@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Import FontAwesome styles */
+@import "@fortawesome/fontawesome-free/css/all.min.css";
+
+/* Font Styles */
+body {
+  @apply bg-background text-foreground font-sans;
+}
+
+/* Optional Utility Layer */
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  /* Custom Media Query for Small Screens */
+  @media (max-width: 640px) {
+    .back-arrow {
+      left: 12px !important;  /* Adjust for small screen */
+      top: 10px !important;   /* Adjust top position */
+    }
+  }
+}
