@@ -22,7 +22,7 @@ const DashboardNavbar = ({ toggleSidebar }) => {
               />
             </svg>
           </button>
-          <h1 className="text-2xl font-bold text-gray-800">Commercial User Dashboard</h1>
+          <h1 className="text-2xl font-bold text-gray-800">Residence User Dashboard</h1>
         </div>
 
         {/* Right side: user info */}
