@@ -70,7 +70,7 @@ export default function StepOneCard() {
         </div>
 
         {/* Heading */}
-        <h1 className="text-2xl sm:text-3xl font-bold text-[#039994] mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#039994] mr-40 mb-6">
           Account Summary
         </h1>
 
