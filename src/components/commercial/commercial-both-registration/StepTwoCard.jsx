@@ -20,7 +20,7 @@ export default function StepOneCard() {
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
-      router.push('/register/residence-user-registration/agreement');
+      router.push('/register/commercial-operator-registration/step-three');  
     }, 1500);
   };
 
@@ -58,15 +58,15 @@ export default function StepOneCard() {
 
         {/* Heading */}
         <h1 className="text-2xl sm:text-3xl font-bold text-[#039994] mr-40 mb-6">
-          Account Summary
+          Utility Authorization
         </h1>
 
         {/* Step Bar */}
         <div className="w-full max-w-md flex items-center justify-between mt-4 mb-4">
           <div className="flex-1 h-1 bg-gray-200 rounded-full mr-4">
-            <div className="h-1 bg-[#039994] w-4/5 rounded-full" />
+            <div className="h-1 bg-[#039994] w-3/5 rounded-full" /> {/* Adjusted to 3/5 for step 3 of 5 */}
           </div>
-          <span className="text-sm font-medium text-gray-500">04/05</span>
+          <span className="text-sm font-medium text-gray-500">03/05</span> {/* Changed to 03/05 */}
         </div>
 
         {/* Dropdowns & File Upload */}

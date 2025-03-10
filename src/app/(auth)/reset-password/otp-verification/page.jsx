@@ -1,6 +1,6 @@
 "use client";
 
-import OtpVerificationCard from '../../../components/(auth)/login/LoginCard';
+import OtpVerificationCard from '../../../../components/(auth)/reset-password/OtpVerificationCard';
 
 export default function OtpVerificationPage() {
   return (

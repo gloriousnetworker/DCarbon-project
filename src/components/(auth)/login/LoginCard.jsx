@@ -8,7 +8,7 @@ export default function LoginCard() {
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
-      window.location.href = '/dashboard'; // Example redirect
+      window.location.href = '/commercial-dashboard'; 
     }, 3000);
   };
 
@@ -75,7 +75,7 @@ export default function LoginCard() {
                   Password
                 </label>
                 <a
-                  href="/forgot-password"
+                  href="/reset-password"  // Updated the route for the forgot password link
                   className="text-sm text-white hover:underline"
                 >
                   Forgot password

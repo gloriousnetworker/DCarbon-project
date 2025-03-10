@@ -1,14 +1,14 @@
 "use client";
 
-import OtpVerificationCard from '../../../components/(auth)/reset-password/OtpVerificationCard';
+import CommercialCard from '../../../../components/commercial/CommercialRegistrationCard';
 
-export default function OtpVerificationPage() {
+export default function CommercialPage() {
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-[#15104D]">
+    <div className="min-h-screen flex flex-col md:flex-row bg-[#FFFFFF]">
       {/* Left Section - Image */}
       <div className="w-full md:w-1/2 p-6 flex justify-center items-center">
         <img
-          src="/auth_images/Login_image.png" // Update this to the correct image path
+          src="/auth_images/Register_image.png" 
           alt="Login Image"
           className="w-full h-auto object-cover rounded-lg"
         />
@@ -16,7 +16,7 @@ export default function OtpVerificationPage() {
 
       {/* Right Section - Login Card */}
       <div className="w-full md:w-1/2 p-6 flex justify-center items-center">
-        <OtpVerificationCard />
+        <CommercialCard />
       </div>
     </div>
   );

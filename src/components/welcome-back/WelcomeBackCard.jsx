@@ -15,7 +15,7 @@ export default function WelcomeBackCard() {
     if (category === 'Resident') {
       router.push('/register/residence-user-registration/step-one');
     } else if (category === 'Commercial') {
-      router.push('/register/commercial-user-registration/step-one');
+      router.push('/register/commercial-user-registration');
     } else if (category === 'Partner') {
       router.push('/register/partner-user-registration/step-one');
     }
@@ -54,7 +54,7 @@ export default function WelcomeBackCard() {
             onClick={() => handleCategorySelect('Resident')}
             className="px-4 py-2 rounded-md text-sm font-medium bg-transparent text-[#039994] border border-[#039994] hover:bg-[#02857f] hover:text-white transition duration-300 ease-in-out"
           >
-            Resident
+            Residence
           </button>
 
           {/* Commercial Button */}

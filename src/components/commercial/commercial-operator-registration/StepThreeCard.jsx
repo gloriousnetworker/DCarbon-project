@@ -20,7 +20,7 @@ export default function StepOneCard() {
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
-      router.push('/register/residence-user-registration/agreement');
+      router.push('/register/commercial-operator-registration/agreement');
     }, 1500);
   };
 
