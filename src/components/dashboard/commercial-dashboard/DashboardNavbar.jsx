@@ -1,38 +1,49 @@
-import React from 'react';
+import React from "react";
+import { FaBars, FaSearch, FaBell, FaHeadset } from "react-icons/fa";
 
 const DashboardNavbar = ({ toggleSidebar }) => {
   return (
-    <header className="bg-white shadow-md">
-      <div className="mx-auto px-4 py-4 flex justify-between items-center">
-        {/* Left side: hamburger icon (mobile) + title */}
-        <div className="flex items-center">
+    <header className="bg-white border-b border-gray-200">
+      <div className="max-w-full px-4 py-3 flex items-center justify-between">
+        {/* Left side: Hamburger (mobile) + "Overview" text */}
+        <div className="flex items-center space-x-4">
           {/* Hamburger menu: visible only on mobile */}
-          <button onClick={toggleSidebar} className="mr-4 md:hidden">
-            <svg
-              className="w-6 h-6 text-gray-700"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 6h16M4 12h16M4 18h16"
-              />
-            </svg>
+          <button className="md:hidden" onClick={toggleSidebar}>
+            <FaBars className="text-gray-700" size={20} />
           </button>
-          <h1 className="text-2xl font-bold text-gray-800">Commercial User Dashboard</h1>
+          {/* Overview text */}
+          <h1 className="text-xl font-semibold text-gray-800">Overview</h1>
         </div>
 
-        {/* Right side: user info */}
-        <div className="flex items-center space-x-4">
-          <span className="text-gray-600">Welcome, User!</span>
-          <img
-            src="https://via.placeholder.com/40"
-            alt="User Avatar"
-            className="w-10 h-10 rounded-full"
-          />
+        {/* Middle: Search bar */}
+        <div className="flex-1 flex justify-center mx-4">
+          <div className="relative w-full max-w-md">
+            {/* Green search icon container */}
+            <span className="absolute inset-y-0 left-0 flex items-center">
+              <div className="bg-[#039994] h-full px-3 flex items-center justify-center rounded-l-md">
+                <FaSearch className="text-white" size={14} />
+              </div>
+            </span>
+            {/* Input field */}
+            <input
+              type="text"
+              placeholder="Search"
+              className="w-full pl-12 pr-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#039994]"
+            />
+          </div>
+        </div>
+
+        {/* Right side: notification + support icons */}
+        <div className="flex items-center space-x-6">
+          {/* Notification icon with a red dot for unread notifications */}
+          <div className="relative">
+            <FaBell className="text-[#039994]" size={20} />
+            {/* Red dot - shown if there is an unread notification */}
+            <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500" />
+          </div>
+
+          {/* Contact Support icon */}
+          <FaHeadset className="text-[#039994]" size={20} />
         </div>
       </div>
     </header>
