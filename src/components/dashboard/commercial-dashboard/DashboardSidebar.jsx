@@ -113,7 +113,7 @@ const DashboardSidebar = ({
           style={getTextStyle(isActive("transaction"))}
         >
           <FiTrendingUp size={16} color={getIconColor(isActive("transaction"))} />
-          <span>REC Sales &amp; Report</span>
+          <span>Facility Management</span>
         </button>
         <button
           onClick={() => onSectionChange("residentialManagement")}
@@ -123,7 +123,8 @@ const DashboardSidebar = ({
           style={getTextStyle(isActive("residentialManagement"))}
         >
           <FiLayers size={16} color={getIconColor(isActive("residentialManagement"))} />
-          <span>Facility Management</span>
+          
+          <span>REC Sales &amp; Report</span>
         </button>
         <button
           onClick={() => onSectionChange("requestPayment")}

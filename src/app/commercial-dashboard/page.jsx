@@ -29,8 +29,8 @@ export default function UserDashboard() {
   // Mapping from section keys to display text for the navbar
   const sectionDisplayMap = {
     overview: 'Overview',
-    transaction: 'REC Sales & Report',
-    residentialManagement: 'Facility Management',
+    transaction: 'Facility Management',
+    residentialManagement: 'REC Sales & Report',
     requestPayment: 'Request Payment',
     myAccount: 'My Account',
     notifications: 'Notification',

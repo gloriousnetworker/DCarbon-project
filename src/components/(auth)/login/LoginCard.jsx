@@ -1,19 +1,51 @@
+'use client';
+
 import { useState } from 'react';
+import axios from 'axios';
 import Loader from '../../../components/loader/Loader';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 export default function LoginCard() {
   const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     setLoading(true);
-    setTimeout(() => {
+    try {
+      const response = await axios.post(
+        'https://dcarbon-server.onrender.com/api/auth/login',
+        { email, password },
+        { headers: { 'Content-Type': 'application/json' } }
+      );
+      const { user, token } = response.data.data;
+      // Store user's first name and token in local storage
+      localStorage.setItem('userFirstName', user.firstName);
+      localStorage.setItem('authToken', token);
+      toast.success('Login successful');
+
+      // Route based on user type
+      if (user.userType === 'RESIDENTIAL') {
+        window.location.href = '/residence-dashboard';
+      } else if (user.userType === 'COMMERCIAL') {
+        window.location.href = '/commercial-dashboard';
+      } else if (user.userType === 'PARTNER') {
+        window.location.href = '/partner-dashboard';
+      } else {
+        // Fallback route if needed
+        window.location.href = '/dashboard';
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Login failed');
+    } finally {
       setLoading(false);
-      window.location.href = '/commercial-dashboard'; 
-    }, 3000);
+    }
   };
 
   return (
     <>
+      <ToastContainer />
       {/* Loader Overlay */}
       {loading && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
@@ -22,7 +54,7 @@ export default function LoginCard() {
       )}
 
       {/* Full-Screen Gradient Background */}
-      
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-gray-700 to-gray-900 px-4">
         {/* Glass-Effect Card */}
         <div
           className="w-full max-w-md rounded-xl shadow-lg p-8"
@@ -34,7 +66,6 @@ export default function LoginCard() {
         >
           {/* Logo */}
           <div className="flex justify-center mb-6">
-            {/* Replace /logo.png with your actual path */}
             <img
               src="/auth_images/Login_logo.png"
               alt="DCarbon Logo"
@@ -61,6 +92,8 @@ export default function LoginCard() {
                 type="email"
                 id="email"
                 placeholder="e.g. name@domain.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -75,7 +108,7 @@ export default function LoginCard() {
                   Password
                 </label>
                 <a
-                  href="/reset-password"  // Updated the route for the forgot password link
+                  href="/forgot-password"
                   className="text-sm text-white hover:underline"
                 >
                   Forgot password
@@ -85,6 +118,8 @@ export default function LoginCard() {
                 type="password"
                 id="password"
                 placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 className="w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -128,6 +163,7 @@ export default function LoginCard() {
             </a>
           </p>
         </div>
+      </div>
     </>
   );
 }

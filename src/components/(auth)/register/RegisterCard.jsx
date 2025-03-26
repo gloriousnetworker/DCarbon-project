@@ -1,25 +1,94 @@
 'use client';
 
 import { useState } from 'react';
+import axios from 'axios';
 import Loader from '../../../components/loader/Loader';
 import EmailModal from '../../../components/modals/EmailModal';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 export default function RegisterCard() {
   const [loading, setLoading] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
-  const [userCategory, setUserCategory] = useState('Resident');
+  // Initially no category is selected
+  const [userCategory, setUserCategory] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleRegister = () => {
+  // Form field states
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  // Mapping UI labels to API expected values
+  const userTypeMapping = {
+    Resident: 'RESIDENTIAL',
+    Commercial: 'COMMERCIAL',
+    Partner: 'PARTNER',
+  };
+
+  // Validate the form before submission
+  const validateForm = () => {
+    if (!firstName.trim() || !lastName.trim() || !email.trim() || !password) {
+      setError('Please fill out all fields.');
+      return false;
+    }
+    const emailRegex = /\S+@\S+\.\S+/;
+    if (!emailRegex.test(email)) {
+      setError('Please enter a valid email address.');
+      return false;
+    }
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters long.');
+      return false;
+    }
+    if (!userCategory) {
+      setError('Please select a user category.');
+      return false;
+    }
+    setError('');
+    return true;
+  };
+
+  // Call the API endpoint to register a user using Axios
+  const handleRegister = async () => {
+    if (!validateForm()) {
+      return;
+    }
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+
+    const payload = {
+      email,
+      firstName,
+      lastName,
+      userType: userTypeMapping[userCategory],
+      password,
+    };
+
+    try {
+      const response = await axios.post(
+        'https://dcarbon-server.onrender.com/api/user/register',
+        payload,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      // Store the user's email in local storage for verification
+      localStorage.setItem('userEmail', response.data.data.email);
+      toast.success('Registration successful');
       setShowModal(true);
-    }, 1500);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Registration failed');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const togglePasswordVisibility = () => {
-    setPasswordVisible(!passwordVisible);
+    setPasswordVisible((prev) => !prev);
   };
 
   const handleUserCategory = (category) => {
@@ -28,16 +97,13 @@ export default function RegisterCard() {
 
   return (
     <>
-      {/* Loader Overlay */}
+      <ToastContainer />
       {loading && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <Loader />
         </div>
       )}
-
-      {/* Full-Screen Background */}
       <div className="min-h-screen w-full bg-white flex flex-col items-center justify-center py-8 px-4">
-        {/* Logo */}
         <div className="mb-6">
           <img
             src="/auth_images/Login_logo.png"
@@ -45,21 +111,21 @@ export default function RegisterCard() {
             className="h-10 object-contain"
           />
         </div>
-
-        {/* Heading */}
         <h1
           className="text-2xl sm:text-3xl font-bold mb-2"
           style={{ color: '#039994', fontFamily: 'SF Pro Text, sans-serif' }}
         >
           Start your Solar journey with DCarbon
         </h1>
-        {/* Extended horizontal line */}
         <hr className="w-full border border-gray-200 mt-4 mb-8" />
-
-        {/* Form Container */}
         <div className="w-full max-w-md">
-          <form className="flex flex-col space-y-6">
-            {/* First Name + Last Name */}
+          <form
+            className="flex flex-col space-y-6"
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleRegister();
+            }}
+          >
             <div className="flex flex-col sm:flex-row sm:space-x-4 space-y-6 sm:space-y-0">
               <div className="w-full">
                 <label
@@ -73,6 +139,8 @@ export default function RegisterCard() {
                   id="firstName"
                   placeholder="👤 First name"
                   className="w-full rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#039994]"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
                 />
               </div>
               <div className="w-full">
@@ -87,11 +155,11 @@ export default function RegisterCard() {
                   id="lastName"
                   placeholder="👤 Last name"
                   className="w-full rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#039994]"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
                 />
               </div>
             </div>
-
-            {/* Email Address */}
             <div>
               <label
                 htmlFor="email"
@@ -104,55 +172,31 @@ export default function RegisterCard() {
                 id="email"
                 placeholder="@ e.g name@domain.com"
                 className="w-full rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#039994]"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
               />
             </div>
-
-            {/* User Category */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 User Category
               </label>
               <div className="flex items-center space-x-4">
-                {/* Resident */}
-                <button
-                  type="button"
-                  onClick={() => handleUserCategory('Resident')}
-                  className={`px-4 py-2 rounded-md text-sm font-medium focus:outline-none transition duration-300 ease-in-out ${
-                    userCategory === 'Resident'
-                      ? 'bg-[#039994] text-white'
-                      : 'bg-transparent text-[#039994] border border-[#039994]'
-                  } hover:bg-[#02857f] hover:text-white`}
-                >
-                  Resident
-                </button>
-                {/* Commercial */}
-                <button
-                  type="button"
-                  onClick={() => handleUserCategory('Commercial')}
-                  className={`px-4 py-2 rounded-md text-sm font-medium focus:outline-none transition duration-300 ease-in-out ${
-                    userCategory === 'Commercial'
-                      ? 'bg-[#039994] text-white'
-                      : 'bg-transparent text-[#039994] border border-[#039994]'
-                  } hover:bg-[#02857f] hover:text-white`}
-                >
-                  Commercial
-                </button>
-                {/* Partner */}
-                <button
-                  type="button"
-                  onClick={() => handleUserCategory('Partner')}
-                  className={`px-4 py-2 rounded-md text-sm font-medium focus:outline-none transition duration-300 ease-in-out ${
-                    userCategory === 'Partner'
-                      ? 'bg-[#039994] text-white'
-                      : 'bg-transparent text-[#039994] border border-[#039994]'
-                  } hover:bg-[#02857f] hover:text-white`}
-                >
-                  Partner
-                </button>
+                {['Resident', 'Commercial', 'Partner'].map((category) => (
+                  <button
+                    key={category}
+                    type="button"
+                    onClick={() => handleUserCategory(category)}
+                    className={`px-4 py-2 rounded-md text-sm font-medium focus:outline-none transition duration-300 ease-in-out ${
+                      userCategory === category
+                        ? 'bg-[#039994] text-white'
+                        : 'bg-transparent text-[#039994] border border-[#039994]'
+                    } hover:bg-[#02857f] hover:text-white`}
+                  >
+                    {category}
+                  </button>
+                ))}
               </div>
             </div>
-
-            {/* Password with Eye Toggle */}
             <div>
               <label
                 htmlFor="password"
@@ -166,6 +210,8 @@ export default function RegisterCard() {
                   id="password"
                   placeholder="|** Create Password"
                   className="w-full rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#039994]"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                 />
                 <button
                   type="button"
@@ -173,7 +219,6 @@ export default function RegisterCard() {
                   className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700 focus:outline-none"
                 >
                   {passwordVisible ? (
-                    // Eye Off icon
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       className="h-5 w-5"
@@ -187,7 +232,6 @@ export default function RegisterCard() {
                       />
                     </svg>
                   ) : (
-                    // Eye icon
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       className="h-5 w-5"
@@ -211,18 +255,14 @@ export default function RegisterCard() {
                 </button>
               </div>
             </div>
-
-            {/* Create Account Button */}
+            {error && <p className="text-red-500 text-sm">{error}</p>}
             <button
-              type="button"
-              onClick={handleRegister}
+              type="submit"
               className="w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994]"
             >
               Create Account
             </button>
           </form>
-
-          {/* Already have an account? Sign in */}
           <p className="mt-6 text-center text-sm text-gray-600">
             Already have an account?{' '}
             <a
@@ -251,8 +291,6 @@ export default function RegisterCard() {
           </p>
         </div>
       </div>
-
-      {/* Email Modal */}
       {showModal && <EmailModal closeModal={() => setShowModal(false)} />}
     </>
   );
