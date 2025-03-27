@@ -13,11 +13,11 @@ export default function CommercialRegistrationCard() {
 
     // Navigate to the correct registration step based on category
     if (category === 'Owner') {
-      router.push('/register/commercial-owner-registration/step-one');
+      router.push('/register/owner-registration');
     } else if (category === 'Operator') {
-      router.push('/register/commercial-operator-registration/step-one');
+      router.push('/register/operator-registration');
     } else if (category === 'Both') {
-      router.push('/register/commercial-both-registration/step-one');
+      router.push('/register/both-registration');
     }
   };
 
