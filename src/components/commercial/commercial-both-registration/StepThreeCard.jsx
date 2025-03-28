@@ -3,39 +3,25 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-export default function StepOneCard() {
+export default function OwnersDetailsCard() {
   const router = useRouter();
+
+  // Loader
   const [loading, setLoading] = useState(false);
 
-  // Toggles to show/hide edit cards
-  const [showFinanceEdit, setShowFinanceEdit] = useState(false);
-  const [showUtilityEdit, setShowUtilityEdit] = useState(false);
-
-  // Finance fields
-  const [financeType, setFinanceType] = useState('cash');
-  const [financeCompany, setFinanceCompany] = useState('n/a');
-  const [installer, setInstaller] = useState('installer1');
-  const [financeAgreement, setFinanceAgreement] = useState('Doc.1.jpg');
-  const [file, setFile] = useState(null);
-
-  // Utility fields
-  const [utilityProvider, setUtilityProvider] = useState('Provider 1');
-  const [utilityDetails, setUtilityDetails] = useState(
-    'Sopanel Energy\nHSE 3, 2nd Avenue, Dummy street, Dummy state.\nZipcode'
-  );
-
-  const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
-    if (e.target.files[0]) {
-      setFinanceAgreement(e.target.files[0].name);
-    }
-  };
+  // Form fields
+  const [fullName, setFullName] = useState('');
+  const [phonePrefix, setPhonePrefix] = useState('+234');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [address, setAddress] = useState('');
+  const [website, setWebsite] = useState('');
 
   const handleSubmit = () => {
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
-      router.push('/register/commercial-both-registration/agreement');
+      // Navigate to the next step
+      router.push('/register/commercial-both-registration/step-four');
     }, 1500);
   };
 
@@ -49,12 +35,13 @@ export default function StepOneCard() {
       )}
 
       {/* Full-Screen Background */}
-      <div className="min-h-screen w-full bg-white flex flex-col items-center justify-center py-8 px-4">
+      <div className="min-h-screen w-full bg-white flex flex-col items-center py-8 px-4">
         {/* Back Arrow */}
-        <div className="relative w-full mb-6">
-          <div
-            className="back-arrow absolute left-12 top-0 text-[#039994] cursor-pointer z-60"
+        <div className="relative w-full mb-4">
+          <button
+            type="button"
             onClick={() => router.back()}
+            className="absolute left-0 text-[#039994] p-2 focus:outline-none"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -66,224 +53,129 @@ export default function StepOneCard() {
             >
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
-          </div>
+          </button>
         </div>
 
         {/* Heading */}
-        <h1 className="text-2xl sm:text-3xl font-bold text-[#039994] mr-40 mb-6">
-          Account Summary
-        </h1>
-
-        {/* Step Bar */}
-        <div className="w-full max-w-md flex items-center justify-between mt-2 mb-6">
-          <div className="flex-1 h-1 bg-gray-200 rounded-full mr-4">
-            <div className="h-1 bg-[#039994] w-4/5 rounded-full" />
-          </div>
-          <span className="text-sm font-medium text-gray-500">04/05</span>
+        <div className="w-full max-w-md">
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#039994] mb-2">
+            Owner’s Details
+          </h1>
         </div>
 
-        {/* Main Content Container */}
-        <div className="w-full max-w-md space-y-6">
-          {/* FINANCE INFORMATION SECTION */}
-          <div className="border border-gray-200 rounded-md p-4 shadow-sm bg-[#F5F5F5]">
-            {/* Section Header with Edit button */}
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-[#039994] font-normal">Finance Information</h2>
-              <button
-                onClick={() => setShowFinanceEdit(!showFinanceEdit)}
-                className="text-[#039994] text-sm font-medium hover:underline"
-              >
-                Edit
-              </button>
-            </div>
+        {/* Step Bar */}
+        <div className="w-full max-w-md flex items-center justify-between mb-6">
+          <div className="flex-1 h-1 bg-gray-200 rounded-full mr-4">
+            {/* Full progress bar since it's 03/03 */}
+            <div className="h-1 bg-[#039994] w-full rounded-full" />
+          </div>
+          <span className="text-sm font-medium text-gray-500">03/03</span>
+        </div>
 
-            {/* Read-Only Finance Info (shown when NOT editing) */}
-            {!showFinanceEdit && (
-              <div className="space-y-2 text-sm text-gray-600">
-                <div className="flex justify-between">
-                  <span className="font-medium">Finance Type:</span>
-                  <span className="ml-2 capitalize">{financeType || 'N/A'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="font-medium">Finance Company:</span>
-                  <span className="ml-2 uppercase">{financeCompany || 'N/A'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="font-medium">Finance Agreement:</span>
-                  <span className="ml-2">{financeAgreement || 'N/A'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="font-medium">Installer:</span>
-                  <span className="ml-2 capitalize">{installer || 'N/A'}</span>
-                </div>
-              </div>
-            )}
+        {/* Subheading */}
+        <div className="w-full max-w-md mb-4">
+          <h2 className="text-md font-semibold text-[#039994]">
+            Individual owner
+          </h2>
+        </div>
 
-            {/* Editable Finance Card (shown when editing) */}
-            {showFinanceEdit && (
-              <div className="space-y-4">
-                {/* Finance Type */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Finance Type
-                  </label>
-                  <select
-                    value={financeType}
-                    onChange={(e) => setFinanceType(e.target.value)}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994]"
-                  >
-                    <option value="">Select Finance Type</option>
-                    <option value="cash">Cash</option>
-                    <option value="loan">Loan</option>
-                    <option value="ppa">PPA</option>
-                    <option value="lease">Lease</option>
-                  </select>
-                </div>
+        {/* Form Fields */}
+        <div className="w-full max-w-md space-y-4">
 
-                {/* Finance Company */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Finance Company
-                  </label>
-                  <select
-                    value={financeCompany}
-                    onChange={(e) => setFinanceCompany(e.target.value)}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994]"
-                  >
-                    <option value="">Select Finance Company</option>
-                    <option value="company1">Company 1</option>
-                    <option value="company2">Company 2</option>
-                    <option value="company3">Company 3</option>
-                    <option value="others">Others</option>
-                    <option value="n/a">N/A</option>
-                  </select>
-                </div>
-
-                {/* Finance Agreement (File Upload) */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Upload Finance Agreement
-                  </label>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="file"
-                      onChange={handleFileChange}
-                      className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994]"
-                    />
-                  </div>
-                </div>
-
-                {/* Installer */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Select Installer
-                  </label>
-                  <select
-                    value={installer}
-                    onChange={(e) => setInstaller(e.target.value)}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994]"
-                  >
-                    <option value="">Select Installer</option>
-                    <option value="installer1">Installer 1</option>
-                    <option value="installer2">Installer 2</option>
-                    <option value="installer3">Installer 3</option>
-                    <option value="others">Others</option>
-                  </select>
-                </div>
-              </div>
-            )}
+          {/* Owner's full name */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Owner’s full name
+            </label>
+            <input
+              type="text"
+              placeholder="Full name"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm placeholder-gray-400
+                         focus:outline-none focus:ring-2 focus:ring-[#039994]"
+            />
           </div>
 
-          {/* THIN HR LINE */}
-          <hr className="border-gray-200" />
-
-          {/* UTILITY AUTHORIZATION SECTION */}
-          <div className="border border-gray-200 rounded-md p-4 shadow-sm bg-[#F5F5F5]">
-            {/* Section Header with Edit button */}
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-[#039994] font-normal">Utility Authorization</h2>
-              <button
-                onClick={() => setShowUtilityEdit(!showUtilityEdit)}
-                className="text-[#039994] text-sm font-medium hover:underline"
-              >
-                Edit
-              </button>
+          {/* Phone Number (split into prefix + number) */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Phone Number
+            </label>
+            <div className="flex space-x-2">
+              <input
+                type="text"
+                value={phonePrefix}
+                onChange={(e) => setPhonePrefix(e.target.value)}
+                className="w-16 rounded-md border border-gray-300 px-3 py-2 text-sm placeholder-gray-400
+                           focus:outline-none focus:ring-2 focus:ring-[#039994]"
+              />
+              <input
+                type="text"
+                placeholder="e.g. 000-0000-000"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm placeholder-gray-400
+                           focus:outline-none focus:ring-2 focus:ring-[#039994]"
+              />
             </div>
-
-            {/* Read-Only Utility Info (shown when NOT editing) */}
-            {!showUtilityEdit && (
-              <div className="space-y-2 text-sm text-gray-600">
-                <div className="flex justify-between">
-                  <span className="font-medium">Utility Provider:</span>
-                  <span className="ml-2">{utilityProvider}</span>
-                </div>
-                <div>
-                  <p className="font-medium">Utility Details:</p>
-                  <p className="mt-1 whitespace-pre-line">{utilityDetails}</p>
-                </div>
-              </div>
-            )}
-
-            {/* Editable Utility Card (shown when editing) */}
-            {showUtilityEdit && (
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Utility Provider
-                  </label>
-                  <select
-                    value={utilityProvider}
-                    onChange={(e) => setUtilityProvider(e.target.value)}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994]"
-                  >
-                    <option value="Provider 1">Provider 1</option>
-                    <option value="Provider 2">Provider 2</option>
-                    <option value="Provider 3">Provider 3</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Utility Details
-                  </label>
-                  <textarea
-                    value={utilityDetails}
-                    onChange={(e) => setUtilityDetails(e.target.value)}
-                    rows={3}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994]"
-                  />
-                </div>
-              </div>
-            )}
           </div>
 
-          {/* NEXT BUTTON */}
+          {/* Address */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Address
+            </label>
+            <input
+              type="text"
+              placeholder="E.g. Street, City, County, State."
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm placeholder-gray-400
+                         focus:outline-none focus:ring-2 focus:ring-[#039994]"
+            />
+          </div>
+
+          {/* Website details */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Website details
+            </label>
+            <input
+              type="text"
+              placeholder="http://"
+              value={website}
+              onChange={(e) => setWebsite(e.target.value)}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm placeholder-gray-400
+                         focus:outline-none focus:ring-2 focus:ring-[#039994]"
+            />
+          </div>
+        </div>
+
+        {/* Next Button */}
+        <div className="w-full max-w-md mt-6">
           <button
             onClick={handleSubmit}
-            className="w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994]"
+            className="w-full rounded-md bg-[#039994] text-white font-semibold py-2
+                       hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994]"
           >
             Next
           </button>
+        </div>
 
-          {/* Terms and Conditions & Privacy Policy */}
-          <div className="mt-2 text-center text-xs text-gray-500 leading-tight">
-            By clicking on ‘Next’, you agree to our{' '}
-            <a
-              href="/terms"
-              className="text-[#039994] hover:underline font-medium"
-            >
-              Terms and Conditions
-            </a>{' '}
-            &{' '}
-            <a
-              href="/privacy"
-              className="text-[#039994] hover:underline font-medium"
-            >
-              Privacy Policy
-            </a>
-          </div>
+        {/* Terms and Conditions & Privacy Policy Links */}
+        <div className="mt-6 text-center text-xs text-gray-500 leading-tight">
+          Terms and Conditions &amp;{' '}
+          <a href="/privacy" className="text-[#039994] hover:underline font-medium">
+            Privacy Policy
+          </a>
         </div>
       </div>
     </>
   );
 }
+
+
+
+
+// 

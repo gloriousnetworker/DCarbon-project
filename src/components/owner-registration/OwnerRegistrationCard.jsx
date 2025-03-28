@@ -104,12 +104,16 @@ export default function StepOneCard() {
         </div>
 
         {/* Next Button */}
-        <button
-          onClick={handleSubmit}
-          className="w-full rounded-md bg-[#039994] text-white font-semibold py-2 mt-6 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994]"
-        >
-          Next
-        </button>
+        <div className="w-full max-w-md mt-6">
+          <button
+            onClick={handleSubmit}
+            className="w-full rounded-md bg-[#039994] text-white font-semibold py-2 
+               hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994]"
+          >
+            Next
+          </button>
+        </div>
+
 
         {/* Terms and Conditions & Privacy Policy Links */}
         <div className="mt-6 text-center text-xs text-gray-500 leading-tight">

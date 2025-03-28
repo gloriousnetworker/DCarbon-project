@@ -121,31 +121,18 @@ export default function StepOneCard() {
               </button>
             </div>
           </div>
-
-          {/* Select Installer Dropdown */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Select Installer</label>
-            <select
-              value={installer}
-              onChange={(e) => setInstaller(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#039994]"
-            >
-              <option value="">Select Installer</option>
-              <option value="installer1">Installer 1</option>
-              <option value="installer2">Installer 2</option>
-              <option value="installer3">Installer 3</option>
-              <option value="others">Others</option>
-            </select>
-          </div>
         </div>
 
         {/* Next Button */}
-        <button
-          onClick={handleSubmit}
-          className="w-full rounded-md bg-[#039994] text-white font-semibold py-2 mt-6 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994]"
-        >
-          Next
-        </button>
+        <div className="w-full max-w-md">
+          <button
+            onClick={handleSubmit}
+            className="w-full rounded-md bg-[#039994] text-white font-semibold py-2 mt-6
+                         hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994]"
+          >
+            Next
+          </button>
+        </div>
 
         {/* Terms and Conditions & Privacy Policy Links */}
         <div className="mt-6 text-center text-xs text-gray-500 leading-tight">

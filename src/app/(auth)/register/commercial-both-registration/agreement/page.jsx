@@ -4,49 +4,38 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { FaDownload, FaPrint, FaTimes } from "react-icons/fa";
 import CustomerIDLoader from "../../../../../components/loader/CustomerIDLoader";
-import InviteOwnerModal from "../../../../../components/modals/commercial-owner-modals/InviteOwnerModal";
-import EmailInvitationSentModal from "../../../../../components/modals/commercial-owner-modals/EmailInvitationSentModal";
-import RegistrationSuccessfulModal from "../../../../../components/modals/commercial-owner-modals/RegistrationSuccessfulModal";
 import Loader from "../../../../../components/loader/Loader";
 import Agreement from "../../../../../components/commercial/commercial-both-registration/AgreementForm";
 import SignatureModal from "../../../../../components/modals/SignatureModal";
+import RegistrationSuccessfulModal from "../../../../../components/modals/commercial-owner-modals/RegistrationSuccessfulModal";
 
 export default function AgreementFormPage() {
   const [loading, setLoading] = useState(false);
-  const [inviteModalOpen, setInviteModalOpen] = useState(false);
-  const [sentModalOpen, setSentModalOpen] = useState(false);
-  const [registrationModalOpen, setRegistrationModalOpen] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
 
   // Condition states: checkboxes and signature
   const [allChecked, setAllChecked] = useState(false);
   const [showSignatureModal, setShowSignatureModal] = useState(false);
   const [signatureData, setSignatureData] = useState(null);
-  const [accepted, setAccepted] = useState(true);
+
+  // Registration success modal
+  const [registrationModalOpen, setRegistrationModalOpen] = useState(false);
 
   const router = useRouter();
 
-  // When Accept is clicked (and conditions met), start the flow by showing the invite modal.
+  // When Accept is clicked (and conditions met), show the Registration successful modal
   const handleSubmit = () => {
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
-      setInviteModalOpen(true);
+      setRegistrationModalOpen(true);
     }, 1500);
   };
 
-  const handleCloseInviteModal = () => {
-    setInviteModalOpen(false);
-    setSentModalOpen(true);
-  };
-
-  const handleCloseSentModal = () => {
-    setSentModalOpen(false);
-    setRegistrationModalOpen(true);
-  };
-
+  // Called when user closes the RegistrationSuccessfulModal
   const handleCloseRegistrationModal = () => {
     setIsRedirecting(true);
+    // Redirect to the dashboard after a brief delay
     setTimeout(() => {
       router.push("/commercial-dashboard");
     }, 2000);
@@ -98,14 +87,11 @@ export default function AgreementFormPage() {
           onOpenSignatureModal={() => setShowSignatureModal(true)}
         />
 
-        {/* Accept / Decline Buttons */}
+        {/* Accept / Decline Buttons (fixed at bottom) */}
         <div className="flex w-full max-w-3xl justify-between mt-6 space-x-4 px-2 fixed bottom-8">
           {/* Accept Button: enabled only if all checkboxes are checked AND signature provided */}
           <button
-            onClick={() => {
-              setAccepted(true);
-              handleSubmit();
-            }}
+            onClick={handleSubmit}
             disabled={!(allChecked && signatureData)}
             className={`
               w-full py-2 text-center rounded-md border border-[#039994]
@@ -118,7 +104,7 @@ export default function AgreementFormPage() {
             Accept
           </button>
 
-          {/* Decline Button: transparent */}
+          {/* Decline Button */}
           <button
             onClick={() => router.back()}
             className="
@@ -133,13 +119,7 @@ export default function AgreementFormPage() {
         </div>
       </div>
 
-      {/* Modals */}
-      {inviteModalOpen && (
-        <InviteOwnerModal closeModal={handleCloseInviteModal} />
-      )}
-      {sentModalOpen && (
-        <EmailInvitationSentModal closeModal={handleCloseSentModal} />
-      )}
+      {/* Registration Successful Modal */}
       {registrationModalOpen && (
         <RegistrationSuccessfulModal
           closeModal={handleCloseRegistrationModal}

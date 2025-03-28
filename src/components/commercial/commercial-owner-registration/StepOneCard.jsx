@@ -7,7 +7,6 @@ export default function StepOneCard() {
   const [loading, setLoading] = useState(false);
   const [financeType, setFinanceType] = useState('');
   const [financeCompany, setFinanceCompany] = useState('');
-  const [installer, setInstaller] = useState('');
   const [file, setFile] = useState(null);
   const router = useRouter();
 
@@ -62,24 +61,41 @@ export default function StepOneCard() {
         </h1>
 
         {/* Step Bar */}
-        <div className="w-full max-w-md flex items-center justify-between mt-4 mb-4">
+        <div className="w-full max-w-md flex items-center justify-between mb-6">
           <div className="flex-1 h-1 bg-gray-200 rounded-full mr-4">
-            <div className="h-1 bg-[#039994] w-2/5 rounded-full" />
+            {/* Adjust width here to reflect how much of the step is complete */}
+            <div className="h-1 bg-[#039994] w-2/3 rounded-full" />
           </div>
-          <span className="text-sm font-medium text-gray-500">02/05</span>
+          <span className="text-sm font-medium text-gray-500">02/03</span>
         </div>
 
-        {/* Dropdowns & File Upload */}
+        {/* Form Card */}
         <div className="w-full max-w-md space-y-6">
           {/* Finance Type Dropdown */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Finance Type</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+              Finance type
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4 ml-1 text-gray-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M8.228 9a3.77 3.77 0 017.544 0c0 1.668-1.172 2.5-2.178 3.057-.97.53-1.533 1.023-1.533 1.943M12 17h.01"
+                />
+              </svg>
+            </label>
             <select
               value={financeType}
               onChange={(e) => setFinanceType(e.target.value)}
               className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#039994]"
             >
-              <option value="">Select Finance Type</option>
+              <option value="">Choose type</option>
               <option value="cash">Cash</option>
               <option value="loan">Loan</option>
               <option value="ppa">PPA</option>
@@ -89,13 +105,29 @@ export default function StepOneCard() {
 
           {/* Finance Company Dropdown */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Finance Company</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+              Finance company
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4 ml-1 text-gray-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M8.228 9a3.77 3.77 0 017.544 0c0 1.668-1.172 2.5-2.178 3.057-.97.53-1.533 1.023-1.533 1.943M12 17h.01"
+                />
+              </svg>
+            </label>
             <select
               value={financeCompany}
               onChange={(e) => setFinanceCompany(e.target.value)}
               className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#039994]"
             >
-              <option value="">Select Finance Company</option>
+              <option value="">Choose company</option>
               <option value="company1">Company 1</option>
               <option value="company2">Company 2</option>
               <option value="company3">Company 3</option>
@@ -106,13 +138,51 @@ export default function StepOneCard() {
 
           {/* Upload Finance Agreement */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Upload Finance Agreement</label>
-            <div className="flex items-center space-x-4">
-              <input
-                type="file"
-                onChange={handleFileChange}
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#039994]"
-              />
+            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+              Upload Finance Agreement (Optional)
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4 ml-1 text-gray-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M8.228 9a3.77 3.77 0 017.544 0c0 1.668-1.172 2.5-2.178 3.057-.97.53-1.533 1.023-1.533 1.943M12 17h.01"
+                />
+              </svg>
+            </label>
+
+            {/* "Choose file..." + pencil icon + Upload button */}
+            <div className="flex items-center space-x-3">
+              <label className="relative flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-500 bg-gray-50 focus-within:outline-none focus-within:ring-2 focus-within:ring-[#039994] cursor-pointer">
+                {file ? file.name : 'Choose file...'}
+                <input
+                  type="file"
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                  onChange={handleFileChange}
+                />
+                {/* Pencil / edit icon on the right */}
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M15.232 5.232l3.536 3.536m-2.036-6.036a2.5 2.5 0 113.536 3.536L7.5 19.5l-4 1 1-4 11.232-11.232z"
+                    />
+                  </svg>
+                </span>
+              </label>
               <button
                 type="button"
                 className="px-4 py-2 bg-[#039994] text-white rounded-md hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994]"
@@ -120,32 +190,21 @@ export default function StepOneCard() {
                 Upload
               </button>
             </div>
-          </div>
-
-          {/* Select Installer Dropdown */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Select Installer</label>
-            <select
-              value={installer}
-              onChange={(e) => setInstaller(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#039994]"
-            >
-              <option value="">Select Installer</option>
-              <option value="installer1">Installer 1</option>
-              <option value="installer2">Installer 2</option>
-              <option value="installer3">Installer 3</option>
-              <option value="others">Others</option>
-            </select>
+            <p className="mt-2 text-xs text-gray-500">
+              Note: You will need to upload Finance Agreement to approve any transactions
+            </p>
           </div>
         </div>
 
         {/* Next Button */}
-        <button
-          onClick={handleSubmit}
-          className="w-full rounded-md bg-[#039994] text-white font-semibold py-2 mt-6 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994]"
-        >
-          Next
-        </button>
+        <div className="w-full max-w-md mt-6">
+          <button
+            onClick={handleSubmit}
+            className="w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994]"
+          >
+            Next
+          </button>
+        </div>
 
         {/* Terms and Conditions & Privacy Policy Links */}
         <div className="mt-6 text-center text-xs text-gray-500 leading-tight">

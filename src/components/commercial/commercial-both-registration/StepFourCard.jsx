@@ -42,7 +42,7 @@ export default function OwnersDetailsCard() {
     setTimeout(() => {
       setLoading(false);
       // Navigate to the next step
-      router.push('/register/commercial-owner-registration/agreement');
+      router.push('/register/commercial-both-registration/agreement');
     }, 1500);
   };
 
