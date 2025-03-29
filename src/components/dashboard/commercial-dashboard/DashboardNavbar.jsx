@@ -5,7 +5,7 @@ const DashboardNavbar = ({ toggleSidebar, selectedSection, sectionDisplayMap }) 
   return (
     <header className="bg-white border-b border-gray-200">
       <div className="max-w-full px-4 py-3 flex items-center justify-between">
-        {/* Left side: Hamburger (mobile) + current section title */}
+        {/* Left side: Hamburger (mobile) + current section title + Operator pending button */}
         <div className="flex items-center space-x-4">
           <button className="md:hidden" onClick={toggleSidebar}>
             <FaBars className="text-gray-700" size={20} />
@@ -13,6 +13,10 @@ const DashboardNavbar = ({ toggleSidebar, selectedSection, sectionDisplayMap }) 
           <h1 className="text-xl font-semibold text-gray-800">
             {sectionDisplayMap[selectedSection]}
           </h1>
+          {/* Yellow Operator Pending button */}
+          <button className="bg-[#FFC107] text-black px-4 py-1.5 rounded-full text-sm font-medium">
+            Operator pending
+          </button>
         </div>
 
         {/* Middle: Search bar */}

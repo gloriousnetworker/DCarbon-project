@@ -3,10 +3,10 @@
 import React, { useState } from 'react';
 import DashboardSidebar from '../../components/dashboard/commercial-dashboard/DashboardSidebar';
 import DashboardNavbar from '../../components/dashboard/commercial-dashboard/DashboardNavbar';
-import DashboardOverview from '../../components/dashboard/commercial-dashboard/DashboardOverview';
-import DashboardTransaction from '../../components/dashboard/commercial-dashboard/DashboardTransaction';
-import DashboardResidentialManagement from '../../components/dashboard/commercial-dashboard/DashboardResidentialManagement';
-import RequestPayment from '../../components/dashboard/commercial-dashboard/RequestPayment';
+import DashboardOverview from '../../components/dashboard/commercial-dashboard/overview/DashboardOverview';
+import DashboardTransaction from '../../components/dashboard/commercial-dashboard/facility-management/FacilityManagement';
+import DashboardResidentialManagement from '../../components/dashboard/commercial-dashboard/rec-sales-and-report/RECSalesAndReport';
+import RequestPayment from '../../components/dashboard/commercial-dashboard/payouts/Payouts';
 import DashboardContactSupport from '../../components/dashboard/commercial-dashboard/ContactSupport';
 import DashboardHelpCentre from '../../components/dashboard/commercial-dashboard/HelpCentre';
 import DashboardNotifications from '../../components/dashboard/commercial-dashboard/Notifications';
@@ -31,7 +31,7 @@ export default function UserDashboard() {
     overview: 'Overview',
     transaction: 'Facility Management',
     residentialManagement: 'REC Sales & Report',
-    requestPayment: 'Request Payment',
+    requestPayment: 'Payouts',
     myAccount: 'My Account',
     notifications: 'Notification',
     helpCenter: 'Help Centre (FAQs)',
@@ -50,7 +50,7 @@ export default function UserDashboard() {
     case 'residentialManagement':
       SectionComponent = DashboardResidentialManagement;
       break;
-    case 'requestPayment':
+    case 'payouts':
       SectionComponent = RequestPayment;
       break;
     case 'myAccount':

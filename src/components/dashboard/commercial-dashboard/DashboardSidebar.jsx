@@ -6,7 +6,6 @@ import {
   FiCreditCard,
   FiUser,
   FiBell,
-  FiHelpCircle,
   FiHeadphones,
   FiLogOut,
 } from "react-icons/fi";
@@ -59,6 +58,11 @@ const DashboardSidebar = ({
   const activeClasses = "bg-[#039994]";
   const inactiveClasses = "hover:bg-gray-100";
 
+  // A helper to handle logout (navigate to /login)
+  const handleLogout = () => {
+    window.location.href = "/login";
+  };
+
   return (
     <aside
       className="
@@ -105,16 +109,7 @@ const DashboardSidebar = ({
           <FiHome size={16} color={getIconColor(isActive("overview"))} />
           <span>Overview</span>
         </button>
-        <button
-          onClick={() => onSectionChange("transaction")}
-          className={`${baseItemClasses} ${
-            isActive("transaction") ? activeClasses : inactiveClasses
-          }`}
-          style={getTextStyle(isActive("transaction"))}
-        >
-          <FiTrendingUp size={16} color={getIconColor(isActive("transaction"))} />
-          <span>Facility Management</span>
-        </button>
+
         <button
           onClick={() => onSectionChange("residentialManagement")}
           className={`${baseItemClasses} ${
@@ -122,19 +117,33 @@ const DashboardSidebar = ({
           }`}
           style={getTextStyle(isActive("residentialManagement"))}
         >
-          <FiLayers size={16} color={getIconColor(isActive("residentialManagement"))} />
-          
+          <FiTrendingUp
+            size={16}
+            color={getIconColor(isActive("residentialManagement"))}
+          />
           <span>REC Sales &amp; Report</span>
         </button>
+
         <button
-          onClick={() => onSectionChange("requestPayment")}
+          onClick={() => onSectionChange("transaction")}
           className={`${baseItemClasses} ${
-            isActive("requestPayment") ? activeClasses : inactiveClasses
+            isActive("transaction") ? activeClasses : inactiveClasses
           }`}
-          style={getTextStyle(isActive("requestPayment"))}
+          style={getTextStyle(isActive("transaction"))}
         >
-          <FiCreditCard size={16} color={getIconColor(isActive("requestPayment"))} />
-          <span>Request Payment</span>
+          <FiLayers size={16} color={getIconColor(isActive("transaction"))} />
+          <span>Facility Management</span>
+        </button>
+
+        <button
+          onClick={() => onSectionChange("payouts")}
+          className={`${baseItemClasses} ${
+            isActive("payouts") ? activeClasses : inactiveClasses
+          }`}
+          style={getTextStyle(isActive("payouts"))}
+        >
+          <FiCreditCard size={16} color={getIconColor(isActive("payouts"))} />
+          <span>Payouts</span>
         </button>
       </nav>
 
@@ -188,18 +197,8 @@ const DashboardSidebar = ({
         </h3>
       </div>
 
-      {/* Support Items */}
+      {/* Support Items (Removed "Help Centre (FAQs)") */}
       <nav className="flex-1 flex flex-col space-y-2 px-2">
-        <button
-          onClick={() => onSectionChange("helpCenter")}
-          className={`${baseItemClasses} ${
-            isActive("helpCenter") ? activeClasses : inactiveClasses
-          }`}
-          style={getTextStyle(isActive("helpCenter"))}
-        >
-          <FiHelpCircle size={16} color={getIconColor(isActive("helpCenter"))} />
-          <span>Help Centre (FAQs)</span>
-        </button>
         <button
           onClick={() => onSectionChange("contactSupport")}
           className={`${baseItemClasses} ${
@@ -207,7 +206,10 @@ const DashboardSidebar = ({
           }`}
           style={getTextStyle(isActive("contactSupport"))}
         >
-          <FiHeadphones size={16} color={getIconColor(isActive("contactSupport"))} />
+          <FiHeadphones
+            size={16}
+            color={getIconColor(isActive("contactSupport"))}
+          />
           <span>Contact Support</span>
         </button>
       </nav>
@@ -226,7 +228,7 @@ const DashboardSidebar = ({
           <span style={{ ...baseTextStyle, color: "#1E1E1E" }}>Hi, User</span>
         </div>
         <button
-          onClick={() => onSectionChange("logout")}
+          onClick={handleLogout}
           className={`${baseItemClasses} ${inactiveClasses}`}
           style={{ ...baseTextStyle, color: "#1E1E1E" }}
         >
