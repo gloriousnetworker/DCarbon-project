@@ -19,21 +19,41 @@ export default function LoginCard() {
         { email, password },
         { headers: { 'Content-Type': 'application/json' } }
       );
+      
+      // Destructure the response data
       const { user, token } = response.data.data;
-      // Store user's first name and token in local storage
+      
+      // Store user details in local storage for persistence
       localStorage.setItem('userFirstName', user.firstName);
       localStorage.setItem('authToken', token);
+      localStorage.setItem('userId', user.id);
+      
       toast.success('Login successful');
 
-      // Route based on user type
-      if (user.userType === 'RESIDENTIAL') {
-        window.location.href = '/residence-dashboard';
-      } else if (user.userType === 'COMMERCIAL') {
-        window.location.href = '/commercial-dashboard';
+      // Check if financial details are incomplete: if either is null
+      const financeDetailsIncomplete = user.financialInfo === null || user.agreements === null;
+
+      // Route based on user type and finance details
+      if (user.userType === 'COMMERCIAL') {
+        if (financeDetailsIncomplete) {
+          window.location.href = '/register/commercial-user-registration';
+        } else {
+          window.location.href = '/commercial-dashboard';
+        }
+      } else if (user.userType === 'RESIDENTIAL') {
+        if (financeDetailsIncomplete) {
+          window.location.href = '/register/residence-user-registration/step-one';
+        } else {
+          window.location.href = '/residence-dashboard';
+        }
       } else if (user.userType === 'PARTNER') {
-        window.location.href = '/partner-dashboard';
+        if (financeDetailsIncomplete) {
+          window.location.href = '/register/partner-user-registration/step-one';
+        } else {
+          window.location.href = '/partner-dashboard';
+        }
       } else {
-        // Fallback route if needed
+        // Fallback route if user type doesn't match any above
         window.location.href = '/dashboard';
       }
     } catch (err) {
