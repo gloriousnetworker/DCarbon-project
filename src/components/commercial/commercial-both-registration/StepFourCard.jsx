@@ -3,12 +3,14 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FaEdit, FaTimes, FaPlus } from 'react-icons/fa';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 export default function OwnersDetailsCard() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
-  // Main owner info
+  // Main company/owner details
   const [companyName, setCompanyName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [address, setAddress] = useState('');
@@ -17,11 +19,8 @@ export default function OwnersDetailsCard() {
   // Multiple owners toggle
   const [multipleOwners, setMultipleOwners] = useState('no');
 
-  // Existing owners list
-  const [owners, setOwners] = useState([
-    // Uncomment if you want to display a pre-filled owner
-    // { fullName: 'Awele Francis', ownership: '50', email: 'awele@example.com', phone: '000-000-000', address: '', website: '' }
-  ]);
+  // Existing owners list (for additional owners)
+  const [owners, setOwners] = useState([]);
 
   // New owner form
   const [newOwner, setNewOwner] = useState({
@@ -36,20 +35,10 @@ export default function OwnersDetailsCard() {
   // Track which owner is being edited (if any)
   const [editingIndex, setEditingIndex] = useState(null);
 
-  // Loader / submission simulation
-  const handleSubmit = () => {
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      // Navigate to the next step
-      router.push('/register/commercial-both-registration/agreement');
-    }, 1500);
-  };
-
-  // Handle adding or updating an owner
+  // Function to add or update an owner in the list
   const handleAddOrUpdateOwner = () => {
     if (editingIndex !== null) {
-      // Update existing owner
+      // Update the existing owner
       const updatedOwners = [...owners];
       updatedOwners[editingIndex] = newOwner;
       setOwners(updatedOwners);
@@ -58,7 +47,7 @@ export default function OwnersDetailsCard() {
       // Add new owner
       setOwners([...owners, newOwner]);
     }
-    // Reset the form
+    // Reset the newOwner form
     setNewOwner({
       fullName: '',
       ownership: '',
@@ -69,19 +58,17 @@ export default function OwnersDetailsCard() {
     });
   };
 
-  // Handle edit click
+  // Function to handle edit click on an owner
   const handleEditOwner = (index) => {
     setEditingIndex(index);
     setNewOwner(owners[index]);
   };
 
-  // Handle remove owner
+  // Function to remove an owner from the list
   const handleRemoveOwner = (index) => {
     const updatedOwners = [...owners];
     updatedOwners.splice(index, 1);
     setOwners(updatedOwners);
-
-    // If we were editing this owner, reset the form
     if (editingIndex === index) {
       setEditingIndex(null);
       setNewOwner({
@@ -95,8 +82,82 @@ export default function OwnersDetailsCard() {
     }
   };
 
+  // Handle submission of the entire form
+  const handleSubmit = async () => {
+    // Basic validation can be added here as needed
+    if (!companyName || !phoneNumber || !address || !website) {
+      toast.error('Please fill in all required fields.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Retrieve userId and authToken from local storage
+      const userId = localStorage.getItem('userId');
+      const authToken = localStorage.getItem('authToken');
+
+      if (!userId || !authToken) {
+        toast.error('User not authenticated.');
+        setLoading(false);
+        return;
+      }
+
+      // Build the payload. We are using:
+      // - The main form values for company details.
+      // - For owner details, if multipleOwners is 'no', we assume the main form values represent the sole owner.
+      // - If multipleOwners is 'yes', we include the owners list (mapping only fullName and email).
+      const payload = {
+        entityType: 'individual',
+        commercialRole: 'owner',
+        // If no multiple owners, use main form for owner details,
+        // otherwise use the first owner in the list if available.
+        ownerFullName: multipleOwners === 'no' ? companyName : (owners.length > 0 ? owners[0].fullName : ''),
+        companyWebsite: website,
+        multipleUsers: multipleOwners === 'yes'
+          ? owners.map((owner) => ({ fullName: owner.fullName, email: owner.email }))
+          : [],
+        phoneNumber: phoneNumber,
+        // For addresses and websites, we use the same value from the main form.
+        ownerAddress: address,
+        ownerWebsite: website,
+        companyName: companyName,
+        companyAddress: address,
+      };
+
+      // Construct the API URL with the userId
+      const url = `https://dcarbon-server.onrender.com/api/user/commercial-registration/${userId}`;
+
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.status === 'success') {
+        toast.success('Owner details updated successfully!');
+        // Delay to allow the user to see the notification before navigating
+        setTimeout(() => {
+          router.push('/register/commercial-both-registration/agreement');
+        }, 1500);
+      } else {
+        toast.error(data.message || 'Failed to update owner details.');
+      }
+    } catch (error) {
+      toast.error('An error occurred. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <>
+      <ToastContainer />
+
       {/* Loader Overlay */}
       {loading && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
@@ -121,11 +182,7 @@ export default function OwnersDetailsCard() {
               stroke="currentColor"
               strokeWidth={2}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M15 19l-7-7 7-7"
-              />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
           </button>
         </div>
@@ -140,7 +197,6 @@ export default function OwnersDetailsCard() {
         {/* Step Bar */}
         <div className="w-full max-w-md flex items-center justify-between mb-6">
           <div className="flex-1 h-1 bg-gray-200 rounded-full mr-4">
-            {/* Full progress since it's 03/03 */}
             <div className="h-1 bg-[#039994] w-full rounded-full" />
           </div>
           <span className="text-sm font-medium text-gray-500">03/03</span>
@@ -160,7 +216,7 @@ export default function OwnersDetailsCard() {
             </label>
             <input
               type="text"
-              placeholder="Full name"
+              placeholder="Company name"
               value={companyName}
               onChange={(e) => setCompanyName(e.target.value)}
               className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm
@@ -183,11 +239,11 @@ export default function OwnersDetailsCard() {
             />
           </div>
 
-          {/* Address + Website details (2-column layout on larger screens) */}
+          {/* Address and Website details */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Address
+                Company's Address
               </label>
               <input
                 type="text"
@@ -240,7 +296,7 @@ export default function OwnersDetailsCard() {
             </label>
           </div>
 
-          {/* Owners List & Add Form (only if multipleOwners === 'yes') */}
+          {/* Owners List & Add Form (only if multipleOwners is 'yes') */}
           {multipleOwners === 'yes' && (
             <div className="border border-gray-300 rounded-md p-4 space-y-4">
               {/* Existing owners (chips) */}
@@ -255,7 +311,6 @@ export default function OwnersDetailsCard() {
                         {owner.fullName}
                       </span>
                       <div className="flex items-center space-x-3">
-                        {/* Edit icon */}
                         <button
                           type="button"
                           onClick={() => handleEditOwner(index)}
@@ -263,7 +318,6 @@ export default function OwnersDetailsCard() {
                         >
                           <FaEdit size={14} />
                         </button>
-                        {/* Remove (X) icon */}
                         <button
                           type="button"
                           onClick={() => handleRemoveOwner(index)}
@@ -279,7 +333,6 @@ export default function OwnersDetailsCard() {
 
               {/* New or Edit Owner Form */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Full name */}
                 <div>
                   <label className="block text-xs text-gray-600 mb-1">Full name</label>
                   <input
@@ -292,7 +345,6 @@ export default function OwnersDetailsCard() {
                                focus:outline-none focus:ring-2 focus:ring-[#039994]"
                   />
                 </div>
-                {/* Ownership */}
                 <div>
                   <label className="block text-xs text-gray-600 mb-1">% ownership</label>
                   <input
@@ -305,7 +357,6 @@ export default function OwnersDetailsCard() {
                                focus:outline-none focus:ring-2 focus:ring-[#039994]"
                   />
                 </div>
-                {/* Email address */}
                 <div>
                   <label className="block text-xs text-gray-600 mb-1">Email address</label>
                   <input
@@ -318,7 +369,6 @@ export default function OwnersDetailsCard() {
                                focus:outline-none focus:ring-2 focus:ring-[#039994]"
                   />
                 </div>
-                {/* Phone number */}
                 <div>
                   <label className="block text-xs text-gray-600 mb-1">Phone Number</label>
                   <input
@@ -331,7 +381,6 @@ export default function OwnersDetailsCard() {
                                focus:outline-none focus:ring-2 focus:ring-[#039994]"
                   />
                 </div>
-                {/* Address */}
                 <div>
                   <label className="block text-xs text-gray-600 mb-1">Address</label>
                   <input
@@ -344,7 +393,6 @@ export default function OwnersDetailsCard() {
                                focus:outline-none focus:ring-2 focus:ring-[#039994]"
                   />
                 </div>
-                {/* Website */}
                 <div>
                   <label className="block text-xs text-gray-600 mb-1">Website</label>
                   <input
@@ -359,7 +407,7 @@ export default function OwnersDetailsCard() {
                 </div>
               </div>
 
-              {/* Add / Update button */}
+              {/* Add / Update Button */}
               <div className="flex justify-end mt-2">
                 <button
                   type="button"
@@ -389,10 +437,7 @@ export default function OwnersDetailsCard() {
         {/* Terms and Conditions & Privacy Policy */}
         <div className="mt-6 text-center text-xs text-gray-500 leading-tight">
           Terms and Conditions &amp;{' '}
-          <a
-            href="/privacy"
-            className="text-[#039994] hover:underline font-medium"
-          >
+          <a href="/privacy" className="text-[#039994] hover:underline font-medium">
             Privacy Policy
           </a>
         </div>
@@ -400,3 +445,4 @@ export default function OwnersDetailsCard() {
     </>
   );
 }
+// Note: The above code is a React component that handles the registration process for a commercial entity. It includes form fields for company and owner details, a toggle for multiple owners, and functionality to add/edit/remove owners. The form submission is handled with an API call, and loading state is managed with a spinner overlay.

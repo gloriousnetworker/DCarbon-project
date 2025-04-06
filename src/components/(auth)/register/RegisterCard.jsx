@@ -10,7 +10,6 @@ import 'react-toastify/dist/ReactToastify.css';
 export default function RegisterCard() {
   const [loading, setLoading] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
-  // Initially no category is selected
   const [userCategory, setUserCategory] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [error, setError] = useState('');
@@ -19,6 +18,7 @@ export default function RegisterCard() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
 
   // Mapping UI labels to API expected values
@@ -30,13 +30,18 @@ export default function RegisterCard() {
 
   // Validate the form before submission
   const validateForm = () => {
-    if (!firstName.trim() || !lastName.trim() || !email.trim() || !password) {
+    if (!firstName.trim() || !lastName.trim() || !email.trim() || !phoneNumber.trim() || !password) {
       setError('Please fill out all fields.');
       return false;
     }
     const emailRegex = /\S+@\S+\.\S+/;
     if (!emailRegex.test(email)) {
       setError('Please enter a valid email address.');
+      return false;
+    }
+    const phoneRegex = /^\+?[0-9]{7,}$/;
+    if (!phoneRegex.test(phoneNumber)) {
+      setError('Please enter a valid phone number starting with + followed by country code.');
       return false;
     }
     if (password.length < 6) {
@@ -62,6 +67,7 @@ export default function RegisterCard() {
       email,
       firstName,
       lastName,
+      phoneNumber,
       userType: userTypeMapping[userCategory],
       password,
     };
@@ -76,7 +82,6 @@ export default function RegisterCard() {
           },
         }
       );
-      // Store the user's email in local storage for verification
       localStorage.setItem('userEmail', response.data.data.email);
       toast.success('Registration successful');
       setShowModal(true);
@@ -174,6 +179,22 @@ export default function RegisterCard() {
                 className="w-full rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#039994]"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="phone"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Phone Number
+              </label>
+              <input
+                type="tel"
+                id="phone"
+                placeholder="📞 e.g +2348012345678"
+                className="w-full rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#039994]"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
               />
             </div>
             <div>

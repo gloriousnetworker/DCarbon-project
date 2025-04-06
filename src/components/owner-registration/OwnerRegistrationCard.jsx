@@ -10,70 +10,62 @@ export default function StepOneCard() {
   const [loading, setLoading] = useState(false);
   const [financeType, setFinanceType] = useState('');
   const [financeCompany, setFinanceCompany] = useState('');
-  const [installer, setInstaller] = useState('');
-  const [file, setFile] = useState(null);
   const router = useRouter();
-
-  const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
-  };
 
   const handleSubmit = async () => {
     setLoading(true);
 
     try {
-      // Map the dropdown values to the expected API values.
-      // financeType: "cash" => "owner", "loan" => "operator", "ppa" => "both"
-      // financeCompany: "company1" => "individual", "company2" => "company"
-      const commercialRole =
-        financeType === 'cash'
-          ? 'owner'
-          : financeType === 'loan'
-          ? 'operator'
-          : financeType === 'ppa'
-          ? 'both'
-          : '';
-      const entityType =
-        financeCompany === 'company1'
-          ? 'individual'
-          : financeCompany === 'company2'
-          ? 'company'
-          : '';
-
-      // Prepare the request payload (note companyWebsite is now a string)
-      const payload = {
-        entityType,
-        commercialRole,
-        ownerFullName: 'Adeola Odeku', // update as needed
-        companyWebsite: "www.emeka.com", // update as needed
-      };
-
-      // Retrieve the user id and token from local storage
-      const userId = localStorage.getItem('userId');
-      const token = localStorage.getItem('authToken');
-      if (!userId || !token) {
-        throw new Error('User ID or token not found in local storage');
+      // Validate required fields
+      if (!financeType || !financeCompany) {
+        throw new Error('Please fill all required fields');
       }
 
-      const url = `https://dcarbon-server.onrender.com/api/user/commercial-registration/${userId}`;
+      // Map dropdown values to API expected values
+      const commercialRoleMap = {
+        cash: 'owner',
+        loan: 'operator',
+        ppa: 'both'
+      };
 
-      // Consume the endpoint with a PUT request using Bearer token authentication
-      const response = await axios.put(url, payload, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-      });
+      const entityTypeMap = {
+        company1: 'individual',
+        company2: 'company'
+      };
 
-      // Console log the response from the endpoint
-      console.log(response);
+      const payload = {
+        entityType: entityTypeMap[financeCompany],
+        commercialRole: commercialRoleMap[financeType]
+      };
 
-      toast.success('Commercial registration updated successfully');
+      // Retrieve authentication details
+      const userId = localStorage.getItem('userId');
+      const token = localStorage.getItem('authToken');
+      
+      if (!userId || !token) {
+        throw new Error('Authentication required - please login again');
+      }
 
-      // Route to the next step (update this route as needed)
+      // Make API call
+      const response = await axios.put(
+        `https://dcarbon-server.onrender.com/api/user/commercial-registration/${userId}`,
+        payload,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+
+      console.log('API Response:', response.data);
+      toast.success('Registration details saved successfully');
       router.push('/register/commercial-owner-registration/step-one');
+      
     } catch (err) {
-      toast.error(err.response?.data?.message || err.message || 'Registration update failed');
+      const errorMessage = err.response?.data?.message || err.message || 'Operation failed';
+      toast.error(errorMessage);
+      console.error('API Error:', err);
     } finally {
       setLoading(false);
     }
@@ -87,11 +79,12 @@ export default function StepOneCard() {
           <div className="h-12 w-12 border-4 border-t-4 border-gray-300 border-t-[#039994] rounded-full animate-spin"></div>
         </div>
       )}
+      
       <div className="min-h-screen w-full bg-white flex flex-col items-center justify-center py-8 px-4">
-        {/* Back Arrow */}
+        {/* Back button and header */}
         <div className="relative w-full mb-10">
           <div
-            className="back-arrow absolute left-12 top-0 text-[#039994] cursor-pointer z-60"
+            className="absolute left-12 top-0 text-[#039994] cursor-pointer"
             onClick={() => router.back()}
           >
             <svg
@@ -107,19 +100,22 @@ export default function StepOneCard() {
           </div>
         </div>
 
-        <h1 className="text-2xl sm:text-3xl font-bold text-[#039994] mr-40 mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#039994] mb-6">
           Owner's Registration
         </h1>
 
-        <div className="w-full max-w-md flex items-center justify-between mt-4 mb-4">
-          <div className="flex-1 h-1 bg-gray-200 rounded-full mr-4">
-            <div className="h-1 bg-[#039994] w-2/5 rounded-full" />
+        {/* Progress indicator */}
+        <div className="w-full max-w-md mb-8">
+          <div className="flex items-center">
+            <div className="flex-1 h-1 bg-gray-200 rounded-full">
+              <div className="h-1 bg-[#039994] w-1/5 rounded-full" />
+            </div>
+            <span className="ml-4 text-sm font-medium text-gray-500">01/05</span>
           </div>
-          <span className="text-sm font-medium text-gray-500">01/05</span>
         </div>
 
+        {/* Form fields */}
         <div className="w-full max-w-md space-y-6">
-          {/* Finance Type Dropdown */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Commercial Role
@@ -127,16 +123,15 @@ export default function StepOneCard() {
             <select
               value={financeType}
               onChange={(e) => setFinanceType(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#039994]"
+              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-[#039994] focus:outline-none"
             >
-              <option value="">Choose role</option>
+              <option value="">Select Role</option>
               <option value="cash">Owner</option>
               <option value="loan">Operator</option>
               <option value="ppa">Both</option>
             </select>
           </div>
 
-          {/* Finance Company Dropdown */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Entity Type
@@ -144,33 +139,30 @@ export default function StepOneCard() {
             <select
               value={financeCompany}
               onChange={(e) => setFinanceCompany(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#039994]"
+              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-[#039994] focus:outline-none"
             >
-              <option value="">Choose Type</option>
+              <option value="">Select Entity Type</option>
               <option value="company1">Individual</option>
               <option value="company2">Company</option>
             </select>
           </div>
         </div>
 
-        <div className="w-full max-w-md mt-6">
+        {/* Submit button */}
+        <div className="w-full max-w-md mt-8">
           <button
             onClick={handleSubmit}
-            className="w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994]"
+            className="w-full bg-[#039994] text-white py-2 rounded-md hover:bg-[#02857f] transition-colors"
           >
-            Next
+            Continue
           </button>
         </div>
 
-        <div className="mt-6 text-center text-xs text-gray-500 leading-tight">
-          By clicking on ‘Next’, you agree to our{' '}
-          <a href="/terms" className="text-[#039994] hover:underline font-medium">
-            Terms and Conditions
-          </a>{' '}
-          &{' '}
-          <a href="/privacy" className="text-[#039994] hover:underline font-medium">
-            Privacy Policy
-          </a>
+        {/* Footer links */}
+        <div className="mt-8 text-center text-xs text-gray-600">
+          By continuing, you agree to our {' '}
+          <a href="/terms" className="text-[#039994] hover:underline">Terms</a> and {' '}
+          <a href="/privacy" className="text-[#039994] hover:underline">Privacy Policy</a>
         </div>
       </div>
     </>

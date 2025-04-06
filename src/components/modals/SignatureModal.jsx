@@ -1,62 +1,121 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { FaTimes } from "react-icons/fa";
 
 const SignatureModal = ({ isOpen, onClose, onSaveSignature }) => {
-  // Track the active tab: "draw", "type", or "upload"
+  // Active tab: "draw", "type", or "upload"
   const [activeTab, setActiveTab] = useState("draw");
 
-  // For demonstration: track typed signature text, file upload progress, etc.
+  // For typed signature
   const [typedSignature, setTypedSignature] = useState("");
+
+  // For file upload
+  const [selectedFile, setSelectedFile] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadComplete, setUploadComplete] = useState(false);
 
-  // Mock an upload
+  // File input ref
+  const fileInputRef = useRef(null);
+
+  // Trigger hidden file input
   const handleSelectImage = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  // Handle file selection
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setSelectedFile(file);
+      simulateUploadProgress();
+    }
+  };
+
+  // Simulate upload progress
+  const simulateUploadProgress = () => {
     setUploadProgress(0);
     setUploadComplete(false);
 
     const interval = setInterval(() => {
       setUploadProgress((prev) => {
-        if (prev >= 100) {
+        const nextVal = Math.min(prev + 23, 100);
+        if (nextVal >= 100) {
           clearInterval(interval);
           setUploadComplete(true);
-          return 100;
         }
-        return prev + 23; // increments for demo
+        return nextVal;
       });
     }, 600);
   };
 
-  // Called when user clicks "Sign Agreement"
-  const handleSignAgreement = () => {
+  // Handle updating the signature (instead of "Sign Agreement")
+  const handleSignatureUpload = async () => {
     let signatureResult = "";
 
+    // If "Draw" tab
     if (activeTab === "draw") {
-      // Replace with real signature pad data if using a library
       signatureResult = "Drawn Signature";
-    } else if (activeTab === "type") {
-      // Use typed text as the signature
-      signatureResult = typedSignature || "Typed Signature";
-    } else if (activeTab === "upload") {
-      // If upload is complete, use a placeholder
-      signatureResult = uploadComplete
-        ? "Uploaded Signature"
-        : "No file uploaded";
+      onSaveSignature(signatureResult);
     }
+    // If "Type" tab
+    else if (activeTab === "type") {
+      signatureResult = typedSignature || "Typed Signature";
+      onSaveSignature(signatureResult);
+    }
+    // If "Upload" tab
+    else if (activeTab === "upload") {
+      if (!selectedFile || !uploadComplete) {
+        alert("Please upload a signature image first.");
+        return;
+      }
 
-    // Pass signature back to parent
-    onSaveSignature(signatureResult);
+      // Build FormData with "signature" as the key
+      const formData = new FormData();
+      formData.append("signature", selectedFile);
+
+      // Retrieve userId, authToken from localStorage
+      const userId = localStorage.getItem("userId");
+      const authToken = localStorage.getItem("authToken");
+
+      try {
+        // NOTE: If your endpoint is still named 'update-user-agreement', keep it:
+        const response = await fetch(
+          `https://dcarbon-server.onrender.com/api/user/update-user-agreement/${userId}`,
+          // OR if you rename it, do something like:
+          // `https://dcarbon-server.onrender.com/api/user/update-user-signature/${userId}`,
+          {
+            method: "PUT",
+            headers: {
+              Authorization: `Bearer ${authToken}`,
+            },
+            body: formData,
+          }
+        );
+
+        const data = await response.json();
+        if (response.ok) {
+          // We got a successful response back
+          signatureResult = "Uploaded Signature";
+          onSaveSignature(signatureResult);
+        } else {
+          alert("Failed to update signature: " + data.message);
+        }
+      } catch (error) {
+        console.error("Error updating signature:", error);
+        alert("An error occurred while updating the signature.");
+      }
+    }
   };
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-      {/* Modal Container */}
       <div className="relative w-full max-w-xl bg-white rounded-md shadow-md">
         {/* Header */}
         <div className="flex justify-between items-center px-6 py-4">
-          <h2 className="text-xl font-semibold text-[#039994]">Signature</h2>
+          <h2 className="text-xl font-semibold text-[#039994]">Upload Signature</h2>
           <button
             onClick={onClose}
             className="text-red-500 hover:text-red-600"
@@ -66,7 +125,7 @@ const SignatureModal = ({ isOpen, onClose, onSaveSignature }) => {
           </button>
         </div>
 
-        {/* Tabs: Draw | Type | Upload */}
+        {/* Tabs */}
         <div className="px-6">
           <ul className="flex space-x-6 border-b border-gray-200">
             <li>
@@ -108,21 +167,20 @@ const SignatureModal = ({ isOpen, onClose, onSaveSignature }) => {
           </ul>
         </div>
 
-        {/* Content Area */}
+        {/* Content */}
         <div className="px-6 py-4 min-h-[250px]">
+          {/* Draw */}
           {activeTab === "draw" && (
             <div className="space-y-4">
-              {/* Signature Drawing Area */}
               <div className="border rounded-md h-32 flex items-center justify-center bg-gray-50 text-gray-400">
-                {/* Replace this div with a real signature pad if needed */}
                 Draw signature here
               </div>
             </div>
           )}
 
+          {/* Type */}
           {activeTab === "type" && (
             <div className="space-y-4">
-              {/* Typed Signature Interface */}
               <div className="flex flex-col">
                 <label className="text-sm text-gray-700 mb-1">
                   Select typeface
@@ -143,7 +201,6 @@ const SignatureModal = ({ isOpen, onClose, onSaveSignature }) => {
                 />
               </div>
 
-              {/* Preview typed signature */}
               <div className="border rounded-md h-24 flex items-center justify-center bg-gray-50 text-gray-700">
                 <span className="text-2xl" style={{ fontFamily: "cursive" }}>
                   {typedSignature || "Typed Signature Preview"}
@@ -152,13 +209,21 @@ const SignatureModal = ({ isOpen, onClose, onSaveSignature }) => {
             </div>
           )}
 
+          {/* Upload */}
           {activeTab === "upload" && (
             <div className="space-y-4">
-              {/* File Upload Area */}
+              {/* Hidden file input */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                style={{ display: "none" }}
+              />
+
+              {/* Upload UI */}
               {!uploadComplete ? (
                 <>
                   {uploadProgress > 0 ? (
-                    // Show upload progress
                     <div className="border-2 border-dashed border-gray-300 rounded-md p-4 flex flex-col items-center justify-center text-gray-500">
                       <p>Please wait...</p>
                       <div className="w-full bg-gray-200 h-2 rounded mt-2">
@@ -168,11 +233,10 @@ const SignatureModal = ({ isOpen, onClose, onSaveSignature }) => {
                         />
                       </div>
                       <div className="text-sm mt-2">
-                        IMG1.jpg uploading {uploadProgress}%
+                        {selectedFile && selectedFile.name} uploading {uploadProgress}%
                       </div>
                     </div>
                   ) : (
-                    // Drag & drop area
                     <div className="border-2 border-dashed border-gray-300 rounded-md p-6 flex flex-col items-center justify-center text-gray-500 text-center">
                       <p>Drag &amp; drop a signature image or scan</p>
                       <p className="my-2">or</p>
@@ -186,7 +250,6 @@ const SignatureModal = ({ isOpen, onClose, onSaveSignature }) => {
                   )}
                 </>
               ) : (
-                // Show upload complete
                 <div className="border-2 border-gray-300 rounded-md p-4 flex flex-col items-center justify-center text-[#039994]">
                   <p className="font-medium text-lg mb-2">
                     Signature image uploaded
@@ -194,24 +257,24 @@ const SignatureModal = ({ isOpen, onClose, onSaveSignature }) => {
                   <div className="w-full bg-[#039994] h-2 rounded">
                     <div className="bg-[#039994] h-2 rounded w-full" />
                   </div>
-                  <p className="text-sm mt-2 text-gray-600">IMG1.jpg &nbsp; ✓</p>
+                  <p className="text-sm mt-2 text-gray-600">
+                    {selectedFile && selectedFile.name} &nbsp; ✓
+                  </p>
                 </div>
               )}
             </div>
           )}
         </div>
 
-        {/* Agreement Text */}
+        {/* (Optional) Explanation Text */}
         <div className="px-6 text-sm text-gray-600">
-          By signing this document with an electronic signature, I agree that
-          such signature will be as valid as handwritten signatures to the
-          extent allowed by local law
+          By uploading this signature, I acknowledge it will be used wherever a
+          signature is required in my user profile.
         </div>
 
-        {/* Horizontal Rule */}
         <hr className="my-4 border-gray-200" />
 
-        {/* Buttons: Cancel | Sign Agreement */}
+        {/* Footer Buttons */}
         <div className="flex justify-end space-x-4 px-6 pb-6">
           <button
             onClick={onClose}
@@ -220,10 +283,10 @@ const SignatureModal = ({ isOpen, onClose, onSaveSignature }) => {
             Cancel
           </button>
           <button
-            onClick={handleSignAgreement}
+            onClick={handleSignatureUpload}
             className="px-4 py-2 rounded-md bg-[#039994] text-white hover:bg-[#027f7d]"
           >
-            Sign Agreement
+            Update Signature
           </button>
         </div>
       </div>

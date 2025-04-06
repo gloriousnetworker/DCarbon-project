@@ -2,11 +2,13 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 export default function OwnersDetailsCard() {
   const router = useRouter();
 
-  // Loader
+  // Loader state
   const [loading, setLoading] = useState(false);
 
   // Form fields
@@ -16,17 +18,73 @@ export default function OwnersDetailsCard() {
   const [address, setAddress] = useState('');
   const [website, setWebsite] = useState('');
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    // Basic validation for required fields
+    if (!fullName || !phoneNumber || !address || !website) {
+      toast.error('Please fill in all required fields.');
+      return;
+    }
+
     setLoading(true);
-    setTimeout(() => {
+
+    try {
+      // Retrieve userId and authToken from local storage
+      const userId = localStorage.getItem('userId');
+      const authToken = localStorage.getItem('authToken');
+
+      if (!userId || !authToken) {
+        toast.error('User not authenticated.');
+        setLoading(false);
+        return;
+      }
+
+      // Construct the full phone number
+      const fullPhoneNumber = phonePrefix + phoneNumber;
+
+      // Build the payload for the PUT request
+      const payload = {
+        entityType: 'individual',
+        commercialRole: 'owner',
+        ownerFullName: fullName,
+        phoneNumber: fullPhoneNumber,
+        ownerAddress: address,
+        ownerWebsite: website,
+      };
+
+      // Construct the URL with the userId
+      const url = `https://dcarbon-server.onrender.com/api/user/commercial-registration/${userId}`;
+
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.status === 'success') {
+        toast.success('Owner details updated successfully!');
+        // Delay to allow the user to see the notification before navigating
+        setTimeout(() => {
+          router.push('/register/commercial-both-registration/step-four');
+        }, 1500);
+      } else {
+        toast.error(data.message || 'Failed to update owner details.');
+      }
+    } catch (error) {
+      toast.error('An error occurred. Please try again.');
+    } finally {
       setLoading(false);
-      // Navigate to the next step
-      router.push('/register/commercial-both-registration/step-four');
-    }, 1500);
+    }
   };
 
   return (
     <>
+      <ToastContainer />
+
       {/* Loader Overlay */}
       {loading && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
@@ -66,7 +124,6 @@ export default function OwnersDetailsCard() {
         {/* Step Bar */}
         <div className="w-full max-w-md flex items-center justify-between mb-6">
           <div className="flex-1 h-1 bg-gray-200 rounded-full mr-4">
-            {/* Full progress bar since it's 03/03 */}
             <div className="h-1 bg-[#039994] w-full rounded-full" />
           </div>
           <span className="text-sm font-medium text-gray-500">03/03</span>
@@ -74,14 +131,11 @@ export default function OwnersDetailsCard() {
 
         {/* Subheading */}
         <div className="w-full max-w-md mb-4">
-          <h2 className="text-md font-semibold text-[#039994]">
-            Individual owner
-          </h2>
+          <h2 className="text-md font-semibold text-[#039994]">Individual owner</h2>
         </div>
 
         {/* Form Fields */}
         <div className="w-full max-w-md space-y-4">
-
           {/* Owner's full name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -92,12 +146,11 @@ export default function OwnersDetailsCard() {
               placeholder="Full name"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm placeholder-gray-400
-                         focus:outline-none focus:ring-2 focus:ring-[#039994]"
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#039994]"
             />
           </div>
 
-          {/* Phone Number (split into prefix + number) */}
+          {/* Phone Number (split into prefix and number) */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Phone Number
@@ -107,16 +160,14 @@ export default function OwnersDetailsCard() {
                 type="text"
                 value={phonePrefix}
                 onChange={(e) => setPhonePrefix(e.target.value)}
-                className="w-16 rounded-md border border-gray-300 px-3 py-2 text-sm placeholder-gray-400
-                           focus:outline-none focus:ring-2 focus:ring-[#039994]"
+                className="w-16 rounded-md border border-gray-300 px-3 py-2 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#039994]"
               />
               <input
                 type="text"
                 placeholder="e.g. 000-0000-000"
                 value={phoneNumber}
                 onChange={(e) => setPhoneNumber(e.target.value)}
-                className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm placeholder-gray-400
-                           focus:outline-none focus:ring-2 focus:ring-[#039994]"
+                className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#039994]"
               />
             </div>
           </div>
@@ -131,8 +182,7 @@ export default function OwnersDetailsCard() {
               placeholder="E.g. Street, City, County, State."
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm placeholder-gray-400
-                         focus:outline-none focus:ring-2 focus:ring-[#039994]"
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#039994]"
             />
           </div>
 
@@ -146,8 +196,7 @@ export default function OwnersDetailsCard() {
               placeholder="http://"
               value={website}
               onChange={(e) => setWebsite(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm placeholder-gray-400
-                         focus:outline-none focus:ring-2 focus:ring-[#039994]"
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#039994]"
             />
           </div>
         </div>
@@ -156,8 +205,7 @@ export default function OwnersDetailsCard() {
         <div className="w-full max-w-md mt-6">
           <button
             onClick={handleSubmit}
-            className="w-full rounded-md bg-[#039994] text-white font-semibold py-2
-                       hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994]"
+            className="w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994]"
           >
             Next
           </button>
@@ -174,8 +222,3 @@ export default function OwnersDetailsCard() {
     </>
   );
 }
-
-
-
-
-// 

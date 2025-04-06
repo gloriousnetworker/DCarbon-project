@@ -12,20 +12,17 @@ export default function StepOneCard() {
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [financeType, setFinanceType] = useState('');
   const [financeCompany, setFinanceCompany] = useState('');
-  const [installer, setInstaller] = useState('');
   const [file, setFile] = useState(null);
   const router = useRouter();
 
-  // Trigger file selection when a file is chosen
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
     setUploadSuccess(false);
   };
 
-  // Validate and update financial info
   const handleSubmit = async () => {
-    if (!financeType || !financeCompany || !installer) {
-      toast.error('Please fill in all required fields: Finance type, Finance company, and Installer.');
+    if (!financeType || !financeCompany) {
+      toast.error('Please fill in all required fields: Finance type and Finance company');
       return;
     }
 
@@ -40,7 +37,6 @@ export default function StepOneCard() {
       const payload = {
         financialType: financeType,
         financeCompany: financeCompany,
-        installer: installer,
       };
 
       const url = `https://dcarbon-server.onrender.com/api/user/financial-info/${userId}`;
@@ -62,7 +58,6 @@ export default function StepOneCard() {
     }
   };
 
-  // Upload the financial agreement file using multipart/form-data
   const handleUpload = async () => {
     if (!file) return;
     setUploading(true);
@@ -105,7 +100,6 @@ export default function StepOneCard() {
       )}
 
       <div className="min-h-screen w-full bg-white flex flex-col items-center justify-center py-8 px-4">
-        {/* Back Arrow */}
         <div className="relative w-full mb-10">
           <div
             className="back-arrow absolute left-12 top-0 text-[#039994] cursor-pointer z-60"
@@ -124,12 +118,10 @@ export default function StepOneCard() {
           </div>
         </div>
 
-        {/* Heading */}
         <h1 className="text-2xl sm:text-3xl font-bold text-[#039994] mr-40 mb-6">
           Finance information
         </h1>
 
-        {/* Step Bar */}
         <div className="w-full max-w-md flex items-center justify-between mb-6">
           <div className="flex-1 h-1 bg-gray-200 rounded-full mr-4">
             <div className="h-1 bg-[#039994] w-2/3 rounded-full" />
@@ -137,9 +129,7 @@ export default function StepOneCard() {
           <span className="text-sm font-medium text-gray-500">02/03</span>
         </div>
 
-        {/* Form Card */}
         <div className="w-full max-w-md space-y-6">
-          {/* Finance Type Dropdown */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
               Finance type
@@ -171,7 +161,6 @@ export default function StepOneCard() {
             </select>
           </div>
 
-          {/* Finance Company Dropdown */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
               Finance company
@@ -204,44 +193,10 @@ export default function StepOneCard() {
             </select>
           </div>
 
-          {/* Installer Dropdown */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-              Installer
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 ml-1 text-gray-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M8.228 9a3.77 3.77 0 017.544 0c0 1.668-1.172 2.5-2.178 3.057-.97.53-1.533 1.023-1.533 1.943M12 17h.01"
-                />
-              </svg>
-            </label>
-            <select
-              value={installer}
-              onChange={(e) => setInstaller(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#039994]"
-            >
-              <option value="">Choose installer</option>
-              <option value="installer1">Installer 1</option>
-              <option value="installer2">Installer 2</option>
-              <option value="others">Others</option>
-            </select>
-          </div>
-
-          {/* Upload Finance Agreement */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
               Upload Finance Agreement (Optional)
             </label>
-
-            {/* File selection label with clip icon and Upload button */}
             <div className="flex items-center space-x-3">
               <label className="relative flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-500 bg-gray-50 focus-within:outline-none focus-within:ring-2 focus-within:ring-[#039994] cursor-pointer">
                 {file ? file.name : 'Choose file...'}
@@ -251,21 +206,20 @@ export default function StepOneCard() {
                   onChange={handleFileChange}
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
-                  {/* Clip Icon */}
                   <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 ml-1 text-gray-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M8.5 12.5l7-7a2.121 2.121 0 013 3L10 17a4 4 0 01-5.657-5.657l7-7"
-                />
-              </svg>
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4 ml-1 text-gray-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M8.5 12.5l7-7a2.121 2.121 0 013 3L10 17a4 4 0 01-5.657-5.657l7-7"
+                    />
+                  </svg>
                 </span>
               </label>
               <button
@@ -316,7 +270,6 @@ export default function StepOneCard() {
           </div>
         </div>
 
-        {/* Next Button */}
         <div className="w-full max-w-md mt-6">
           <button
             onClick={handleSubmit}
@@ -326,7 +279,6 @@ export default function StepOneCard() {
           </button>
         </div>
 
-        {/* Terms and Conditions & Privacy Policy Links */}
         <div className="mt-6 text-center text-xs text-gray-500 leading-tight">
           By clicking on ‘Next’, you agree to our{' '}
           <a href="/terms" className="text-[#039994] hover:underline font-medium">

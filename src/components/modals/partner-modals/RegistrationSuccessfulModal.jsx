@@ -10,8 +10,7 @@ export default function RegistrationSuccessfulModal({ closeModal }) {
     closeModal(); // Close the modal
     setIsRedirecting(true); // Show the loader in this component
     setTimeout(() => {
-      localStorage.clear();
-      router.push('/commercial-dashboard'); // Redirect after loader delay
+      router.push('/partner-dashboard'); // Redirect after loader delay
     }, 2000); // Simulate a delay for loader visibility
   };
 
