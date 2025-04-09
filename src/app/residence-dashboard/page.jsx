@@ -9,7 +9,7 @@ import DashboardResidentialManagement from '../../components/dashboard/residence
 import DashboardContactSupport from '../../components/dashboard/residence-dashboard/ContactSupport';
 import DashboardHelpCentre from '../../components/dashboard/residence-dashboard/HelpCentre';
 import DashboardNotifications from '../../components/dashboard/residence-dashboard/Notifications';
-import MyAccount from '../../components/dashboard/residence-dashboard/MyAccount';
+import MyAccount from '../../components/dashboard/residence-dashboard/account/MyAccount';
 import DashboardLogout from '../../components/dashboard/residence-dashboard/LogOut';
 
 export default function UserDashboard() {
@@ -64,9 +64,9 @@ export default function UserDashboard() {
     case 'contactSupport':
       SectionComponent = DashboardContactSupport;
       break;
-      case 'logout':
-        SectionComponent = DashboardLogout;
-        break;
+    case 'logout':
+      SectionComponent = DashboardLogout;
+      break;
     default:
       SectionComponent = DashboardOverview;
   }

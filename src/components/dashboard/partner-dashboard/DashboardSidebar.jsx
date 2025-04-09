@@ -216,13 +216,15 @@ const DashboardSidebar = ({
           <span style={{ ...baseTextStyle, color: "#1E1E1E" }}>Hi, User</span>
         </div>
         <button
-          onClick={() => onSectionChange("logout")}
-          className={`${baseItemClasses} ${inactiveClasses}`}
-          style={{ ...baseTextStyle, color: "#1E1E1E" }}
-        >
-          <FiLogOut size={16} color="#039994" />
-          <span>Log Out</span>
-        </button>
+                  onClick={() => onSectionChange("logout")}
+                  className={`${baseItemClasses} ${
+                    isActive("logout") ? activeClasses : inactiveClasses
+                  }`}
+                  style={getTextStyle(isActive("logout"))}
+                >
+                  <FiLogOut size={16} color={getIconColor(isActive("logout"))} />
+                  <span>Log out</span>
+                </button>
       </div>
     </aside>
   );

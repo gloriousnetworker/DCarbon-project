@@ -9,7 +9,8 @@ import DashboardResidentialManagement from '../../components/dashboard/partner-d
 import DashboardContactSupport from '../../components/dashboard/partner-dashboard/ContactSupport';
 import DashboardHelpCentre from '../../components/dashboard/partner-dashboard/HelpCentre';
 import DashboardNotifications from '../../components/dashboard/partner-dashboard/Notifications';
-import MyAccount from '../../components/dashboard/partner-dashboard/MyAccount';
+import DashboardLogout from '../../components/dashboard/partner-dashboard/Logout';
+import MyAccount from '../../components/dashboard/partner-dashboard/account/MyAccount';
 
 export default function UserDashboard() {
   const [activeSection, setActiveSection] = useState('overview');
@@ -60,6 +61,9 @@ export default function UserDashboard() {
     case 'contactSupport':
       SectionComponent = DashboardContactSupport;
       break;
+    case 'logout':
+      SectionComponent = DashboardLogout;
+      break;
     default:
       SectionComponent = DashboardOverview;
   }
@@ -68,19 +72,19 @@ export default function UserDashboard() {
     <div className="min-h-screen flex bg-gray-100">
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex flex-col w-64 bg-white border-r h-screen fixed">
-        <DashboardSidebar 
+        <DashboardSidebar
           selectedSection={activeSection}
-          onSectionChange={handleSectionChange} 
+          onSectionChange={handleSectionChange}
         />
       </aside>
 
       {/* Main Area */}
       <div className="md:ml-64 flex-1 flex flex-col">
         {/* Top Navbar with dynamic title */}
-        <DashboardNavbar 
-          toggleSidebar={toggleSidebar} 
-          selectedSection={activeSection} 
-          sectionDisplayMap={sectionDisplayMap} 
+        <DashboardNavbar
+          toggleSidebar={toggleSidebar}
+          selectedSection={activeSection}
+          sectionDisplayMap={sectionDisplayMap}
         />
 
         {/* Mobile Sidebar Overlay */}
@@ -93,7 +97,7 @@ export default function UserDashboard() {
             />
             {/* Sidebar itself */}
             <div className="relative bg-white w-64 h-full shadow-md">
-              <DashboardSidebar 
+              <DashboardSidebar
                 selectedSection={activeSection}
                 onSectionChange={handleSectionChange}
                 toggleSidebar={toggleSidebar}
