@@ -3,14 +3,14 @@
 import React, { useState } from 'react';
 import DashboardSidebar from '../../components/dashboard/residence-dashboard/DashboardSidebar';
 import DashboardNavbar from '../../components/dashboard/residence-dashboard/DashboardNavbar';
-import DashboardOverview from '../../components/dashboard/residence-dashboard/DashboardOverview';
-import DashboardTransaction from '../../components/dashboard/residence-dashboard/DashboardTransaction';
-import DashboardResidentialManagement from '../../components/dashboard/residence-dashboard/DashboardResidentialManagement';
-import RequestPayment from '../../components/dashboard/residence-dashboard/RequestPayment';
+import DashboardOverview from '../../components/dashboard/residence-dashboard/overview/DashboardOverview';
+import DashboardTransaction from '../../components/dashboard/residence-dashboard/transactions/DashboardTransaction';
+import DashboardResidentialManagement from '../../components/dashboard/residence-dashboard/residential-management/DashboardResidentialManagement';
 import DashboardContactSupport from '../../components/dashboard/residence-dashboard/ContactSupport';
 import DashboardHelpCentre from '../../components/dashboard/residence-dashboard/HelpCentre';
 import DashboardNotifications from '../../components/dashboard/residence-dashboard/Notifications';
 import MyAccount from '../../components/dashboard/residence-dashboard/MyAccount';
+import DashboardLogout from '../../components/dashboard/residence-dashboard/LogOut';
 
 export default function UserDashboard() {
   const [activeSection, setActiveSection] = useState('overview');
@@ -29,9 +29,8 @@ export default function UserDashboard() {
   // Mapping from section keys to display text for the navbar
   const sectionDisplayMap = {
     overview: 'Overview',
-    transaction: 'REC Sales & Report',
-    residentialManagement: 'Facility Management',
-    requestPayment: 'Request Payment',
+    transaction: 'Transaction',
+    residentialManagement: 'Residential Management',
     myAccount: 'My Account',
     notifications: 'Notification',
     helpCenter: 'Help Centre (FAQs)',
@@ -65,6 +64,9 @@ export default function UserDashboard() {
     case 'contactSupport':
       SectionComponent = DashboardContactSupport;
       break;
+      case 'logout':
+        SectionComponent = DashboardLogout;
+        break;
     default:
       SectionComponent = DashboardOverview;
   }

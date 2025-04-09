@@ -1,14 +1,16 @@
-'use client';
+"use client";
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import UtilityAuthorizationModal from './UtilityAuthorizationModal';
 
-export default function StepOneCard() {
+export default function OperatorRegistrationCard() {
   const [loading, setLoading] = useState(false);
   const [commercialRole, setCommercialRole] = useState('');
   const [entityType, setEntityType] = useState('');
+  const [showUtilityModal, setShowUtilityModal] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async () => {
@@ -51,12 +53,23 @@ export default function StepOneCard() {
       }
 
       toast.success('Registration updated successfully!');
-      router.push('/register/commercial-operator-registration/step-two');
+
+      // Open the external link in a new tab
+      window.open('https://utilityapi.com/authorize/DCarbon_Solutions', '_blank');
+
+      // Display the Utility Authorization modal
+      setShowUtilityModal(true);
     } catch (error) {
       toast.error(error.message || 'An error occurred during registration');
     } finally {
       setLoading(false);
     }
+  };
+
+  // Callback when the utility modal authorizes successfully
+  const handleUtilityAuthorized = () => {
+    setShowUtilityModal(false);
+    router.push('/register/commercial-operator-registration/agreement');
   };
 
   return (
@@ -74,7 +87,7 @@ export default function StepOneCard() {
       <div className="min-h-screen w-full bg-white flex flex-col items-center justify-center py-8 px-4">
         {/* Back Arrow */}
         <div className="relative w-full mb-10">
-          <div className="back-arrow absolute left-12 top-0 text-[#039994] cursor-pointer z-60">
+          <div className="back-arrow absolute left-12 top-0 text-[#039994] cursor-pointer z-60" onClick={() => router.back()}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className="h-6 w-6"
@@ -82,13 +95,8 @@ export default function StepOneCard() {
               viewBox="0 0 24 24"
               stroke="currentColor"
               strokeWidth={2}
-              onClick={() => router.back()}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M15 19l-7-7 7-7"
-              />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
           </div>
         </div>
@@ -146,8 +154,7 @@ export default function StepOneCard() {
         <div className="w-full max-w-md mt-6">
           <button
             onClick={handleSubmit}
-            className="w-full rounded-md bg-[#039994] text-white font-semibold py-2 
-               hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994]"
+            className="w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994]"
           >
             Next
           </button>
@@ -165,6 +172,11 @@ export default function StepOneCard() {
           </a>
         </div>
       </div>
+
+      {/* Utility Authorization Modal */}
+      {showUtilityModal && (
+        <UtilityAuthorizationModal onAuthorized={handleUtilityAuthorized} onClose={() => setShowUtilityModal(false)} />
+      )}
     </>
   );
 }

@@ -12,7 +12,7 @@ const Transaction = () => {
       {/* Header: Title + Buttons */}
       <div className="flex items-center justify-between mb-4">
         {/* Title in green */}
-        <h2 className="text-xl font-semibold text-[#039994]">REC Sales Report</h2>
+        <h2 className="text-xl font-semibold text-[#039994]">Redemption Transaction</h2>
 
         {/* Buttons */}
         <div className="flex items-center space-x-2">

@@ -6,7 +6,7 @@ export default function EmailVerificationModal({ closeModal }) {
 
   const handleNavigate = () => {
     closeModal();
-    router.push('/register/welcome-back');
+    router.push('/login');
   };
 
   return (

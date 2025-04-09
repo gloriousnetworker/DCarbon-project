@@ -3,7 +3,6 @@ import {
   FiHome,
   FiTrendingUp,
   FiLayers,
-  FiCreditCard,
   FiUser,
   FiBell,
   FiHelpCircle,
@@ -113,7 +112,7 @@ const DashboardSidebar = ({
           style={getTextStyle(isActive("transaction"))}
         >
           <FiTrendingUp size={16} color={getIconColor(isActive("transaction"))} />
-          <span>REC Sales &amp; Report</span>
+          <span>Transaction</span>
         </button>
         <button
           onClick={() => onSectionChange("residentialManagement")}
@@ -123,17 +122,7 @@ const DashboardSidebar = ({
           style={getTextStyle(isActive("residentialManagement"))}
         >
           <FiLayers size={16} color={getIconColor(isActive("residentialManagement"))} />
-          <span>Facility Management</span>
-        </button>
-        <button
-          onClick={() => onSectionChange("requestPayment")}
-          className={`${baseItemClasses} ${
-            isActive("requestPayment") ? activeClasses : inactiveClasses
-          }`}
-          style={getTextStyle(isActive("requestPayment"))}
-        >
-          <FiCreditCard size={16} color={getIconColor(isActive("requestPayment"))} />
-          <span>Request Payment</span>
+          <span>Residential Management</span>
         </button>
       </nav>
 
@@ -226,11 +215,13 @@ const DashboardSidebar = ({
         </div>
         <button
           onClick={() => onSectionChange("logout")}
-          className={`${baseItemClasses} ${inactiveClasses}`}
-          style={{ ...baseTextStyle, color: "#1E1E1E" }}
+          className={`${baseItemClasses} ${
+            isActive("logout") ? activeClasses : inactiveClasses
+          }`}
+          style={getTextStyle(isActive("logout"))}
         >
-          <FiLogOut size={16} color="#039994" />
-          <span>Log Out</span>
+          <FiLogOut size={16} color={getIconColor(isActive("logout"))} />
+          <span>Log out</span>
         </button>
       </div>
     </aside>
