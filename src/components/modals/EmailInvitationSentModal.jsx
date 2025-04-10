@@ -16,6 +16,8 @@ export default function EmailVerificationModal({ closeModal }) {
         <p className="text-center text-gray-600">
           An email invitation has been sent to your owner connected to this account.
         </p>
+
+        <hr></hr>
         <div className="flex justify-center mt-6">
           <button
             className="w-full sm:w-auto py-3 px-6 rounded-md bg-[#039994] text-white font-semibold hover:bg-[#02857f] transition duration-300"

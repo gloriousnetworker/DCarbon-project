@@ -1,41 +1,60 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Loader from '../../../components/loader/Loader'; 
+import Loader from '../../../components/loader/Loader';
+import Image from 'next/image';
 
 export default function RegistrationSuccessfulModal({ closeModal }) {
-  const [isRedirecting, setIsRedirecting] = useState(false); // Local state for loader visibility
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const router = useRouter();
+  
+  // Get user's first name from local storage
+  const userFirstName = typeof window !== 'undefined' ? localStorage.getItem('userFirstName') : '';
 
   const handleNavigate = () => {
-    closeModal(); // Close the modal
-    setIsRedirecting(true); // Show the loader in this component
+    closeModal();
+    setIsRedirecting(true);
     setTimeout(() => {
-      localStorage.clear();
-      router.push('/commercial-dashboard'); // Redirect after loader delay
-    }, 2000); // Simulate a delay for loader visibility
+      router.push('/commercial-dashboard');
+    }, 2000);
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      {/* Modal Content */}
-      <div className="relative bg-white rounded-lg w-96 p-6 space-y-4 animate__animated animate__fadeIn">
-
-        {/* Loader Overlay - Position it directly on top of the modal content */}
+    <div className={spinnerOverlay}>
+      <div className={`relative bg-white rounded-md shadow-md p-6 space-y-6 w-full max-w-md ${modalContent}`}>
+        {/* Loader Overlay */}
         {isRedirecting && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 z-60">
-            <Loader /> {/* The Loader component */}
+          <div className={loaderOverlay}>
+            <Loader />
           </div>
         )}
 
-        {/* Modal Content */}
-        <h2 className="text-lg font-semibold text-center text-[#039994]">Registration Successful</h2>
-        <p className="text-center text-gray-600">
-          Welcome to DCarbon, Udofot.
+        {/* Registration Success Icon */}
+        <div className="flex justify-center">
+          <Image 
+            src="/vectors/RegSuccessVector.png" // Replace with your actual image path
+            alt="Registration successful"
+            width={80}
+            height={80}
+            className="mb-4"
+          />
+        </div>
+
+        {/* Heading */}
+        <h2 className={modalHeading}>
+          Registration Successful
+        </h2>
+
+        {/* Welcome Message */}
+        <p className={welcomeMessage}>
+          Welcome to DCarbon, <span className={userNameStyle}>{userFirstName || 'User'}</span>
         </p>
-        <div className="flex justify-center mt-6">
+
+        {/* Button */}
+        <div className="flex justify-center">
           <button
-            className="w-full sm:w-auto py-3 px-6 rounded-md bg-[#039994] text-white font-semibold hover:bg-[#02857f] transition duration-300"
-            onClick={handleNavigate} // Trigger loader and redirection
+            className={buttonPrimary}
+            onClick={handleNavigate}
+            disabled={isRedirecting}
           >
             Go to Dashboard
           </button>
@@ -44,3 +63,12 @@ export default function RegistrationSuccessfulModal({ closeModal }) {
     </div>
   );
 }
+
+// Style constants
+const spinnerOverlay = 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 font-sfpro';
+const modalContent = 'animate__animated animate__fadeIn';
+const loaderOverlay = 'absolute inset-0 flex items-center justify-center bg-white bg-opacity-90 rounded-md z-10';
+const modalHeading = 'text-2xl font-semibold text-[#039994] text-center font-sfpro';
+const welcomeMessage = 'text-center font-sfpro text-[16px] leading-[140%] text-[#1E1E1E]';
+const userNameStyle = 'text-[#039994] font-medium';
+const buttonPrimary = 'w-full sm:w-auto py-2 px-6 rounded-md bg-[#039994] text-white font-semibold hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro transition duration-300 disabled:opacity-50';

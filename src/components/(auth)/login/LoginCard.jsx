@@ -3,8 +3,7 @@
 import { useState } from 'react';
 import axios from 'axios';
 import Loader from '../../../components/loader/Loader';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import toast from 'react-hot-toast';
 
 export default function LoginCard() {
   const [loading, setLoading] = useState(false);
@@ -69,7 +68,6 @@ export default function LoginCard() {
 
   return (
     <>
-      <ToastContainer />
       {/* Loader Overlay */}
       {loading && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
@@ -77,14 +75,13 @@ export default function LoginCard() {
         </div>
       )}
 
-      {/* Glass-Effect Card Using OTP Component Styling */}
-      <div
-        className="w-full max-w-md rounded-xl shadow-lg p-8"
-        style={{
-          background:
-            'linear-gradient(140.06deg, rgba(89, 89, 89, 0.4) -3.08%, rgba(255, 255, 255, 0.4) 106.56%)',
-          backdropFilter: 'blur(40px)',
-        }}
+      {/* Glass-Effect Card Container */}
+      <div className="w-full max-w-md rounded-xl shadow-lg p-6 font-sfpro"
+           style={{
+             background:
+               'linear-gradient(140.06deg, rgba(89, 89, 89, 0.4) -3.08%, rgba(255, 255, 255, 0.4) 106.56%)',
+             backdropFilter: 'blur(40px)',
+           }}
       >
         {/* Logo */}
         <div className="flex justify-center mb-6">
@@ -96,17 +93,7 @@ export default function LoginCard() {
         </div>
 
         {/* Heading */}
-        <h2
-          className="text-center mb-8"
-          style={{
-            fontFamily: 'SF Pro Text',
-            fontWeight: 600,
-            fontSize: '48px',
-            lineHeight: '100%',
-            letterSpacing: '-5%',
-            color: '#FFFFFF',
-          }}
-        >
+        <h2 className="text-center mb-8 font-[600] text-[48px] leading-[100%] tracking-[-5%] text-white">
           Welcome back to DCarbon
         </h2>
 
@@ -115,19 +102,7 @@ export default function LoginCard() {
 
         {/* Email Field */}
         <div className="mb-6">
-          <label
-            htmlFor="email"
-            style={{
-              display: 'block',
-              marginBottom: '8px',
-              fontFamily: 'SF Pro Text',
-              fontWeight: 400,
-              fontSize: '14px',
-              lineHeight: '100%',
-              letterSpacing: '-5%',
-              color: '#FFFFFF',
-            }}
-          >
+          <label htmlFor="email" className="block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-5%] font-[400] text-white">
             Email Address
           </label>
           <input
@@ -136,38 +111,13 @@ export default function LoginCard() {
             placeholder="@ e.g name@domain.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            style={{
-              width: '100%',
-              borderRadius: '8px',
-              border: '1px solid #FFFFFF',
-              background: '#F0F0F033',
-              padding: '8px 12px',
-              fontFamily: 'SF Pro Text',
-              fontWeight: 400,
-              fontSize: '14px',
-              lineHeight: '100%',
-              letterSpacing: '-5%',
-              color: '#FFFFFF',
-              outline: 'none',
-            }}
+            className="w-full rounded-md border border-white bg-[#F0F0F033] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-5%] text-white"
           />
         </div>
 
         {/* Password Field with Forgot Password Link */}
         <div className="mb-6">
-          <label
-            htmlFor="password"
-            style={{
-              display: 'block',
-              marginBottom: '8px',
-              fontFamily: 'SF Pro Text',
-              fontWeight: 400,
-              fontSize: '14px',
-              lineHeight: '100%',
-              letterSpacing: '-5%',
-              color: '#FFFFFF',
-            }}
-          >
+          <label htmlFor="password" className="block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-5%] font-[400] text-white">
             Password
           </label>
           <input
@@ -176,36 +126,12 @@ export default function LoginCard() {
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            style={{
-              width: '100%',
-              borderRadius: '8px',
-              border: '1px solid #FFFFFF',
-              background: '#F0F0F033',
-              padding: '8px 12px',
-              fontFamily: 'SF Pro Text',
-              fontWeight: 400,
-              fontSize: '14px',
-              lineHeight: '100%',
-              letterSpacing: '-5%',
-              color: '#FFFFFF',
-              outline: 'none',
-              marginBottom: '8px',
-            }}
+            className="w-full rounded-md border border-white bg-[#F0F0F033] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-5%] text-white mb-2"
           />
-
-          {/* Forgot Password Link */}
-          <div style={{ textAlign: 'right' }}>
+          <div className="text-right">
             <a
               href="/forgot-password"
-              style={{
-                fontFamily: 'SF Pro Text',
-                fontWeight: 600,
-                fontSize: '12px',
-                lineHeight: '100%',
-                letterSpacing: '-5%',
-                color: '#FFFFFF',
-                textDecoration: 'none',
-              }}
+              className="font-sfpro font-[600] text-[12px] leading-[100%] tracking-[-5%] text-white no-underline"
             >
               Forgot password
             </a>
@@ -216,39 +142,17 @@ export default function LoginCard() {
         <button
           type="button"
           onClick={handleLogin}
-          style={{
-            width: '100%',
-            borderRadius: '8px',
-            background: '#039994',
-            color: '#FFFFFF',
-            fontFamily: 'SF Pro Text',
-            fontWeight: 600,
-            fontSize: '14px',
-            lineHeight: '100%',
-            letterSpacing: '-5%',
-            padding: '12px 0',
-            border: 'none',
-            cursor: 'pointer',
-            marginBottom: '20px',
-          }}
+          className="w-full rounded-md bg-[#039994] text-white font-sfpro font-[600] text-[14px] leading-[100%] tracking-[-5%] py-2 cursor-pointer mb-5 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994]"
         >
           Sign in
         </button>
 
-        {/* Create Account */}
-        <p className="mt-6 text-center" style={{ fontFamily: 'SF Pro Text', fontWeight: 400, fontSize: '14px', lineHeight: '100%', letterSpacing: '-5%', color: '#FFFFFF' }}>
-          Don’t have an account?{' '}
+        {/* Create Account Link */}
+        <p className="mt-6 text-center font-sfpro font-[400] text-[14px] leading-[100%] tracking-[-5%] text-white">
+          Don't have an account?{' '}
           <a
             href="/register"
-            style={{
-              fontFamily: 'SF Pro Text',
-              fontWeight: 600,
-              fontSize: '14px',
-              lineHeight: '100%',
-              letterSpacing: '-5%',
-              color: '#FFFFFF',
-              textDecoration: 'none',
-            }}
+            className="font-sfpro font-[600] text-[14px] leading-[100%] tracking-[-5%] text-white no-underline"
           >
             Create account
           </a>
@@ -258,43 +162,17 @@ export default function LoginCard() {
         <hr className="border-t-2 border-white my-4" />
 
         {/* Disclaimer */}
-        <p
-          style={{
-            fontFamily: 'SF Pro Text',
-            fontWeight: 400,
-            fontSize: '10px',
-            lineHeight: '100%',
-            letterSpacing: '-5%',
-            textAlign: 'center',
-            color: '#FFFFFF',
-            marginBottom: 0,
-          }}
-        >
+        <p className="font-sfpro font-[400] text-[10px] leading-[100%] tracking-[-5%] text-center text-white mb-0">
           By clicking on <strong>Sign in</strong>, you agree to our{' '}
-          <a
-            href="/terms"
-            style={{
-              color: '#FFFFFF',
-              textDecoration: 'underline',
-              fontWeight: 600,
-            }}
-          >
+          <a href="/terms" className="text-white underline font-[600]">
             Terms and Conditions
           </a>{' '}
           &amp;{' '}
-          <a
-            href="/privacy"
-            style={{
-              color: '#FFFFFF',
-              textDecoration: 'underline',
-              fontWeight: 600,
-            }}
-          >
+          <a href="/privacy" className="text-white underline font-[600]">
             Privacy Policy
           </a>
         </p>
       </div>
-
     </>
   );
 }

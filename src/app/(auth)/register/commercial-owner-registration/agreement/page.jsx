@@ -10,6 +10,7 @@ import RegistrationSuccessfulModal from "../../../../../components/modals/commer
 import Loader from "../../../../../components/loader/Loader";
 import Agreement from "../../../../../components/commercial/commercial-owner-registration/AgreementForm";
 import SignatureModal from "../../../../../components/modals/SignatureModal";
+import toast from "react-hot-toast";
 
 export default function AgreementFormPage() {
   const [loading, setLoading] = useState(false);
@@ -28,10 +29,20 @@ export default function AgreementFormPage() {
 
   // When Accept is clicked (and conditions met), start the flow by showing the invite modal.
   const handleSubmit = () => {
+    if (!allChecked) {
+      toast.error("Please accept all agreements");
+      return;
+    }
+    if (!signatureData) {
+      toast.error("Please add your signature");
+      return;
+    }
+
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
       setInviteModalOpen(true);
+      toast.success("Agreement signed successfully!");
     }, 1500);
   };
 
@@ -56,6 +67,7 @@ export default function AgreementFormPage() {
   const handleSaveSignature = (data) => {
     setSignatureData(data);
     setShowSignatureModal(false);
+    toast.success("Signature saved successfully");
   };
 
   return (
@@ -64,11 +76,11 @@ export default function AgreementFormPage() {
       {loading && <CustomerIDLoader />}
 
       {/* Full-Screen Background Container */}
-      <div className="min-h-screen w-full bg-white flex flex-col items-center justify-center py-8 px-4 relative">
+      <div className={mainContainer}>
         {/* X (Close) Button in red */}
         <button
           onClick={() => router.back()}
-          className="absolute top-4 right-4 text-red-500 hover:text-red-700"
+          className={backArrow}
           aria-label="Close"
         >
           <FaTimes size={24} />
@@ -78,8 +90,8 @@ export default function AgreementFormPage() {
         <hr className="mb-4 border-gray-300 w-full max-w-3xl" />
 
         {/* Heading + Icons */}
-        <div className="flex w-full max-w-3xl justify-between items-center mb-4 px-2">
-          <h1 className="text-2xl font-semibold text-[#039994]">
+        <div className={headingContainer}>
+          <h1 className={pageTitle}>
             Terms of Agreement
           </h1>
           <div className="flex space-x-4">
@@ -108,11 +120,8 @@ export default function AgreementFormPage() {
             }}
             disabled={!(allChecked && signatureData)}
             className={`
-              w-full py-2 text-center rounded-md border border-[#039994]
-              text-white 
-              ${(allChecked && signatureData)
-                ? "bg-[#039994]"
-                : "bg-[#039994] opacity-50 cursor-not-allowed"}
+              ${buttonPrimary}
+              ${!(allChecked && signatureData) ? "opacity-50 cursor-not-allowed" : ""}
             `}
           >
             Accept
@@ -126,6 +135,7 @@ export default function AgreementFormPage() {
               bg-transparent 
               border border-[#039994] 
               text-[#039994]
+              font-sfpro
             "
           >
             Decline
@@ -135,8 +145,12 @@ export default function AgreementFormPage() {
 
       {/* Modals */}
       {inviteModalOpen && (
-        <InviteOwnerModal closeModal={handleCloseInviteModal} />
-      )}
+        <InviteOwnerModal
+          closeModal={handleCloseInviteModal}
+          onSkip={() => {
+            setInviteModalOpen(false);
+            setRegistrationModalOpen(true);
+          }} />)}
       {sentModalOpen && (
         <EmailInvitationSentModal closeModal={handleCloseSentModal} />
       )}
@@ -159,3 +173,10 @@ export default function AgreementFormPage() {
     </>
   );
 }
+
+// Apply styles from styles.js
+const mainContainer = 'min-h-screen w-full flex flex-col items-center justify-center py-8 px-4 bg-white';
+const headingContainer = 'relative w-full flex flex-col items-center mb-2';
+const backArrow = 'absolute left-4 top-0 text-[#039994] cursor-pointer z-10';
+const pageTitle = 'mb-4 font-[600] text-[36px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro text-center';
+const buttonPrimary = 'w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro';

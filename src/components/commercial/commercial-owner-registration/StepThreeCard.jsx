@@ -3,9 +3,8 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
-import { toast, ToastContainer } from 'react-toastify';
-import { FaEdit, FaTimes, FaPlus } from 'react-icons/fa';
-import 'react-toastify/dist/ReactToastify.css';
+import toast from 'react-hot-toast';
+import { FaEdit, FaTimes } from 'react-icons/fa';
 
 export default function OwnersDetailsCard() {
   const router = useRouter();
@@ -15,12 +14,6 @@ export default function OwnersDetailsCard() {
   const [companyName, setCompanyName] = useState('');
   const [companyAddress, setCompanyAddress] = useState('');
   const [companyWebsite, setCompanyWebsite] = useState('');
-
-  // Owner info
-  const [ownerFullName, setOwnerFullName] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [ownerAddress, setOwnerAddress] = useState('');
-  const [ownerWebsite, setOwnerWebsite] = useState('');
 
   // Multiple owners toggle
   const [multipleOwners, setMultipleOwners] = useState('no');
@@ -45,32 +38,12 @@ export default function OwnersDetailsCard() {
       return false;
     }
 
-    if (!ownerFullName.trim()) {
-      toast.error('Owner’s full name is required');
-      return false;
-    }
-
-    if (!phoneNumber.trim()) {
-      toast.error('Phone number is required');
-      return false;
-    }
-
-    if (!/^\+?\d{7,}$/.test(phoneNumber)) {
-      toast.error('Invalid phone number format');
-      return false;
-    }
-
-    if (multipleOwners === 'yes' && owners.length === 0) {
-      toast.error('At least one additional owner required');
-      return false;
-    }
-
     return true;
   };
 
   const handleAddOrUpdateOwner = () => {
     if (!newOwner.fullName || !newOwner.email) {
-      toast.error('Full name and email are required for additional owners');
+      toast.error('Full name and email are required for owners');
       return;
     }
 
@@ -86,6 +59,15 @@ export default function OwnersDetailsCard() {
     setEditingIndex(null);
   };
 
+  const handleEditOwner = (index) => {
+    setNewOwner(owners[index]);
+    setEditingIndex(index);
+  };
+
+  const handleRemoveOwner = (index) => {
+    setOwners(owners.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
@@ -99,19 +81,18 @@ export default function OwnersDetailsCard() {
       }
 
       const payload = {
-        entityType: 'individual',
+        entityType: 'company',
         commercialRole: 'owner',
         companyName,
         companyAddress,
         companyWebsite: companyWebsite || undefined,
-        ownerFullName,
-        phoneNumber,
-        ownerAddress: ownerAddress || undefined,
-        ownerWebsite: ownerWebsite || undefined,
-        multipleUsers: multipleOwners === 'yes' 
+        additionalOwners: multipleOwners === 'yes' 
           ? owners.map(owner => ({
               fullName: owner.fullName,
-              email: owner.email
+              email: owner.email,
+              phone: owner.phone || undefined,
+              address: owner.address || undefined,
+              website: owner.website || undefined
             }))
           : undefined
       };
@@ -127,7 +108,7 @@ export default function OwnersDetailsCard() {
         }
       );
 
-      toast.success('Details updated successfully');
+      toast.success('Company details updated successfully');
       router.push('/register/commercial-owner-registration/agreement');
     } catch (err) {
       const errorMessage = err.response?.data?.message || err.message || 'Update failed';
@@ -140,19 +121,18 @@ export default function OwnersDetailsCard() {
 
   return (
     <>
-      <ToastContainer />
       {loading && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="h-12 w-12 border-4 border-t-4 border-gray-300 border-t-[#039994] rounded-full animate-spin"></div>
+        <div className={spinnerOverlay}>
+          <div className={spinner}></div>
         </div>
       )}
 
-      <div className="min-h-screen w-full bg-white flex flex-col items-center py-8 px-4">
-        <div className="relative w-full mb-4">
+      <div className={mainContainer}>
+        <div className={headingContainer}>
           <button
             type="button"
             onClick={() => router.back()}
-            className="absolute left-0 text-[#039994] p-2 focus:outline-none"
+            className={backArrow}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -168,25 +148,25 @@ export default function OwnersDetailsCard() {
         </div>
 
         <div className="w-full max-w-md">
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#039994] mb-2">
-            Commercial Registration
+          <h1 className={pageTitle}>
+            Solar Owner Details
           </h1>
         </div>
 
-        <div className="w-full max-w-md flex items-center justify-between mb-6">
-          <div className="flex-1 h-1 bg-gray-200 rounded-full mr-4">
-            <div className="h-1 bg-[#039994] w-full rounded-full" />
+        <div className={progressContainer}>
+          <div className={progressBarWrapper}>
+            <div className={`${progressBarActive} w-full`} />
           </div>
-          <span className="text-sm font-medium text-gray-500">03/03</span>
+          <span className={progressStepText}>03/03</span>
         </div>
 
-        <div className="w-full max-w-md space-y-4">
+        <div className={formWrapper}>
           {/* Company Details */}
           <div className="border-b pb-4">
-            <h2 className="text-md font-semibold text-[#039994] mb-4">Company Information</h2>
+            <h2 className={uploadHeading}>Company Information</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className={labelClass}>
                   Company Name
                 </label>
                 <input
@@ -194,13 +174,12 @@ export default function OwnersDetailsCard() {
                   placeholder="Company legal name"
                   value={companyName}
                   onChange={(e) => setCompanyName(e.target.value)}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm
-                            placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#039994]"
+                  className={inputClass}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className={labelClass}>
                   Company Address
                 </label>
                 <input
@@ -208,13 +187,12 @@ export default function OwnersDetailsCard() {
                   placeholder="Registered business address"
                   value={companyAddress}
                   onChange={(e) => setCompanyAddress(e.target.value)}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm
-                            placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#039994]"
+                  className={inputClass}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className={labelClass}>
                   Company Website
                 </label>
                 <input
@@ -222,81 +200,16 @@ export default function OwnersDetailsCard() {
                   placeholder="https://company.com"
                   value={companyWebsite}
                   onChange={(e) => setCompanyWebsite(e.target.value)}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm
-                            placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#039994]"
+                  className={inputClass}
                 />
               </div>
             </div>
           </div>
 
-          {/* Primary Owner Details */}
-          <div className="border-b pb-4">
-            <h2 className="text-md font-semibold text-[#039994] mb-4">Primary Owner Information</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Owner's Full Name
-                </label>
-                <input
-                  type="text"
-                  placeholder="Legal name of primary owner"
-                  value={ownerFullName}
-                  onChange={(e) => setOwnerFullName(e.target.value)}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm
-                            placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#039994]"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Phone Number
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Primary contact number"
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm
-                              placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#039994]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Owner Address
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Residential address"
-                    value={ownerAddress}
-                    onChange={(e) => setOwnerAddress(e.target.value)}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm
-                              placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#039994]"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Owner Website
-                </label>
-                <input
-                  type="text"
-                  placeholder="Personal or business website"
-                  value={ownerWebsite}
-                  onChange={(e) => setOwnerWebsite(e.target.value)}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm
-                            placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#039994]"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Multiple Owners Section */}
+          {/* Optional Additional Owners Section */}
           <div className="space-y-4">
             <div className="flex items-center space-x-4">
-              <span className="text-sm font-medium text-gray-700">Multiple Owners?</span>
+              <span className={labelClass}>Add Additional Owners?</span>
               <label className="flex items-center space-x-1 cursor-pointer">
                 <input
                   type="radio"
@@ -306,7 +219,7 @@ export default function OwnersDetailsCard() {
                   onChange={() => setMultipleOwners('yes')}
                   className="form-radio text-[#039994]"
                 />
-                <span className="text-sm">Yes</span>
+                <span className="text-sm font-sfpro">Yes</span>
               </label>
               <label className="flex items-center space-x-1 cursor-pointer">
                 <input
@@ -317,79 +230,82 @@ export default function OwnersDetailsCard() {
                   onChange={() => setMultipleOwners('no')}
                   className="form-radio text-[#039994]"
                 />
-                <span className="text-sm">No</span>
+                <span className="text-sm font-sfpro">No</span>
               </label>
             </div>
 
             {multipleOwners === 'yes' && (
-              <div className="border border-gray-300 rounded-md p-4 space-y-4">
+              <div className="border border-[#039994] rounded-md p-4 space-y-4">
                 {owners.map((owner, index) => (
-                  <div key={index} className="flex items-center justify-between bg-[#F5F5F5] px-3 py-2 rounded-md">
+                  <div key={index} className="flex items-center justify-between bg-[#039994] px-3 py-2 rounded-md">
                     <div>
-                      <p className="text-sm font-medium">{owner.fullName}</p>
-                      <p className="text-xs text-gray-600">{owner.email}</p>
+                      <p className="text-sm font-medium font-sfpro text-white">{owner.fullName}</p>
+                      <p className="text-xs text-gray-200 font-sfpro">{owner.email}</p>
                     </div>
                     <div className="flex space-x-2">
                       <button
                         onClick={() => handleEditOwner(index)}
-                        className="text-[#039994] hover:text-[#02857f] p-1"
+                        className="text-white hover:text-gray-200 p-1 border border-white rounded-full"
                       >
-                        <FaEdit size={16} />
+                        <FaEdit size={14} />
                       </button>
                       <button
                         onClick={() => handleRemoveOwner(index)}
-                        className="text-red-500 hover:text-red-600 p-1"
+                        className="text-white hover:text-gray-200 p-1 bg-red-500 rounded-full"
                       >
-                        <FaTimes size={16} />
+                        <FaTimes size={14} />
                       </button>
                     </div>
                   </div>
                 ))}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs text-gray-600 mb-1">Full Name</label>
+                <div className={rowWrapper}>
+                  <div className="flex-1">
+                    <label className={labelClass}>Full Name</label>
                     <input
                       type="text"
                       value={newOwner.fullName}
                       onChange={(e) => setNewOwner({ ...newOwner, fullName: e.target.value })}
-                      className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm"
+                      className={inputClass}
                     />
                   </div>
-                  <div>
-                    <label className="block text-xs text-gray-600 mb-1">Email</label>
+                  <div className="flex-1">
+                    <label className={labelClass}>Email</label>
                     <input
                       type="email"
                       value={newOwner.email}
                       onChange={(e) => setNewOwner({ ...newOwner, email: e.target.value })}
-                      className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm"
+                      className={inputClass}
                     />
                   </div>
-                  <div>
-                    <label className="block text-xs text-gray-600 mb-1">Phone</label>
+                </div>
+
+                <div className={rowWrapper}>
+                  <div className="flex-1">
+                    <label className={labelClass}>Phone</label>
                     <input
                       type="text"
                       value={newOwner.phone}
                       onChange={(e) => setNewOwner({ ...newOwner, phone: e.target.value })}
-                      className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm"
+                      className={inputClass}
                     />
                   </div>
-                  <div>
-                    <label className="block text-xs text-gray-600 mb-1">Website</label>
+                  <div className="flex-1">
+                    <label className={labelClass}>Website</label>
                     <input
                       type="text"
                       value={newOwner.website}
                       onChange={(e) => setNewOwner({ ...newOwner, website: e.target.value })}
-                      className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm"
+                      className={inputClass}
                     />
                   </div>
                 </div>
 
                 <button
                   onClick={handleAddOrUpdateOwner}
-                  className="w-full bg-[#039994] text-white py-2 rounded-md hover:bg-[#02857f] transition-colors"
+                  className={buttonPrimary}
                 >
-                  {editingIndex !== null ? 'Update Owner' : 'Add Additional Owner'}
+                  {editingIndex !== null ? 'Update Owner' : 'Add Owner'}
                 </button>
               </div>
             )}
@@ -397,13 +313,13 @@ export default function OwnersDetailsCard() {
 
           <button
             onClick={handleSubmit}
-            className="w-full bg-[#039994] text-white py-2 rounded-md hover:bg-[#02857f] transition-colors"
+            className={buttonPrimary}
           >
             Complete Registration
           </button>
         </div>
 
-        <div className="mt-6 text-center text-xs text-gray-500">
+        <div className={termsTextContainer}>
           Terms and Conditions &amp;{' '}
           <a href="/privacy" className="text-[#039994] hover:underline">
             Privacy Policy
@@ -413,3 +329,22 @@ export default function OwnersDetailsCard() {
     </>
   );
 }
+
+// Style constants (would normally be imported from styles.js)
+const mainContainer = 'min-h-screen w-full flex flex-col items-center justify-center py-8 px-4 bg-white';
+const headingContainer = 'relative w-full flex flex-col items-center mb-2';
+const backArrow = 'absolute left-4 top-0 text-[#039994] cursor-pointer z-10';
+const pageTitle = 'mb-4 font-[600] text-[36px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro text-center';
+const progressContainer = 'w-full max-w-md flex items-center justify-between mb-6';
+const progressBarWrapper = 'flex-1 h-1 bg-gray-200 rounded-full mr-4';
+const progressBarActive = 'h-1 bg-[#039994] rounded-full';
+const progressStepText = 'text-sm font-medium text-gray-500 font-sfpro';
+const formWrapper = 'w-full max-w-md space-y-6';
+const labelClass = 'block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]';
+const inputClass = 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]';
+const rowWrapper = 'flex space-x-4';
+const buttonPrimary = 'w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro';
+const spinnerOverlay = 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20';
+const spinner = 'h-12 w-12 border-4 border-t-4 border-gray-300 border-t-[#039994] rounded-full animate-spin';
+const termsTextContainer = 'mt-6 text-center font-sfpro text-[10px] font-[800] leading-[100%] tracking-[-0.05em] underline text-[#1E1E1E]';
+const uploadHeading = 'block mb-2 font-sfpro text-[24px] leading-[100%] tracking-[-0.05em] font-[400] text-[#039994]';

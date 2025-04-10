@@ -3,8 +3,22 @@
 import { useState } from 'react';
 import axios from 'axios';
 import Loader from '../../../components/loader/Loader';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import toast, { Toaster } from 'react-hot-toast';
+
+// Styles (moved from styles.js)
+const styles = {
+  pageTitle:
+    'mb-4 font-[600] text-[36px] leading-[100%] tracking-[-0.05em] text-[#FFFFFF] font-sfpro text-center',
+  labelClass:
+    'block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#FFFFFF]',
+  inputClass:
+    'w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#FFFFFF]',
+  buttonPrimary:
+    'w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro',
+  termsTextContainer:
+    'mt-6 text-center font-sfpro text-[10px] font-[800] leading-[100%] tracking-[-0.05em] underline text-[#FFFFFF]',
+  formWrapper: 'w-full max-w-md space-y-6',
+};
 
 export default function ForgotPasswordCard() {
   const [loading, setLoading] = useState(false);
@@ -24,9 +38,7 @@ export default function ForgotPasswordCard() {
         { headers: { 'Content-Type': 'application/json' } }
       );
       toast.success('An OTP verification code has been sent to your email');
-      // Store email in local storage for use in reset password flow
       localStorage.setItem('forgotEmail', email);
-      // Navigate to reset-password page after success
       setTimeout(() => {
         window.location.href = '/reset-password';
       }, 1500);
@@ -39,13 +51,14 @@ export default function ForgotPasswordCard() {
 
   return (
     <>
-      <ToastContainer />
+      <Toaster position="top-right" reverseOrder={false} />
       {loading && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <Loader />
         </div>
       )}
-      {/* Glass-Effect Card */}
+
+      {/* Card Container */}
       <div
         className="w-full max-w-md rounded-xl shadow-lg p-8 mx-auto mt-10"
         style={{
@@ -54,55 +67,62 @@ export default function ForgotPasswordCard() {
           backdropFilter: 'blur(40px)',
         }}
       >
-        {/* Logo */}
-        <div className="flex justify-center mb-6">
-          <img
-            src="/auth_images/Login_logo.png"
-            alt="DCarbon Logo"
-            className="h-10 object-contain"
-          />
+        <div className={styles.formWrapper}>
+          {/* Logo */}
+          <div className="flex justify-center mb-6">
+            <img
+              src="/auth_images/Login_logo.png"
+              alt="DCarbon Logo"
+              className="h-10 object-contain"
+            />
+          </div>
+
+          {/* Heading */}
+          <h2 className={styles.pageTitle}>Forgot Password</h2>
+
+          {/* Description */}
+          <p className="text-center text-sm text-white font-sfpro mb-4">
+            Please enter your email address. A reset OTP will be sent to your email.
+          </p>
+
+          {/* Email Input */}
+          <div>
+            <label htmlFor="email" className={styles.labelClass}>
+              Email Address
+            </label>
+            <input
+              type="email"
+              id="email"
+              placeholder="name@domain.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className={`${styles.inputClass} bg-transparent placeholder-gray-300 text-white`}
+            />
+          </div>
+
+          {/* Continue Button */}
+          <button
+            type="button"
+            onClick={handleForgotPassword}
+            className={styles.buttonPrimary}
+          >
+            Continue
+          </button>
+
+          <hr />
+
+          {/* Terms & Conditions */}
+          <p className={styles.termsTextContainer}>
+            By clicking continue, you agree to our{' '}
+            <a href="/terms" className="text-[#039994] hover:underline">
+              Terms and Conditions
+            </a>{' '}
+            &{' '}
+            <a href="/privacy" className="text-[#039994] hover:underline">
+              Privacy Policy
+            </a>
+          </p>
         </div>
-        {/* Heading */}
-        <h2 className="text-3xl font-bold text-white text-center mb-4">
-          Forgot Password
-        </h2>
-        {/* Description */}
-        <p className="text-sm text-white text-center mb-6">
-          Please enter your email address. A reset OTP will be sent to your email.
-        </p>
-        {/* Email Input Field */}
-        <div className="mb-6">
-          <label htmlFor="email" className="block text-sm font-medium text-white mb-2">
-            Email Address
-          </label>
-          <input
-            type="email"
-            id="email"
-            placeholder="name@domain.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#2EBAA0]"
-          />
-        </div>
-        {/* Continue Button */}
-        <button
-          type="button"
-          onClick={handleForgotPassword}
-          className="w-full rounded-lg bg-[#2EBAA0] text-white font-semibold py-2 hover:bg-[#27a48e] focus:outline-none focus:ring-2 focus:ring-[#2EBAA0]"
-        >
-          Continue
-        </button>
-        {/* Disclaimer */}
-        <p className="mt-6 text-xs text-center text-white leading-tight">
-          By clicking continue, you agree to our{' '}
-          <a href="/terms" className="text-[#2EBAA0] hover:underline font-medium">
-            Terms and Conditions
-          </a>{' '}
-          &{' '}
-          <a href="/privacy" className="text-[#2EBAA0] hover:underline font-medium">
-            Privacy Policy
-          </a>
-        </p>
       </div>
     </>
   );

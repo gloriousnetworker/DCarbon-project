@@ -3,8 +3,7 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import toast from 'react-hot-toast';
 
 export default function StepOneCard() {
   const [loading, setLoading] = useState(false);
@@ -73,18 +72,17 @@ export default function StepOneCard() {
 
   return (
     <>
-      <ToastContainer />
       {loading && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="h-12 w-12 border-4 border-t-4 border-gray-300 border-t-[#039994] rounded-full animate-spin"></div>
+        <div className={spinnerOverlay}>
+          <div className={spinner}></div>
         </div>
       )}
       
-      <div className="min-h-screen w-full bg-white flex flex-col items-center justify-center py-8 px-4">
+      <div className={mainContainer}>
         {/* Back button and header */}
-        <div className="relative w-full mb-10">
+        <div className={headingContainer}>
           <div
-            className="absolute left-12 top-0 text-[#039994] cursor-pointer"
+            className={backArrow}
             onClick={() => router.back()}
           >
             <svg
@@ -100,30 +98,28 @@ export default function StepOneCard() {
           </div>
         </div>
 
-        <h1 className="text-2xl sm:text-3xl font-bold text-[#039994] mb-6">
+        <h1 className={pageTitle}>
           Solar Owner's Registration
         </h1>
 
         {/* Progress indicator */}
-        <div className="w-full max-w-md mb-8">
-          <div className="flex items-center">
-            <div className="flex-1 h-1 bg-gray-200 rounded-full">
-              <div className="h-1 bg-[#039994] w-1/5 rounded-full" />
-            </div>
-            <span className="ml-4 text-sm font-medium text-gray-500">01/05</span>
+        <div className={progressContainer}>
+          <div className={progressBarWrapper}>
+            <div className={`${progressBarActive} w-1/5`} />
           </div>
+          <span className={progressStepText}>01/05</span>
         </div>
 
         {/* Form fields */}
-        <div className="w-full max-w-md space-y-6">
+        <div className={formWrapper}>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className={labelClass}>
               Commercial Role
             </label>
             <select
               value={financeType}
               onChange={(e) => setFinanceType(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-[#039994] focus:outline-none"
+              className={selectClass}
             >
               <option value="">Select Role</option>
               <option value="cash">Owner</option>
@@ -133,13 +129,13 @@ export default function StepOneCard() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className={labelClass}>
               Entity Type
             </label>
             <select
               value={financeCompany}
               onChange={(e) => setFinanceCompany(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-[#039994] focus:outline-none"
+              className={selectClass}
             >
               <option value="">Select Entity Type</option>
               <option value="company1">Individual</option>
@@ -152,14 +148,14 @@ export default function StepOneCard() {
         <div className="w-full max-w-md mt-8">
           <button
             onClick={handleSubmit}
-            className="w-full bg-[#039994] text-white py-2 rounded-md hover:bg-[#02857f] transition-colors"
+            className={buttonPrimary}
           >
             Continue
           </button>
         </div>
 
         {/* Footer links */}
-        <div className="mt-8 text-center text-xs text-gray-600">
+        <div className={termsTextContainer}>
           By continuing, you agree to our {' '}
           <a href="/terms" className="text-[#039994] hover:underline">Terms</a> and {' '}
           <a href="/privacy" className="text-[#039994] hover:underline">Privacy Policy</a>
@@ -168,3 +164,20 @@ export default function StepOneCard() {
     </>
   );
 }
+
+// Style constants (would normally be imported from styles.js)
+const mainContainer = 'min-h-screen w-full flex flex-col items-center justify-center py-8 px-4 bg-white';
+const headingContainer = 'relative w-full flex flex-col items-center mb-2';
+const backArrow = 'absolute left-4 top-0 text-[#039994] cursor-pointer z-10';
+const pageTitle = 'mb-4 font-[600] text-[36px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro text-center';
+const progressContainer = 'w-full max-w-md flex items-center justify-between mb-6';
+const progressBarWrapper = 'flex-1 h-1 bg-gray-200 rounded-full mr-4';
+const progressBarActive = 'h-1 bg-[#039994] rounded-full';
+const progressStepText = 'text-sm font-medium text-gray-500 font-sfpro';
+const formWrapper = 'w-full max-w-md space-y-6';
+const labelClass = 'block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]';
+const selectClass = 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#626060]';
+const buttonPrimary = 'w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro';
+const spinnerOverlay = 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20';
+const spinner = 'h-12 w-12 border-4 border-t-4 border-gray-300 border-t-[#039994] rounded-full animate-spin';
+const termsTextContainer = 'mt-6 text-center font-sfpro text-[10px] font-[800] leading-[100%] tracking-[-0.05em] underline text-[#1E1E1E]';

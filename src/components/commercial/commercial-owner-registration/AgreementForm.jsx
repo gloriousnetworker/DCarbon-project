@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import toast from "react-hot-toast";
 
 export default function Agreement({
   onAllCheckedChange,
@@ -17,6 +18,14 @@ export default function Agreement({
     }
   }, [checked1, checked2, checked3, onAllCheckedChange]);
 
+  const handleSignatureClick = () => {
+    if (!(checked1 && checked2 && checked3)) {
+      toast.error("Please accept all agreements first");
+      return;
+    }
+    onOpenSignatureModal();
+  };
+
   return (
     <div className="w-full max-w-3xl h-[50vh] overflow-y-auto scrollbar-thin scrollbar-track-gray-200 scrollbar-thumb-[#039994] px-2">
       
@@ -29,11 +38,11 @@ export default function Agreement({
             onChange={() => setChecked1(!checked1)}
             className="form-checkbox h-5 w-5 text-[#039994] border-gray-400 rounded"
           />
-          <span className="font-semibold text-[#039994]">
+          <span className="font-semibold text-[#039994] font-sfpro">
             DCarbon Information Release Agreement
           </span>
         </label>
-        <p className="text-sm text-gray-700">
+        <p className={noteText}>
           Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod 
           tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, 
           quis nostrud exercitation ullamco...
@@ -51,11 +60,11 @@ export default function Agreement({
             onChange={() => setChecked2(!checked2)}
             className="form-checkbox h-5 w-5 text-[#039994] border-gray-400 rounded"
           />
-          <span className="font-semibold text-[#039994]">
+          <span className="font-semibold text-[#039994] font-sfpro">
             DCarbon Services Agreement
           </span>
         </label>
-        <p className="text-sm text-gray-700">
+        <p className={noteText}>
           Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus tincidunt 
           nisl felis, vel interdum dui suscipit eu. Aliquam erat volutpat. Integer 
           vel ante sit amet urna auctor ultrices...
@@ -73,11 +82,11 @@ export default function Agreement({
             onChange={() => setChecked3(!checked3)}
             className="form-checkbox h-5 w-5 text-[#039994] border-gray-400 rounded"
           />
-          <span className="font-semibold text-[#039994]">
+          <span className="font-semibold text-[#039994] font-sfpro">
             WREGIS Assignment Agreement
           </span>
         </label>
-        <p className="text-sm text-gray-700">
+        <p className={noteText}>
           Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus tincidunt 
           nisl felis, vel interdum dui suscipit eu. Aliquam erat volutpat. Integer 
           vel ante sit amet urna auctor ultrices...
@@ -88,22 +97,22 @@ export default function Agreement({
       <hr className="my-4 border-gray-300" />
 
       <div className="mb-4">
-        <h3 className="font-semibold text-[#039994] mb-2">Signature</h3>
+        <h3 className={uploadHeading}>Signature</h3>
         {/* If there's signature data, display it; otherwise show placeholder */}
         {signatureData ? (
           <div className="border border-gray-300 rounded p-4 mb-2 text-gray-700">
-            <p>{signatureData}</p>
+            <img src={signatureData} alt="User signature" className="max-w-full h-auto" />
           </div>
         ) : (
-          <div className="border border-dashed border-gray-300 rounded p-4 mb-2 text-gray-500 italic">
+          <div className="border border-dashed border-gray-300 rounded p-4 mb-2 text-gray-500 italic font-sfpro">
             No signature yet
           </div>
         )}
 
         {/* Button to open the Signature Modal */}
         <button
-          onClick={onOpenSignatureModal}
-          className="px-4 py-2 bg-[#039994] text-white rounded-md hover:bg-[#027f7d]"
+          onClick={handleSignatureClick}
+          className={uploadButtonStyle}
         >
           {signatureData ? "Update Signature" : "Add Signature"}
         </button>
@@ -111,3 +120,8 @@ export default function Agreement({
     </div>
   );
 }
+
+// Apply styles from styles.js
+const noteText = 'mt-2 font-sfpro text-[12px] leading-[100%] tracking-[-0.05em] font-[300] italic text-[#1E1E1E]';
+const uploadHeading = 'block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]';
+const uploadButtonStyle = 'px-4 py-2 bg-[#039994] text-white rounded-md hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro';

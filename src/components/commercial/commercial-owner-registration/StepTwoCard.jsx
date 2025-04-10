@@ -3,8 +3,7 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import toast from 'react-hot-toast';
 
 export default function OwnersDetailsCard() {
   const router = useRouter();
@@ -84,19 +83,18 @@ export default function OwnersDetailsCard() {
 
   return (
     <>
-      <ToastContainer />
       {loading && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="h-12 w-12 border-4 border-t-4 border-gray-300 border-t-[#039994] rounded-full animate-spin"></div>
+        <div className={spinnerOverlay}>
+          <div className={spinner}></div>
         </div>
       )}
 
-      <div className="min-h-screen w-full bg-white flex flex-col items-center py-8 px-4">
-        <div className="relative w-full mb-4">
+      <div className={mainContainer}>
+        <div className={headingContainer}>
           <button
             type="button"
             onClick={() => router.back()}
-            className="absolute left-0 text-[#039994] p-2 focus:outline-none"
+            className={backArrow}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -112,64 +110,62 @@ export default function OwnersDetailsCard() {
         </div>
 
         <div className="w-full max-w-md">
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#039994] mb-2">
-            Owner’s Details
+          <h1 className={pageTitle}>
+            Solar Owner's Details
           </h1>
         </div>
 
-        <div className="w-full max-w-md flex items-center justify-between mb-6">
-          <div className="flex-1 h-1 bg-gray-200 rounded-full mr-4">
-            <div className="h-1 bg-[#039994] w-full rounded-full" />
+        <div className={progressContainer}>
+          <div className={progressBarWrapper}>
+            <div className={`${progressBarActive} w-full`} />
           </div>
-          <span className="text-sm font-medium text-gray-500">03/03</span>
+          <span className={progressStepText}>03/05</span>
         </div>
 
         <div className="w-full max-w-md mb-4">
-          <h2 className="text-md font-semibold text-[#039994]">
+          <h2 className={uploadHeading}>
             Individual owner
           </h2>
         </div>
 
-        <div className="w-full max-w-md space-y-4">
+        <div className={formWrapper}>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Owner’s full name
+            <label className={labelClass}>
+              Owner's full name
             </label>
             <input
               type="text"
               placeholder="Full name"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm placeholder-gray-400
-                         focus:outline-none focus:ring-2 focus:ring-[#039994]"
+              className={inputClass}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Phone Number
-            </label>
-            <div className="flex space-x-2">
-              <input
-                type="text"
-                value={phonePrefix}
-                onChange={(e) => setPhonePrefix(e.target.value)}
-                className="w-16 rounded-md border border-gray-300 px-3 py-2 text-sm placeholder-gray-400
-                           focus:outline-none focus:ring-2 focus:ring-[#039994]"
-              />
-              <input
-                type="text"
-                placeholder="e.g. 000-0000-000"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm placeholder-gray-400
-                           focus:outline-none focus:ring-2 focus:ring-[#039994]"
-              />
-            </div>
-          </div>
+  <label className={labelClass}>
+    Phone Number
+  </label>
+  <div className="flex gap-2">
+    <input
+      type="text"
+      value={phonePrefix}
+      placeholder="+1"
+      onChange={(e) => setPhonePrefix(e.target.value)}
+      className={`${inputClass} w-20`}  // Reduced width for prefix
+    />
+    <input
+      type="text"
+      placeholder="000-0000-000"
+      value={phoneNumber}
+      onChange={(e) => setPhoneNumber(e.target.value)}
+      className={`${inputClass} flex-1`}
+    />
+  </div>
+</div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className={labelClass}>
               Address
             </label>
             <input
@@ -177,13 +173,12 @@ export default function OwnersDetailsCard() {
               placeholder="E.g. Street, City, County, State."
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm placeholder-gray-400
-                         focus:outline-none focus:ring-2 focus:ring-[#039994]"
+              className={inputClass}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className={labelClass}>
               Website details
             </label>
             <input
@@ -191,8 +186,7 @@ export default function OwnersDetailsCard() {
               placeholder="Enter website (e.g. www.example.com)"
               value={website}
               onChange={(e) => setWebsite(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm placeholder-gray-400
-                         focus:outline-none focus:ring-2 focus:ring-[#039994]"
+              className={inputClass}
             />
           </div>
         </div>
@@ -200,16 +194,15 @@ export default function OwnersDetailsCard() {
         <div className="w-full max-w-md mt-6">
           <button
             onClick={handleSubmit}
-            className="w-full rounded-md bg-[#039994] text-white font-semibold py-2
-                       hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994]"
+            className={buttonPrimary}
           >
             Next
           </button>
         </div>
 
-        <div className="mt-6 text-center text-xs text-gray-500 leading-tight">
+        <div className={termsTextContainer}>
           Terms and Conditions &amp;{' '}
-          <a href="/privacy" className="text-[#039994] hover:underline font-medium">
+          <a href="/privacy" className="text-[#039994] hover:underline">
             Privacy Policy
           </a>
         </div>
@@ -217,3 +210,22 @@ export default function OwnersDetailsCard() {
     </>
   );
 }
+
+// Style constants (would normally be imported from styles.js)
+const mainContainer = 'min-h-screen w-full flex flex-col items-center justify-center py-8 px-4 bg-white';
+const headingContainer = 'relative w-full flex flex-col items-center mb-2';
+const backArrow = 'absolute left-4 top-0 text-[#039994] cursor-pointer z-10';
+const pageTitle = 'mb-4 font-[600] text-[36px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro text-center';
+const progressContainer = 'w-full max-w-md flex items-center justify-between mb-6';
+const progressBarWrapper = 'flex-1 h-1 bg-gray-200 rounded-full mr-4';
+const progressBarActive = 'h-1 bg-[#039994] rounded-full';
+const progressStepText = 'text-sm font-medium text-gray-500 font-sfpro';
+const formWrapper = 'w-full max-w-md space-y-6';
+const labelClass = 'block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]';
+const inputClass = 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]';
+const rowWrapper = 'flex space-x-4';
+const buttonPrimary = 'w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro';
+const spinnerOverlay = 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20';
+const spinner = 'h-12 w-12 border-4 border-t-4 border-gray-300 border-t-[#039994] rounded-full animate-spin';
+const termsTextContainer = 'mt-6 text-center font-sfpro text-[10px] font-[800] leading-[100%] tracking-[-0.05em] underline text-[#1E1E1E]';
+const uploadHeading = 'block mb-2 font-sfpro text-[24px] leading-[100%] tracking-[-0.05em] font-[400] text-[#039994]';
