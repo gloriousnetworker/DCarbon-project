@@ -101,7 +101,7 @@ export default function StepOneCard() {
         </div>
 
         <h1 className="text-2xl sm:text-3xl font-bold text-[#039994] mb-6">
-          Owner's Registration
+          Solar Owner's Registration
         </h1>
 
         {/* Progress indicator */}
@@ -127,8 +127,8 @@ export default function StepOneCard() {
             >
               <option value="">Select Role</option>
               <option value="cash">Owner</option>
-              <option value="loan">Operator</option>
-              <option value="ppa">Both</option>
+              {/* <option value="loan">Operator</option>
+              <option value="ppa">Both</option> */}
             </select>
           </div>
 

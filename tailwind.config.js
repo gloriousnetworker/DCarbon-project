@@ -1,5 +1,3 @@
-// tailwind.config.js
-
 const { nextui } = require('@nextui-org/react');
 
 module.exports = {
@@ -13,6 +11,9 @@ module.exports = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        'sf-pro-text': ['SF Pro Text', 'sans-serif'],
+      },
       keyframes: {
         rotate: {
           '0%': { transform: 'rotate(0deg)' },
@@ -36,11 +37,11 @@ module.exports = {
         beep: 'beep 1.5s ease-in-out infinite',
         blink: 'blink 1.2s ease-in-out infinite',
         'dot-1': 'dotBlink 1s ease-in-out infinite',
-        'dot-2': 'dotBlink 1s ease-in-out infinite 0.2s', // 0.2s delay for the second dot
-        'dot-3': 'dotBlink 1s ease-in-out infinite 0.4s', // 0.4s delay for the third dot
+        'dot-2': 'dotBlink 1s ease-in-out infinite 0.2s',
+        'dot-3': 'dotBlink 1s ease-in-out infinite 0.4s',
       },
       screens: {
-        sm: '640px', 
+        sm: '640px',
       },
     },
   },

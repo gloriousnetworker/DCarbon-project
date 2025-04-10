@@ -4,8 +4,20 @@ import { useState } from 'react';
 import axios from 'axios';
 import Loader from '../../../components/loader/Loader';
 import EmailModal from '../../../components/modals/EmailModal';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+// Using react-hot-toast instead of react-toastify for toast notifications
+import { toast } from 'react-hot-toast';
+
+// Import our custom styles from styles.js
+import {
+  mainContainer,
+  pageTitle,
+  formWrapper,
+  labelClass,
+  inputClass,
+  buttonPrimary,
+  termsTextContainer,
+  grayPlaceholder,
+} from './styles';
 
 export default function RegisterCard() {
   const [loading, setLoading] = useState(false);
@@ -30,7 +42,13 @@ export default function RegisterCard() {
 
   // Validate the form before submission
   const validateForm = () => {
-    if (!firstName.trim() || !lastName.trim() || !email.trim() || !phoneNumber.trim() || !password) {
+    if (
+      !firstName.trim() ||
+      !lastName.trim() ||
+      !email.trim() ||
+      !phoneNumber.trim() ||
+      !password
+    ) {
       setError('Please fill out all fields.');
       return false;
     }
@@ -41,7 +59,9 @@ export default function RegisterCard() {
     }
     const phoneRegex = /^\+?[0-9]{7,}$/;
     if (!phoneRegex.test(phoneNumber)) {
-      setError('Please enter a valid phone number starting with + followed by country code.');
+      setError(
+        'Please enter a valid phone number starting with + followed by country code.'
+      );
       return false;
     }
     if (password.length < 6) {
@@ -56,11 +76,9 @@ export default function RegisterCard() {
     return true;
   };
 
-  // Call the API endpoint to register a user using Axios
+  // Register the user using Axios
   const handleRegister = async () => {
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
     setLoading(true);
 
     const payload = {
@@ -76,11 +94,7 @@ export default function RegisterCard() {
       const response = await axios.post(
         'https://dcarbon-server.onrender.com/api/user/register',
         payload,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
+        { headers: { 'Content-Type': 'application/json' } }
       );
       localStorage.setItem('userEmail', response.data.data.email);
       toast.success('Registration successful');
@@ -92,122 +106,157 @@ export default function RegisterCard() {
     }
   };
 
-  const togglePasswordVisibility = () => {
+  const togglePasswordVisibility = () =>
     setPasswordVisible((prev) => !prev);
-  };
-
-  const handleUserCategory = (category) => {
+  const handleUserCategory = (category) =>
     setUserCategory(category);
-  };
 
   return (
     <>
-      <ToastContainer />
+      {/* Remove Toaster from here – configure your global Toaster in RootLayout 
+          with the desired position (e.g., center) */}
       {loading && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <Loader />
         </div>
       )}
-      <div className="min-h-screen w-full bg-white flex flex-col items-center justify-center py-8 px-4">
+
+      <div className={mainContainer}>
+        {/* Logo Section */}
         <div className="mb-6">
           <img
             src="/auth_images/Login_logo.png"
             alt="DCarbon Logo"
-            className="h-10 object-contain"
+            style={{ width: '116px', height: '37px', objectFit: 'contain' }}
           />
         </div>
-        <h1
-          className="text-2xl sm:text-3xl font-bold mb-2"
-          style={{ color: '#039994', fontFamily: 'SF Pro Text, sans-serif' }}
-        >
-          Start your Solar journey with DCarbon
+
+        {/* Title Section - Two Lines on Large Screens */}
+        <h1 className={pageTitle}>
+          <span className="block lg:hidden">
+            Start your Solar journey with DCarbon
+          </span>
+          <span className="hidden lg:block">
+            Start your Solar journey
+            <br />
+            with DCarbon
+          </span>
         </h1>
+
+        {/* Horizontal Divider */}
         <hr className="w-full border border-gray-200 mt-4 mb-8" />
+
+        {/* Form Container */}
         <div className="w-full max-w-md">
           <form
-            className="flex flex-col space-y-6"
+            className={formWrapper}
             onSubmit={(e) => {
               e.preventDefault();
               handleRegister();
             }}
           >
+            {/* First Name and Last Name */}
             <div className="flex flex-col sm:flex-row sm:space-x-4 space-y-6 sm:space-y-0">
-              <div className="w-full">
-                <label
-                  htmlFor="firstName"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
+              {/* First Name */}
+              <div className="flex-1">
+                <label htmlFor="firstName" className={labelClass}>
                   First Name
                 </label>
-                <input
-                  type="text"
-                  id="firstName"
-                  placeholder="👤 First name"
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#039994]"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                />
+                <div className="relative">
+                  {/* Profile icon placeholder for First Name */}
+                  <img
+                    src="/vectors/profile_icon.png"
+                    alt="Profile icon"
+                    className="absolute w-[16px] h-[16px] top-1/2 left-2 -translate-y-1/2"
+                  />
+                  <input
+                    type="text"
+                    id="firstName"
+                    placeholder="First name"
+                    className={`${inputClass} ${grayPlaceholder} pl-10`}
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                  />
+                </div>
               </div>
-              <div className="w-full">
-                <label
-                  htmlFor="lastName"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
+
+              {/* Last Name */}
+              <div className="flex-1">
+                <label htmlFor="lastName" className={labelClass}>
                   Last Name
                 </label>
+                <div className="relative">
+                  {/* Profile icon placeholder for Last Name */}
+                  <img
+                    src="/vectors/profile_icon.png"
+                    alt="Profile icon"
+                    className="absolute w-[16px] h-[16px] top-1/2 left-2 -translate-y-1/2"
+                  />
+                  <input
+                    type="text"
+                    id="lastName"
+                    placeholder="Last name"
+                    className={`${inputClass} ${grayPlaceholder} pl-10`}
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Email Address */}
+            <div>
+              <label htmlFor="email" className={labelClass}>
+                Email Address
+              </label>
+              <div className="relative">
+                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[#1E1E1E] text-[14px]">
+                  @
+                </span>
                 <input
-                  type="text"
-                  id="lastName"
-                  placeholder="👤 Last name"
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#039994]"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
+                  type="email"
+                  id="email"
+                  placeholder="name@domain.com"
+                  className={`${inputClass} ${grayPlaceholder} pl-10`}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
             </div>
+
+            {/* Phone Number */}
             <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Email Address
-              </label>
-              <input
-                type="email"
-                id="email"
-                placeholder="@ e.g name@domain.com"
-                className="w-full rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#039994]"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-            <div>
-              <label
-                htmlFor="phone"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
+              <label htmlFor="phone" className={labelClass}>
                 Phone Number
               </label>
-              <input
-                type="tel"
-                id="phone"
-                placeholder="📞 e.g +2348012345678"
-                className="w-full rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#039994]"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-              />
+              <div className="relative">
+                {/* Unique black phone icon placeholder */}
+                <img
+                  src="/vectors/phone.png"
+                  alt="Phone icon"
+                  className="absolute w-[24px] h-[24px] top-1/2 left-2 -translate-y-1/2"
+                />
+                <input
+                  type="tel"
+                  id="phone"
+                  placeholder="+1 000-000-0000"
+                  className={`${inputClass} ${grayPlaceholder} pl-10`}
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                />
+              </div>
             </div>
+
+            {/* User Category */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                User Category
-              </label>
-              <div className="flex items-center space-x-4">
+              <label className={labelClass}>User Category</label>
+              <div className="flex gap-4">
                 {['Resident', 'Commercial', 'Partner'].map((category) => (
                   <button
                     key={category}
                     type="button"
                     onClick={() => handleUserCategory(category)}
-                    className={`px-4 py-2 rounded-md text-sm font-medium focus:outline-none transition duration-300 ease-in-out ${
+                    className={`flex-1 text-center px-4 py-2 rounded-md text-sm font-sfpro transition duration-300 ease-in-out ${
                       userCategory === category
                         ? 'bg-[#039994] text-white'
                         : 'bg-transparent text-[#039994] border border-[#039994]'
@@ -218,31 +267,32 @@ export default function RegisterCard() {
                 ))}
               </div>
             </div>
+
+            {/* Password */}
             <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
+              <label htmlFor="password" className={labelClass}>
                 Password
               </label>
               <div className="relative">
+                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[#1E1E1E] text-[14px]">
+                  |**
+                </span>
                 <input
                   type={passwordVisible ? 'text' : 'password'}
                   id="password"
-                  placeholder="|** Create Password"
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#039994]"
+                  className={`${inputClass} ${grayPlaceholder} pl-12`}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
                 <button
                   type="button"
                   onClick={togglePasswordVisibility}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700 focus:outline-none"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-black"
                 >
                   {passwordVisible ? (
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5"
+                      className="h-4 w-4"
                       viewBox="0 0 20 20"
                       fill="currentColor"
                     >
@@ -255,63 +305,61 @@ export default function RegisterCard() {
                   ) : (
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5"
+                      className="h-4 w-4"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
                       strokeWidth={2}
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M2.458 12C3.732 7.943 7.294 5 12 5c4.706 0 8.268 2.943 9.542 7-1.274 4.057-4.836 7-9.542 7-4.706 0-8.268-2.943-9.542-7z"
-                      />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.294 5 12 5c4.706 0 8.268 2.943 9.542 7-1.274 4.057-4.836 7-9.542 7-4.706 0-8.268-2.943-9.542-7z" />
                     </svg>
                   )}
                 </button>
               </div>
+              <p className="mt-2 font-sfpro text-[12px] font-[400] leading-[100%] tracking-[-0.05em] text-[#626060]">
+                * Must be at least 8 characters
+              </p>
             </div>
-            {error && <p className="text-red-500 text-sm">{error}</p>}
-            <button
-              type="submit"
-              className="w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994]"
-            >
+
+            {/* Error Message */}
+            {error && (
+              <p className="text-red-500 text-[14px] font-sfpro">
+                {error}
+              </p>
+            )}
+
+            {/* Create Account Button */}
+            <button type="submit" className={buttonPrimary}>
               Create Account
             </button>
           </form>
-          <p className="mt-6 text-center text-sm text-gray-600">
+
+          {/* Already have an account? Sign in */}
+          <p className="mt-6 text-center font-sfpro font-[400] text-[14px] leading-[100%] tracking-[-0.05em] text-[#626060]">
             Already have an account?{' '}
-            <a
-              href="/login"
-              className="text-[#039994] hover:underline font-medium"
-            >
+            <a href="/login" className="text-[#039994] underline">
               Sign in
             </a>
           </p>
+
+          {/* Horizontal Divider */}
           <hr className="w-full border border-gray-200 mt-4" />
-          <p className="mt-4 text-xs text-center text-gray-500 leading-tight">
+
+          {/* Terms and Conditions */}
+          <p className={termsTextContainer}>
             By clicking on ‘Create Account’, you agree to our{' '}
-            <a
-              href="/terms"
-              className="text-[#039994] hover:underline font-medium"
-            >
+            <a href="/terms" className="text-[#039994] underline">
               Terms and Conditions
             </a>{' '}
-            &{' '}
-            <a
-              href="/privacy"
-              className="text-[#039994] hover:underline font-medium"
-            >
+            &amp;{' '}
+            <a href="/privacy" className="text-[#039994] underline">
               Privacy Policy
             </a>
           </p>
         </div>
       </div>
+
       {showModal && <EmailModal closeModal={() => setShowModal(false)} />}
     </>
   );

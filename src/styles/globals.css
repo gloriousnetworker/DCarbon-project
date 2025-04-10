@@ -6,30 +6,45 @@
 @import "@fortawesome/fontawesome-free/css/all.min.css";
 
 /* Font Styles */
-body {
-  @apply bg-background text-foreground font-sans;
+@font-face {
+  font-family: 'SF Pro Text';
+  src: url('/fonts/SFProText-Regular.woff2') format('woff2'),
+       url('/fonts/SFProText-Regular.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
 }
 
-/* Optional Utility Layer */
+@font-face {
+  font-family: 'SF Pro Text';
+  src: url('/fonts/SFProText-Semibold.woff2') format('woff2'),
+       url('/fonts/SFProText-Semibold.woff') format('woff');
+  font-weight: 600;
+  font-style: normal;
+}
+
+body {
+  @apply bg-background text-foreground;
+  font-family: 'SF Pro Text', sans-serif;
+}
+
+/* Utility Layer */
 @layer utilities {
   .text-balance {
     text-wrap: balance;
   }
 
-  /* Custom Media Query for Small Screens */
   @media (max-width: 640px) {
     .back-arrow {
-      left: 12px !important;  /* Adjust for small screen */
-      top: 10px !important;   /* Adjust top position */
+      left: 12px !important;
+      top: 10px !important;
     }
   }
 
-  /* Hide scrollbar utility */
   .hide-scrollbar {
-    -ms-overflow-style: none; /* IE and Edge */
-    scrollbar-width: none;    /* Firefox */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
   .hide-scrollbar::-webkit-scrollbar {
-    display: none;            /* Chrome, Safari, and Opera */
+    display: none;
   }
 }

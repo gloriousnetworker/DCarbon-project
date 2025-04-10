@@ -1,12 +1,12 @@
 "use client";
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
 import TwoFactorAuth from "./TwoFactorAuth";
 import ChangePasswordModal from "./ChangePasswordModal";
+import ProfileImage from "./ProfileImage";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
-/**
- * Custom toggle switch component
- */
 const ToggleSwitch = ({ enabled, onChange }) => {
   return (
     <div
@@ -25,40 +25,70 @@ const ToggleSwitch = ({ enabled, onChange }) => {
 };
 
 const MyAccount = () => {
-  // Collapsible sections
   const [showPersonal, setShowPersonal] = useState(true);
   const [showAccount, setShowAccount] = useState(true);
   const [showPreferences, setShowPreferences] = useState(true);
-
-  // Views / modals
   const [viewTwoFA, setViewTwoFA] = useState(false);
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
-
-  // Profile image upload
-  const [profileImage, setProfileImage] = useState(null);
-  const fileInputRef = useRef(null);
-
-  // Stripe toggle
   const [stripeEnabled, setStripeEnabled] = useState(false);
+  const [userData, setUserData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // Profile image handlers
-  const handleProfileClick = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
-    }
+  // Fetch user data on component mount
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const userId = localStorage.getItem("userId");
+        const authToken = localStorage.getItem("authToken");
+        
+        if (!userId || !authToken) {
+          throw new Error("User not authenticated");
+        }
+
+        const response = await fetch(
+          `https://dcarbon-server.onrender.com/api/user/get-one-user/${userId}`,
+          {
+            method: "GET",
+            headers: {
+              'Authorization': `Bearer ${authToken}`
+            }
+          }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || "Failed to fetch user data");
+        }
+
+        setUserData(data.data);
+        localStorage.setItem("userProfile", JSON.stringify(data.data));
+      } catch (error) {
+        console.error("Fetch error:", error);
+        toast.error(error.message || "Error fetching user data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
+  const handleProfileUploadSuccess = (updatedUserData) => {
+    toast.success("Profile picture updated successfully!");
+    setUserData(prev => ({ ...prev, ...updatedUserData }));
   };
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const imageUrl = URL.createObjectURL(file);
-      setProfileImage(imageUrl);
-    }
-  };
-
-  // Show 2FA view if active
   if (viewTwoFA) {
     return <TwoFactorAuth onBack={() => setViewTwoFA(false)} />;
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-100 py-10 px-4 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#039994]"></div>
+      </div>
+    );
   }
 
   return (
@@ -70,70 +100,8 @@ const MyAccount = () => {
       <div className="min-h-screen bg-gray-100 py-10 px-4">
         <div className="container mx-auto">
           <div className="bg-white rounded shadow p-6 flex flex-col md:flex-row">
-            {/* Left: Profile Image Upload */}
-            <div className="w-full md:w-1/3 flex flex-col items-center mb-6 md:mb-0 md:pr-8 border-b md:border-b-0 md:border-r border-gray-200">
-              <div
-                className="relative w-32 h-32 rounded-full bg-gray-200 cursor-pointer overflow-hidden flex items-center justify-center"
-                onClick={handleProfileClick}
-              >
-                {/* Profile Image or Default Icon */}
-                {profileImage ? (
-                  <img
-                    src={profileImage}
-                    alt="Profile"
-                    className="object-cover w-full h-full"
-                  />
-                ) : (
-                  <svg
-                    className="text-gray-400 w-12 h-12"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={1.5}
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M12 4.5c2.485 0 4.5 2.015 4.5 4.5S14.485 13.5 12 13.5
-                         7.5 11.485 7.5 9 9.515 4.5 12 4.5zM6.136 18.364c1.308-1.308
-                         3.413-2.364 5.864-2.364 2.45 0 4.556 1.056 5.864 2.364
-                         A9.953 9.953 0 0112 21c-2.731 0-5.21-1.106-7.136-2.636z"
-                    />
-                  </svg>
-                )}
+            <ProfileImage onUploadSuccess={handleProfileUploadSuccess} />
 
-                {/* Hidden file input */}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-
-                {/* Teal plus icon overlay (bottom-right) */}
-                <div className="absolute bottom-1 right-1 bg-[#039994] w-8 h-8 flex items-center justify-center rounded-full">
-                  <svg
-                    className="text-white w-4 h-4"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M12 5a1 1 0 011 1v5h5a1 1 0
-                         110 2h-5v5a1 1 0 11-2 0v-5H6a1 1
-                         0 110-2h5V6a1 1 0 011-1z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </div>
-              </div>
-              <p className="text-sm text-gray-500 mt-2">
-                Click to upload/change profile picture
-              </p>
-            </div>
-
-            {/* Right: Collapsible Sections */}
             <div className="w-full md:w-2/3 md:pl-8">
               {/* PERSONAL INFORMATION */}
               <div className="border-b border-gray-200 pb-4 mb-4">
@@ -152,73 +120,76 @@ const MyAccount = () => {
                 </div>
                 {showPersonal && (
                   <div className="mt-4 space-y-4">
-                    {/* Name Fields */}
                     <div className="flex flex-wrap md:flex-nowrap gap-4">
-                      {/* First Name */}
                       <div className="w-full md:w-1/2">
                         <label className="text-sm text-gray-700 mb-1 block">
                           First Name
                         </label>
                         <input
                           type="text"
+                          value={userData?.firstName || ""}
                           className="border border-gray-300 rounded w-full px-3 py-2 focus:outline-none"
                           placeholder="First name"
+                          readOnly
                         />
                       </div>
-                      {/* Last Name */}
                       <div className="w-full md:w-1/2">
                         <label className="text-sm text-gray-700 mb-1 block">
                           Last Name
                         </label>
                         <input
                           type="text"
+                          value={userData?.lastName || ""}
                           className="border border-gray-300 rounded w-full px-3 py-2 focus:outline-none"
                           placeholder="Last name"
+                          readOnly
                         />
                       </div>
                     </div>
 
-                    {/* Email Address */}
                     <div>
                       <label className="text-sm text-gray-700 mb-1 block">
                         Email Address
                       </label>
                       <input
                         type="email"
+                        value={userData?.email || ""}
                         className="border border-gray-300 rounded w-full px-3 py-2 focus:outline-none"
                         placeholder="e.g. name@domain.com"
+                        readOnly
                       />
                     </div>
 
-                    {/* Address */}
                     <div>
                       <label className="text-sm text-gray-700 mb-1 block">
                         Address
                       </label>
                       <input
                         type="text"
+                        value={userData?.address || ""}
                         className="border border-gray-300 rounded w-full px-3 py-2 focus:outline-none"
                         placeholder="e.g. Street, Country, State"
+                        readOnly
                       />
                     </div>
 
-                    {/* Phone Number (Country Code + Main Input) */}
                     <div>
                       <label className="text-sm text-gray-700 mb-1 block">
                         Phone number
                       </label>
                       <div className="flex flex-wrap md:flex-nowrap gap-2">
-                        {/* Country Code (editable) */}
                         <input
                           type="text"
-                          defaultValue="+234"
+                          value={userData?.phone?.countryCode || "+234"}
                           className="border border-gray-300 rounded px-3 py-2 focus:outline-none w-full md:w-1/4"
+                          readOnly
                         />
-                        {/* Main phone input */}
                         <input
                           type="tel"
+                          value={userData?.phone?.number || ""}
                           className="border border-gray-300 rounded w-full px-3 py-2 focus:outline-none"
                           placeholder="000-0000-000"
+                          readOnly
                         />
                       </div>
                     </div>
