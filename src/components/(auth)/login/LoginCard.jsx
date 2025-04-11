@@ -27,12 +27,13 @@ export default function LoginCard() {
 
       // Store user details in local storage for persistence
       localStorage.setItem('userFirstName', user.firstName);
+      localStorage.setItem('userProfilePicture', user.profilePicture);
       localStorage.setItem('authToken', token);
       localStorage.setItem('userId', user.id);
 
       toast.success('Login successful');
 
-      // Check if financial details are incomplete: if either is null
+      // Check if financial details are incomplete
       const financeDetailsIncomplete =
         user.financialInfo === null || user.agreements === null;
 
@@ -56,7 +57,6 @@ export default function LoginCard() {
           window.location.href = '/partner-dashboard';
         }
       } else {
-        // Fallback route if user type doesn't match any above
         window.location.href = '/dashboard';
       }
     } catch (err) {
@@ -67,24 +67,25 @@ export default function LoginCard() {
   };
 
   return (
-    <>
+    <div className="min-h-screen w-full flex flex-col items-center justify-center py-8 px-8">
       {/* Loader Overlay */}
       {loading && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20">
           <Loader />
         </div>
       )}
 
       {/* Glass-Effect Card Container */}
-      <div className="w-full max-w-md rounded-xl shadow-lg p-6 font-sfpro"
-           style={{
-             background:
-               'linear-gradient(140.06deg, rgba(89, 89, 89, 0.4) -3.08%, rgba(255, 255, 255, 0.4) 106.56%)',
-             backdropFilter: 'blur(40px)',
-           }}
+      <div 
+        className="w-full max-w-md space-y-6 p-8 rounded-xl shadow-lg"
+        style={{
+          background: 'linear-gradient(140.06deg, rgba(89, 89, 89, 0.4) -3.08%, rgba(255, 255, 255, 0.4) 106.56%)',
+          backdropFilter: 'blur(40px)',
+          border: '1px solid rgba(255, 255, 255, 0.2)'
+        }}
       >
         {/* Logo */}
-        <div className="flex justify-center mb-6">
+        <div className="relative w-full flex flex-col items-center mb-2">
           <img
             src="/auth_images/Login_logo.png"
             alt="DCarbon Logo"
@@ -93,48 +94,50 @@ export default function LoginCard() {
         </div>
 
         {/* Heading */}
-        <h2 className="text-center mb-8 font-[600] text-[48px] leading-[100%] tracking-[-5%] text-white">
+        <h2 className="mb-4 font-[600] text-[36px] leading-[100%] tracking-[-0.05em] text-[#FFFFFF] font-sfpro text-center">
           Welcome back to DCarbon
         </h2>
 
         {/* Horizontal Line */}
-        <hr className="border-t-2 border-white mb-4" />
+        <hr className="border-t-2 border-gray-200 mb-4 opacity-70" />
 
         {/* Email Field */}
-        <div className="mb-6">
-          <label htmlFor="email" className="block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-5%] font-[400] text-white">
-            Email Address
-          </label>
-          <input
-            type="email"
-            id="email"
-            placeholder="@ e.g name@domain.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-md border border-white bg-[#F0F0F033] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-5%] text-white"
-          />
-        </div>
+        <div className="space-y-6">
+          <div>
+            <label htmlFor="email" className="block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#FFFFFF]">
+              Email Address
+            </label>
+            <input
+              type="email"
+              id="email"
+              placeholder="@ e.g name@domain.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E] bg-white bg-opacity-70"
+            />
+          </div>
 
-        {/* Password Field with Forgot Password Link */}
-        <div className="mb-6">
-          <label htmlFor="password" className="block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-5%] font-[400] text-white">
-            Password
-          </label>
-          <input
-            type="password"
-            id="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-md border border-white bg-[#F0F0F033] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-5%] text-white mb-2"
-          />
-          <div className="text-right">
-            <a
-              href="/forgot-password"
-              className="font-sfpro font-[600] text-[12px] leading-[100%] tracking-[-5%] text-white no-underline"
-            >
-              Forgot password
-            </a>
+          {/* Password Field with Forgot Password Link */}
+          <div>
+            <label htmlFor="password" className="block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#FFFFFF]">
+              Password
+            </label>
+            <input
+              type="password"
+              id="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E] mb-2 bg-white bg-opacity-70"
+            />
+            <div className="text-right">
+              <a
+                href="/forgot-password"
+                className="font-sfpro font-[600] text-[12px] leading-[100%] tracking-[-0.05em] text-[#FFFFFF] no-underline hover:text-[#02857f]"
+              >
+                Forgot password
+              </a>
+            </div>
           </div>
         </div>
 
@@ -142,37 +145,37 @@ export default function LoginCard() {
         <button
           type="button"
           onClick={handleLogin}
-          className="w-full rounded-md bg-[#039994] text-white font-sfpro font-[600] text-[14px] leading-[100%] tracking-[-5%] py-2 cursor-pointer mb-5 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994]"
+          className="w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro transition-colors duration-200"
         >
           Sign in
         </button>
 
         {/* Create Account Link */}
-        <p className="mt-6 text-center font-sfpro font-[400] text-[14px] leading-[100%] tracking-[-5%] text-white">
+        <p className="mt-6 text-center font-sfpro font-[400] text-[14px] leading-[100%] tracking-[-0.05em] text-[#FFFFFF]">
           Don't have an account?{' '}
           <a
             href="/register"
-            className="font-sfpro font-[600] text-[14px] leading-[100%] tracking-[-5%] text-white no-underline"
+            className="font-sfpro font-[600] text-[14px] leading-[100%] tracking-[-0.05em] text-[#039994] no-underline hover:text-[#02857f]"
           >
             Create account
           </a>
         </p>
 
         {/* Horizontal Line */}
-        <hr className="border-t-2 border-white my-4" />
+        <hr className="border-t-2 border-gray-200 my-4 opacity-70" />
 
         {/* Disclaimer */}
-        <p className="font-sfpro font-[400] text-[10px] leading-[100%] tracking-[-5%] text-center text-white mb-0">
+        <p className="font-sfpro font-[400] text-[10px] leading-[100%] tracking-[-0.05em] text-center text-[#FFFFFF] mb-0">
           By clicking on <strong>Sign in</strong>, you agree to our{' '}
-          <a href="/terms" className="text-white underline font-[600]">
+          <a href="/terms" className="text-[#039994] underline font-[600] hover:text-[#02857f]">
             Terms and Conditions
           </a>{' '}
           &amp;{' '}
-          <a href="/privacy" className="text-white underline font-[600]">
+          <a href="/privacy" className="text-[#039994] underline font-[600] hover:text-[#02857f]">
             Privacy Policy
           </a>
         </p>
       </div>
-    </>
+    </div>
   );
 }
