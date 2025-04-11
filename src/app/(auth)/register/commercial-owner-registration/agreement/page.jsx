@@ -27,8 +27,44 @@ export default function AgreementFormPage() {
 
   const router = useRouter();
 
+  // Function to call the accept user agreement endpoint
+  const acceptUserAgreement = async () => {
+    try {
+      const userId = localStorage.getItem("userId");
+      const authToken = localStorage.getItem("authToken");
+
+      if (!userId || !authToken) {
+        throw new Error("User authentication details not found");
+      }
+
+      const response = await fetch(
+        `https://dcarbon-server.onrender.com/api/user/accept-user-agreement-terms/${userId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`,
+          },
+          body: JSON.stringify({
+            signature: signatureData, // Assuming signatureData contains the signature URL or data
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to accept user agreement");
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error("Error accepting user agreement:", error);
+      throw error;
+    }
+  };
+
   // When Accept is clicked (and conditions met), start the flow by showing the invite modal.
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!allChecked) {
       toast.error("Please accept all agreements");
       return;
@@ -39,11 +75,18 @@ export default function AgreementFormPage() {
     }
 
     setLoading(true);
-    setTimeout(() => {
+    try {
+      // First call the API to accept the agreement
+      await acceptUserAgreement();
+      
+      // Then proceed with the UI flow
       setLoading(false);
       setInviteModalOpen(true);
       toast.success("Agreement signed successfully!");
-    }, 1500);
+    } catch (error) {
+      setLoading(false);
+      toast.error(error.message || "Failed to accept agreement");
+    }
   };
 
   const handleCloseInviteModal = () => {

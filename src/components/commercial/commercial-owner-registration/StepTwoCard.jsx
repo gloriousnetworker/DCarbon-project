@@ -1,40 +1,36 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import axios from 'axios';
-import { useRouter } from 'next/navigation';
-import toast from 'react-hot-toast';
+import { useState } from "react";
+import axios from "axios";
+import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
 export default function OwnersDetailsCard() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [fullName, setFullName] = useState('');
-  const [phonePrefix, setPhonePrefix] = useState('+234');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [address, setAddress] = useState('');
-  const [website, setWebsite] = useState('');
+  const [fullName, setFullName] = useState("");
+  const [phonePrefix, setPhonePrefix] = useState("+234");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [address, setAddress] = useState("");
+  const [website, setWebsite] = useState("");
 
   const validateForm = () => {
     if (!fullName.trim()) {
-      toast.error('Owner’s full name is required');
+      toast.error("Owner’s full name is required");
       return false;
     }
-
     if (!phoneNumber.trim()) {
-      toast.error('Phone number is required');
+      toast.error("Phone number is required");
       return false;
     }
-
     if (!address.trim()) {
-      toast.error('Address is required');
+      toast.error("Address is required");
       return false;
     }
-
     if (!/^\+?\d{7,}$/.test(phonePrefix + phoneNumber)) {
-      toast.error('Invalid phone number format');
+      toast.error("Invalid phone number format");
       return false;
     }
-
     return true;
   };
 
@@ -43,39 +39,44 @@ export default function OwnersDetailsCard() {
 
     setLoading(true);
     try {
-      const userId = localStorage.getItem('userId');
-      const token = localStorage.getItem('authToken');
-      
+      const userId = localStorage.getItem("userId");
+      const token = localStorage.getItem("authToken");
+
       if (!userId || !token) {
-        throw new Error('Authentication required');
+        throw new Error("Authentication required");
       }
 
       const payload = {
-        entityType: 'individual',
-        commercialRole: 'owner',
+        entityType: "individual",
+        commercialRole: "owner",
         ownerFullName: fullName,
         phoneNumber: `${phonePrefix}${phoneNumber}`,
         ownerAddress: address,
         ownerWebsite: website || undefined // Send as undefined if empty
       };
 
+      // Make the API call to update owner details
       await axios.put(
         `https://dcarbon-server.onrender.com/api/user/commercial-registration/${userId}`,
         payload,
         {
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
           }
         }
       );
 
-      toast.success('Owner details updated successfully');
-      router.push('/register/commercial-owner-registration/step-three');
+      // Save the owner details in local storage for later retrieval
+      localStorage.setItem("ownerDetails", JSON.stringify(payload));
+
+      toast.success("Owner details updated successfully");
+      router.push("/register/commercial-owner-registration/step-three");
     } catch (err) {
-      const errorMessage = err.response?.data?.message || err.message || 'Update failed';
+      const errorMessage =
+        err.response?.data?.message || err.message || "Update failed";
       toast.error(errorMessage);
-      console.error('Submission Error:', err);
+      console.error("Submission Error:", err);
     } finally {
       setLoading(false);
     }
@@ -104,15 +105,17 @@ export default function OwnersDetailsCard() {
               stroke="currentColor"
               strokeWidth={2}
             >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M15 19l-7-7 7-7"
+              />
             </svg>
           </button>
         </div>
 
         <div className="w-full max-w-md">
-          <h1 className={pageTitle}>
-            Solar Owner's Details
-          </h1>
+          <h1 className={pageTitle}>Solar Owner's Details</h1>
         </div>
 
         <div className={progressContainer}>
@@ -123,16 +126,12 @@ export default function OwnersDetailsCard() {
         </div>
 
         <div className="w-full max-w-md mb-4">
-          <h2 className={uploadHeading}>
-            Individual owner
-          </h2>
+          <h2 className={uploadHeading}>Individual owner</h2>
         </div>
 
         <div className={formWrapper}>
           <div>
-            <label className={labelClass}>
-              Owner's full name
-            </label>
+            <label className={labelClass}>Owner's full name</label>
             <input
               type="text"
               placeholder="Full name"
@@ -143,31 +142,27 @@ export default function OwnersDetailsCard() {
           </div>
 
           <div>
-  <label className={labelClass}>
-    Phone Number
-  </label>
-  <div className="flex gap-2">
-    <input
-      type="text"
-      value={phonePrefix}
-      placeholder="+1"
-      onChange={(e) => setPhonePrefix(e.target.value)}
-      className={`${inputClass} w-20`}  // Reduced width for prefix
-    />
-    <input
-      type="text"
-      placeholder="000-0000-000"
-      value={phoneNumber}
-      onChange={(e) => setPhoneNumber(e.target.value)}
-      className={`${inputClass} flex-1`}
-    />
-  </div>
-</div>
+            <label className={labelClass}>Phone Number</label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={phonePrefix}
+                placeholder="+1"
+                onChange={(e) => setPhonePrefix(e.target.value)}
+                className={`${inputClass} w-16`} // Adjusted width for prefix
+              />
+              <input
+                type="text"
+                placeholder="000-0000-000"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                className={`${inputClass} flex-1`}
+              />
+            </div>
+          </div>
 
           <div>
-            <label className={labelClass}>
-              Address
-            </label>
+            <label className={labelClass}>Address</label>
             <input
               type="text"
               placeholder="E.g. Street, City, County, State."
@@ -178,9 +173,7 @@ export default function OwnersDetailsCard() {
           </div>
 
           <div>
-            <label className={labelClass}>
-              Website details
-            </label>
+            <label className={labelClass}>Website details</label>
             <input
               type="text"
               placeholder="Enter website (e.g. www.example.com)"
@@ -192,16 +185,13 @@ export default function OwnersDetailsCard() {
         </div>
 
         <div className="w-full max-w-md mt-6">
-          <button
-            onClick={handleSubmit}
-            className={buttonPrimary}
-          >
+          <button onClick={handleSubmit} className={buttonPrimary}>
             Next
           </button>
         </div>
 
         <div className={termsTextContainer}>
-          Terms and Conditions &amp;{' '}
+          Terms and Conditions &amp;{" "}
           <a href="/privacy" className="text-[#039994] hover:underline">
             Privacy Policy
           </a>
@@ -212,20 +202,35 @@ export default function OwnersDetailsCard() {
 }
 
 // Style constants (would normally be imported from styles.js)
-const mainContainer = 'min-h-screen w-full flex flex-col items-center justify-center py-8 px-4 bg-white';
-const headingContainer = 'relative w-full flex flex-col items-center mb-2';
-const backArrow = 'absolute left-4 top-0 text-[#039994] cursor-pointer z-10';
-const pageTitle = 'mb-4 font-[600] text-[36px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro text-center';
-const progressContainer = 'w-full max-w-md flex items-center justify-between mb-6';
-const progressBarWrapper = 'flex-1 h-1 bg-gray-200 rounded-full mr-4';
-const progressBarActive = 'h-1 bg-[#039994] rounded-full';
-const progressStepText = 'text-sm font-medium text-gray-500 font-sfpro';
-const formWrapper = 'w-full max-w-md space-y-6';
-const labelClass = 'block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]';
-const inputClass = 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]';
-const rowWrapper = 'flex space-x-4';
-const buttonPrimary = 'w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro';
-const spinnerOverlay = 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20';
-const spinner = 'h-12 w-12 border-4 border-t-4 border-gray-300 border-t-[#039994] rounded-full animate-spin';
-const termsTextContainer = 'mt-6 text-center font-sfpro text-[10px] font-[800] leading-[100%] tracking-[-0.05em] underline text-[#1E1E1E]';
-const uploadHeading = 'block mb-2 font-sfpro text-[24px] leading-[100%] tracking-[-0.05em] font-[400] text-[#039994]';
+const mainContainer =
+  "min-h-screen w-full flex flex-col items-center justify-center py-8 px-4 bg-white";
+const headingContainer =
+  "relative w-full flex flex-col items-center mb-2";
+const backArrow =
+  "absolute left-4 top-0 text-[#039994] cursor-pointer z-10";
+const pageTitle =
+  "mb-4 font-[600] text-[36px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro text-center";
+const progressContainer =
+  "w-full max-w-md flex items-center justify-between mb-6";
+const progressBarWrapper =
+  "flex-1 h-1 bg-gray-200 rounded-full mr-4";
+const progressBarActive =
+  "h-1 bg-[#039994] rounded-full";
+const progressStepText =
+  "text-sm font-medium text-gray-500 font-sfpro";
+const formWrapper =
+  "w-full max-w-md space-y-6";
+const labelClass = "block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]";
+const inputClass =
+  "w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]";
+const rowWrapper = "flex space-x-4";
+const buttonPrimary =
+  "w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro";
+const spinnerOverlay =
+  "fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20";
+const spinner =
+  "h-12 w-12 border-4 border-t-4 border-gray-300 border-t-[#039994] rounded-full animate-spin";
+const termsTextContainer =
+  "mt-6 text-center font-sfpro text-[10px] font-[800] leading-[100%] tracking-[-0.05em] underline text-[#1E1E1E]";
+const uploadHeading =
+  "block mb-2 font-sfpro text-[24px] leading-[100%] tracking-[-0.05em] font-[400] text-[#039994]";

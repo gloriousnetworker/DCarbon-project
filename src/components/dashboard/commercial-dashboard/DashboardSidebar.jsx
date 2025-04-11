@@ -3,19 +3,20 @@ import {
   FiHome,
   FiTrendingUp,
   FiLayers,
-  FiCreditCard,
   FiUser,
   FiBell,
   FiHelpCircle,
   FiHeadphones,
   FiLogOut,
 } from "react-icons/fi";
+import { FiZap, FiSend } from "react-icons/fi"; // Updated icons
 import Image from "next/image";
 
 const DashboardSidebar = ({
   onSectionChange,
   selectedSection = "overview",
   toggleSidebar,
+  hasPendingActions = false, // New prop to control the indicator
 }) => {
   const [isClient, setIsClient] = useState(false);
   const [profilePicture, setProfilePicture] = useState(null);
@@ -86,6 +87,7 @@ const DashboardSidebar = ({
   const greetingText = 'text-[#1E1E1E] font-sfpro text-sm';
   const userName = 'text-[#1E1E1E] font-sfpro text-sm font-semibold';
   const activeDot = 'w-2 h-2 rounded-full bg-[#039994] ml-2';
+  const pendingDot = 'w-2 h-2 rounded-full bg-[#FF0000] ml-2';
 
   if (!isClient) {
     // Return a skeleton loader during SSR
@@ -144,31 +146,34 @@ const DashboardSidebar = ({
           <span>Overview</span>
         </button>
         <button
-          onClick={() => onSectionChange("transaction")}
+          onClick={() => onSectionChange("generatorManagement")}
           className={`${menuItemBase} ${
-            isActive("transaction") ? menuItemActive : menuItemInactive
+            isActive("generatorManagement") ? menuItemActive : menuItemInactive
           }`}
         >
-          <FiTrendingUp className={iconBase} color={isActive("transaction") ? "#FFFFFF" : "#039994"} />
-          <span>Facility Management</span>
+          <FiZap className={iconBase} color={isActive("generatorManagement") ? "#FFFFFF" : "#039994"} />
+          <span>Generator Management</span>
         </button>
         <button
-          onClick={() => onSectionChange("residentialManagement")}
+          onClick={() => onSectionChange("report")}
           className={`${menuItemBase} ${
-            isActive("residentialManagement") ? menuItemActive : menuItemInactive
+            isActive("report") ? menuItemActive : menuItemInactive
           }`}
         >
-          <FiLayers className={iconBase} color={isActive("residentialManagement") ? "#FFFFFF" : "#039994"} />
-          <span>REC Sales &amp; Report</span>
+          <FiTrendingUp className={iconBase} color={isActive("report") ? "#FFFFFF" : "#039994"} />
+          <span>Report</span>
         </button>
         <button
-          onClick={() => onSectionChange("requestPayment")}
+          onClick={() => onSectionChange("pendingActions")}
           className={`${menuItemBase} ${
-            isActive("requestPayment") ? menuItemActive : menuItemInactive
+            isActive("pendingActions") ? menuItemActive : menuItemInactive
           }`}
         >
-          <FiCreditCard className={iconBase} color={isActive("requestPayment") ? "#FFFFFF" : "#039994"} />
-          <span>Request Payment</span>
+          <FiSend className={iconBase} color={isActive("pendingActions") ? "#FFFFFF" : "#039994"} />
+          <span className="flex items-center">
+            Pending Actions
+            {hasPendingActions && <span className={pendingDot}></span>}
+          </span>
         </button>
       </nav>
 

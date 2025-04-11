@@ -6,6 +6,22 @@ import Loader from '../../components/loader/Loader';
 import EmailVerificationModal from '../../components/modals/EmailVerificationModal';
 import toast, { Toaster } from 'react-hot-toast';
 
+// Local style constants (from your styles.js)
+const mainContainer = 'min-h-screen w-full flex flex-col items-center justify-center py-8 px-4 bg-white';
+const headingContainer = 'relative w-full flex flex-col items-center mb-2';
+const pageTitle = 'mb-4 font-[600] text-[36px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro text-center';
+const progressContainer = 'w-full max-w-md flex items-center justify-between mb-6';
+const progressBarWrapper = 'flex-1 h-1 bg-gray-200 rounded-full mr-4';
+const progressBarActive = 'h-1 bg-[#039994] w-2/3 rounded-full';
+const progressStepText = 'text-sm font-medium text-gray-500 font-sfpro';
+const formWrapper = 'w-full max-w-md space-y-6';
+const labelClass = 'block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]';
+const inputClass = 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]';
+const buttonPrimary = 'w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro';
+const spinnerOverlay = 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20';
+const noteText = 'mt-2 font-sfpro text-[12px] leading-[100%] tracking-[-0.05em] font-[300] italic';
+const termsTextContainer = 'mt-6 text-center font-sfpro text-[10px] font-[800] leading-[100%] tracking-[-0.05em] underline text-[#1E1E1E]';
+
 export default function EmailVerificationCard() {
   const [loading, setLoading] = useState(false);
   const [otp, setOtp] = useState(Array(6).fill(''));
@@ -21,6 +37,7 @@ export default function EmailVerificationCard() {
     if (storedEmail) setUserEmail(storedEmail);
   }, []);
 
+  // Countdown timer for OTP expiry
   useEffect(() => {
     const timer = setInterval(() => {
       setTimeLeft(prev => (prev > 0 ? prev - 1 : 0));
@@ -31,9 +48,7 @@ export default function EmailVerificationCard() {
   const formatTime = (seconds) => {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
-    return `${m} minute${m !== 1 ? 's' : ''} ${s
-      .toString()
-      .padStart(2, '0')} second${s !== 1 ? 's' : ''}`;
+    return `${m} minute${m !== 1 ? 's' : ''} ${s.toString().padStart(2, '0')} second${s !== 1 ? 's' : ''}`;
   };
 
   const handleOtpChange = (e, index) => {
@@ -114,12 +129,13 @@ export default function EmailVerificationCard() {
       <Toaster position="top-center" reverseOrder={false} />
 
       {loading && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20">
+        <div className={spinnerOverlay}>
           <Loader />
         </div>
       )}
 
-      <div className="min-h-screen w-full flex flex-col items-center justify-center py-8 px-4 bg-white font-sfpro">
+      <div className={mainContainer + ' font-sfpro'}>
+        {/* Logo */}
         <div className="mb-6">
           <img
             src="/auth_images/Login_logo.png"
@@ -128,35 +144,37 @@ export default function EmailVerificationCard() {
           />
         </div>
 
-        <div className="relative w-full flex flex-col items-center mb-2">
-          <h1 className="mb-4 font-semibold text-[36px] leading-[100%] tracking-[-0.05em] text-[#039994] text-center font-sfpro">
+        {/* Heading */}
+        <div className={headingContainer}>
+          <h1 className={pageTitle}>
             Let’s verify your email
           </h1>
         </div>
 
-        <div className="w-full max-w-md mb-4">
-          <input
-            type="text"
-            value={userEmail}
-            onChange={(e) => setUserEmail(e.target.value)}
-            readOnly={!isEditingEmail}
-            className={`w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-[#039994] ${
-              isEditingEmail ? 'bg-white' : 'bg-gray-100'
-            } font-sfpro`}
-          />
-        </div>
-
-        <div className="w-full max-w-md flex items-center justify-between mb-6">
-          <div className="flex-1 h-1 bg-gray-200 rounded-full mr-4">
-            <div className="h-1 bg-[#039994] w-2/3 rounded-full" />
+        {/* Progress Indicator */}
+        <div className={progressContainer}>
+          <div className={progressBarWrapper}>
+            <div className={progressBarActive} />
           </div>
-          <span className="text-sm font-medium text-gray-500 font-sfpro">01/05</span>
+          <span className={progressStepText}>01/05</span>
         </div>
 
         <p className="text-center text-sm text-gray-600 mb-6 font-sfpro">
           Please enter the 6-digit code sent to your email.
         </p>
 
+        {/* Email input */}
+        <div className="w-full max-w-md mb-4">
+          <input
+            type="text"
+            value={userEmail}
+            onChange={(e) => setUserEmail(e.target.value)}
+            readOnly={!isEditingEmail}
+            className={`${inputClass} text-center ${isEditingEmail ? 'bg-white' : 'bg-gray-100'}`}
+          />
+        </div>
+
+        {/* OTP Inputs */}
         <div className="w-full max-w-md">
           <div className="flex justify-center items-center space-x-2 mb-4">
             {otp.map((digit, index) => (
@@ -174,34 +192,37 @@ export default function EmailVerificationCard() {
             ))}
           </div>
 
+          {/* Timer */}
           <div className="flex items-center justify-center text-sm text-gray-600 mb-6 font-sfpro">
             <span>OTP expires in</span>
-            <span className="ml-1 font-semibold text-red-500">{formatTime(timeLeft)}</span>
+            <span className="ml-1 font-semibold text-[#FF0000]">
+              {formatTime(timeLeft)}
+            </span>
           </div>
 
+          {/* Resend/Change Email Links */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-sm text-gray-500 mb-6 space-y-2 sm:space-y-0 font-sfpro">
             <button
               type="button"
               className="hover:underline text-left"
               onClick={handleToggleEditEmail}
             >
-              Not the correct email?{' '}
-              <span className="text-[#039994]">Change email address</span>
+              Not the correct email? <span className="text-[#039994]">Change email address</span>
             </button>
             <button
               type="button"
               className="hover:underline text-left"
               onClick={handleResendEmail}
             >
-              Did not receive an email?{' '}
-              <span className="text-[#039994]">Resend email</span>
+              Did not receive an email? <span className="text-[#039994]">Resend email</span>
             </button>
           </div>
 
+          {/* Verify Email Button */}
           <button
             type="button"
             onClick={handleVerifyEmail}
-            className="w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro"
+            className={buttonPrimary}
           >
             Verify Email Address
           </button>

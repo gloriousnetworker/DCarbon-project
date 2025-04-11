@@ -4,9 +4,9 @@ import React, { useState } from 'react';
 import DashboardSidebar from '../../components/dashboard/commercial-dashboard/DashboardSidebar';
 import DashboardNavbar from '../../components/dashboard/commercial-dashboard/DashboardNavbar';
 import DashboardOverview from '../../components/dashboard/commercial-dashboard/overview/DashboardOverview';
-import DashboardTransaction from '../../components/dashboard/commercial-dashboard/facility-management/FacilityManagement';
-import DashboardResidentialManagement from '../../components/dashboard/commercial-dashboard/rec-sales-and-report/RECSalesAndReport';
-import RequestPayment from '../../components/dashboard/commercial-dashboard/payouts/Payouts';
+import GeneratorManagement from '../../components/dashboard/commercial-dashboard/facility-management/FacilityManagement';
+import Report from '../../components/dashboard/commercial-dashboard/rec-sales-and-report/RECSalesAndReport';
+import PendingActions from '../../components/dashboard/commercial-dashboard/payouts/Payouts';
 import DashboardContactSupport from '../../components/dashboard/commercial-dashboard/ContactSupport';
 import DashboardHelpCentre from '../../components/dashboard/commercial-dashboard/HelpCentre';
 import DashboardNotifications from '../../components/dashboard/commercial-dashboard/Notifications';
@@ -30,9 +30,9 @@ export default function UserDashboard() {
   // Mapping from section keys to display text for the navbar
   const sectionDisplayMap = {
     overview: 'Overview',
-    transaction: 'Facility Management',
-    residentialManagement: 'REC Sales & Report',
-    requestPayment: 'Payouts',
+    generatorManagement: 'Generator Management',
+    report: 'Report',
+    pendingActions: 'Pending Actions',
     myAccount: 'My Account',
     notifications: 'Notification',
     helpCenter: 'Help Centre (FAQs)',
@@ -45,14 +45,14 @@ export default function UserDashboard() {
     case 'overview':
       SectionComponent = DashboardOverview;
       break;
-    case 'transaction':
-      SectionComponent = DashboardTransaction;
+    case 'generatorManagement':
+      SectionComponent = GeneratorManagement;
       break;
-    case 'residentialManagement':
-      SectionComponent = DashboardResidentialManagement;
+    case 'report':
+      SectionComponent = Report;
       break;
-    case 'payouts':
-      SectionComponent = RequestPayment;
+    case 'pendingActions':
+      SectionComponent = PendingActions;
       break;
     case 'myAccount':
       SectionComponent = MyAccount;

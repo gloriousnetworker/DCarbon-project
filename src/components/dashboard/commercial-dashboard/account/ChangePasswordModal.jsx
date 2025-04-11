@@ -1,66 +1,157 @@
 "use client";
 import React, { useState } from "react";
+import axios from "axios";
+import toast, { Toaster } from "react-hot-toast";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 
-const ChangePasswordModal = ({ onClose }) => {
+const ChangePasswordCard = ({ onClose }) => {
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
 
-  const handlePasswordSubmit = (e) => {
+  // Handle password change
+  const handlePasswordSubmit = async (e) => {
     e.preventDefault();
-    // Insert your change password logic here.
-    console.log("Old Password:", oldPassword);
-    console.log("New Password:", newPassword);
-    onClose();
+
+    // Retrieve userId and authToken from localStorage
+    const userId = localStorage.getItem("userId");
+    const authToken = localStorage.getItem("authToken");
+
+    if (!userId || !authToken) {
+      toast.error("User not authenticated");
+      return;
+    }
+
+    // Prepare the payload
+    const payload = {
+      oldPassword,
+      newPassword,
+    };
+
+    try {
+      // Make the POST request
+      const response = await axios.post(
+        `https://dcarbon-server.onrender.com/api/auth/change-password/${userId}`,
+        payload,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`,
+          },
+        }
+      );
+
+      toast.success(response.data.message || "Password changed successfully");
+
+      // Close the modal (if you want that behavior)
+      onClose && onClose();
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message || error.message || "Change password failed";
+      toast.error(errorMessage);
+      console.error("Change Password Error:", error);
+    }
+  };
+
+  // Inline styles
+  const styles = {
+    mainContainer: "min-h-screen w-full flex flex-col items-center justify-center py-8 px-4 bg-white",
+    modalOverlay: "fixed inset-0 z-50 bg-black bg-opacity-40 flex justify-center items-center",
+    modalContent: "relative bg-white rounded-md shadow-md w-full max-w-md p-6",
+    pageTitle: "mb-4 font-[600] text-[24px] leading-normal tracking-[-0.05em] text-[#039994] font-sfpro text-center",
+    formWrapper: "w-full max-w-md space-y-6",
+    labelClass: "block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]",
+    inputClass: "w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]",
+    buttonPrimary: "w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro",
+    passwordInputWrapper: "relative",
+    eyeIcon: "absolute inset-y-0 right-3 flex items-center cursor-pointer text-gray-500",
+    forgotPasswordLink: "text-right mt-1 text-[#FBB03B] text-sm hover:underline",
+    closeButton: "absolute top-2 right-2 text-gray-500 hover:text-gray-700"
   };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
-      <div className="bg-white p-6 rounded shadow-lg w-full max-w-md">
-        <h2 className="text-xl font-bold text-[#039994] mb-4">
+    <div className={styles.modalOverlay}>
+      <Toaster />
+      <div className={styles.modalContent}>
+        <h2 className={styles.pageTitle}>
           Change Password
         </h2>
-        <form onSubmit={handlePasswordSubmit}>
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm mb-2">
+        <form onSubmit={handlePasswordSubmit} className={styles.formWrapper}>
+          {/* Old Password */}
+          <div>
+            <label className={styles.labelClass}>
               Old Password
             </label>
-            <input
-              type="password"
-              className="border w-full px-3 py-2 rounded focus:outline-none"
-              value={oldPassword}
-              onChange={(e) => setOldPassword(e.target.value)}
-            />
+            <div className={styles.passwordInputWrapper}>
+              <input
+                type={showOldPassword ? "text" : "password"}
+                className={`${styles.inputClass} pr-10`}
+                value={oldPassword}
+                onChange={(e) => setOldPassword(e.target.value)}
+              />
+              {/* Eye Icon Toggle */}
+              <div
+                className={styles.eyeIcon}
+                onClick={() => setShowOldPassword(!showOldPassword)}
+              >
+                {showOldPassword ? <FaEyeSlash /> : <FaEye />}
+              </div>
+            </div>
+            {/* Forgot Password Link */}
+            <div className={styles.forgotPasswordLink}>
+              <a
+                href="/forgot-password"
+              >
+                Forgot Password?
+              </a>
+            </div>
           </div>
-          <div className="mb-6">
-            <label className="block text-gray-700 text-sm mb-2">
+
+          {/* New Password */}
+          <div>
+            <label className={styles.labelClass}>
               New Password
             </label>
-            <input
-              type="password"
-              className="border w-full px-3 py-2 rounded focus:outline-none"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-            />
+            <div className={styles.passwordInputWrapper}>
+              <input
+                type={showNewPassword ? "text" : "password"}
+                className={`${styles.inputClass} pr-10`}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+              />
+              {/* Eye Icon Toggle */}
+              <div
+                className={styles.eyeIcon}
+                onClick={() => setShowNewPassword(!showNewPassword)}
+              >
+                {showNewPassword ? <FaEyeSlash /> : <FaEye />}
+              </div>
+            </div>
           </div>
-          <div className="flex justify-end space-x-3">
-            <button
-              type="button"
-              className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
-              onClick={onClose}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-[#039994] text-white rounded hover:bg-[#02857f]"
-            >
-              Save
-            </button>
-          </div>
+
+          {/* Save Button */}
+          <button
+            type="submit"
+            className={`mt-4 ${styles.buttonPrimary}`}
+          >
+            Save
+          </button>
         </form>
+
+        {/* Optional "Cancel" button if you want a modal-like behavior */}
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            className={styles.closeButton}
+          >
+            X
+          </button>
+        )}
       </div>
     </div>
   );
 };
 
-export default ChangePasswordModal;
+export default ChangePasswordCard;

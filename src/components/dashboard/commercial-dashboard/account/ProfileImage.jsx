@@ -1,82 +1,107 @@
 "use client";
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
+import { toast } from "react-hot-toast";
 
 const ProfileImage = () => {
-  const [profileImage, setProfileImage] = useState(null);
+  // Default image path from public folder
+  const defaultProfilePic = "/dashboard_images/profileImage.png";
+  
+  // Reference to the hidden file input element
   const fileInputRef = useRef(null);
+  // Local state to store the profile image URL
+  const [profilePic, setProfilePic] = useState(defaultProfilePic);
 
-  const handleProfileClick = () => {
+  // On component mount, check if there's a stored profile picture URL in localStorage
+  useEffect(() => {
+    const storedPic = localStorage.getItem("userProfilePicture");
+    if (storedPic) {
+      setProfilePic(storedPic);
+    }
+  }, []);
+
+  // Trigger file input when image container is clicked
+  const handleImageClick = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
     }
   };
 
-  const handleFileChange = (e) => {
+  // Handle file selection and upload
+  const handleFileChange = async (e) => {
     const file = e.target.files[0];
-    if (file) {
-      const imageUrl = URL.createObjectURL(file);
-      setProfileImage(imageUrl);
+    if (!file) return;
+
+    // Get userId and authToken from localStorage
+    const userId = localStorage.getItem("userId");
+    const authToken = localStorage.getItem("authToken");
+
+    // Construct form data
+    const formData = new FormData();
+    formData.append("profilePicture", file);
+
+    try {
+      // Replace the URL with your backend server URL and the corresponding userId
+      const response = await fetch(
+        `https://dcarbon-server.onrender.com/api/user/upload-profile-picture/${userId}`,
+        {
+          method: "POST",
+          // Setting the auth token header (adjust header key if needed)
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
+          body: formData,
+        }
+      );
+
+      const data = await response.json();
+
+      if (response.ok && data.status === "success") {
+        // Display a success toast notification
+        toast.success(data.message);
+
+        // Create an object URL for the file to update the UI immediately.
+        // (Alternatively, use a URL returned by your API if available.)
+        const newImageUrl = URL.createObjectURL(file);
+
+        // Persist the updated image in localStorage
+        localStorage.setItem("userProfilePicture", newImageUrl);
+
+        // Update the state so the new picture is displayed
+        setProfilePic(newImageUrl);
+      } else {
+        toast.error("Failed to upload profile picture");
+      }
+    } catch (error) {
+      toast.error("Error uploading image");
+      console.error("Upload error:", error);
     }
   };
 
   return (
     <div className="w-full md:w-1/3 flex flex-col items-center mb-6 md:mb-0 md:pr-8 border-b md:border-b-0 md:border-r border-gray-200">
       <div
-        className="relative w-32 h-32 rounded-full bg-gray-200 cursor-pointer overflow-hidden flex items-center justify-center"
-        onClick={handleProfileClick}
+        className="relative w-32 h-32 rounded-full bg-gray-200 overflow-hidden flex items-center justify-center cursor-pointer"
+        onClick={handleImageClick}
       >
-        {profileImage ? (
-          <img
-            src={profileImage}
-            alt="Profile"
-            className="object-cover w-full h-full"
-          />
-        ) : (
-          <svg
-            className="text-gray-400 w-12 h-12"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={1.5}
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M12 4.5c2.485 0 4.5 2.015 4.5 4.5S14.485 13.5 12 13.5
-                  7.5 11.485 7.5 9 9.515 4.5 12 4.5zM6.136 18.364c1.308-1.308
-                  3.413-2.364 5.864-2.364 2.45 0 4.556 1.056 5.864 2.364
-                  A9.953 9.953 0 0112 21c-2.731 0-5.21-1.106-7.136-2.636z"
-            />
-          </svg>
-        )}
-
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          onChange={handleFileChange}
-          className="hidden"
+        <img
+          src={profilePic}
+          alt="Profile"
+          className="object-cover w-full h-full"
+          onError={(e) => {
+            e.target.onerror = null;
+            // If the image fails to load, fallback to the default image
+            e.target.src = defaultProfilePic;
+          }}
         />
-
-        <div className="absolute bottom-1 right-1 bg-[#039994] w-8 h-8 flex items-center justify-center rounded-full">
-          <svg
-            className="text-white w-4 h-4"
-            fill="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              fillRule="evenodd"
-              d="M12 5a1 1 0 011 1v5h5a1 1 0
-                  110 2h-5v5a1 1 0 11-2 0v-5H6a1 1
-                  0 110-2h5V6a1 1 0 011-1z"
-              clipRule="evenodd"
-            />
-          </svg>
-        </div>
       </div>
-      <p className="text-sm text-gray-500 mt-2">
-        Click to upload/change profile picture
-      </p>
+      {/* Hidden file input element */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        style={{ display: "none" }}
+        accept="image/*"
+        onChange={handleFileChange}
+      />
     </div>
   );
 };

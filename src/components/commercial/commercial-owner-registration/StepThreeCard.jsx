@@ -32,12 +32,10 @@ export default function OwnersDetailsCard() {
       toast.error('Company name is required');
       return false;
     }
-
     if (!companyAddress.trim()) {
       toast.error('Company address is required');
       return false;
     }
-
     return true;
   };
 
@@ -46,7 +44,6 @@ export default function OwnersDetailsCard() {
       toast.error('Full name and email are required for owners');
       return;
     }
-
     if (editingIndex !== null) {
       const updatedOwners = [...owners];
       updatedOwners[editingIndex] = newOwner;
@@ -54,7 +51,6 @@ export default function OwnersDetailsCard() {
     } else {
       setOwners([...owners, newOwner]);
     }
-
     setNewOwner({ fullName: '', email: '', phone: '', address: '', website: '' });
     setEditingIndex(null);
   };
@@ -75,18 +71,19 @@ export default function OwnersDetailsCard() {
     try {
       const userId = localStorage.getItem('userId');
       const token = localStorage.getItem('authToken');
-      
+
       if (!userId || !token) {
         throw new Error('Authentication required');
       }
 
+      // Build the payload (store optional fields as undefined if empty)
       const payload = {
         entityType: 'company',
         commercialRole: 'owner',
         companyName,
         companyAddress,
         companyWebsite: companyWebsite || undefined,
-        additionalOwners: multipleOwners === 'yes' 
+        additionalOwners: multipleOwners === 'yes'
           ? owners.map(owner => ({
               fullName: owner.fullName,
               email: owner.email,
@@ -96,6 +93,9 @@ export default function OwnersDetailsCard() {
             }))
           : undefined
       };
+
+      // Save the company details to local storage for later retrieval
+      localStorage.setItem('companyDetails', JSON.stringify(payload));
 
       await axios.put(
         `https://dcarbon-server.onrender.com/api/user/commercial-registration/${userId}`,

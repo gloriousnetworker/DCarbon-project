@@ -22,10 +22,19 @@ export default function LoginCard() {
       // Store the full response for debugging
       localStorage.setItem('loginResponse', JSON.stringify(response.data));
 
-      // Destructure the response data
-      const { user, token } = response.data.data;
+      const { user, token, requiresTwoFactor, tempToken } = response.data.data;
 
-      // Store user details in local storage for persistence
+      // Check if login requires Two Factor Authentication
+      if (requiresTwoFactor) {
+        // Store the temporary token and any other relevant info in localStorage for the next step
+        localStorage.setItem('tempToken', tempToken);
+        localStorage.setItem('userId', user.id);
+        toast.success(response.data.message || '2FA verification required');
+        window.location.href = '/login/two-factor-authentication';
+        return; // Exit the login handler so the rest of the code does not execute.
+      }
+
+      // Otherwise, store user details and token for normal login flow
       localStorage.setItem('userFirstName', user.firstName);
       localStorage.setItem('userProfilePicture', user.profilePicture);
       localStorage.setItem('authToken', token);
@@ -104,7 +113,10 @@ export default function LoginCard() {
         {/* Email Field */}
         <div className="space-y-6">
           <div>
-            <label htmlFor="email" className="block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#FFFFFF]">
+            <label 
+              htmlFor="email" 
+              className="block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#FFFFFF]"
+            >
               Email Address
             </label>
             <input
@@ -119,7 +131,10 @@ export default function LoginCard() {
 
           {/* Password Field with Forgot Password Link */}
           <div>
-            <label htmlFor="password" className="block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#FFFFFF]">
+            <label 
+              htmlFor="password" 
+              className="block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#FFFFFF]"
+            >
               Password
             </label>
             <input
