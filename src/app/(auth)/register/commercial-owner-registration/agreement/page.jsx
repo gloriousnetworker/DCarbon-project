@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { FaDownload, FaPrint, FaTimes } from "react-icons/fa";
 import CustomerIDLoader from "../../../../../components/loader/CustomerIDLoader";
@@ -14,10 +14,12 @@ import toast from "react-hot-toast";
 
 export default function AgreementFormPage() {
   const [loading, setLoading] = useState(false);
+  const [showLoader, setShowLoader] = useState(false); // New state for loader visibility
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [sentModalOpen, setSentModalOpen] = useState(false);
   const [registrationModalOpen, setRegistrationModalOpen] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
+  const [showRedirectLoader, setShowRedirectLoader] = useState(false); // New state for redirect loader
 
   // Condition states: checkboxes and signature
   const [allChecked, setAllChecked] = useState(false);
@@ -26,6 +28,29 @@ export default function AgreementFormPage() {
   const [accepted, setAccepted] = useState(true);
 
   const router = useRouter();
+
+  // Effect for main loader delay
+  useEffect(() => {
+    let timer;
+    if (loading) {
+      setShowLoader(true);
+    } else {
+      // Minimum display time of 500ms for the loader
+      timer = setTimeout(() => setShowLoader(false), 500);
+    }
+    return () => clearTimeout(timer);
+  }, [loading]);
+
+  // Effect for redirect loader delay
+  useEffect(() => {
+    let timer;
+    if (isRedirecting) {
+      setShowRedirectLoader(true);
+    } else {
+      timer = setTimeout(() => setShowRedirectLoader(false), 500);
+    }
+    return () => clearTimeout(timer);
+  }, [isRedirecting]);
 
   // Function to call the accept user agreement endpoint
   const acceptUserAgreement = async () => {
@@ -46,7 +71,7 @@ export default function AgreementFormPage() {
             Authorization: `Bearer ${authToken}`,
           },
           body: JSON.stringify({
-            signature: signatureData, // Assuming signatureData contains the signature URL or data
+            signature: signatureData,
           }),
         }
       );
@@ -76,10 +101,7 @@ export default function AgreementFormPage() {
 
     setLoading(true);
     try {
-      // First call the API to accept the agreement
       await acceptUserAgreement();
-      
-      // Then proceed with the UI flow
       setLoading(false);
       setInviteModalOpen(true);
       toast.success("Agreement signed successfully!");
@@ -106,7 +128,6 @@ export default function AgreementFormPage() {
     }, 2000);
   };
 
-  // Called by the SignatureModal when the user clicks "Sign Agreement"
   const handleSaveSignature = (data) => {
     setSignatureData(data);
     setShowSignatureModal(false);
@@ -115,12 +136,16 @@ export default function AgreementFormPage() {
 
   return (
     <>
-      {/* Loader Overlay */}
-      {loading && <CustomerIDLoader />}
+      {/* Full-screen Loader Overlay with delay */}
+      {showLoader && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <CustomerIDLoader />
+        </div>
+      )}
 
       {/* Full-Screen Background Container */}
       <div className={mainContainer}>
-        {/* X (Close) Button in red */}
+        {/* X (Close) Button */}
         <button
           onClick={() => router.back()}
           className={backArrow}
@@ -155,7 +180,6 @@ export default function AgreementFormPage() {
 
         {/* Accept / Decline Buttons */}
         <div className="flex w-full max-w-3xl justify-between mt-6 space-x-4 px-2 fixed bottom-8">
-          {/* Accept Button: enabled only if all checkboxes are checked AND signature provided */}
           <button
             onClick={() => {
               setAccepted(true);
@@ -170,7 +194,6 @@ export default function AgreementFormPage() {
             Accept
           </button>
 
-          {/* Decline Button: transparent */}
           <button
             onClick={() => router.back()}
             className="
@@ -204,8 +227,12 @@ export default function AgreementFormPage() {
         />
       )}
 
-      {/* Loader before redirect */}
-      {isRedirecting && <Loader />}
+      {/* Loader before redirect with delay */}
+      {showRedirectLoader && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <Loader />
+        </div>
+      )}
 
       {/* Signature Modal */}
       <SignatureModal
@@ -217,7 +244,7 @@ export default function AgreementFormPage() {
   );
 }
 
-// Apply styles from styles.js
+// Style constants
 const mainContainer = 'min-h-screen w-full flex flex-col items-center justify-center py-8 px-4 bg-white';
 const headingContainer = 'relative w-full flex flex-col items-center mb-2';
 const backArrow = 'absolute left-4 top-0 text-[#039994] cursor-pointer z-10';

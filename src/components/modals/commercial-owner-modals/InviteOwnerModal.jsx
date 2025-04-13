@@ -28,7 +28,7 @@ export default function EmailVerificationModal({ closeModal, onSkip }) {
     const roleMapping = roleOptions.find(opt => opt.label === selectedLabel);
 
     if (!email || !roleMapping) {
-      toast.error('Please fill out all fields.');
+      toast.error('Please fill out all required fields.');
       setLoading(false);
       return;
     }
@@ -89,7 +89,7 @@ export default function EmailVerificationModal({ closeModal, onSkip }) {
         {/* Email Input */}
         <div>
           <label htmlFor="email" className={labelClass}>
-            Email Address
+            Email Address <span className="text-red-500">*</span>
           </label>
           <input
             type="email"
@@ -99,19 +99,21 @@ export default function EmailVerificationModal({ closeModal, onSkip }) {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="E.g. name@domain.com"
             className={inputClass}
+            required
           />
         </div>
 
         {/* Role Dropdown */}
         <div>
           <label htmlFor="role" className={labelClass}>
-            Select Role
+            Select Role <span className="text-red-500">*</span>
           </label>
           <select
             id="role"
             value={selectedLabel}
             onChange={(e) => setSelectedLabel(e.target.value)}
             className={selectClass}
+            required
           >
             <option value="" disabled>Select a role</option>
             {roleOptions.map((option) => (

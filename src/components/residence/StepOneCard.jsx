@@ -2,92 +2,226 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import axios from 'axios';
+import toast from 'react-hot-toast';
+import Loader from '@/components/loader/Loader';
+
+// Import shared styles from styles.js
+import {
+  mainContainer,
+  headingContainer,
+  backArrow,
+  pageTitle,
+  progressContainer,
+  progressBarWrapper,
+  progressBarActive,
+  progressStepText,
+  formWrapper,
+  labelClass,
+  selectClass,
+  inputClass,
+  fileInputWrapper,
+  noteText,
+  rowWrapper,
+  halfWidth,
+  grayPlaceholder,
+  buttonPrimary,
+  spinnerOverlay,
+  termsTextContainer,
+  uploadHeading,
+  uploadFieldWrapper,
+  uploadInputLabel,
+  uploadIconContainer,
+  uploadButtonStyle,
+  uploadNoteStyle
+} from './styles.js';
+
+// List of finance types that require document upload
+const documentRequiredTypes = ['loan', 'ppa', 'lease'];
 
 export default function StepOneCard() {
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
+
   const [financeType, setFinanceType] = useState('');
   const [financeCompany, setFinanceCompany] = useState('');
   const [installer, setInstaller] = useState('');
   const [customInstaller, setCustomInstaller] = useState('');
+  const [systemSize, setSystemSize] = useState('');
+  const [cod, setCOD] = useState('');
   const [file, setFile] = useState(null);
-  const [uploadStatus, setUploadStatus] = useState('idle');
+
   const router = useRouter();
 
+  const showUploadField = documentRequiredTypes.includes(financeType.toLowerCase());
+
   const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
-    setUploadStatus('idle');
+    const selectedFile = e.target.files[0];
+    setFile(selectedFile);
+    setUploadSuccess(false);
+    localStorage.removeItem('tempFinancialAgreement');
   };
 
-  const handleUpload = () => {
+  const handleUpload = async () => {
     if (!file) return;
-    setUploadStatus('uploading');
-    setTimeout(() => {
-      setUploadStatus('success');
-    }, 1500);
+    setUploading(true);
+    try {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64data = reader.result;
+        localStorage.setItem('tempFinancialAgreement', base64data);
+        toast.success('Financial agreement uploaded successfully!');
+        setUploadSuccess(true);
+      };
+      reader.onerror = () => {
+        toast.error('Error reading file');
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      toast.error(err.message || 'Upload failed');
+    } finally {
+      setUploading(false);
+    }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    // Validate required fields
+    if (!financeType || !financeCompany) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    if (showUploadField && !uploadSuccess) {
+      toast.error('Please upload the financial agreement');
+      return;
+    }
+
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    const toastId = toast.loading('Saving your information...');
+
+    try {
+      const userId = localStorage.getItem('userId');
+      const token = localStorage.getItem('authToken');
+      
+      if (!userId || !token) {
+        throw new Error('Authentication required');
+      }
+
+      // Prepare payload with all fields
+      const payload = {
+        financialType: financeType,
+        financeCompany: financeCompany,
+        ...(installer && { installer: installer === 'others' ? customInstaller : installer }),
+        ...(systemSize && { systemSize }),
+        ...(cod && { cod })
+      };
+
+      // First save the financial info
+      const infoResponse = await axios.put(
+        `https://dcarbon-server.onrender.com/api/user/financial-info/${userId}`,
+        payload,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+
+      toast.success('Financial information saved successfully!', { id: toastId });
+
+      // If document is required, upload it
+      if (showUploadField && uploadSuccess) {
+        const uploadToastId = toast.loading('Uploading financial agreement...');
+        try {
+          const base64data = localStorage.getItem('tempFinancialAgreement');
+          if (!base64data) throw new Error('File data not found');
+          
+          // Convert base64 to blob for upload
+          const response = await fetch(base64data);
+          const blob = await response.blob();
+          const fileToUpload = new File([blob], file.name, { type: blob.type });
+
+          const formData = new FormData();
+          formData.append('financialAgreement', fileToUpload);
+
+          await axios.put(
+            `https://dcarbon-server.onrender.com/api/user/update-financial-agreement/${userId}`,
+            formData,
+            {
+              headers: {
+                'Content-Type': 'multipart/form-data',
+                'Authorization': `Bearer ${token}`
+              }
+            }
+          );
+
+          toast.success('Financial agreement uploaded successfully!', { id: uploadToastId });
+          localStorage.removeItem('tempFinancialAgreement');
+        } catch (uploadErr) {
+          toast.error(uploadErr.response?.data?.message || uploadErr.message || 'File upload failed', { id: uploadToastId });
+          throw uploadErr; // Re-throw to prevent navigation
+        }
+      }
+
       router.push('/register/residence-user-registration/step-two');
-    }, 1500);
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Operation failed', { id: toastId });
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const uploadButtonClass = `${uploadButtonStyle} ${file && !uploading ? 'bg-[#039994]' : 'bg-gray-400 cursor-not-allowed'}`;
 
   return (
     <>
-      {/* Loader Overlay */}
       {loading && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="h-12 w-12 border-4 border-t-4 border-gray-300 border-t-[#039994] rounded-full animate-spin"></div>
+        <div className={spinnerOverlay}>
+          <Loader />
         </div>
       )}
 
-      {/* Full-Screen Background */}
-      <div className="min-h-screen w-full bg-white flex flex-col items-center justify-center py-8 px-4">
-        {/* Back Arrow */}
-        <div className="relative w-full mb-10">
-          <div className="back-arrow absolute left-12 top-0 text-[#039994] cursor-pointer z-60">
+      <div className={mainContainer}>
+        <div className={headingContainer}>
+          <div className={backArrow} onClick={() => router.back()}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6"
+              className="h-7 w-7"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
               strokeWidth={2}
-              onClick={() => router.back()}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M15 19l-7-7 7-7"
-              />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
           </div>
+          <h1 className={pageTitle}>Finance Information</h1>
         </div>
 
-        {/* Heading */}
-        <h1 className="text-2xl sm:text-3xl font-bold text-[#039994] mr-40 mb-6">
-          Finance information
-        </h1>
-
-        {/* Step Bar */}
-        <div className="w-full max-w-md flex items-center justify-between mt-4 mb-4">
-          <div className="flex-1 h-1 bg-gray-200 rounded-full mr-4">
-            <div className="h-1 bg-[#039994] w-2/5 rounded-full" />
+        <div className={progressContainer}>
+          <div className={progressBarWrapper}>
+            <div className={progressBarActive} />
           </div>
-          <span className="text-sm font-medium text-gray-500">02/05</span>
+          <span className={progressStepText}>02/05</span>
         </div>
 
-        {/* Dropdowns & File Upload */}
-        <div className="w-full max-w-md space-y-6">
-          {/* Finance Type Dropdown */}
+        <div className={formWrapper}>
+          {/* Finance Type - Required */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Finance Type?</label>
+            <label className={labelClass}>
+              Finance Type <span className="text-red-500">*</span>
+            </label>
             <select
               value={financeType}
-              onChange={(e) => setFinanceType(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#039994]"
+              onChange={(e) => {
+                setFinanceType(e.target.value);
+                setFile(null);
+                setUploadSuccess(false);
+              }}
+              className={selectClass}
+              required
             >
               <option value="">Select Finance Type</option>
               <option value="cash">Cash</option>
@@ -97,13 +231,16 @@ export default function StepOneCard() {
             </select>
           </div>
 
-          {/* Finance Company Dropdown */}
+          {/* Finance Company - Required */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Finance Company?</label>
+            <label className={labelClass}>
+              Finance Company <span className="text-red-500">*</span>
+            </label>
             <select
               value={financeCompany}
               onChange={(e) => setFinanceCompany(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#039994]"
+              className={selectClass}
+              required
             >
               <option value="">Select Finance Company</option>
               <option value="company1">Company 1</option>
@@ -114,81 +251,99 @@ export default function StepOneCard() {
             </select>
           </div>
 
-          {/* Upload Finance Agreement */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Upload Finance Agreement (Optional)
-            </label>
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <input
-                  type="file"
-                  onChange={handleFileChange}
-                  className="hidden"
-                  id="fileInput"
-                />
-                <label
-                  htmlFor="fileInput"
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#039994] flex items-center justify-between cursor-pointer"
-                >
-                  <span className="text-gray-400">
-                    {file ? file.name : 'Choose file...'}
+          {/* Financial Agreement - Conditionally Required */}
+          {showUploadField && (
+            <div>
+              <label className={uploadHeading}>
+                Upload Finance Agreement <span className="text-red-500">*</span>
+              </label>
+              <div className={uploadFieldWrapper}>
+                <label className={uploadInputLabel}>
+                  {file ? file.name : 'Choose file...'}
+                  <input
+                    type="file"
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                    onChange={handleFileChange}
+                    required={showUploadField}
+                  />
+                  <span className={uploadIconContainer}>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4 ml-1 text-gray-400"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M8.5 12.5l7-7a2.121 2.121 0 013 3L10 17a4 4 0 01-5.657-5.657l7-7"
+                      />
+                    </svg>
                   </span>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 text-gray-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
-                    />
-                  </svg>
                 </label>
+                <button
+                  type="button"
+                  onClick={handleUpload}
+                  disabled={!file || uploading}
+                  className={uploadButtonClass}
+                >
+                  {uploading ? (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5 animate-spin text-white"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                      ></path>
+                    </svg>
+                  ) : uploadSuccess ? (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5 text-white"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  ) : (
+                    'Upload'
+                  )}
+                </button>
               </div>
-              <button
-                onClick={handleUpload}
-                disabled={!file || uploadStatus === 'uploading' || uploadStatus === 'success'}
-                className="px-4 py-2 bg-[#039994] text-white rounded-md hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] disabled:opacity-50 disabled:cursor-not-allowed w-24 flex items-center justify-center"
-              >
-                {uploadStatus === 'uploading' ? (
-                  <div className="h-5 w-5 border-2 border-t-2 border-white rounded-full animate-spin" />
-                ) : uploadStatus === 'success' ? (
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                ) : (
-                  'Upload'
-                )}
-              </button>
+              <p className={uploadNoteStyle}>
+                Required for loan, PPA, and lease agreements
+              </p>
             </div>
-            <p className="mt-2 text-sm italic text-gray-500">
-              Note: You will need to upload Finance Agreement to approve any transactions.
-            </p>
-          </div>
+          )}
 
-          {/* Select Installer Dropdown */}
+          {/* Installer - Optional */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Select Installer?</label>
+            <label className={labelClass}>
+              Select Installer <span className="text-gray-500 text-xs">(optional)</span>
+            </label>
             <select
               value={installer}
               onChange={(e) => setInstaller(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#039994]"
+              className={selectClass}
             >
               <option value="">Select Installer</option>
               <option value="installer1">Installer 1</option>
@@ -202,28 +357,53 @@ export default function StepOneCard() {
                 value={customInstaller}
                 onChange={(e) => setCustomInstaller(e.target.value)}
                 placeholder="Enter installer name"
-                className="w-full rounded-md border border-gray-300 px-3 py-2 mt-2 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#039994]"
+                className={`${inputClass} mt-2`}
               />
             )}
           </div>
+
+          {/* System Size & COD - Both Optional - Now on same row */}
+          <div className={rowWrapper}>
+            <div className={halfWidth}>
+              <label className={labelClass}>
+                System Size <span className="text-gray-500 text-xs">(optional)</span>
+              </label>
+              <input
+                type="text"
+                placeholder="e.g., 5kW (watch video guide)"
+                value={systemSize}
+                onChange={(e) => setSystemSize(e.target.value)}
+                className={`${inputClass} ${grayPlaceholder}`}
+              />
+            </div>
+            <div className={halfWidth}>
+              <label className={labelClass}>
+                COD <span className="text-gray-500 text-xs">(optional)</span>
+              </label>
+              <input
+                type="text"
+                placeholder="e.g., 12345 (watch video guide)"
+                value={cod}
+                onChange={(e) => setCOD(e.target.value)}
+                className={`${inputClass} ${grayPlaceholder}`}
+              />
+            </div>
+          </div>
         </div>
 
-        {/* Next Button */}
-        <button
-          onClick={handleSubmit}
-          className="w-full max-w-md rounded-md bg-[#039994] text-white font-semibold py-2 mt-6 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994]"
-        >
-          Next
-        </button>
+        <div className="w-full max-w-md mt-6">
+          <button onClick={handleSubmit} className={buttonPrimary}>
+            Next
+          </button>
+        </div>
 
-        {/* Terms and Conditions & Privacy Policy Links */}
-        <div className="mt-6 text-center text-xs text-gray-500 leading-tight">
-          By clicking on ‘Next’, you agree to our{' '}
-          <a href="/terms" className="text-[#039994] hover:underline font-medium">
-            Terms and Conditions
+        <div className={termsTextContainer}>
+          By clicking 'Next', you agree to our{' '}
+          <a href="/terms" className="text-[#039994] font-[800] underline">
+            Terms
           </a>{' '}
-          &{' '}
-          <a href="/privacy" className="text-[#039994] hover:underline font-medium">
+          and{' '}
+          <a href="/privacy" className="text-[#039994] font-[800] underline">
             Privacy Policy
           </a>
         </div>

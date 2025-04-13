@@ -9,14 +9,14 @@ export default function OwnersDetailsCard() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [fullName, setFullName] = useState("");
-  const [phonePrefix, setPhonePrefix] = useState("+234");
+  const [phonePrefix, setPhonePrefix] = useState("+1");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [address, setAddress] = useState("");
   const [website, setWebsite] = useState("");
 
   const validateForm = () => {
     if (!fullName.trim()) {
-      toast.error("Owner’s full name is required");
+      toast.error("Owner's full name is required");
       return false;
     }
     if (!phoneNumber.trim()) {
@@ -27,7 +27,7 @@ export default function OwnersDetailsCard() {
       toast.error("Address is required");
       return false;
     }
-    if (!/^\+?\d{7,}$/.test(phonePrefix + phoneNumber)) {
+    if (!/^\+?\d{7,}$/.test(phonePrefix + phoneNumber.replace(/-/g, ""))) {
       toast.error("Invalid phone number format");
       return false;
     }
@@ -50,12 +50,11 @@ export default function OwnersDetailsCard() {
         entityType: "individual",
         commercialRole: "owner",
         ownerFullName: fullName,
-        phoneNumber: `${phonePrefix}${phoneNumber}`,
+        phoneNumber: `${phonePrefix}${phoneNumber.replace(/-/g, "")}`,
         ownerAddress: address,
-        ownerWebsite: website || undefined // Send as undefined if empty
+        ...(website && { ownerWebsite: website }) // Only include website if it exists
       };
 
-      // Make the API call to update owner details
       await axios.put(
         `https://dcarbon-server.onrender.com/api/user/commercial-registration/${userId}`,
         payload,
@@ -67,9 +66,7 @@ export default function OwnersDetailsCard() {
         }
       );
 
-      // Save the owner details in local storage for later retrieval
       localStorage.setItem("ownerDetails", JSON.stringify(payload));
-
       toast.success("Owner details updated successfully");
       router.push("/register/commercial-owner-registration/step-three");
     } catch (err) {
@@ -80,6 +77,27 @@ export default function OwnersDetailsCard() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const formatPhoneNumber = (value) => {
+    // Remove all non-digit characters
+    const cleaned = value.replace(/\D/g, '');
+    
+    // Apply formatting: 000-0000-000
+    let formatted = cleaned;
+    if (cleaned.length > 3) {
+      formatted = `${cleaned.slice(0, 3)}-${cleaned.slice(3)}`;
+    }
+    if (cleaned.length > 6) {
+      formatted = `${formatted.slice(0, 7)}-${formatted.slice(7)}`;
+    }
+    
+    return formatted.slice(0, 13); // Limit to 12 characters (including hyphens)
+  };
+
+  const handlePhoneNumberChange = (e) => {
+    const formatted = formatPhoneNumber(e.target.value);
+    setPhoneNumber(formatted);
   };
 
   return (
@@ -118,9 +136,11 @@ export default function OwnersDetailsCard() {
           <h1 className={pageTitle}>Solar Owner's Details</h1>
         </div>
 
+        {/* Progress Bar */}
         <div className={progressContainer}>
           <div className={progressBarWrapper}>
-            <div className={`${progressBarActive} w-full`} />
+            {/* Set width via inline style to reflect 3/5 progress */}
+            <div className={progressBarActive} style={{ width: "60%" }} />
           </div>
           <span className={progressStepText}>03/05</span>
         </div>
@@ -131,49 +151,62 @@ export default function OwnersDetailsCard() {
 
         <div className={formWrapper}>
           <div>
-            <label className={labelClass}>Owner's full name</label>
+            <label className={labelClass}>
+              Owner's full name <span className="text-red-500">*</span>
+            </label>
             <input
               type="text"
               placeholder="Full name"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               className={inputClass}
+              required
             />
           </div>
 
           <div>
-            <label className={labelClass}>Phone Number</label>
-            <div className="flex gap-2">
+            <label className={labelClass}>
+              Phone Number <span className="text-red-500">*</span>
+            </label>
+            {/* Using grid with fixed width for the prefix */}
+            <div className="grid grid-cols-[80px_1fr] gap-2">
               <input
                 type="text"
                 value={phonePrefix}
                 placeholder="+1"
                 onChange={(e) => setPhonePrefix(e.target.value)}
-                className={`${inputClass} w-16`} // Adjusted width for prefix
+                className={inputClass}
+                maxLength={4}
               />
               <input
                 type="text"
                 placeholder="000-0000-000"
                 value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                className={`${inputClass} flex-1`}
+                onChange={handlePhoneNumberChange}
+                className={inputClass}
+                maxLength={12}
               />
             </div>
           </div>
 
           <div>
-            <label className={labelClass}>Address</label>
+            <label className={labelClass}>
+              Address <span className="text-red-500">*</span>
+            </label>
             <input
               type="text"
               placeholder="E.g. Street, City, County, State."
               value={address}
               onChange={(e) => setAddress(e.target.value)}
               className={inputClass}
+              required
             />
           </div>
 
           <div>
-            <label className={labelClass}>Website details</label>
+            <label className={labelClass}>
+              Website details <span className="text-gray-400 text-xs">(optional)</span>
+            </label>
             <input
               type="text"
               placeholder="Enter website (e.g. www.example.com)"
@@ -201,7 +234,7 @@ export default function OwnersDetailsCard() {
   );
 }
 
-// Style constants (would normally be imported from styles.js)
+// Style constants
 const mainContainer =
   "min-h-screen w-full flex flex-col items-center justify-center py-8 px-4 bg-white";
 const headingContainer =
@@ -220,10 +253,10 @@ const progressStepText =
   "text-sm font-medium text-gray-500 font-sfpro";
 const formWrapper =
   "w-full max-w-md space-y-6";
-const labelClass = "block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]";
+const labelClass =
+  "block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]";
 const inputClass =
-  "w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]";
-const rowWrapper = "flex space-x-4";
+  "w-full rounded-md border border-gray-300 px-6 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]";
 const buttonPrimary =
   "w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro";
 const spinnerOverlay =

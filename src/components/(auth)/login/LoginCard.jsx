@@ -49,19 +49,19 @@ export default function LoginCard() {
       // Route based on user type and finance details
       if (user.userType === 'COMMERCIAL') {
         if (financeDetailsIncomplete) {
-          window.location.href = '/register/commercial-user-registration';
+          window.location.href = '/register/welcome-back-commercial-users';
         } else {
           window.location.href = '/commercial-dashboard';
         }
       } else if (user.userType === 'RESIDENTIAL') {
         if (financeDetailsIncomplete) {
-          window.location.href = '/register/residence-user-registration/step-one';
+          window.location.href = '/register/welcome-back-residence-users';
         } else {
           window.location.href = '/residence-dashboard';
         }
       } else if (user.userType === 'PARTNER') {
         if (financeDetailsIncomplete) {
-          window.location.href = '/register/partner-user-registration/step-one';
+          window.location.href = '/register/welcome-back-partner-users';
         } else {
           window.location.href = '/partner-dashboard';
         }

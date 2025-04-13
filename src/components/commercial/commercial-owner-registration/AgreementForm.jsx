@@ -39,7 +39,7 @@ export default function Agreement({
             className="form-checkbox h-5 w-5 text-[#039994] border-gray-400 rounded"
           />
           <span className="font-semibold text-[#039994] font-sfpro">
-            DCarbon Information Release Agreement
+            DCarbon Information Release Agreement <span className="text-red-500">*</span>
           </span>
         </label>
         <p className={noteText}>
@@ -61,7 +61,7 @@ export default function Agreement({
             className="form-checkbox h-5 w-5 text-[#039994] border-gray-400 rounded"
           />
           <span className="font-semibold text-[#039994] font-sfpro">
-            DCarbon Services Agreement
+            DCarbon Services Agreement <span className="text-red-500">*</span>
           </span>
         </label>
         <p className={noteText}>
@@ -83,7 +83,7 @@ export default function Agreement({
             className="form-checkbox h-5 w-5 text-[#039994] border-gray-400 rounded"
           />
           <span className="font-semibold text-[#039994] font-sfpro">
-            WREGIS Assignment Agreement
+            WREGIS Assignment Agreement <span className="text-red-500">*</span>
           </span>
         </label>
         <p className={noteText}>
@@ -97,7 +97,7 @@ export default function Agreement({
       <hr className="my-4 border-gray-300" />
 
       <div className="mb-4">
-        <h3 className={uploadHeading}>Signature</h3>
+        <h3 className={uploadHeading}>Signature <span className="text-red-500">*</span></h3>
         {/* If there's signature data, display it; otherwise show placeholder */}
         {signatureData ? (
           <div className="border border-gray-300 rounded p-4 mb-2 text-gray-700">
@@ -122,6 +122,9 @@ export default function Agreement({
 }
 
 // Apply styles from styles.js
-const noteText = 'mt-2 font-sfpro text-[12px] leading-[100%] tracking-[-0.05em] font-[300] italic text-[#1E1E1E]';
-const uploadHeading = 'block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]';
-const uploadButtonStyle = 'px-4 py-2 bg-[#039994] text-white rounded-md hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro';
+const noteText =
+  'mt-2 font-sfpro text-[12px] leading-[100%] tracking-[-0.05em] font-[300] italic text-[#1E1E1E]';
+const uploadHeading =
+  'block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]';
+const uploadButtonStyle =
+  'px-4 py-2 bg-[#039994] text-white rounded-md hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro';
