@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import axios from 'axios';
 import toast from 'react-hot-toast';
 
 export default function StepOneCard() {
@@ -10,12 +11,13 @@ export default function StepOneCard() {
   const [partnerName, setPartnerName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [email, setEmail] = useState('');
+  const [address, setAddress] = useState('');
 
   const router = useRouter();
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     // Validate required fields
-    if (!partnerType || !partnerName || !phoneNumber || !email) {
+    if (!partnerType || !partnerName || !phoneNumber || !email || !address) {
       toast.error('Please fill all required fields');
       return;
     }
@@ -27,12 +29,52 @@ export default function StepOneCard() {
       return;
     }
 
-    // Simulate a brief loading, then navigate to the next page
+    const userId = localStorage.getItem('userId');
+    const authToken = localStorage.getItem('authToken');
+
+    if (!userId || !authToken) {
+      toast.error('Authentication required');
+      return;
+    }
+
     setLoading(true);
-    setTimeout(() => {
+
+    try {
+      const payload = {
+        name: partnerName,
+        email,
+        phoneNumber,
+        partnerType: partnerType.toLowerCase().replace(' ', '_'),
+        address
+      };
+
+      const response = await axios.post(
+        `https://dcarbon-server.onrender.com/api/user/create-partner/${userId}`,
+        payload,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${authToken}`
+          }
+        }
+      );
+
+      if (response.data.status === 'success') {
+        toast.success('Partner registration successful');
+        router.push('/register/partner-user-registration/agreement');
+      } else {
+        throw new Error(response.data.message || 'Partner registration failed');
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      toast.error(
+        error.response?.data?.message || 
+        error.message || 
+        'Partner registration failed'
+      );
+    } finally {
       setLoading(false);
-      router.push('/register/partner-user-registration/agreement');
-    }, 1500);
+    }
   };
 
   return (
@@ -91,11 +133,12 @@ export default function StepOneCard() {
               value={partnerType}
               onChange={(e) => setPartnerType(e.target.value)}
               className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#626060]"
+              required
             >
               <option value="">Choose type</option>
-              <option value="salesAgent">Sales Agent</option>
+              <option value="sales_agent">Sales Agent</option>
               <option value="installer">Installer</option>
-              <option value="financeCompany">Finance Company</option>
+              <option value="finance_company">Finance Company</option>
             </select>
           </div>
 
@@ -110,6 +153,7 @@ export default function StepOneCard() {
               onChange={(e) => setPartnerName(e.target.value)}
               placeholder="Partner name"
               className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]"
+              required
             />
           </div>
 
@@ -122,8 +166,9 @@ export default function StepOneCard() {
               type="tel"
               value={phoneNumber}
               onChange={(e) => setPhoneNumber(e.target.value)}
-              placeholder="+234-phone number"
+              placeholder="08123456789"
               className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]"
+              required
             />
           </div>
 
@@ -138,6 +183,22 @@ export default function StepOneCard() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="name@domain.com"
               className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]"
+              required
+            />
+          </div>
+
+          {/* Address */}
+          <div>
+            <label className="block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]">
+              Address <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder="15 Airport Road, Lagos"
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]"
+              required
             />
           </div>
         </div>
@@ -146,9 +207,10 @@ export default function StepOneCard() {
         <div className="w-full max-w-md mt-6">
           <button
             onClick={handleSubmit}
-            className="w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro"
+            disabled={loading}
+            className="w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro disabled:opacity-70 disabled:cursor-not-allowed"
           >
-            Next
+            {loading ? 'Processing...' : 'Next'}
           </button>
         </div>
 

@@ -20,57 +20,64 @@ const ContactInformation = () => {
   const [phonePrefix, setPhonePrefix] = useState("+234");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [ownerAddress, setOwnerAddress] = useState("");
-  const [commercialRole, setCommercialRole] = useState("owner");
-  const [entityType, setEntityType] = useState("individual");
+  const [commercialRole, setCommercialRole] = useState("");
+  const [entityType, setEntityType] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  // Load owner details from updated local storage ("ownerDetails") if available,
-  // otherwise fallback to data stored under "userData".
+  // Fetch contact information from API
   useEffect(() => {
-    const loadOwnerDetails = () => {
-      const storedOwnerDetails = localStorage.getItem("ownerDetails");
-      if (storedOwnerDetails) {
-        try {
-          const details = JSON.parse(storedOwnerDetails);
-          setOwnerFullName(details.ownerFullName || "");
-          setOwnerWebsite(details.ownerWebsite || "");
-          // Assuming phoneNumber is stored with the prefix.
-          // If you want to separate the prefix from the rest, you may need additional logic.
-          if (details.phoneNumber) {
-            // For simplicity, if the stored phone number starts with +, we'll use the default prefix and the rest.
-            if (details.phoneNumber.startsWith("+")) {
-              // Example: if stored phoneNumber is "+2341234567890", then:
-              setPhonePrefix(details.phoneNumber.slice(0, 4)); // e.g., "+234"
-              setPhoneNumber(details.phoneNumber.slice(4));
+    const fetchContactInfo = async () => {
+      const userId = localStorage.getItem("userId");
+      const authToken = localStorage.getItem("authToken");
+
+      if (!userId || !authToken) {
+        toast.error("Authentication required");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const response = await axios.get(
+          `https://dcarbon-server.onrender.com/api/user/get-commercial-user/${userId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${authToken}`,
+            },
+          }
+        );
+
+        const { commercialUser } = response.data.data;
+        
+        if (commercialUser) {
+          setOwnerFullName(commercialUser.ownerFullName || "");
+          setOwnerWebsite(commercialUser.ownerWebsite || "");
+          
+          // Handle phone number
+          if (commercialUser.phoneNumber) {
+            if (commercialUser.phoneNumber.startsWith("+")) {
+              setPhonePrefix(commercialUser.phoneNumber.slice(0, 4));
+              setPhoneNumber(commercialUser.phoneNumber.slice(4));
             } else {
-              setPhoneNumber(details.phoneNumber);
+              setPhoneNumber(commercialUser.phoneNumber);
             }
           }
-          setOwnerAddress(details.ownerAddress || "");
-          setCommercialRole(details.commercialRole || "owner");
-          setEntityType(details.entityType || "individual");
-        } catch (err) {
-          console.error("Error parsing ownerDetails from localStorage", err);
+          
+          setOwnerAddress(commercialUser.ownerAddress || "");
+          setCommercialRole(commercialUser.commercialRole || "");
+          setEntityType(commercialUser.entityType || "");
         }
-      } else {
-        // Fallback to userData if ownerDetails does not exist
-        const storedUserData = localStorage.getItem("userData");
-        if (storedUserData) {
-          try {
-            const data = JSON.parse(storedUserData);
-            setOwnerFullName(data.ownerFullName || "");
-            setOwnerWebsite(data.ownerWebsite || "");
-            setPhoneNumber(data.phoneNumber || "");
-            setOwnerAddress(data.ownerAddress || "");
-            setCommercialRole(data.commercialRole || "owner");
-            setEntityType(data.entityType || "individual");
-          } catch (err) {
-            console.error("Error parsing userData from localStorage", err);
-          }
-        }
+      } catch (error) {
+        console.error("Error fetching contact information:", error);
+        toast.error(
+          error.response?.data?.message || 
+          "Failed to fetch contact information"
+        );
+      } finally {
+        setLoading(false);
       }
     };
 
-    loadOwnerDetails();
+    fetchContactInfo();
   }, []);
 
   // Handle update to send PUT request with the correct payload
@@ -104,9 +111,6 @@ const ContactInformation = () => {
         }
       );
       toast.success("Contact information updated successfully");
-
-      // Save the updated owner details in local storage under "ownerDetails"
-      localStorage.setItem("ownerDetails", JSON.stringify(payload));
     } catch (error) {
       const errorMessage =
         error.response?.data?.message || error.message || "Update failed";
@@ -114,6 +118,32 @@ const ContactInformation = () => {
       console.error("Update error:", error);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="border-b border-gray-200 pb-4 mb-4">
+        <div className={sectionHeader} onClick={() => setIsOpen(!isOpen)}>
+          <h2 className={sectionTitle}>Contact Information</h2>
+          {isOpen ? (
+            <FaChevronUp className="text-[#039994]" size={20} />
+          ) : (
+            <FaChevronDown className="text-[#039994]" size={20} />
+          )}
+        </div>
+        {isOpen && (
+          <div className="mt-4 space-y-4">
+            <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
+            <div className="flex gap-2">
+              <div className="h-8 bg-gray-200 rounded w-20 animate-pulse"></div>
+              <div className="h-8 bg-gray-200 rounded flex-1 animate-pulse"></div>
+            </div>
+            <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="border-b border-gray-200 pb-4 mb-4">
@@ -156,7 +186,7 @@ const ContactInformation = () => {
           {/* Phone Number */}
           <div>
             <label className={labelClass}>Phone Number</label>
-            <div className="flex gap-2">
+            <div className="grid grid-cols-[80px_1fr] gap-2">
               <input
                 type="text"
                 value={phonePrefix}

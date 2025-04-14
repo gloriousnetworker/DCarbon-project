@@ -18,24 +18,53 @@ const CompanyInformation = () => {
   const [companyName, setCompanyName] = useState("");
   const [companyAddress, setCompanyAddress] = useState("");
   const [companyWebsite, setCompanyWebsite] = useState("");
-  const [commercialRole, setCommercialRole] = useState("owner"); // fixed, non-editable
-  const [entityType, setEntityType] = useState("company");
+  const [commercialRole, setCommercialRole] = useState("");
+  const [entityType, setEntityType] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  // Load company details from local storage on mount
+  // Fetch company details from API
   useEffect(() => {
-    const stored = localStorage.getItem("companyDetails");
-    if (stored) {
-      try {
-        const details = JSON.parse(stored);
-        setCompanyName(details.companyName || "");
-        setCompanyAddress(details.companyAddress || "");
-        setCompanyWebsite(details.companyWebsite || "");
-        setCommercialRole(details.commercialRole || "owner");
-        setEntityType(details.entityType || "company");
-      } catch (err) {
-        console.error("Error parsing companyDetails from localStorage", err);
+    const fetchCompanyDetails = async () => {
+      const userId = localStorage.getItem("userId");
+      const authToken = localStorage.getItem("authToken");
+
+      if (!userId || !authToken) {
+        toast.error("Authentication required");
+        setLoading(false);
+        return;
       }
-    }
+
+      try {
+        const response = await axios.get(
+          `https://dcarbon-server.onrender.com/api/user/get-commercial-user/${userId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${authToken}`,
+            },
+          }
+        );
+
+        const { commercialUser } = response.data.data;
+        
+        if (commercialUser) {
+          setCompanyName(commercialUser.companyName || "");
+          setCompanyAddress(commercialUser.companyAddress || "");
+          setCompanyWebsite(commercialUser.companyWebsite || "");
+          setCommercialRole(commercialUser.commercialRole || "");
+          setEntityType(commercialUser.entityType || "");
+        }
+      } catch (error) {
+        console.error("Error fetching company details:", error);
+        toast.error(
+          error.response?.data?.message || 
+          "Failed to fetch company details"
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCompanyDetails();
   }, []);
 
   // Handle update button click to send PUT request to update company details
@@ -48,10 +77,9 @@ const CompanyInformation = () => {
       return;
     }
 
-    // Build the payload; commercialRole is fixed and not editable
     const payload = {
       entityType,
-      commercialRole, // always "owner"
+      commercialRole,
       companyName,
       companyAddress,
       companyWebsite,
@@ -70,8 +98,6 @@ const CompanyInformation = () => {
       );
 
       toast.success("Company details updated successfully");
-      // Update local storage with the new company details
-      localStorage.setItem("companyDetails", JSON.stringify(payload));
     } catch (error) {
       const errorMessage =
         error.response?.data?.message ||
@@ -81,6 +107,28 @@ const CompanyInformation = () => {
       console.error("Update error:", error);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="border-b border-[#1E1E1E] pb-4 mb-4">
+        <div className={sectionHeader} onClick={() => setIsOpen(!isOpen)}>
+          <h2 className={sectionTitle}>Company Information</h2>
+          {isOpen ? (
+            <FaChevronUp className="text-[#039994]" size={20} />
+          ) : (
+            <FaChevronDown className="text-[#039994]" size={20} />
+          )}
+        </div>
+        {isOpen && (
+          <div className="mt-4 space-y-4">
+            <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="border-b border-[#1E1E1E] pb-4 mb-4">
@@ -130,7 +178,7 @@ const CompanyInformation = () => {
               placeholder="https://company.com"
             />
           </div>
-          {/* Commercial Role (read-only) */}
+          {/* Commercial Role */}
           <div>
             <label className={labelClass}>Commercial Role</label>
             <input
@@ -141,7 +189,7 @@ const CompanyInformation = () => {
               style={inputStyle}
             />
           </div>
-          {/* Entity Type (read-only) */}
+          {/* Entity Type */}
           <div>
             <label className={labelClass}>Entity Type</label>
             <input

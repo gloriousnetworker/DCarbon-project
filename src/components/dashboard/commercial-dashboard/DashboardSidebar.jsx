@@ -163,18 +163,6 @@ const DashboardSidebar = ({
           <FiTrendingUp className={iconBase} color={isActive("report") ? "#FFFFFF" : "#039994"} />
           <span>Report</span>
         </button>
-        <button
-          onClick={() => onSectionChange("pendingActions")}
-          className={`${menuItemBase} ${
-            isActive("pendingActions") ? menuItemActive : menuItemInactive
-          }`}
-        >
-          <FiSend className={iconBase} color={isActive("pendingActions") ? "#FFFFFF" : "#039994"} />
-          <span className="flex items-center">
-            Pending Actions
-            {hasPendingActions && <span className={pendingDot}></span>}
-          </span>
-        </button>
       </nav>
 
       {/* Divider */}
