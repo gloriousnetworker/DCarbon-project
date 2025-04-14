@@ -2,18 +2,44 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import toast from 'react-hot-toast';
+
+const styles = {
+  mainContainer: 'min-h-screen w-full flex flex-col items-center justify-center py-8 px-4 bg-white',
+  headingContainer: 'relative w-full flex flex-col items-center mb-2',
+  backArrow: 'absolute left-4 top-0 text-[#039994] cursor-pointer z-10',
+  pageTitle: 'mb-4 font-[600] text-[36px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro text-center',
+  progressContainer: 'w-full max-w-md flex items-center justify-between mb-6',
+  progressBarWrapper: 'flex-1 h-1 bg-gray-200 rounded-full mr-4',
+  progressBarActive: 'h-1 bg-[#039994] w-2/5 rounded-full',
+  progressStepText: 'text-sm font-medium text-gray-500 font-sfpro',
+  formWrapper: 'w-full max-w-md space-y-6',
+  labelClass: 'block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]',
+  selectClass: 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#626060]',
+  buttonPrimary: 'w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro',
+  spinnerOverlay: 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20',
+  spinner: 'h-12 w-12 border-4 border-t-4 border-gray-300 border-t-[#039994] rounded-full animate-spin',
+  termsTextContainer: 'mt-6 text-center font-sfpro text-[10px] leading-[100%] tracking-[-0.05em] text-[#1E1E1E]',
+  termsLink: 'text-[#039994] hover:underline font-medium',
+  mandatoryStar: 'text-red-500 ml-1',
+  labelContainer: 'flex items-center'
+};
 
 export default function StepOneCard() {
   const [loading, setLoading] = useState(false);
-  const [commercialRole, setCommercialRole] = useState('');
+  const [commercialRole, setCommercialRole] = useState('both');
   const [entityType, setEntityType] = useState('');
   const router = useRouter();
 
   const handleSubmit = async () => {
     if (!commercialRole || !entityType) {
-      toast.error('Please select both Commercial Role and Entity Type');
+      toast.error('Please select both Commercial Role and Entity Type', {
+        style: {
+          fontFamily: 'SF Pro',
+          background: '#FFEBEE',
+          color: '#B71C1C',
+        },
+      });
       return;
     }
 
@@ -21,7 +47,13 @@ export default function StepOneCard() {
     const authToken = localStorage.getItem('authToken');
 
     if (!userId || !authToken) {
-      toast.error('Authentication required. Please login again.');
+      toast.error('Authentication required. Please login again.', {
+        style: {
+          fontFamily: 'SF Pro',
+          background: '#FFEBEE',
+          color: '#B71C1C',
+        },
+      });
       return;
     }
 
@@ -48,10 +80,22 @@ export default function StepOneCard() {
         throw new Error(errorData.message || 'Registration update failed');
       }
 
-      toast.success('Registration updated successfully!');
+      toast.success('Registration updated successfully!', {
+        style: {
+          fontFamily: 'SF Pro',
+          background: '#E8F5E9',
+          color: '#1B5E20',
+        },
+      });
       router.push('/register/commercial-both-registration/step-one');
     } catch (error) {
-      toast.error(error.message || 'An error occurred during registration');
+      toast.error(error.message || 'An error occurred during registration', {
+        style: {
+          fontFamily: 'SF Pro',
+          background: '#FFEBEE',
+          color: '#B71C1C',
+        },
+      });
     } finally {
       setLoading(false);
     }
@@ -60,16 +104,14 @@ export default function StepOneCard() {
   return (
     <>
       {loading && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="h-12 w-12 border-4 border-t-4 border-gray-300 border-t-[#039994] rounded-full animate-spin"></div>
+        <div className={styles.spinnerOverlay}>
+          <div className={styles.spinner}></div>
         </div>
       )}
 
-      <ToastContainer position="top-right" autoClose={5000} />
-
-      <div className="min-h-screen w-full bg-white flex flex-col items-center justify-center py-8 px-4">
-        <div className="relative w-full mb-10">
-          <div className="back-arrow absolute left-12 top-0 text-[#039994] cursor-pointer z-60">
+      <div className={styles.mainContainer}>
+        <div className={styles.headingContainer}>
+          <div className={styles.backArrow} onClick={() => router.back()}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className="h-6 w-6"
@@ -77,49 +119,46 @@ export default function StepOneCard() {
               viewBox="0 0 24 24"
               stroke="currentColor"
               strokeWidth={2}
-              onClick={() => router.back()}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M15 19l-7-7 7-7"
-              />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
           </div>
-        </div>
 
-        <h1 className="text-2xl sm:text-3xl font-bold text-[#039994] mr-40 mb-6">
-          Owner & Operator's Registration
-        </h1>
+          <h1 className={styles.pageTitle}>Owner & Operator's Registration</h1>
 
-        <div className="w-full max-w-md flex items-center justify-between mt-4 mb-4">
-          <div className="flex-1 h-1 bg-gray-200 rounded-full mr-4">
-            <div className="h-1 bg-[#039994] w-2/5 rounded-full" />
+          <div className={styles.progressContainer}>
+            <div className={styles.progressBarWrapper}>
+              <div className={styles.progressBarActive} />
+            </div>
+            <span className={styles.progressStepText}>01/05</span>
           </div>
-          <span className="text-sm font-medium text-gray-500">01/05</span>
         </div>
 
-        <div className="w-full max-w-md space-y-6">
+        <div className={styles.formWrapper}>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Commercial Role</label>
+            <div className={styles.labelContainer}>
+              <label className={styles.labelClass}>Commercial Role</label>
+              <span className={styles.mandatoryStar}>*</span>
+            </div>
             <select
               value={commercialRole}
               onChange={(e) => setCommercialRole(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#039994]"
+              className={styles.selectClass}
+              disabled
             >
-              <option value="">Choose role</option>
-              <option value="owner">Owner</option>
-              <option value="operator">Operator</option>
-              <option value="both">Both</option>
+              <option value="both">Commercial Owner & Operator</option>
             </select>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Entity Type</label>
+            <div className={styles.labelContainer}>
+              <label className={styles.labelClass}>Entity Type</label>
+              <span className={styles.mandatoryStar}>*</span>
+            </div>
             <select
               value={entityType}
               onChange={(e) => setEntityType(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#039994]"
+              className={styles.selectClass}
             >
               <option value="">Choose Type</option>
               <option value="individual">Individual</option>
@@ -131,20 +170,20 @@ export default function StepOneCard() {
         <div className="w-full max-w-md mt-6">
           <button
             onClick={handleSubmit}
-            className="w-full rounded-md bg-[#039994] text-white font-semibold py-2 
-               hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994]"
+            className={styles.buttonPrimary}
+            disabled={loading}
           >
-            Next
+            {loading ? 'Processing...' : 'Next'}
           </button>
         </div>
 
-        <div className="mt-6 text-center text-xs text-gray-500 leading-tight">
-          By clicking on ‘Next’, you agree to our{' '}
-          <a href="/terms" className="text-[#039994] hover:underline font-medium">
+        <div className={styles.termsTextContainer}>
+          By clicking on 'Next', you agree to our{' '}
+          <a href="/terms" className={styles.termsLink}>
             Terms and Conditions
           </a>{' '}
           &{' '}
-          <a href="/privacy" className="text-[#039994] hover:underline font-medium">
+          <a href="/privacy" className={styles.termsLink}>
             Privacy Policy
           </a>
         </div>

@@ -113,7 +113,7 @@ export default function OperatorRegistrationCard() {
   // Callback when the utility modal authorizes successfully
   const handleUtilityAuthorized = () => {
     setShowUtilityModal(false);
-    router.push('/register/commercial-operator-registration/agreement');
+    router.push('/register/commercial-both-registration/step-two');
   };
 
   return (
@@ -144,7 +144,7 @@ export default function OperatorRegistrationCard() {
           </div>
 
           {/* Page Title */}
-          <h1 className={styles.pageTitle}>Operator's Registration</h1>
+          <h1 className={styles.pageTitle}>Utility API Authorization</h1>
 
           {/* Step Bar */}
           <div className={styles.progressContainer}>
