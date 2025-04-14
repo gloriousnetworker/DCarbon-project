@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import toast from 'react-hot-toast';
 
 // Modal styles
@@ -17,89 +17,156 @@ const modalStyles = {
 
 export default function UtilityAuthorizationModal({ onAuthorized, onClose }) {
   const [authorizing, setAuthorizing] = useState(false);
+  const pollingRef = useRef(null);
+  const timeoutRef = useRef(null);
+
+  // Clear any intervals/timeouts when the component unmounts
+  useEffect(() => {
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
 
   const handleAuthorize = async () => {
     setAuthorizing(true);
 
-    try {
-      // Hitting the endpoint from the provided URL
-      const response = await fetch('https://dcarbon-server.onrender.com/api/auth/fetch-utility-data', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+    // Get user credentials from local storage
+    const userId = localStorage.getItem('userId');
+    const authToken = localStorage.getItem('authToken');
 
-      // Parse and log the response data
-      const data = await response.json();
-      console.log('Utility API response:', data);
-
-      // Check if authorizationUid exists and is not null
-      if (data && data.authorizationUid) {
-        toast.success('Utility authorized successfully!', {
-          style: {
-            fontFamily: 'SF Pro',
-            background: '#E8F5E9',
-            color: '#1B5E20',
-          },
-        });
-        onAuthorized();
-      } else {
-        throw new Error('Authorization failure: no valid authorizationUid found');
-      }
-    } catch (error) {
-      toast.error(error.message || 'Error during utility authorization', {
+    if (!userId || !authToken) {
+      toast.error('Missing credentials. Please login again.', {
         style: {
           fontFamily: 'SF Pro',
           background: '#FFEBEE',
           color: '#B71C1C',
         },
       });
-    } finally {
       setAuthorizing(false);
+      return;
     }
+
+    // Polling configuration: every 5 seconds, for up to 2 minutes (i.e. 24 attempts)
+    const pollingIntervalMs = 5000;
+    const maxPollCount = 24;
+    let pollCount = 0;
+
+    // Define the polling function
+    const pollForAuthorization = async () => {
+      pollCount++;
+      try {
+        const response = await fetch(
+          `https://dcarbon-server.onrender.com/api/auth/check-utility-auth/${userId}`,
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${authToken}`,
+            },
+          }
+        );
+
+        const data = await response.json();
+        console.log('Utility Auth check response:', data);
+
+        if (data && data.data && data.data.isAuthorized) {
+          toast.success('Utility authorized successfully!', {
+            style: {
+              fontFamily: 'SF Pro',
+              background: '#E8F5E9',
+              color: '#1B5E20',
+            },
+          });
+          clearInterval(pollingRef.current);
+          clearTimeout(timeoutRef.current);
+          setAuthorizing(false);
+          onAuthorized();
+        } else if (pollCount >= maxPollCount) {
+          // Stop polling if maximum attempts reached
+          clearInterval(pollingRef.current);
+          toast.error('Timed out waiting for utility authorization. Please try again.', {
+            style: {
+              fontFamily: 'SF Pro',
+              background: '#FFEBEE',
+              color: '#B71C1C',
+            },
+          });
+          setAuthorizing(false);
+        }
+        // Otherwise, keep polling
+      } catch (error) {
+        console.error('Polling error:', error);
+        // Optionally: if you want to stop on error, clear the polling and notify the user.
+        clearInterval(pollingRef.current);
+        toast.error(error.message || 'Error during utility authorization', {
+          style: {
+            fontFamily: 'SF Pro',
+            background: '#FFEBEE',
+            color: '#B71C1C',
+          },
+        });
+        setAuthorizing(false);
+      }
+    };
+
+    // Start polling
+    pollingRef.current = setInterval(pollForAuthorization, pollingIntervalMs);
+
+    // Set a fallback timeout of 2 minutes (in case polling interval fails to clear)
+    timeoutRef.current = setTimeout(() => {
+      clearInterval(pollingRef.current);
+      toast.error('Timed out waiting for utility authorization. Please try again.', {
+        style: {
+          fontFamily: 'SF Pro',
+          background: '#FFEBEE',
+          color: '#B71C1C',
+        },
+      });
+      setAuthorizing(false);
+    }, pollingIntervalMs * maxPollCount);
   };
 
   return (
-    <>
-      {/* Modal Overlay */}
-      <div className={modalStyles.overlay}>
-        {/* Modal Content */}
-        <div className={modalStyles.content}>
-          {/* Modal Title */}
-          <h2 className={modalStyles.title}>Utility Authorization</h2>
-          
-          {/* Modal Description */}
-          <p className={modalStyles.description}>
-            Please click "Authorize" to validate your utility data before proceeding.
-          </p>
+    <div className={modalStyles.overlay}>
+      <div className={modalStyles.content}>
+        {/* Modal Title */}
+        <h2 className={modalStyles.title}>Utility Authorization</h2>
+        
+        {/* Modal Description */}
+        <p className={modalStyles.description}>
+          Please click "Authorize" to validate your utility data before proceeding.
+          This process may take up to 2 minutes.
+        </p>
 
-          {/* Buttons Container */}
-          <div className={modalStyles.buttonContainer}>
-            {/* Cancel Button */}
-            <button
-              onClick={onClose}
-              className={modalStyles.cancelButton}
-              disabled={authorizing}
-            >
-              Cancel
-            </button>
-            
-            {/* Authorize Button */}
-            <button
-              onClick={handleAuthorize}
-              className={modalStyles.authorizeButton}
-              disabled={authorizing}
-            >
-              {authorizing ? (
-                <span className={modalStyles.loadingText}>Authorizing...</span>
-              ) : (
-                'Authorize'
-              )}
-            </button>
-          </div>
+        {/* Buttons Container */}
+        <div className={modalStyles.buttonContainer}>
+          <button
+            onClick={() => {
+              // If the user cancels, clear any running polling
+              if (pollingRef.current) clearInterval(pollingRef.current);
+              if (timeoutRef.current) clearTimeout(timeoutRef.current);
+              onClose();
+            }}
+            className={modalStyles.cancelButton}
+            disabled={authorizing}
+          >
+            Cancel
+          </button>
+          
+          <button
+            onClick={handleAuthorize}
+            className={modalStyles.authorizeButton}
+            disabled={authorizing}
+          >
+            {authorizing ? (
+              <span className={modalStyles.loadingText}>Authorizing...</span>
+            ) : (
+              'Authorize'
+            )}
+          </button>
         </div>
       </div>
-    </>
+    </div>
   );
 }

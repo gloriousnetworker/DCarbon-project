@@ -5,7 +5,7 @@ import RecentRecSales from "./RecentRecSales";
 
 export default function DashboardOverview() {
   return (
-    <div className="w-full min-h-screen bg-[#D9D9D9] space-y-8 p-4">
+    <div className="w-full min-h-screen space-y-8 p-4">
       {/* Quick Actions */}
       <QuickActions />
 

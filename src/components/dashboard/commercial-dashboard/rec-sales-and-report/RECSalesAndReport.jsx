@@ -11,6 +11,15 @@ import {
 import FilterModal from './FilterModal';
 import ExportReportModal from './ExportReportModal';
 
+// Import style constants from styles.js
+import {
+  mainContainer,
+  headingContainer,
+  pageTitle,
+  selectClass,
+  buttonPrimary,
+} from './styles';
+
 const RECSalesAndReport = () => {
   // Example table data (replace with your own or fetch dynamically)
   const tableData = [
@@ -156,11 +165,11 @@ const RECSalesAndReport = () => {
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow w-full">
+    <div className={`${mainContainer} bg-white p-6 rounded-lg shadow w-full`}>
       {/* Header Section */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
-        {/* Title: #039994 color */}
-        <h2 className="text-xl font-semibold" style={{ color: '#039994' }}>
+      <div className={`${headingContainer} flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4`}>
+        {/* Title with #039994 color */}
+        <h2 className={pageTitle} style={{ color: '#039994' }}>
           REC Sales
         </h2>
 
@@ -175,12 +184,11 @@ const RECSalesAndReport = () => {
             Filter by
             <HiOutlineChevronDown className="ml-2" />
           </button>
-          {/* Export Button (with #039994 background & more rounded corners) */}
+          {/* Export Button */}
           <button
             type="button"
             onClick={openExportModal}
-            className="inline-flex items-center px-4 py-2 rounded-lg"
-            style={{ backgroundColor: '#039994', color: '#ffffff' }}
+            className={`inline-flex items-center px-4 py-2 rounded-lg ${buttonPrimary}`}
           >
             <HiOutlineDownload className="mr-2" />
             Export Report
@@ -224,7 +232,7 @@ const RECSalesAndReport = () => {
         </table>
       </div>
 
-      {/* Pagination */}
+      {/* Pagination Section */}
       <div className="flex flex-col sm:flex-row items-center justify-between mt-4">
         <p className="text-sm text-gray-600">
           Page <span className="font-medium">{currentPage}</span> of{' '}

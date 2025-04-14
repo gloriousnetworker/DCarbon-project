@@ -26,12 +26,12 @@ export default function LoginCard() {
 
       // Check if login requires Two Factor Authentication
       if (requiresTwoFactor) {
-        // Store the temporary token and any other relevant info in localStorage for the next step
+        // Store the temporary token and any other relevant info for the next step
         localStorage.setItem('tempToken', tempToken);
         localStorage.setItem('userId', user.id);
         toast.success(response.data.message || '2FA verification required');
         window.location.href = '/login/two-factor-authentication';
-        return; // Exit the login handler so the rest of the code does not execute.
+        return;
       }
 
       // Otherwise, store user details and token for normal login flow
@@ -42,25 +42,27 @@ export default function LoginCard() {
 
       toast.success('Login successful');
 
-      // Check if financial details are incomplete
-      const financeDetailsIncomplete =
-        user.financialInfo === null || user.agreements === null;
+      // Check if the agreement is completed: signature must not be null and termsAccepted true
+      const agreementCompleted =
+        user.agreements &&
+        user.agreements.signature !== null &&
+        user.agreements.termsAccepted;
 
-      // Route based on user type and finance details
+      // Route based on user type and agreement status
       if (user.userType === 'COMMERCIAL') {
-        if (financeDetailsIncomplete) {
+        if (!agreementCompleted) {
           window.location.href = '/register/welcome-back-commercial-users';
         } else {
           window.location.href = '/commercial-dashboard';
         }
       } else if (user.userType === 'RESIDENTIAL') {
-        if (financeDetailsIncomplete) {
+        if (!agreementCompleted) {
           window.location.href = '/register/welcome-back-residence-users';
         } else {
           window.location.href = '/residence-dashboard';
         }
       } else if (user.userType === 'PARTNER') {
-        if (financeDetailsIncomplete) {
+        if (!agreementCompleted) {
           window.location.href = '/register/welcome-back-partner-users';
         } else {
           window.location.href = '/partner-dashboard';
@@ -85,10 +87,11 @@ export default function LoginCard() {
       )}
 
       {/* Glass-Effect Card Container */}
-      <div 
+      <div
         className="w-full max-w-md space-y-6 p-8 rounded-xl shadow-lg"
         style={{
-          background: 'linear-gradient(140.06deg, rgba(89, 89, 89, 0.4) -3.08%, rgba(255, 255, 255, 0.4) 106.56%)',
+          background:
+            'linear-gradient(140.06deg, rgba(89, 89, 89, 0.4) -3.08%, rgba(255, 255, 255, 0.4) 106.56%)',
           backdropFilter: 'blur(40px)',
           border: '1px solid rgba(255, 255, 255, 0.2)'
         }}
@@ -113,8 +116,8 @@ export default function LoginCard() {
         {/* Email Field */}
         <div className="space-y-6">
           <div>
-            <label 
-              htmlFor="email" 
+            <label
+              htmlFor="email"
               className="block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#FFFFFF]"
             >
               Email Address
@@ -131,8 +134,8 @@ export default function LoginCard() {
 
           {/* Password Field with Forgot Password Link */}
           <div>
-            <label 
-              htmlFor="password" 
+            <label
+              htmlFor="password"
               className="block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#FFFFFF]"
             >
               Password
@@ -182,11 +185,17 @@ export default function LoginCard() {
         {/* Disclaimer */}
         <p className="font-sfpro font-[400] text-[10px] leading-[100%] tracking-[-0.05em] text-center text-[#FFFFFF] mb-0">
           By clicking on <strong>Sign in</strong>, you agree to our{' '}
-          <a href="/terms" className="text-[#039994] underline font-[600] hover:text-[#02857f]">
+          <a
+            href="/terms"
+            className="text-[#039994] underline font-[600] hover:text-[#02857f]"
+          >
             Terms and Conditions
           </a>{' '}
           &amp;{' '}
-          <a href="/privacy" className="text-[#039994] underline font-[600] hover:text-[#02857f]">
+          <a
+            href="/privacy"
+            className="text-[#039994] underline font-[600] hover:text-[#02857f]"
+          >
             Privacy Policy
           </a>
         </p>
