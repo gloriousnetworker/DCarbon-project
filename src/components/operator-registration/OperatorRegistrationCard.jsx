@@ -28,7 +28,7 @@ const styles = {
 
 export default function OperatorRegistrationCard() {
   const [loading, setLoading] = useState(false);
-  const [commercialRole, setCommercialRole] = useState('operator'); // Set to "operator" by default
+  const [commercialRole] = useState('operator'); // operator is fixed
   const [entityType, setEntityType] = useState('');
   const [showUtilityModal, setShowUtilityModal] = useState(false);
   const router = useRouter();
@@ -40,8 +40,8 @@ export default function OperatorRegistrationCard() {
         style: {
           fontFamily: 'SF Pro',
           background: '#FFEBEE',
-          color: '#B71C1C',
-        },
+          color: '#B71C1C'
+        }
       });
       return;
     }
@@ -55,8 +55,8 @@ export default function OperatorRegistrationCard() {
         style: {
           fontFamily: 'SF Pro',
           background: '#FFEBEE',
-          color: '#B71C1C',
-        },
+          color: '#B71C1C'
+        }
       });
       return;
     }
@@ -64,7 +64,8 @@ export default function OperatorRegistrationCard() {
     setLoading(true);
 
     try {
-      const response = await fetch(
+      // Step 1: Update registration details
+      const registrationResponse = await fetch(
         `https://dcarbon-server.onrender.com/api/user/commercial-registration/${userId}`,
         {
           method: 'PUT',
@@ -79,8 +80,8 @@ export default function OperatorRegistrationCard() {
         }
       );
 
-      if (!response.ok) {
-        const errorData = await response.json();
+      if (!registrationResponse.ok) {
+        const errorData = await registrationResponse.json();
         throw new Error(errorData.message || 'Registration update failed');
       }
 
@@ -88,29 +89,54 @@ export default function OperatorRegistrationCard() {
         style: {
           fontFamily: 'SF Pro',
           background: '#E8F5E9',
-          color: '#1B5E20',
-        },
+          color: '#1B5E20'
+        }
       });
 
-      // Open the external link in a new tab
+      // Step 2: Initiate Utility Authorization
+      const initiateResponse = await fetch(
+        `{{local}}/api/auth/initiate-utility-auth/5394b5aa-2313-46a6-b5e4-0605fbf80fe6`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          }
+        }
+      );
+
+      const initData = await initiateResponse.json();
+      if (!initiateResponse.ok || initData.status !== 'success') {
+        throw new Error(initData.message || 'Utility authorization initiation failed');
+      }
+
+      toast.success(initData.message || 'Utility authorization initiated successfully', {
+        style: {
+          fontFamily: 'SF Pro',
+          background: '#E8F5E9',
+          color: '#1B5E20'
+        }
+      });
+
+      // Open the external utility authorization link in a new tab
       window.open('https://utilityapi.com/authorize/DCarbon_Solutions', '_blank');
 
-      // Display the Utility Authorization modal
+      // Optionally display a modal if you need extra info before proceeding
       setShowUtilityModal(true);
     } catch (error) {
       toast.error(error.message || 'An error occurred during registration', {
         style: {
           fontFamily: 'SF Pro',
           background: '#FFEBEE',
-          color: '#B71C1C',
-        },
+          color: '#B71C1C'
+        }
       });
     } finally {
       setLoading(false);
     }
   };
 
-  // Callback when the utility modal authorizes successfully
+  // Callback after utility modal authorization (if used)
   const handleUtilityAuthorized = () => {
     setShowUtilityModal(false);
     router.push('/register/commercial-operator-registration/agreement');
@@ -118,35 +144,21 @@ export default function OperatorRegistrationCard() {
 
   return (
     <>
-      {/* Loader Overlay */}
       {loading && (
         <div className={styles.spinnerOverlay}>
           <div className={styles.spinner}></div>
         </div>
       )}
 
-      {/* Main Container */}
       <div className={styles.mainContainer}>
-        {/* Heading Container */}
         <div className={styles.headingContainer}>
-          {/* Back Arrow */}
           <div className={styles.backArrow} onClick={() => router.back()}>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none"
+              viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
           </div>
-
-          {/* Page Title */}
           <h1 className={styles.pageTitle}>Operator's Registration</h1>
-
-          {/* Step Bar */}
           <div className={styles.progressContainer}>
             <div className={styles.progressBarWrapper}>
               <div className={styles.progressBarActive} />
@@ -155,17 +167,14 @@ export default function OperatorRegistrationCard() {
           </div>
         </div>
 
-        {/* Form Wrapper */}
         <div className={styles.formWrapper}>
-          {/* Commercial Role Static Text */}
+          {/* Commercial Role (static) */}
           <div>
             <div className={styles.labelContainer}>
-              <label className={styles.labelClass}>
-                Commercial Role
-              </label>
+              <label className={styles.labelClass}>Commercial Role</label>
               <span className={styles.mandatoryStar}>*</span>
             </div>
-            <div className={styles.selectClass} disabled>
+            <div className={styles.selectClass}>
               Operator
             </div>
           </div>
@@ -173,9 +182,7 @@ export default function OperatorRegistrationCard() {
           {/* Entity Type Dropdown */}
           <div>
             <div className={styles.labelContainer}>
-              <label className={styles.labelClass}>
-                Entity Type
-              </label>
+              <label className={styles.labelClass}>Entity Type</label>
               <span className={styles.mandatoryStar}>*</span>
             </div>
             <select
@@ -190,7 +197,6 @@ export default function OperatorRegistrationCard() {
           </div>
         </div>
 
-        {/* Next Button */}
         <div className="w-full max-w-md mt-6">
           <button
             onClick={handleSubmit}
@@ -201,24 +207,18 @@ export default function OperatorRegistrationCard() {
           </button>
         </div>
 
-        {/* Terms and Conditions & Privacy Policy Links */}
         <div className={styles.termsTextContainer}>
           By clicking on 'Next', you agree to our{' '}
-          <a href="/terms" className={styles.termsLink}>
-            Terms and Conditions
-          </a>{' '}
+          <a href="/terms" className={styles.termsLink}>Terms and Conditions</a>{' '}
           &{' '}
-          <a href="/privacy" className={styles.termsLink}>
-            Privacy Policy
-          </a>
+          <a href="/privacy" className={styles.termsLink}>Privacy Policy</a>
         </div>
       </div>
 
-      {/* Utility Authorization Modal */}
       {showUtilityModal && (
         <UtilityAuthorizationModal 
-          onAuthorized={handleUtilityAuthorized} 
-          onClose={() => setShowUtilityModal(false)} 
+          onAuthorized={handleUtilityAuthorized}
+          onClose={() => setShowUtilityModal(false)}
         />
       )}
     </>
