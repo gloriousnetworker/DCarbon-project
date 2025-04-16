@@ -1,74 +1,33 @@
+// app/components/DashboardSidebar.js
+'use client';
+
 import React, { useState, useEffect } from "react";
 import {
   FiHome,
   FiTrendingUp,
-  FiLayers,
   FiUser,
   FiBell,
   FiHelpCircle,
   FiHeadphones,
   FiLogOut,
 } from "react-icons/fi";
-import { FiZap, FiSend } from "react-icons/fi"; // Updated icons
+import { FiZap } from "react-icons/fi";
 import Image from "next/image";
+import { useProfile } from "../contexts/ProfileContext";
 
 const DashboardSidebar = ({
   onSectionChange,
   selectedSection = "overview",
   toggleSidebar,
-  hasPendingActions = false, // New prop to control the indicator
+  hasPendingActions = false,
 }) => {
   const [isClient, setIsClient] = useState(false);
-  const [profilePicture, setProfilePicture] = useState(null);
-  const [firstName, setFirstName] = useState('User');
+  const { profile } = useProfile();
 
   useEffect(() => {
     setIsClient(true);
-    // Load from localStorage only on client side
-    const storedFirstName = localStorage.getItem('userFirstName');
-    const storedProfilePicture = localStorage.getItem('userProfilePicture');
-    
-    if (storedFirstName) {
-      try {
-        setFirstName(JSON.parse(storedFirstName));
-      } catch {
-        setFirstName(storedFirstName);
-      }
-    }
-    
-    if (storedProfilePicture) {
-      try {
-        setProfilePicture(JSON.parse(storedProfilePicture));
-      } catch {
-        setProfilePicture(storedProfilePicture);
-      }
-    }
   }, []);
 
-  // Listen for storage changes
-  useEffect(() => {
-    const handleStorageChange = (e) => {
-      if (e.key === 'userFirstName') {
-        try {
-          setFirstName(e.newValue ? JSON.parse(e.newValue) : 'User');
-        } catch {
-          setFirstName(e.newValue || 'User');
-        }
-      }
-      if (e.key === 'userProfilePicture') {
-        try {
-          setProfilePicture(e.newValue ? JSON.parse(e.newValue) : null);
-        } catch {
-          setProfilePicture(e.newValue || null);
-        }
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
-
-  // Helper to check if a section is active
   const isActive = (section) => section === selectedSection;
 
   // Style constants
@@ -87,24 +46,19 @@ const DashboardSidebar = ({
   const greetingText = 'text-[#1E1E1E] font-sfpro text-sm';
   const userName = 'text-[#1E1E1E] font-sfpro text-sm font-semibold';
   const activeDot = 'w-2 h-2 rounded-full bg-[#039994] ml-2';
-  const pendingDot = 'w-2 h-2 rounded-full bg-[#FF0000] ml-2';
 
   if (!isClient) {
-    // Return a skeleton loader during SSR
     return (
       <aside className={sidebarContainer}>
-        {/* Skeleton content that matches the layout */}
         <div className="flex justify-center p-4">
           <div className="h-8 w-[120px] bg-gray-200 rounded"></div>
         </div>
-        {/* Add more skeleton elements as needed */}
       </aside>
     );
   }
 
   return (
     <aside className={sidebarContainer}>
-      {/* Mobile Close Button */}
       {toggleSidebar && (
         <div className="md:hidden flex justify-end p-4">
           <button
@@ -116,7 +70,6 @@ const DashboardSidebar = ({
         </div>
       )}
 
-      {/* Logo at the top */}
       <div className="flex justify-center p-4">
         <Image 
           src="/dashboard_images/logo.png"
@@ -127,14 +80,10 @@ const DashboardSidebar = ({
         />
       </div>
 
-      {/* DASHBOARD heading */}
       <div className={sidebarSection}>
-        <h3 className={sectionHeading}>
-          DASHBOARD
-        </h3>
+        <h3 className={sectionHeading}>DASHBOARD</h3>
       </div>
 
-      {/* Dashboard Menu Items */}
       <nav className="flex-1 flex flex-col space-y-1 px-2">
         <button
           onClick={() => onSectionChange("overview")}
@@ -165,17 +114,12 @@ const DashboardSidebar = ({
         </button>
       </nav>
 
-      {/* Divider */}
       <hr className={sidebarDivider} />
 
-      {/* SETTINGS heading */}
       <div className={sidebarSection}>
-        <h3 className={sectionHeading}>
-          SETTINGS
-        </h3>
+        <h3 className={sectionHeading}>SETTINGS</h3>
       </div>
 
-      {/* Settings Items */}
       <nav className="flex-1 flex flex-col space-y-1 px-2">
         <button
           onClick={() => onSectionChange("myAccount")}
@@ -197,17 +141,12 @@ const DashboardSidebar = ({
         </button>
       </nav>
 
-      {/* Divider */}
       <hr className={sidebarDivider} />
 
-      {/* SUPPORT heading */}
       <div className={sidebarSection}>
-        <h3 className={sectionHeading}>
-          SUPPORT
-        </h3>
+        <h3 className={sectionHeading}>SUPPORT</h3>
       </div>
 
-      {/* Support Items */}
       <nav className="flex-1 flex flex-col space-y-1 px-2">
         <button
           onClick={() => onSectionChange("helpCenter")}
@@ -229,16 +168,14 @@ const DashboardSidebar = ({
         </button>
       </nav>
 
-      {/* Divider */}
       <hr className={sidebarDivider} />
 
-      {/* Bottom User Info & Logout */}
       <div className={userInfoContainer}>
         <div className={userProfile}>
           <div className="w-8 h-8 rounded-full overflow-hidden relative">
-            {profilePicture ? (
+            {profile.picture ? (
               <Image
-                src={profilePicture}
+                src={profile.picture}
                 alt="User profile"
                 width={32}
                 height={32}
@@ -257,7 +194,7 @@ const DashboardSidebar = ({
           </div>
           <div className="flex items-center">
             <span className={greetingText}>Hi, </span>
-            <span className={userName}>{firstName}</span>
+            <span className={userName}>{profile.firstName}</span>
             <span className={activeDot}></span>
           </div>
         </div>

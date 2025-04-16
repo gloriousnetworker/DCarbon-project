@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState } from "react";
 import axios from "axios";
@@ -12,7 +12,6 @@ export default function OwnersDetailsCard() {
   const [phonePrefix, setPhonePrefix] = useState("+1");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [address, setAddress] = useState("");
-  const [website, setWebsite] = useState("");
 
   const validateForm = () => {
     if (!fullName.trim()) {
@@ -52,7 +51,6 @@ export default function OwnersDetailsCard() {
         ownerFullName: fullName,
         phoneNumber: `${phonePrefix}${phoneNumber.replace(/-/g, "")}`,
         ownerAddress: address,
-        ...(website && { ownerWebsite: website }) // Only include website if it exists
       };
 
       await axios.put(
@@ -61,8 +59,8 @@ export default function OwnersDetailsCard() {
         {
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
-          }
+            "Authorization": `Bearer ${token}`,
+          },
         }
       );
 
@@ -81,7 +79,7 @@ export default function OwnersDetailsCard() {
 
   const formatPhoneNumber = (value) => {
     // Remove all non-digit characters
-    const cleaned = value.replace(/\D/g, '');
+    const cleaned = value.replace(/\D/g, "");
     
     // Apply formatting: 000-0000-000
     let formatted = cleaned;
@@ -200,19 +198,6 @@ export default function OwnersDetailsCard() {
               onChange={(e) => setAddress(e.target.value)}
               className={inputClass}
               required
-            />
-          </div>
-
-          <div>
-            <label className={labelClass}>
-              Website details <span className="text-gray-400 text-xs">(optional)</span>
-            </label>
-            <input
-              type="text"
-              placeholder="Enter website (e.g. www.example.com)"
-              value={website}
-              onChange={(e) => setWebsite(e.target.value)}
-              className={inputClass}
             />
           </div>
         </div>

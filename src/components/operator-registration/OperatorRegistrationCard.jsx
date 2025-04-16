@@ -28,7 +28,7 @@ const styles = {
 
 export default function OperatorRegistrationCard() {
   const [loading, setLoading] = useState(false);
-  const [commercialRole, setCommercialRole] = useState('');
+  const [commercialRole, setCommercialRole] = useState('operator'); // Set to "operator" by default
   const [entityType, setEntityType] = useState('');
   const [showUtilityModal, setShowUtilityModal] = useState(false);
   const router = useRouter();
@@ -157,7 +157,7 @@ export default function OperatorRegistrationCard() {
 
         {/* Form Wrapper */}
         <div className={styles.formWrapper}>
-          {/* Commercial Role Dropdown */}
+          {/* Commercial Role Static Text */}
           <div>
             <div className={styles.labelContainer}>
               <label className={styles.labelClass}>
@@ -165,14 +165,9 @@ export default function OperatorRegistrationCard() {
               </label>
               <span className={styles.mandatoryStar}>*</span>
             </div>
-            <select
-              value={commercialRole}
-              onChange={(e) => setCommercialRole(e.target.value)}
-              className={styles.selectClass}
-            >
-              <option value="">Choose role</option>
-              <option value="operator">Operator</option>
-            </select>
+            <div className={styles.selectClass} disabled>
+              Operator
+            </div>
           </div>
 
           {/* Entity Type Dropdown */}

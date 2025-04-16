@@ -22,12 +22,12 @@ const styles = {
   termsTextContainer: 'mt-6 text-center font-sfpro text-[10px] leading-[100%] tracking-[-0.05em] text-[#1E1E1E]',
   termsLink: 'text-[#039994] hover:underline font-medium',
   mandatoryStar: 'text-red-500 ml-1',
-  labelContainer: 'flex items-center'
+  labelContainer: 'flex items-center',
 };
 
 export default function StepOneCard() {
   const [loading, setLoading] = useState(false);
-  const [commercialRole, setCommercialRole] = useState('both');
+  const [commercialRole, setCommercialRole] = useState('both'); // Set to "both" by default
   const [entityType, setEntityType] = useState('');
   const router = useRouter();
 
@@ -135,19 +135,15 @@ export default function StepOneCard() {
         </div>
 
         <div className={styles.formWrapper}>
+          {/* Commercial Role Static Text */}
           <div>
             <div className={styles.labelContainer}>
               <label className={styles.labelClass}>Commercial Role</label>
               <span className={styles.mandatoryStar}>*</span>
             </div>
-            <select
-              value={commercialRole}
-              onChange={(e) => setCommercialRole(e.target.value)}
-              className={styles.selectClass}
-              disabled
-            >
-              <option value="both">Commercial Owner & Operator</option>
-            </select>
+            <div className={styles.selectClass} disabled>
+              Both Owner & Operator
+            </div>
           </div>
 
           <div>

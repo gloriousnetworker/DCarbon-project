@@ -8,7 +8,6 @@ import Loader from '@/components/loader/Loader';
 
 export default function StepOneCard() {
   const [loading, setLoading] = useState(false);
-  const [financeType, setFinanceType] = useState('');
   const [financeCompany, setFinanceCompany] = useState('');
   const router = useRouter();
 
@@ -17,17 +16,11 @@ export default function StepOneCard() {
 
     try {
       // Validate required fields
-      if (!financeType || !financeCompany) {
+      if (!financeCompany) {
         throw new Error('Please fill all required fields');
       }
 
       // Map dropdown values to API expected values
-      const commercialRoleMap = {
-        cash: 'owner',
-        loan: 'operator',
-        ppa: 'both'
-      };
-
       const entityTypeMap = {
         company1: 'individual',
         company2: 'company'
@@ -35,7 +28,7 @@ export default function StepOneCard() {
 
       const payload = {
         entityType: entityTypeMap[financeCompany],
-        commercialRole: commercialRoleMap[financeType]
+        commercialRole: 'owner' // Fixed value for commercialRole
       };
 
       // Retrieve authentication details
@@ -113,21 +106,17 @@ export default function StepOneCard() {
 
         {/* Form fields */}
         <div className="w-full max-w-md space-y-6">
+          {/* Commercial Role field */}
           <div>
             <label className="block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]">
               Commercial Role <span className="text-red-500">*</span>
             </label>
-            <select
-              value={financeType}
-              onChange={(e) => setFinanceType(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#626060]"
-              required
-            >
-              <option value="">Select Role</option>
-              <option value="cash">Owner</option>
-            </select>
+            <div className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#626060]">
+              Owner
+            </div>
           </div>
 
+          {/* Entity Type field */}
           <div>
             <label className="block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]">
               Entity Type <span className="text-red-500">*</span>

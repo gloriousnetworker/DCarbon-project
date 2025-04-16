@@ -27,11 +27,21 @@ export default function OwnersDetailsCard() {
   });
   const [editingIndex, setEditingIndex] = useState(null);
 
-  // Updated validation: for multiple owners, ensure at least one owner is added
-  // and that no partially filled newOwner entry remains unadded.
   const validateForm = () => {
+    // Validate required company fields
+    if (!companyName.trim()) {
+      toast.error('Company name is required');
+      return false;
+    }
+
+    if (!companyAddress.trim()) {
+      toast.error('Company address is required');
+      return false;
+    }
+
+    // Validate multiple owners section
     if (multipleOwners === 'yes') {
-      // Warn if the user has partially filled newOwner fields that haven't been added.
+      // Check for partially filled newOwner fields
       if (
         newOwner.fullName.trim() !== '' ||
         newOwner.email.trim() !== '' ||
@@ -87,20 +97,21 @@ export default function OwnersDetailsCard() {
         throw new Error('Authentication required');
       }
 
-      // Build the payload:
-      // Only include a field if it has a value (otherwise, use undefined so it gets omitted)
+      // Build the payload
       const payload = {
         entityType: 'company',
         commercialRole: 'owner',
-        companyName: companyName.trim() || undefined,
-        companyAddress: companyAddress.trim() || undefined,
+        companyName: companyName.trim(),
+        companyAddress: companyAddress.trim(),
         companyWebsite: companyWebsite.trim() || undefined,
-        // Use the owners array for additional users, mapping each tag's fullName and email.
         multipleUsers:
           multipleOwners === 'yes'
             ? owners.map((owner) => ({
-                fullName: owner.fullName.trim() || undefined,
-                email: owner.email.trim() || undefined,
+                fullName: owner.fullName.trim(),
+                email: owner.email.trim(),
+                phone: owner.phone.trim() || undefined,
+                address: owner.address.trim() || undefined,
+                website: owner.website.trim() || undefined,
               }))
             : undefined,
       };
@@ -172,7 +183,7 @@ export default function OwnersDetailsCard() {
             <div className="space-y-4">
               <div>
                 <label className={labelClass}>
-                  Company Name <span className="text-gray-500 text-xs">(optional)</span>
+                  Company Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -180,12 +191,13 @@ export default function OwnersDetailsCard() {
                   value={companyName}
                   onChange={(e) => setCompanyName(e.target.value)}
                   className={inputClass}
+                  required
                 />
               </div>
 
               <div>
                 <label className={labelClass}>
-                  Company Address <span className="text-gray-500 text-xs">(optional)</span>
+                  Company Address <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -193,6 +205,7 @@ export default function OwnersDetailsCard() {
                   value={companyAddress}
                   onChange={(e) => setCompanyAddress(e.target.value)}
                   className={inputClass}
+                  required
                 />
               </div>
 
@@ -348,7 +361,7 @@ export default function OwnersDetailsCard() {
   );
 }
 
-// Style constants (would normally be imported from styles.js)
+// Style constants
 const mainContainer =
   'min-h-screen w-full flex flex-col items-center justify-center py-8 px-4 bg-white';
 const headingContainer =
