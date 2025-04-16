@@ -9,7 +9,7 @@ import ResidentialManagement from '../../components/dashboard/residence-dashboar
 import DashboardContactSupport from '../../components/dashboard/residence-dashboard/ContactSupport';
 import DashboardHelpCentre from '../../components/dashboard/residence-dashboard/HelpCentre';
 import DashboardNotifications from '../../components/dashboard/residence-dashboard/Notifications';
-import DashboardLogout from '../../components/dashboard/residence-dashboard/Logout';
+import DashboardLogout from '../../components/dashboard/partner-dashboard/Logout';
 import MyAccount from '../../components/dashboard/residence-dashboard/account/MyAccount';
 
 export default function UserDashboard() {
