@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from 'react';
 import OperatorRegistrationCard from '../../../../components/operator-registration/Verification';
 
 export default function OwnerRegistrationPage() {
@@ -16,7 +17,9 @@ export default function OwnerRegistrationPage() {
 
       {/* Right Section - Login Card */}
       <div className="w-full md:w-1/2 p-6 flex justify-center items-center">
-        <OperatorRegistrationCard />
+        <Suspense fallback={<div>Loading...</div>}>
+          <OperatorRegistrationCard />
+        </Suspense>
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 
@@ -13,7 +13,8 @@ const styles = {
   buttonSkip: 'w-full max-w-md rounded-md border border-[#039994] text-[#039994] font-semibold py-2 mt-2 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro',
 };
 
-export default function UtilityVerificationCard() {
+// Move the main component logic to a child component
+function VerificationContent() {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const router = useRouter();
@@ -48,7 +49,7 @@ export default function UtilityVerificationCard() {
     }, 250);
 
     try {
-      const response = await fetch(`{{local}}/api/auth/check-utility-auth`, {
+      const response = await fetch(`/api/auth/check-utility-auth`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -80,11 +81,11 @@ export default function UtilityVerificationCard() {
     }
   };
 
-  // Skip button simply notifies the user that they will be updated once authorized.
   const handleSkip = () => {
     toast('You will be notified once your utility authorization is complete.', {
       style: { fontFamily: 'SF Pro', background: '#E8F5E9', color: '#1B5E20' }
     });
+    router.push('/register/commercial-operator-registration/agreement');
   };
 
   return (
@@ -103,7 +104,7 @@ export default function UtilityVerificationCard() {
         className={styles.buttonPrimary} 
         disabled={loading}
       >
-        {loading ? 'Verifying...' : 'Verify Authorization'}
+        {loading ? `Verifying... ${progress}%` : 'Verify Authorization'}
       </button>
 
       <button 
@@ -114,5 +115,14 @@ export default function UtilityVerificationCard() {
         Skip and I'll be notified
       </button>
     </div>
+  );
+}
+
+// Main component that wraps the content in Suspense
+export default function UtilityVerificationCard() {
+  return (
+    <Suspense fallback={<div className={styles.container}>Loading verification...</div>}>
+      <VerificationContent />
+    </Suspense>
   );
 }
