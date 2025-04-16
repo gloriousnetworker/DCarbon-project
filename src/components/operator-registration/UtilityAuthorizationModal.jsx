@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import toast from 'react-hot-toast';
+import { useRouter } from 'next/navigation';
 
 // Modal styles
 const modalStyles = {
@@ -10,15 +11,19 @@ const modalStyles = {
   title: 'text-xl font-bold mb-4 text-[#039994] font-sfpro',
   description: 'mb-6 text-gray-700 font-sfpro text-[14px] leading-[140%]',
   buttonContainer: 'flex justify-between space-x-4 mt-4',
-  cancelButton: 'flex-1 px-4 py-2 border border-[#039994] text-[#039994] rounded hover:bg-gray-50 focus:outline-none font-sfpro font-medium',
+  skipButton: 'flex-1 px-4 py-2 border border-[#039994] text-[#039994] rounded hover:bg-gray-50 focus:outline-none font-sfpro font-medium',
   authorizeButton: 'flex-1 px-4 py-2 bg-[#039994] text-white rounded hover:bg-[#02857f] focus:outline-none font-sfpro font-medium',
-  loadingText: 'font-sfpro'
+  loadingText: 'font-sfpro',
+  progressContainer: 'w-full bg-gray-200 rounded-full h-2.5 mb-6',
+  progressBar: 'bg-[#039994] h-2.5 rounded-full transition-all duration-500'
 };
 
 export default function UtilityAuthorizationModal({ onAuthorized, onClose }) {
   const [authorizing, setAuthorizing] = useState(false);
+  const [progress, setProgress] = useState(0);
   const pollingRef = useRef(null);
   const timeoutRef = useRef(null);
+  const router = useRouter();
 
   // Clear any intervals/timeouts when the component unmounts
   useEffect(() => {
@@ -28,14 +33,19 @@ export default function UtilityAuthorizationModal({ onAuthorized, onClose }) {
     };
   }, []);
 
+  const navigateToNextPage = () => {
+    router.push('/register/commercial-operator-registration/agreement');
+  };
+
   const handleAuthorize = async () => {
     setAuthorizing(true);
+    setProgress(0);
 
     // Get user credentials from local storage
-    const userId = localStorage.getItem('userId');
     const authToken = localStorage.getItem('authToken');
+    const utilityToken = localStorage.getItem('utilityToken');
 
-    if (!userId || !authToken) {
+    if (!authToken || !utilityToken) {
       toast.error('Missing credentials. Please login again.', {
         style: {
           fontFamily: 'SF Pro',
@@ -52,18 +62,29 @@ export default function UtilityAuthorizationModal({ onAuthorized, onClose }) {
     const maxPollCount = 24;
     let pollCount = 0;
 
+    // Update progress bar incrementally
+    const progressInterval = setInterval(() => {
+      setProgress(prev => {
+        const newProgress = prev + (100 / maxPollCount);
+        return newProgress > 100 ? 100 : newProgress;
+      });
+    }, pollingIntervalMs);
+
     // Define the polling function
     const pollForAuthorization = async () => {
       pollCount++;
       try {
         const response = await fetch(
-          `https://dcarbon-server.onrender.com/api/auth/check-utility-auth/${userId}`,
+          '/api/auth/check-utility-auth',
           {
-            method: 'GET',
+            method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${authToken}`,
             },
+            body: JSON.stringify({
+              token: utilityToken
+            })
           }
         );
 
@@ -71,6 +92,14 @@ export default function UtilityAuthorizationModal({ onAuthorized, onClose }) {
         console.log('Utility Auth check response:', data);
 
         if (data && data.data && data.data.isAuthorized) {
+          // Clear intervals and timeouts
+          clearInterval(pollingRef.current);
+          clearInterval(progressInterval);
+          clearTimeout(timeoutRef.current);
+          
+          // Set progress to 100%
+          setProgress(100);
+          
           toast.success('Utility authorized successfully!', {
             style: {
               fontFamily: 'SF Pro',
@@ -78,13 +107,14 @@ export default function UtilityAuthorizationModal({ onAuthorized, onClose }) {
               color: '#1B5E20',
             },
           });
-          clearInterval(pollingRef.current);
-          clearTimeout(timeoutRef.current);
+          
           setAuthorizing(false);
           onAuthorized();
+          navigateToNextPage();
         } else if (pollCount >= maxPollCount) {
           // Stop polling if maximum attempts reached
           clearInterval(pollingRef.current);
+          clearInterval(progressInterval);
           toast.error('Timed out waiting for utility authorization. Please try again.', {
             style: {
               fontFamily: 'SF Pro',
@@ -94,11 +124,10 @@ export default function UtilityAuthorizationModal({ onAuthorized, onClose }) {
           });
           setAuthorizing(false);
         }
-        // Otherwise, keep polling
       } catch (error) {
         console.error('Polling error:', error);
-        // Optionally: if you want to stop on error, clear the polling and notify the user.
         clearInterval(pollingRef.current);
+        clearInterval(progressInterval);
         toast.error(error.message || 'Error during utility authorization', {
           style: {
             fontFamily: 'SF Pro',
@@ -116,6 +145,7 @@ export default function UtilityAuthorizationModal({ onAuthorized, onClose }) {
     // Set a fallback timeout of 2 minutes (in case polling interval fails to clear)
     timeoutRef.current = setTimeout(() => {
       clearInterval(pollingRef.current);
+      clearInterval(progressInterval);
       toast.error('Timed out waiting for utility authorization. Please try again.', {
         style: {
           fontFamily: 'SF Pro',
@@ -139,19 +169,29 @@ export default function UtilityAuthorizationModal({ onAuthorized, onClose }) {
           This process may take up to 2 minutes.
         </p>
 
+        {/* Progress Bar */}
+        {authorizing && (
+          <div className={modalStyles.progressContainer}>
+            <div 
+              className={modalStyles.progressBar} 
+              style={{ width: `${progress}%` }}
+            ></div>
+          </div>
+        )}
+
         {/* Buttons Container */}
         <div className={modalStyles.buttonContainer}>
           <button
             onClick={() => {
-              // If the user cancels, clear any running polling
+              // If the user skips, clear any running polling
               if (pollingRef.current) clearInterval(pollingRef.current);
               if (timeoutRef.current) clearTimeout(timeoutRef.current);
-              onClose();
+              navigateToNextPage();
             }}
-            className={modalStyles.cancelButton}
+            className={modalStyles.skipButton}
             disabled={authorizing}
           >
-            Cancel
+            Skip
           </button>
           
           <button
@@ -160,7 +200,7 @@ export default function UtilityAuthorizationModal({ onAuthorized, onClose }) {
             disabled={authorizing}
           >
             {authorizing ? (
-              <span className={modalStyles.loadingText}>Authorizing...</span>
+              <span className={modalStyles.loadingText}>Authorizing... {Math.round(progress)}%</span>
             ) : (
               'Authorize'
             )}

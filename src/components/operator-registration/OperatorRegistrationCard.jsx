@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -27,26 +27,15 @@ const styles = {
 };
 
 export default function OperatorRegistrationCard() {
-  const [loading, setLoading] = useState(false);
-  const [commercialRole] = useState('operator'); // operator is fixed
+  const commercialRole = 'operator';
   const [entityType, setEntityType] = useState('');
+  const [loading, setLoading] = useState(false);
   const [showUtilityModal, setShowUtilityModal] = useState(false);
   const router = useRouter();
 
-  const handleSubmit = async () => {
-    // Validate selections
-    if (!commercialRole || !entityType) {
-      toast.error('Please select both Commercial Role and Entity Type', {
-        style: {
-          fontFamily: 'SF Pro',
-          background: '#FFEBEE',
-          color: '#B71C1C'
-        }
-      });
-      return;
-    }
+  const localURL = 'https://dcarbon-server.onrender.com';
 
-    // Get user credentials from localStorage
+  const handleSubmit = async () => {
     const userId = localStorage.getItem('userId');
     const authToken = localStorage.getItem('authToken');
 
@@ -64,38 +53,8 @@ export default function OperatorRegistrationCard() {
     setLoading(true);
 
     try {
-      // Step 1: Update registration details
-      const registrationResponse = await fetch(
-        `https://dcarbon-server.onrender.com/api/user/commercial-registration/${userId}`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`,
-          },
-          body: JSON.stringify({
-            entityType,
-            commercialRole,
-          }),
-        }
-      );
-
-      if (!registrationResponse.ok) {
-        const errorData = await registrationResponse.json();
-        throw new Error(errorData.message || 'Registration update failed');
-      }
-
-      toast.success('Registration updated successfully!', {
-        style: {
-          fontFamily: 'SF Pro',
-          background: '#E8F5E9',
-          color: '#1B5E20'
-        }
-      });
-
-      // Step 2: Initiate Utility Authorization
       const initiateResponse = await fetch(
-        `{{local}}/api/auth/initiate-utility-auth/5394b5aa-2313-46a6-b5e4-0605fbf80fe6`,
+        `${localURL}/api/auth/initiate-utility-auth/${userId}`,
         {
           method: 'POST',
           headers: {
@@ -118,13 +77,10 @@ export default function OperatorRegistrationCard() {
         }
       });
 
-      // Open the external utility authorization link in a new tab
       window.open('https://utilityapi.com/authorize/DCarbon_Solutions', '_blank');
-
-      // Optionally display a modal if you need extra info before proceeding
       setShowUtilityModal(true);
     } catch (error) {
-      toast.error(error.message || 'An error occurred during registration', {
+      toast.error(error.message || 'An error occurred during utility authorization', {
         style: {
           fontFamily: 'SF Pro',
           background: '#FFEBEE',
@@ -136,7 +92,6 @@ export default function OperatorRegistrationCard() {
     }
   };
 
-  // Callback after utility modal authorization (if used)
   const handleUtilityAuthorized = () => {
     setShowUtilityModal(false);
     router.push('/register/commercial-operator-registration/agreement');
@@ -153,8 +108,14 @@ export default function OperatorRegistrationCard() {
       <div className={styles.mainContainer}>
         <div className={styles.headingContainer}>
           <div className={styles.backArrow} onClick={() => router.back()}>
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none"
-              viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
           </div>
@@ -174,12 +135,10 @@ export default function OperatorRegistrationCard() {
               <label className={styles.labelClass}>Commercial Role</label>
               <span className={styles.mandatoryStar}>*</span>
             </div>
-            <div className={styles.selectClass}>
-              Operator
-            </div>
+            <div className={styles.selectClass}>Operator</div>
           </div>
 
-          {/* Entity Type Dropdown */}
+          {/* Entity Type Dropdown (optional, for future use) */}
           <div>
             <div className={styles.labelContainer}>
               <label className={styles.labelClass}>Entity Type</label>
@@ -209,14 +168,18 @@ export default function OperatorRegistrationCard() {
 
         <div className={styles.termsTextContainer}>
           By clicking on 'Next', you agree to our{' '}
-          <a href="/terms" className={styles.termsLink}>Terms and Conditions</a>{' '}
+          <a href="/terms" className={styles.termsLink}>
+            Terms and Conditions
+          </a>{' '}
           &{' '}
-          <a href="/privacy" className={styles.termsLink}>Privacy Policy</a>
+          <a href="/privacy" className={styles.termsLink}>
+            Privacy Policy
+          </a>
         </div>
       </div>
 
       {showUtilityModal && (
-        <UtilityAuthorizationModal 
+        <UtilityAuthorizationModal
           onAuthorized={handleUtilityAuthorized}
           onClose={() => setShowUtilityModal(false)}
         />
