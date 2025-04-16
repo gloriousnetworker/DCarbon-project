@@ -1,29 +1,25 @@
 import React from "react";
-import TopStats from "./TopStats";
-import ReferredCustomersChart from "./ReferredCustomersChart";
-import CommissionChart from "./CommissionChart";
-import CustomerRangeCard from "./CustomerRangeCard";
-import PendingCustomerRegCard from "./PendingCustomerRegCard";
-import WorkProgressCard from "./WorkProgressCard";
+import QuickActions from "./QuickActions";
+import Graph from "./Graph";
+import RecentRecSales from "./CustomerCards";
 
 export default function DashboardOverview() {
   return (
-    <div className="w-full min-h-screen bg-[#D9D9D9] p-4 space-y-8">
-      {/* Top row of cards */}
-      <TopStats />
+    <div className="w-full min-h-screen space-y-8 p-4">
+      {/* Quick Actions */}
+      <QuickActions />
 
-      {/* Two graphs side by side */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <ReferredCustomersChart />
-        <CommissionChart />
-      </div>
+      {/* Separator */}
+      <hr className="border-gray-300" />
 
-      {/* Bottom row of info cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <CustomerRangeCard />
-        <PendingCustomerRegCard />
-        <WorkProgressCard />
-      </div>
+      {/* Graphs & Side Cards */}
+      <Graph />
+
+      {/* Separator */}
+      <hr className="border-gray-300" />
+
+      {/* Recent REC Sales Table */}
+      <RecentRecSales />
     </div>
   );
 }

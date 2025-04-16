@@ -4,8 +4,6 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { FaDownload, FaPrint, FaTimes } from "react-icons/fa";
 import CustomerIDLoader from "../../../../../components/loader/CustomerIDLoader";
-import InviteOwnerModal from "../../../../../components/modals/partner-modals/InvitePartnerModal";
-import EmailInvitationSentModal from "../../../../../components/modals/partner-modals/EmailInvitationSentModal";
 import RegistrationSuccessfulModal from "../../../../../components/modals/partner-modals/RegistrationSuccessfulModal";
 import Loader from "../../../../../components/loader/Loader";
 import Agreement from "../../../../../components/commercial/commercial-owner-registration/AgreementForm";
@@ -14,12 +12,10 @@ import toast from "react-hot-toast";
 
 export default function AgreementFormPage() {
   const [loading, setLoading] = useState(false);
-  const [showLoader, setShowLoader] = useState(false); // New state for loader visibility
-  const [inviteModalOpen, setInviteModalOpen] = useState(false);
-  const [sentModalOpen, setSentModalOpen] = useState(false);
+  const [showLoader, setShowLoader] = useState(false); // Loader visibility state
   const [registrationModalOpen, setRegistrationModalOpen] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
-  const [showRedirectLoader, setShowRedirectLoader] = useState(false); // New state for redirect loader
+  const [showRedirectLoader, setShowRedirectLoader] = useState(false); // Redirect loader state
 
   // Condition states: checkboxes and signature
   const [allChecked, setAllChecked] = useState(false);
@@ -88,7 +84,7 @@ export default function AgreementFormPage() {
     }
   };
 
-  // When Accept is clicked (and conditions met), start the flow by showing the invite modal.
+  // When Accept is clicked, start the flow by calling the endpoint.
   const handleSubmit = async () => {
     if (!allChecked) {
       toast.error("Please accept all agreements");
@@ -103,22 +99,13 @@ export default function AgreementFormPage() {
     try {
       await acceptUserAgreement();
       setLoading(false);
-      setInviteModalOpen(true);
+      // Directly show registration successful modal
+      setRegistrationModalOpen(true);
       toast.success("Agreement signed successfully!");
     } catch (error) {
       setLoading(false);
       toast.error(error.message || "Failed to accept agreement");
     }
-  };
-
-  const handleCloseInviteModal = () => {
-    setInviteModalOpen(false);
-    setSentModalOpen(true);
-  };
-
-  const handleCloseSentModal = () => {
-    setSentModalOpen(false);
-    setRegistrationModalOpen(true);
   };
 
   const handleCloseRegistrationModal = () => {
@@ -136,7 +123,7 @@ export default function AgreementFormPage() {
 
   return (
     <>
-      {/* Full-screen Loader Overlay with delay */}
+      {/* Full-screen Loader Overlay */}
       {showLoader && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
           <CustomerIDLoader />
@@ -159,9 +146,7 @@ export default function AgreementFormPage() {
 
         {/* Heading + Icons */}
         <div className={headingContainer}>
-          <h1 className={pageTitle}>
-            Terms of Agreement
-          </h1>
+          <h1 className={pageTitle}>Terms of Agreement</h1>
           <div className="flex space-x-4">
             <FaDownload className="cursor-pointer text-[#039994]" size={20} />
             <FaPrint className="cursor-pointer text-[#039994]" size={20} />
@@ -209,17 +194,7 @@ export default function AgreementFormPage() {
         </div>
       </div>
 
-      {/* Modals */}
-      {inviteModalOpen && (
-        <InviteOwnerModal
-          closeModal={handleCloseInviteModal}
-          onSkip={() => {
-            setInviteModalOpen(false);
-            setRegistrationModalOpen(true);
-          }} />)}
-      {sentModalOpen && (
-        <EmailInvitationSentModal closeModal={handleCloseSentModal} />
-      )}
+      {/* Registration Successful Modal */}
       {registrationModalOpen && (
         <RegistrationSuccessfulModal
           closeModal={handleCloseRegistrationModal}
@@ -245,8 +220,13 @@ export default function AgreementFormPage() {
 }
 
 // Style constants
-const mainContainer = 'min-h-screen w-full flex flex-col items-center justify-center py-8 px-4 bg-white';
-const headingContainer = 'relative w-full flex flex-col items-center mb-2';
-const backArrow = 'absolute left-4 top-0 text-[#039994] cursor-pointer z-10';
-const pageTitle = 'mb-4 font-[600] text-[36px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro text-center';
-const buttonPrimary = 'w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro';
+const mainContainer =
+  "min-h-screen w-full flex flex-col items-center justify-center py-8 px-4 bg-white";
+const headingContainer =
+  "relative w-full flex flex-col items-center mb-2";
+const backArrow =
+  "absolute left-4 top-0 text-[#039994] cursor-pointer z-10";
+const pageTitle =
+  "mb-4 font-[600] text-[36px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro text-center";
+const buttonPrimary =
+  "w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro";

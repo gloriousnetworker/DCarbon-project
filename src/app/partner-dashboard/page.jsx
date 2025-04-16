@@ -4,8 +4,8 @@ import React, { useState } from 'react';
 import DashboardSidebar from '../../components/dashboard/partner-dashboard/DashboardSidebar';
 import DashboardNavbar from '../../components/dashboard/partner-dashboard/DashboardNavbar';
 import DashboardOverview from '../../components/dashboard/partner-dashboard/overview/DashboardOverview';
-import DashboardTransaction from '../../components/dashboard/partner-dashboard/reporting/Reporting';
-import DashboardResidentialManagement from '../../components/dashboard/partner-dashboard/customer-management/CustomerManagement';
+import Reporting from '../../components/dashboard/partner-dashboard/reporting/Reporting';
+import CustomerManagement from '../../components/dashboard/partner-dashboard/customer-management/CustomerManagement';
 import DashboardContactSupport from '../../components/dashboard/partner-dashboard/ContactSupport';
 import DashboardHelpCentre from '../../components/dashboard/partner-dashboard/HelpCentre';
 import DashboardNotifications from '../../components/dashboard/partner-dashboard/Notifications';
@@ -44,10 +44,10 @@ export default function UserDashboard() {
       SectionComponent = DashboardOverview;
       break;
     case 'reporting':
-      SectionComponent = DashboardTransaction;
+      SectionComponent = Reporting;
       break;
     case 'customerManagement':
-      SectionComponent = DashboardResidentialManagement;
+      SectionComponent = CustomerManagement;
       break;
     case 'myAccount':
       SectionComponent = MyAccount;

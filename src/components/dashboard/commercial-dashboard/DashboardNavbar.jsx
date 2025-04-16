@@ -10,11 +10,12 @@ const DashboardNavbar = ({ toggleSidebar, selectedSection, sectionDisplayMap }) 
           <button className="md:hidden" onClick={toggleSidebar}>
             <FaBars className="text-gray-700" size={20} />
           </button>
-          <h1 className="text-xl font-semibold text-gray-800">
+          {/* Updated header text style from pageTitle */}
+          <h1 className="font-[550] text-[16px] leading-[50%] tracking-[-0.05em] text-[#1E1E1E] font-sfpro text-center">
             {sectionDisplayMap[selectedSection]}
           </h1>
-          {/* Yellow Operator Pending button */}
-          <button className="bg-[#FFC107] text-black px-4 py-1.5 rounded-full text-sm font-medium">
+          {/* Yellow Operator Pending button with consistent font styling */}
+          <button className="bg-[#FFC107] text-black px-4 py-1.5 rounded-full text-sm font-medium font-sfpro">
             Operator pending
           </button>
         </div>

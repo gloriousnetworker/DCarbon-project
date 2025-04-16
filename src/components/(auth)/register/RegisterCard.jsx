@@ -113,8 +113,7 @@ export default function RegisterCard() {
 
   return (
     <>
-      {/* Remove Toaster from here – configure your global Toaster in RootLayout 
-          with the desired position (e.g., center) */}
+      {/* Loader overlay */}
       {loading && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <Loader />
@@ -160,7 +159,7 @@ export default function RegisterCard() {
               {/* First Name */}
               <div className="flex-1">
                 <label htmlFor="firstName" className={labelClass}>
-                  First Name
+                  First Name <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   {/* Profile icon placeholder for First Name */}
@@ -183,7 +182,7 @@ export default function RegisterCard() {
               {/* Last Name */}
               <div className="flex-1">
                 <label htmlFor="lastName" className={labelClass}>
-                  Last Name
+                  Last Name <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   {/* Profile icon placeholder for Last Name */}
@@ -207,7 +206,7 @@ export default function RegisterCard() {
             {/* Email Address */}
             <div>
               <label htmlFor="email" className={labelClass}>
-                Email Address
+                Email Address <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[#1E1E1E] text-[14px]">
@@ -227,7 +226,7 @@ export default function RegisterCard() {
             {/* Phone Number */}
             <div>
               <label htmlFor="phone" className={labelClass}>
-                Phone Number
+                Phone Number <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 {/* Unique black phone icon placeholder */}
@@ -249,7 +248,9 @@ export default function RegisterCard() {
 
             {/* User Category */}
             <div>
-              <label className={labelClass}>User Category</label>
+              <label className={labelClass}>
+                User Category <span className="text-red-500">*</span>
+              </label>
               <div className="flex gap-4">
                 {['Resident', 'Commercial', 'Partner'].map((category) => (
                   <button
@@ -271,7 +272,7 @@ export default function RegisterCard() {
             {/* Password */}
             <div>
               <label htmlFor="password" className={labelClass}>
-                Password
+                Password <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[#1E1E1E] text-[14px]">
@@ -311,8 +312,16 @@ export default function RegisterCard() {
                       stroke="currentColor"
                       strokeWidth={2}
                     >
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.294 5 12 5c4.706 0 8.268 2.943 9.542 7-1.274 4.057-4.836 7-9.542 7-4.706 0-8.268-2.943-9.542-7z" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M2.458 12C3.732 7.943 7.294 5 12 5c4.706 0 8.268 2.943 9.542 7-1.274 4.057-4.836 7-9.542 7-4.706 0-8.268-2.943-9.542-7z"
+                      />
                     </svg>
                   )}
                 </button>

@@ -4,13 +4,13 @@ import React, { useState } from 'react';
 import DashboardSidebar from '../../components/dashboard/residence-dashboard/DashboardSidebar';
 import DashboardNavbar from '../../components/dashboard/residence-dashboard/DashboardNavbar';
 import DashboardOverview from '../../components/dashboard/residence-dashboard/overview/DashboardOverview';
-import DashboardTransaction from '../../components/dashboard/residence-dashboard/transactions/DashboardTransaction';
-import DashboardResidentialManagement from '../../components/dashboard/residence-dashboard/residential-management/DashboardResidentialManagement';
+import Transaction from '../../components/dashboard/residence-dashboard/transaction/Transaction';
+import ResidentialManagement from '../../components/dashboard/residence-dashboard/residential-management/ResidentialManagement';
 import DashboardContactSupport from '../../components/dashboard/residence-dashboard/ContactSupport';
 import DashboardHelpCentre from '../../components/dashboard/residence-dashboard/HelpCentre';
 import DashboardNotifications from '../../components/dashboard/residence-dashboard/Notifications';
+import DashboardLogout from '../../components/dashboard/residence-dashboard/Logout';
 import MyAccount from '../../components/dashboard/residence-dashboard/account/MyAccount';
-import DashboardLogout from '../../components/dashboard/residence-dashboard/LogOut';
 
 export default function UserDashboard() {
   const [activeSection, setActiveSection] = useState('overview');
@@ -31,6 +31,7 @@ export default function UserDashboard() {
     overview: 'Overview',
     transaction: 'Transaction',
     residentialManagement: 'Residential Management',
+    pendingActions: 'Pending Actions',
     myAccount: 'My Account',
     notifications: 'Notification',
     helpCenter: 'Help Centre (FAQs)',
@@ -44,13 +45,10 @@ export default function UserDashboard() {
       SectionComponent = DashboardOverview;
       break;
     case 'transaction':
-      SectionComponent = DashboardTransaction;
+      SectionComponent = Transaction;
       break;
     case 'residentialManagement':
-      SectionComponent = DashboardResidentialManagement;
-      break;
-    case 'requestPayment':
-      SectionComponent = RequestPayment;
+      SectionComponent = ResidentialManagement;
       break;
     case 'myAccount':
       SectionComponent = MyAccount;
@@ -93,10 +91,12 @@ export default function UserDashboard() {
         {/* Mobile Sidebar Overlay */}
         {sidebarOpen && (
           <div className="fixed inset-0 z-50 flex md:hidden">
+            {/* Overlay backdrop */}
             <div
               className="absolute inset-0 bg-black bg-opacity-50"
               onClick={toggleSidebar}
             />
+            {/* Sidebar itself */}
             <div className="relative bg-white w-64 h-full shadow-md">
               <DashboardSidebar
                 selectedSection={activeSection}

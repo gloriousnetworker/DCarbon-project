@@ -1,23 +1,25 @@
 import React from "react";
-import QuickAction from "./QuickAction";
-import Graphs from "./Graphs";
-import RecentTransactions from "./RecentTransactions";
+import QuickActions from "./QuickActions";
+import Graph from "./Graph";
+import RecentRecSales from "./RecentRecSales";
 
-const DashboardOverviewResidence = () => {
+export default function DashboardOverview() {
   return (
-    <div className="w-full space-y-8">
-      <QuickAction />
+    <div className="w-full min-h-screen space-y-8 p-4">
+      {/* Quick Actions */}
+      <QuickActions />
+
+      {/* Separator */}
       <hr className="border-gray-300" />
-      
-      {/* Graphs will now span full width */}
-      <Graphs />
-      
+
+      {/* Graphs & Side Cards */}
+      <Graph />
+
+      {/* Separator */}
       <hr className="border-gray-300" />
-      
-      {/* Recent Transactions will now span full width */}
-      <RecentTransactions />
+
+      {/* Recent REC Sales Table */}
+      <RecentRecSales />
     </div>
   );
-};
-
-export default DashboardOverviewResidence;
+}
