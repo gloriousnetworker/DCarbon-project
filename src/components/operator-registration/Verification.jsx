@@ -48,7 +48,6 @@ export default function VerificationContent({ token: propToken }) {
     setVerificationStatus(null);
     setMessage('');
     
-    // Start a simulated progress increase
     const interval = setInterval(() => {
       setProgress(prev => {
         if (prev >= 100) {
@@ -58,44 +57,51 @@ export default function VerificationContent({ token: propToken }) {
         return prev + 5;
       });
     }, 250);
-
+  
     try {
       const response = await fetch(`/api/auth/verify-utility-auth?token=${encodeURIComponent(token)}`, {
         method: 'GET',
         headers: {
+          'Accept': 'application/json',
           'Content-Type': 'application/json'
         }
       });
-
+  
+      // First check if the response is JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        throw new Error(text || 'Invalid response from server');
+      }
+  
       const data = await response.json();
       
       if (!response.ok) {
         throw new Error(data.message || 'Utility authorization verification failed');
       }
-
+  
       setVerificationStatus('success');
       setMessage(data.message || 'Utility authorization verified successfully');
       
       toast.success(data.message || 'Utility authorization verified', {
         style: { fontFamily: 'SF Pro', background: '#E8F5E9', color: '#1B5E20' }
       });
-
-      // Store the verified token in localStorage
+  
       if (typeof window !== 'undefined') {
         localStorage.setItem('authToken', token);
         localStorage.setItem('utilityVerified', 'true');
       }
-
-      // Redirect after delay
+  
       setTimeout(() => {
         router.push('/register/commercial-operator-registration/agreement');
       }, 1500);
-
+  
     } catch (error) {
       setVerificationStatus('error');
-      setMessage(error.message);
+      setMessage('Verification failed. Please try again or contact support.');
       
-      toast.error(error.message || 'An error occurred during utility verification', {
+      console.error('Verification error:', error);
+      toast.error('Verification failed. Please try again or contact support.', {
         style: { fontFamily: 'SF Pro', background: '#FFEBEE', color: '#B71C1C' }
       });
     } finally {
