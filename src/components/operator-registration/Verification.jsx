@@ -80,6 +80,16 @@ export default function VerificationContent({ token: propToken }) {
       if (!response.ok) {
         throw new Error(data.message || 'Utility authorization verification failed');
       }
+
+      // Store all necessary data in localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('authToken', data.data.token); // Use the token from response
+        localStorage.setItem('loginResponse', JSON.stringify(data)); // Store full response
+        localStorage.setItem('userId', data.data.user.id); // Store user ID
+        localStorage.setItem('userEmail', data.data.user.email);
+        localStorage.setItem('userFirstName', data.data.user.firstName);
+        localStorage.setItem('utilityVerified', 'true');
+      }
   
       setVerificationStatus('success');
       setMessage(data.message || 'Utility authorization verified successfully');
@@ -87,13 +97,6 @@ export default function VerificationContent({ token: propToken }) {
       toast.success(data.message || 'Utility authorization verified', {
         style: { fontFamily: 'SF Pro', background: '#E8F5E9', color: '#1B5E20' }
       });
-  
-      // Store both the token and user ID in localStorage
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('authToken', token);
-        localStorage.setItem('userId', data.userId); // Assuming backend returns userId
-        localStorage.setItem('utilityVerified', 'true');
-      }
   
       setTimeout(() => {
         router.push('/register/commercial-operator-registration/agreement');

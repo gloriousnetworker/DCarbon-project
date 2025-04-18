@@ -9,7 +9,7 @@ import EmailInvitationSentModal from "../../../../../components/modals/commercia
 import RegistrationSuccessfulModal from "../../../../../components/modals/commercial-operator-modals/RegistrationSuccessfulModal";
 import Loader from "../../../../../components/loader/Loader";
 import Agreement from "../../../../../components/commercial/commercial-owner-registration/AgreementForm";
-import SignatureModal from "../../../../../components/modals/SignatureModal";
+import SignatureModal from "../../../../../components/modals/OperatorSignatureModal";
 import toast from "react-hot-toast";
 
 export default function AgreementFormPage() {
