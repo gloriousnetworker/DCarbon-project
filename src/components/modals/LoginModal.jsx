@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import Loader from '../../../components/loader/Loader';
+import Loader from '../../components/loader/Loader';
 import toast from 'react-hot-toast';
 
 export default function LoginModal({ isOpen, onClose, onLoginSuccess, redirectPath }) {
