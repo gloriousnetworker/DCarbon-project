@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense } from 'react';
-import VerificationContent from '../VerificationContent';
+import VerificationContent from '../../../../../../components/operator-registration/Verification';
 
 export default function TokenVerificationPage({ params }) {
   return (
