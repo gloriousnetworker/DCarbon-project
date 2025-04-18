@@ -26,7 +26,7 @@ function RegisterCardContent() {
   const [userCategory, setUserCategory] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [error, setError] = useState('');
-  const [referralCode, setReferralCode] = useState('');
+  const [referral, setReferral] = useState('');
 
   // Form field states
   const [firstName, setFirstName] = useState('');
@@ -39,9 +39,9 @@ function RegisterCardContent() {
 
   // Check for referral code in URL on component mount
   useEffect(() => {
-    const code = searchParams.get('referralCode');
+    const code = searchParams.get('referral');
     if (code) {
-      setReferralCode(code);
+      setReferral(code);
       toast.success(`You've been invited with referral code: ${code}`);
     }
   }, [searchParams]);
@@ -107,8 +107,8 @@ function RegisterCardContent() {
       let url = 'https://dcarbon-server.onrender.com/api/user/register';
       
       // If referral code exists, use the referral endpoint
-      if (referralCode) {
-        url = `${url}?referralCode=${referralCode}`;
+      if (referral) {
+        url = `${url}?referral=${referral}`;
       }
 
       const response = await axios.post(
@@ -168,9 +168,9 @@ function RegisterCardContent() {
 
         {/* Form Container */}
         <div className="w-full max-w-md">
-          {referralCode && (
+          {referral && (
             <div className="mb-4 p-3 bg-green-100 text-green-800 rounded-md text-sm">
-              You're registering with referral code: <strong>{referralCode}</strong>
+              You're registering with referral code: <strong>{referral}</strong>
             </div>
           )}
           
