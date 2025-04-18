@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense } from 'react';
-import OperatorRegistrationCard from '../../../../components/operator-registration/Verification';
+import OperatorRegistrationCard from '../../../../../components/operator-registration/Verification';
 
 export default function OwnerRegistrationPage() {
   return (

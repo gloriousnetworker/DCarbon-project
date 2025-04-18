@@ -11,19 +11,28 @@ const styles = {
   progressBar: (width) => `bg-[#039994] h-2 rounded-full transition-all duration-300` + ` w-[${width}%]`,
   buttonPrimary: 'w-full max-w-md rounded-md bg-[#039994] text-white font-semibold py-2 mt-4 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro',
   buttonSkip: 'w-full max-w-md rounded-md border border-[#039994] text-[#039994] font-semibold py-2 mt-2 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro',
+  statusMessage: 'mt-4 text-center font-sfpro',
+  successMessage: 'text-green-600',
+  errorMessage: 'text-red-600',
 };
 
-// Move the main component logic to a child component
 function VerificationContent() {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [verificationStatus, setVerificationStatus] = useState(null);
+  const [message, setMessage] = useState('');
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Get token from the URL, fallback to localStorage if not available
-  const urlToken = searchParams.get('token');
-  const localToken = typeof window !== 'undefined' && localStorage.getItem('authToken');
-  const token = urlToken || localToken;
+  // Extract token from URL
+  const token = searchParams.get('token');
+
+  // Auto-verify if token is present in URL
+  useEffect(() => {
+    if (token && !loading && verificationStatus === null) {
+      handleVerify();
+    }
+  }, [token]);
 
   // Function to verify the utility authorization
   const handleVerify = async () => {
@@ -36,8 +45,10 @@ function VerificationContent() {
     
     setLoading(true);
     setProgress(0);
+    setVerificationStatus(null);
+    setMessage('');
     
-    // Start a simulated progress increase (for example over 5 seconds)
+    // Start a simulated progress increase
     const interval = setInterval(() => {
       setProgress(prev => {
         if (prev >= 100) {
@@ -49,29 +60,42 @@ function VerificationContent() {
     }, 250);
 
     try {
-      const response = await fetch(`/api/auth/check-utility-auth`, {
+      const response = await fetch(`/api/auth/verify-utility-auth`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ token })
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
       });
+
       const data = await response.json();
-      if (!response.ok || data.data?.isAuthorized !== true) {
+      
+      if (!response.ok) {
         throw new Error(data.message || 'Utility authorization verification failed');
       }
+
+      setVerificationStatus('success');
+      setMessage(data.message || 'Utility authorization verified successfully');
       
       toast.success(data.message || 'Utility authorization verified', {
         style: { fontFamily: 'SF Pro', background: '#E8F5E9', color: '#1B5E20' }
       });
-      
-      // Ensure progress is complete before redirecting
-      setProgress(100);
+
+      // Store the verified token in localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('authToken', token);
+        localStorage.setItem('utilityVerified', 'true');
+      }
+
+      // Redirect after delay
       setTimeout(() => {
         router.push('/register/commercial-operator-registration/agreement');
-      }, 500);
+      }, 1500);
 
     } catch (error) {
+      setVerificationStatus('error');
+      setMessage(error.message);
+      
       toast.error(error.message || 'An error occurred during utility verification', {
         style: { fontFamily: 'SF Pro', background: '#FFEBEE', color: '#B71C1C' }
       });
@@ -92,6 +116,15 @@ function VerificationContent() {
     <div className={styles.container}>
       <h1 className={styles.title}>Verify Utility Authorization</h1>
 
+      {/* Display verification status message */}
+      {verificationStatus && (
+        <div className={`${styles.statusMessage} ${
+          verificationStatus === 'success' ? styles.successMessage : styles.errorMessage
+        }`}>
+          {message}
+        </div>
+      )}
+
       {/* Progress Bar */}
       {loading && (
         <div className={styles.progressBarContainer}>
@@ -99,26 +132,37 @@ function VerificationContent() {
         </div>
       )}
 
-      <button 
-        onClick={handleVerify} 
-        className={styles.buttonPrimary} 
-        disabled={loading}
-      >
-        {loading ? `Verifying... ${progress}%` : 'Verify Authorization'}
-      </button>
+      {/* Only show buttons if not auto-verifying */}
+      {!loading && verificationStatus === null && (
+        <>
+          <button 
+            onClick={handleVerify} 
+            className={styles.buttonPrimary} 
+            disabled={loading}
+          >
+            {loading ? `Verifying... ${progress}%` : 'Verify Authorization'}
+          </button>
 
-      <button 
-        onClick={handleSkip} 
-        className={styles.buttonSkip}
-        disabled={loading}
-      >
-        Skip and I'll be notified
-      </button>
+          <button 
+            onClick={handleSkip} 
+            className={styles.buttonSkip}
+            disabled={loading}
+          >
+            Skip and I'll be notified
+          </button>
+        </>
+      )}
+
+      {/* Show loading message during auto-verification */}
+      {loading && token && (
+        <p className="mt-4 text-center font-sfpro text-gray-600">
+          Verifying your utility authorization...
+        </p>
+      )}
     </div>
   );
 }
 
-// Main component that wraps the content in Suspense
 export default function UtilityVerificationCard() {
   return (
     <Suspense fallback={<div className={styles.container}>Loading verification...</div>}>
