@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from "react";
+import axios from "axios";
+import SendReminderModal from "../overview/modals/SendReminderModal";
 
 export default function ThreeCardsDashboard() {
-  // --------------------------------------------
-  // 1) CUSTOMER RANGE (Referral Statistics)
-  // --------------------------------------------
   const [referralStats, setReferralStats] = useState({
     totalInvited: 0,
     totalPending: 0,
@@ -13,50 +12,29 @@ export default function ThreeCardsDashboard() {
   const [loadingStats, setLoadingStats] = useState(true);
   const [errorStats, setErrorStats] = useState(null);
 
-  // --------------------------------------------
-  // 2) PENDING CUSTOMER REGISTRATIONS
-  // --------------------------------------------
   const [pendingReferrals, setPendingReferrals] = useState([]);
   const [loadingPending, setLoadingPending] = useState(true);
   const [errorPending, setErrorPending] = useState(null);
 
-  // --------------------------------------------
-  // 3) WORK PROGRESS (Static)
-  // --------------------------------------------
-  // No state or endpoint for this; purely static for now
+  const [selectedEmail, setSelectedEmail] = useState("");
+  const [showReminderModal, setShowReminderModal] = useState(false);
 
-  // --------------------------------------------
-  // On mount, fetch data for both cards
-  // --------------------------------------------
   useEffect(() => {
-    // We can retrieve userId from localStorage; fallback to the one provided in the endpoint
-    const storedUserId =
-      localStorage.getItem("userId") ||
-      "fd1fbb4e-c408-4c73-8b12-a33efc9b3a70";
+    const storedUserId = localStorage.getItem("userId") || "8b14b23d-3082-4846-9216-2c2e9f1e96bf";
     const authToken = localStorage.getItem("authToken") || "";
 
-    // 1) Fetch referral statistics
     const fetchReferralStats = async () => {
       try {
         setLoadingStats(true);
-        setErrorStats(null);
-
-        const response = await fetch(
+        const response = await axios.get(
           `https://dcarbon-server.onrender.com/api/user/referral-statistics/${storedUserId}`,
           {
             headers: {
               Authorization: `Bearer ${authToken}`,
-              "Content-Type": "application/json",
             },
           }
         );
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-
-        const result = await response.json();
-        setReferralStats(result.data || {});
+        setReferralStats(response.data.data || {});
       } catch (err) {
         setErrorStats(err.message);
       } finally {
@@ -64,29 +42,18 @@ export default function ThreeCardsDashboard() {
       }
     };
 
-    // 2) Fetch pending referrals
     const fetchPendingReferrals = async () => {
       try {
         setLoadingPending(true);
-        setErrorPending(null);
-
-        const response = await fetch(
+        const response = await axios.get(
           `https://dcarbon-server.onrender.com/api/user/pending-referrals/${storedUserId}`,
           {
             headers: {
               Authorization: `Bearer ${authToken}`,
-              "Content-Type": "application/json",
             },
           }
         );
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-
-        const result = await response.json();
-        // result.data.pendingReferrals => array of referrals
-        setPendingReferrals(result.data?.pendingReferrals || []);
+        setPendingReferrals(response.data.data?.pendingReferrals || []);
       } catch (err) {
         setErrorPending(err.message);
       } finally {
@@ -94,48 +61,30 @@ export default function ThreeCardsDashboard() {
       }
     };
 
-    // Call both
     fetchReferralStats();
     fetchPendingReferrals();
   }, []);
 
-  // --------------------------------------------
-  // Helper: compute the total + progress for the bars
-  // We have four categories in the referralStats:
-  // totalInvited, totalPending, totalAccepted, totalExpired
-  // We'll map them to the four bars we want: 
-  //   Invited Customers (#FFB200),
-  //   Registered Customers (#1E1E1E),
-  //   Active Customers (#039994),
-  //   Active Resi. Groups (#039994)
-  //
-  // For demonstration, we’ll map:
-  // Invited = totalInvited
-  // Registered = totalPending
-  // Active = totalAccepted
-  // Active Resi. = totalExpired
-  //
-  // Adjust as needed if your business logic differs.
-  // --------------------------------------------
   const totalRefCount =
     referralStats.totalInvited +
     referralStats.totalPending +
     referralStats.totalAccepted +
-    referralStats.totalExpired ||
-    0;
+    referralStats.totalExpired || 0;
 
   const getProgress = (value) => {
     if (!totalRefCount) return 0;
     return Math.round((value / totalRefCount) * 100);
   };
 
+  const handleEmailClick = (email) => {
+    setSelectedEmail(email);
+    setShowReminderModal(true);
+  };
+
   return (
     <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-4">
-      {/* ---------------------------
-          CARD 1: CUSTOMER RANGE
-      ----------------------------*/}
+      {/* Customer Range Card */}
       <div className="bg-white rounded-lg shadow p-4 flex flex-col">
-        {/* Heading Row */}
         <div className="flex items-center space-x-2 mb-2">
           <img
             src="/vectors/UserList.png"
@@ -146,7 +95,6 @@ export default function ThreeCardsDashboard() {
             Customer Range
           </h3>
         </div>
-        {/* Loading/Error state */}
         {loadingStats ? (
           <div className="flex justify-center items-center h-16">
             <p className="animate-pulse text-gray-500">Loading stats...</p>
@@ -155,9 +103,7 @@ export default function ThreeCardsDashboard() {
           <p className="text-red-500 text-sm">Error: {errorStats}</p>
         ) : (
           <>
-            {/* Black horizontal line */}
             <hr className="my-2 border-black" />
-            {/* Four progress bars */}
             <ProgressBarRow
               label="Invited Customers"
               color="#FFB200"
@@ -165,15 +111,15 @@ export default function ThreeCardsDashboard() {
               progress={getProgress(referralStats.totalInvited)}
             />
             <ProgressBarRow
-              label="Registered Customers"
-              color="#1E1E1E"
-              value={referralStats.totalPending}
-              progress={getProgress(referralStats.totalPending)}
-            />
-            <ProgressBarRow
               label="Active Customers"
               color="#039994"
-              value={referralStats.totalAccepted}
+              value={referralStats.totalPending}
+              progress={getProgress(referralStats.totalPending)} 
+            />
+            <ProgressBarRow
+              label="Registered Customers"
+              color="#1E1E1E"
+              value={referralStats.totalAccepted} 
               progress={getProgress(referralStats.totalAccepted)}
             />
             <ProgressBarRow
@@ -186,11 +132,8 @@ export default function ThreeCardsDashboard() {
         )}
       </div>
 
-      {/* --------------------------------
-          CARD 2: PENDING CUSTOMER REGISTRATIONS
-      ---------------------------------*/}
+      {/* Pending Customer Registrations Card */}
       <div className="bg-white rounded-lg shadow p-4 flex flex-col">
-        {/* Heading Row */}
         <div className="flex items-center space-x-2 mb-2">
           <img
             src="/vectors/UserCircleDashed.png"
@@ -201,7 +144,6 @@ export default function ThreeCardsDashboard() {
             Pending Customer Registrations
           </h3>
         </div>
-        {/* Loading/Error state */}
         {loadingPending ? (
           <div className="flex justify-center items-center h-16">
             <p className="animate-pulse text-gray-500">Loading pending...</p>
@@ -210,9 +152,7 @@ export default function ThreeCardsDashboard() {
           <p className="text-red-500 text-sm">Error: {errorPending}</p>
         ) : (
           <>
-            {/* Black horizontal line */}
             <hr className="my-2 border-black" />
-            {/* Scrollable list of up to 5 records */}
             <div className="overflow-y-auto max-h-52 pr-2">
               {pendingReferrals.length > 0 ? (
                 pendingReferrals.slice(0, 5).map((item, idx) => (
@@ -220,10 +160,12 @@ export default function ThreeCardsDashboard() {
                     key={idx}
                     className="flex items-center justify-between mb-2"
                   >
-                    <span className="text-[#1E1E1E] text-sm font-medium">
-                      {item.name || item.fullName || "Unknown User"}
-                    </span>
-                    {/* Tag showing "Pending" */}
+                    <button
+                      onClick={() => handleEmailClick(item.inviteeEmail)}
+                      className="text-[#1E1E1E] text-sm font-medium hover:underline"
+                    >
+                      {item.inviteeEmail || "Unknown User"}
+                    </button>
                     <span
                       className="text-xs px-2 py-1 rounded-full"
                       style={{
@@ -232,7 +174,7 @@ export default function ThreeCardsDashboard() {
                         color: "#FFB200",
                       }}
                     >
-                      Pending
+                      {item.status || "Pending"}
                     </span>
                   </div>
                 ))
@@ -242,14 +184,11 @@ export default function ThreeCardsDashboard() {
                 </div>
               )}
             </div>
-            {/* Black horizontal line */}
             <hr className="my-2 border-black" />
-            {/* View more button */}
             <div className="flex justify-end">
               <button
                 className="text-white text-xs px-3 py-1 rounded"
                 style={{ backgroundColor: "#039994" }}
-                onClick={() => alert("View more clicked!")}
               >
                 View more
               </button>
@@ -258,11 +197,8 @@ export default function ThreeCardsDashboard() {
         )}
       </div>
 
-      {/* --------------------------------
-          CARD 3: WORK PROGRESS
-      ---------------------------------*/}
+      {/* Work Progress Card */}
       <div className="bg-white rounded-lg shadow p-4 flex flex-col">
-        {/* Heading Row */}
         <div className="flex items-center space-x-2 mb-2">
           <img
             src="/vectors/Files.png"
@@ -271,9 +207,7 @@ export default function ThreeCardsDashboard() {
           />
           <h3 className="text-[#1E1E1E] font-semibold text-sm">Work Progress</h3>
         </div>
-        {/* Black horizontal line */}
         <hr className="my-2 border-black" />
-        {/* Items (static) */}
         <WorkProgressItem
           label="Incomplete Registrations"
           color="#FFB200"
@@ -296,26 +230,26 @@ export default function ThreeCardsDashboard() {
         />
         <WorkProgressItem label="Terminated" color="#FF0000" value="12" />
       </div>
+
+      {/* Send Reminder Modal */}
+      {showReminderModal && (
+        <SendReminderModal
+          isOpen={showReminderModal}
+          onClose={() => setShowReminderModal(false)}
+          initialEmail={selectedEmail}
+        />
+      )}
     </div>
   );
 }
 
-/**
- * Progress Bar Row for the Customer Range card
- * @param {string} label - e.g. "Invited Customers"
- * @param {string} color - bar color, e.g. "#FFB200"
- * @param {number} value - numeric value, e.g. 10
- * @param {number} progress - the percentage (0-100)
- */
 function ProgressBarRow({ label, color, value, progress }) {
   return (
     <div className="mb-3">
-      {/* Label Row */}
       <div className="flex items-center justify-between">
         <span className="text-[#1E1E1E] text-sm">{label}</span>
         <span className="text-[#1E1E1E] text-sm font-medium">{value}</span>
       </div>
-      {/* Progress Bar */}
       <div className="w-full h-2 mt-1 bg-[#EEEEEE] rounded-full overflow-hidden">
         <div
           className="h-full rounded-full transition-all duration-300"
@@ -329,12 +263,6 @@ function ProgressBarRow({ label, color, value, progress }) {
   );
 }
 
-/**
- * Single line item for Work Progress
- * @param {string} label - e.g. "Incomplete Registrations"
- * @param {string} color - circle color
- * @param {string|number} value - numeric text for the circle
- */
 function WorkProgressItem({ label, color, value }) {
   return (
     <div className="flex items-center justify-between mb-2">

@@ -15,8 +15,8 @@ const DashboardNavbar = ({ toggleSidebar, selectedSection, sectionDisplayMap }) 
             {sectionDisplayMap[selectedSection]}
           </h1>
           {/* Yellow Operator Pending button with consistent font styling */}
-          <button className="bg-[#FFC107] text-black px-4 py-1.5 rounded-full text-sm font-medium font-sfpro">
-            Operator pending
+          <button className="bg-[#1E1E1E] text-white px-2 py-1.5 rounded-full text-[10px] font-medium font-sfpro">
+            Sales Agent
           </button>
         </div>
 

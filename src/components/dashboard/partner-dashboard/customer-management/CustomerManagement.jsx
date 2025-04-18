@@ -1,48 +1,51 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-// Icons (replace with your own if needed)
+// Icons
 import {
   HiOutlineChevronLeft,
   HiOutlineChevronRight,
 } from 'react-icons/hi';
 
-// Modals (placeholders; create/modify these as needed in ./)
+// Modals
 import FilterModal from './FilterModal';
 import SendReminderModal from './SendReminderModal';
 import InviteIndividualModal from './InviteIndividualModal';
 import InviteBulkModal from './InviteBulkModal';
 
-// Styles from your styles.js
+// Styles
 import {
   mainContainer,
   headingContainer,
   pageTitle,
-  // you can import other style classes as needed
 } from './styles';
 
 export default function PartnerCustomerReport() {
-  // Table data from API
   const [tableData, setTableData] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [statistics, setStatistics] = useState({
+    totalInvited: 0,
+    totalPending: 0,
+    totalAccepted: 0,
+    totalExpired: 0
+  });
+  const [loadingStats, setLoadingStats] = useState(true);
 
-  // Track whether each modal is open
+  // Modal states
   const [isFilterOpen, setFilterOpen] = useState(false);
   const [isSendReminderOpen, setSendReminderOpen] = useState(false);
   const [isInviteDropdownOpen, setInviteDropdownOpen] = useState(false);
   const [isInviteIndividualOpen, setInviteIndividualOpen] = useState(false);
   const [isInviteBulkOpen, setInviteBulkOpen] = useState(false);
 
-  // On mount, fetch the partner customer report
   useEffect(() => {
     fetchTableData(1);
-    // eslint-disable-next-line
+    fetchStatistics();
   }, []);
 
   const fetchTableData = async (pageNumber = 1) => {
     try {
-      // Example of retrieving userId/authToken from localStorage:
       const userId = localStorage.getItem('userId');
       const authToken = localStorage.getItem('authToken');
 
@@ -50,10 +53,9 @@ export default function PartnerCustomerReport() {
         `https://dcarbon-server.onrender.com/api/user/get-users-referrals/${userId}`,
         {
           params: {
-            status: 'ACCEPTED', // Example param
+            status: 'ACCEPTED',
             page: pageNumber,
             limit: 10,
-            // add other params if needed: customerType, startDate, endDate, etc.
           },
           headers: {
             Authorization: `Bearer ${authToken}`,
@@ -71,20 +73,57 @@ export default function PartnerCustomerReport() {
       }
     } catch (error) {
       console.error('Error fetching table data:', error);
-      // You can handle error states here
     }
   };
 
-  // Open/close modals
+  const fetchStatistics = async () => {
+    try {
+      setLoadingStats(true);
+      const userId = localStorage.getItem('userId');
+      const authToken = localStorage.getItem('authToken');
+
+      const response = await axios.get(
+        `https://dcarbon-server.onrender.com/api/user/referral-statistics/${userId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
+        }
+      );
+
+      if (response?.data?.status === 'success') {
+        setStatistics(response.data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching statistics:', error);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
+
+  // Calculate total count for progress bar
+  const getTotalCount = () => {
+    return (
+      statistics.totalInvited +
+      statistics.totalPending +
+      statistics.totalAccepted +
+      statistics.totalExpired
+    );
+  };
+
+  // Calculate percentage for each status
+  const calculatePercentage = (count) => {
+    const total = getTotalCount();
+    return total > 0 ? (count / total) * 100 : 0;
+  };
+
+  // Modal handlers
   const openFilterModal = () => setFilterOpen(true);
   const closeFilterModal = () => setFilterOpen(false);
-
   const openSendReminderModal = () => setSendReminderOpen(true);
   const closeSendReminderModal = () => setSendReminderOpen(false);
-
   const openInviteIndividualModal = () => setInviteIndividualOpen(true);
   const closeInviteIndividualModal = () => setInviteIndividualOpen(false);
-
   const openInviteBulkModal = () => setInviteBulkOpen(true);
   const closeInviteBulkModal = () => setInviteBulkOpen(false);
 
@@ -100,29 +139,25 @@ export default function PartnerCustomerReport() {
     }
   };
 
-  // Handle Cus.Status tag color
+  // Status styling
   const getStatusStyle = (status) => {
     switch (status?.toLowerCase()) {
       case 'terminated':
-        return '#FF0000'; // red
+        return '#FF0000';
       case 'invited':
-        return '#FFB200'; // orange
+        return '#FFB200';
       case 'active':
-        return '#00B4AE'; // teal
+        return '#00B4AE';
       case 'registered':
-      case 'accepted': // if your API returns "ACCEPTED", you might map it to 'registered'
-        return '#000000'; // black
+      case 'accepted':
+        return '#000000';
       default:
-        return '#000000'; // fallback to black
+        return '#000000';
     }
   };
 
-  // Handle Doc. Status: show red triangle or green circle
-  // For demonstration, let's assume: if 'accepted' => green circle, else => red triangle
   const renderDocStatus = (status) => {
-    // If you have actual doc verification data, use that. This is just an example:
     if (status?.toLowerCase() === 'accepted' || status?.toLowerCase() === 'active') {
-      // Green circle with #039994
       return (
         <span
           className="inline-block w-3 h-3 rounded-full"
@@ -130,7 +165,6 @@ export default function PartnerCustomerReport() {
         />
       );
     }
-    // Red triangle with #FF0000
     return (
       <svg
         className="inline-block w-3 h-3"
@@ -142,12 +176,8 @@ export default function PartnerCustomerReport() {
     );
   };
 
-  // Construct table rows from API data
-  // The user wants columns: S/N, Name, Cus.Type, Utility, Finance Company, Address, Date Reg., Cus. Status, Doc. Status
-  // The example API response data has: name, customerType, createdAt, status
   const renderRows = () => {
     return tableData.map((item, index) => {
-      // S/N = index + 1
       const sn = index + 1 + (currentPage - 1) * 10;
       const nameToShow = item.name || item.inviteeEmail || 'Name';
       const customerType = item.customerType || 'Residential';
@@ -155,7 +185,6 @@ export default function PartnerCustomerReport() {
         ? new Date(item.createdAt).toLocaleDateString()
         : '16-03-2025';
 
-      // For illustration, we’re using placeholders for Utility, Finance Company, Address
       return (
         <tr key={item.id || index} className="border-b hover:bg-gray-50">
           <td className="py-3 px-2">{sn}</td>
@@ -165,7 +194,6 @@ export default function PartnerCustomerReport() {
           <td className="py-3 px-2">Finance Comp.</td>
           <td className="py-3 px-2">Address</td>
           <td className="py-3 px-2">{dateReg}</td>
-          {/* Cus. Status tag with round corners */}
           <td className="py-3 px-2">
             <span
               className="text-white px-2 py-1 rounded-full text-sm"
@@ -176,7 +204,6 @@ export default function PartnerCustomerReport() {
                 : item.status || 'Registered'}
             </span>
           </td>
-          {/* Doc. Status */}
           <td className="py-3 px-2">{renderDocStatus(item.status)}</td>
         </tr>
       );
@@ -185,25 +212,20 @@ export default function PartnerCustomerReport() {
 
   return (
     <div className={`rounded-md shadow-md p-6 w-full ${mainContainer}`}>
-      {/* Header row with Filter By (left), Send Reminder (right, #1E1E1E), and Invite New Customer (#039994) */}
+      {/* Header row */}
       <div className="w-full flex flex-col md:flex-row items-start md:items-center justify-between mb-4">
-        {/* Left side: Filter By button */}
         <button
           onClick={openFilterModal}
           className="flex items-center border border-black text-black bg-transparent px-4 py-2 rounded hover:bg-gray-100 focus:outline-none focus:ring-1 focus:ring-black"
         >
           <span className="mr-2">Filter By</span>
-          {/* If you have an icon, place it here or omit */}
         </button>
 
-        {/* Right side: two buttons (Send Reminder & Invite New Customer) */}
         <div className="mt-2 md:mt-0 flex items-center space-x-4">
-          {/* Send Reminder */}
           <button
             onClick={openSendReminderModal}
             className="flex items-center bg-[#1E1E1E] text-white px-4 py-2 rounded hover:opacity-90"
           >
-            {/* vector.png icon (replace src with your correct file path) */}
             <img
               src="/vectors/Timer.png"
               alt="vector"
@@ -212,7 +234,6 @@ export default function PartnerCustomerReport() {
             <span>Send Reminder</span>
           </button>
 
-          {/* Invite New Customer with a dropdown */}
           <div className="relative">
             <button
               onClick={() => setInviteDropdownOpen(!isInviteDropdownOpen)}
@@ -226,7 +247,6 @@ export default function PartnerCustomerReport() {
               <span>Invite New Customer</span>
             </button>
 
-            {/* Dropdown options */}
             {isInviteDropdownOpen && (
               <div className="absolute right-0 mt-2 bg-white border border-gray-200 rounded shadow-lg z-10">
                 <button
@@ -253,40 +273,68 @@ export default function PartnerCustomerReport() {
         </div>
       </div>
 
-      {/* Long progress bar and labeled indicators at bottom-right */}
-      <div className="w-full h-2 bg-gray-200 rounded mb-6 relative">
-        {/* It's just a “bar” for demonstration. You can style differently if you want a gradient or sections. */}
-        {/* You can omit any fill if you only want a gray bar. */}
+      {/* Progress Bar */}
+      <div className="w-full h-2 bg-gray-200 rounded mb-6 relative overflow-hidden">
+        {!loadingStats && (
+          <>
+            <div 
+              className="absolute h-full bg-[#FF0000]" 
+              style={{ width: `${calculatePercentage(statistics.totalExpired)}%` }}
+            />
+            <div 
+              className="absolute h-full bg-[#FFB200]" 
+              style={{ 
+                width: `${calculatePercentage(statistics.totalInvited)}%`,
+                left: `${calculatePercentage(statistics.totalExpired)}%`
+              }}
+            />
+            <div 
+              className="absolute h-full bg-[#00B4AE]" 
+              style={{ 
+                width: `${calculatePercentage(statistics.totalPending)}%`,
+                left: `${calculatePercentage(statistics.totalExpired + statistics.totalInvited)}%`
+              }}
+            />
+            <div 
+              className="absolute h-full bg-[#000000]" 
+              style={{ 
+                width: `${calculatePercentage(statistics.totalAccepted)}%`,
+                left: `${calculatePercentage(statistics.totalExpired + statistics.totalInvited + statistics.totalPending)}%`
+              }}
+            />
+          </>
+        )}
       </div>
-      {/* Legend aligned bottom-right */}
+
+      {/* Legend */}
       <div className="flex items-center justify-end space-x-6 mb-4">
         <div className="flex items-center space-x-1">
           <span
             className="inline-block w-3 h-3 rounded-full"
             style={{ backgroundColor: '#FF0000' }}
           />
-          <span className="text-sm">Terminated</span>
+          <span className="text-sm">Terminated ({statistics.totalExpired})</span>
         </div>
         <div className="flex items-center space-x-1">
           <span
             className="inline-block w-3 h-3 rounded-full"
             style={{ backgroundColor: '#FFB200' }}
           />
-          <span className="text-sm">Invited</span>
+          <span className="text-sm">Invited ({statistics.totalInvited})</span>
         </div>
         <div className="flex items-center space-x-1">
           <span
             className="inline-block w-3 h-3 rounded-full"
             style={{ backgroundColor: '#00B4AE' }}
           />
-          <span className="text-sm">Active</span>
+          <span className="text-sm">Active ({statistics.totalPending})</span>
         </div>
         <div className="flex items-center space-x-1">
           <span
             className="inline-block w-3 h-3 rounded-full"
             style={{ backgroundColor: '#000000' }}
           />
-          <span className="text-sm">Registered</span>
+          <span className="text-sm">Registered ({statistics.totalAccepted})</span>
         </div>
       </div>
 
@@ -310,7 +358,7 @@ export default function PartnerCustomerReport() {
         </table>
       </div>
 
-      {/* Pagination at the center */}
+      {/* Pagination */}
       <div className="flex items-center justify-center space-x-4">
         <button
           onClick={handlePrevious}

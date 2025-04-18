@@ -4,9 +4,7 @@ import { FaChevronDown, FaChevronUp } from "react-icons/fa";
 import TwoFactorAuth from "./TwoFactorAuth";
 import ChangePasswordModal from "./ChangePasswordModal";
 import ProfileImage from "./ProfileImage";
-import CompanyInformation from "./CompanyInformation";
 import ContactInformation from "./ContactInformation";
-import AccountPayableInformation from "./AccountPayableInformation";
 import { toast } from "react-hot-toast";
 import Loader from "@/components/loader/Loader";
 
@@ -15,11 +13,6 @@ const MyAccount = () => {
   const [showPreferences, setShowPreferences] = useState(true);
   const [viewTwoFA, setViewTwoFA] = useState(false);
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
-
-  // Payment toggles & frequency
-  const [stripeEnabled, setStripeEnabled] = useState(false);
-  const [monthlyFrequency, setMonthlyFrequency] = useState(false);
-  const [quarterlyFrequency, setQuarterlyFrequency] = useState(false);
 
   // User data and loading state
   const [userData, setUserData] = useState(null);
@@ -97,13 +90,8 @@ const MyAccount = () => {
               {/* Company, Contact, and Payment Information */}
               {!loading && (
                 <>
-                  <CompanyInformation userData={userData} />
+                  
                   <ContactInformation userData={userData} />
-                  <AccountPayableInformation
-                    stripeEnabled={stripeEnabled}
-                    setStripeEnabled={setStripeEnabled}
-                  />
-
                   {/* Preferences Section */}
                   <div className="border-t border-[#E8E8E8] pt-6">
                     <div
@@ -121,33 +109,6 @@ const MyAccount = () => {
                     </div>
                     {showPreferences && (
                       <div className="mt-4 space-y-4">
-                        {/* Payment Frequency Checkboxes */}
-                        <div>
-                          <label className="text-sm text-[#1E1E1E] font-sfpro">
-                            Payment Frequency:
-                          </label>
-                          <div className="flex items-center mt-2 space-x-6">
-                            <label className="flex items-center space-x-2 text-sm text-[#1E1E1E] font-sfpro">
-                              <input
-                                type="checkbox"
-                                checked={monthlyFrequency}
-                                onChange={() => setMonthlyFrequency(!monthlyFrequency)}
-                                className="rounded border-[#E8E8E8] text-[#039994] focus:ring-[#039994]"
-                              />
-                              <span>Monthly</span>
-                            </label>
-                            <label className="flex items-center space-x-2 text-sm text-[#1E1E1E] font-sfpro">
-                              <input
-                                type="checkbox"
-                                checked={quarterlyFrequency}
-                                onChange={() => setQuarterlyFrequency(!quarterlyFrequency)}
-                                className="rounded border-[#E8E8E8] text-[#039994] focus:ring-[#039994]"
-                              />
-                              <span>Quarterly</span>
-                            </label>
-                          </div>
-                        </div>
-
                         {/* 2FA Authentication */}
                         <button
                           className="text-sm text-[#1E1E1E] hover:text-[#039994] focus:outline-none block font-sfpro transition-colors"
