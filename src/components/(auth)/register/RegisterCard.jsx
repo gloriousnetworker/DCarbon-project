@@ -169,9 +169,9 @@ function RegisterCardContent() {
 
         {/* Form Container */}
         <div className="w-full max-w-md">
-          {referral && (
+          {referralCode && (
             <div className="mb-4 p-3 bg-green-100 text-green-800 rounded-md text-sm">
-              You're registering with referral code: <strong>{referral}</strong>
+              You're registering with referral code: <strong>{referralCode}</strong>
             </div>
           )}
           
