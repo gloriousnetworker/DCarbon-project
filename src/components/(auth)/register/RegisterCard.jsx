@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import Loader from '../../../components/loader/Loader';
 import EmailModal from '../../../components/modals/EmailModal';
-// Using react-hot-toast instead of react-toastify for toast notifications
 import { toast } from 'react-hot-toast';
+import { useSearchParams } from 'next/navigation';
 
 // Import our custom styles from styles.js
 import {
@@ -25,6 +25,7 @@ export default function RegisterCard() {
   const [userCategory, setUserCategory] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [error, setError] = useState('');
+  const [referralCode, setReferralCode] = useState('');
 
   // Form field states
   const [firstName, setFirstName] = useState('');
@@ -32,6 +33,17 @@ export default function RegisterCard() {
   const [email, setEmail] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
+
+  const searchParams = useSearchParams();
+
+  // Check for referral code in URL on component mount
+  useEffect(() => {
+    const code = searchParams.get('referralCode');
+    if (code) {
+      setReferralCode(code);
+      toast.success(`You've been invited with referral code: ${code}`);
+    }
+  }, [searchParams]);
 
   // Mapping UI labels to API expected values
   const userTypeMapping = {
@@ -91,11 +103,19 @@ export default function RegisterCard() {
     };
 
     try {
+      let url = 'https://dcarbon-server.onrender.com/api/user/register';
+      
+      // If referral code exists, use the referral endpoint
+      if (referralCode) {
+        url = `${url}?referralCode=${referralCode}`;
+      }
+
       const response = await axios.post(
-        'https://dcarbon-server.onrender.com/api/user/register',
+        url,
         payload,
         { headers: { 'Content-Type': 'application/json' } }
       );
+      
       localStorage.setItem('userEmail', response.data.data.email);
       toast.success('Registration successful');
       setShowModal(true);
@@ -147,6 +167,12 @@ export default function RegisterCard() {
 
         {/* Form Container */}
         <div className="w-full max-w-md">
+          {referralCode && (
+            <div className="mb-4 p-3 bg-green-100 text-green-800 rounded-md text-sm">
+              You're registering with referral code: <strong>{referralCode}</strong>
+            </div>
+          )}
+          
           <form
             className={formWrapper}
             onSubmit={(e) => {
@@ -357,7 +383,7 @@ export default function RegisterCard() {
 
           {/* Terms and Conditions */}
           <p className={termsTextContainer}>
-            By clicking on ‘Create Account’, you agree to our{' '}
+            By clicking on 'Create Account', you agree to our{' '}
             <a href="/terms" className="text-[#039994] underline">
               Terms and Conditions
             </a>{' '}
