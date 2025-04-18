@@ -24,7 +24,7 @@ function VerificationContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Extract token from URL
+  // Extract token from URL query parameters
   const token = searchParams.get('token');
 
   // Auto-verify if token is present in URL
@@ -60,11 +60,10 @@ function VerificationContent() {
     }, 250);
 
     try {
-      const response = await fetch(`/api/auth/verify-utility-auth`, {
-        method: 'POST',
+      const response = await fetch(`/api/auth/verify-utility-auth?token=${encodeURIComponent(token)}`, {
+        method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         }
       });
 
