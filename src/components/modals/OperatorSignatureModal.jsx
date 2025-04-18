@@ -2,6 +2,11 @@ import React, { useState, useRef, useEffect } from "react";
 import { FaTimes } from "react-icons/fa";
 import toast from "react-hot-toast";
 
+/**
+ * SignatureModal
+ * Allows users to draw, type, or upload a signature.
+ * Retrieves authToken and userId from localStorage based on utility authorization response.
+ */
 const SignatureModal = ({ isOpen, onClose, onSaveSignature }) => {
   const [activeTab, setActiveTab] = useState("draw");
   const [typedSignature, setTypedSignature] = useState("");
@@ -14,6 +19,7 @@ const SignatureModal = ({ isOpen, onClose, onSaveSignature }) => {
   const canvasRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
 
+  // Initialize canvas when opening draw tab
   useEffect(() => {
     if (activeTab === "draw" && isOpen) {
       initCanvas();
@@ -70,10 +76,7 @@ const SignatureModal = ({ isOpen, onClose, onSaveSignature }) => {
     setSignatureData(null);
   };
 
-  const handleSelectImage = () => {
-    fileInputRef.current?.click();
-  };
-
+  const handleSelectImage = () => fileInputRef.current?.click();
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -87,20 +90,28 @@ const SignatureModal = ({ isOpen, onClose, onSaveSignature }) => {
     setUploadComplete(false);
     const interval = setInterval(() => {
       setUploadProgress((prev) => {
-        const nextVal = Math.min(prev + 23, 100);
-        if (nextVal >= 100) {
+        const next = Math.min(prev + 23, 100);
+        if (next >= 100) {
           clearInterval(interval);
           setUploadComplete(true);
         }
-        return nextVal;
+        return next;
       });
     }, 600);
   };
 
+  /**
+   * Uploads the signature by PUT /api/user/update-user-agreement/:userId
+   * Retrieves authToken and userId from localStorage.
+   */
   const handleSignatureUpload = async () => {
-    const loginResponse = JSON.parse(localStorage.getItem("loginResponse") || "{}");
-    const authToken = loginResponse.data?.token;
-    const userId = loginResponse.data?.user?.id;
+    // Retrieve token and loginResponse
+    const authToken = localStorage.getItem("authToken");
+    const raw = localStorage.getItem("loginResponse");
+    const loginResponse = raw ? JSON.parse(raw) : {};
+    const userId = loginResponse.data?.authData?.userId;
+    const userEmail = loginResponse.data?.authData?.email || "";
+    const userName = localStorage.getItem("userFirstName") || userEmail;
 
     if (!authToken || !userId) {
       toast.error("Authentication required");
@@ -108,70 +119,70 @@ const SignatureModal = ({ isOpen, onClose, onSaveSignature }) => {
     }
 
     const formData = new FormData();
-    let signatureMethod = "";
+    let method = "";
 
     try {
       if (activeTab === "draw") {
         if (!signatureData) {
-          toast.error("Please draw your signature first");
+          toast.error("Draw your signature first");
           return;
         }
-        const response = await fetch(signatureData);
-        const blob = await response.blob();
+        const resp = await fetch(signatureData);
+        const blob = await resp.blob();
         formData.append("signature", blob, "signature.png");
-        signatureMethod = "drawn";
+        method = "drawn";
       } else if (activeTab === "type") {
         if (!typedSignature.trim()) {
-          toast.error("Please enter your signature text");
+          toast.error("Enter signature text");
           return;
         }
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-        canvas.width = 300;
-        canvas.height = 100;
+        const c = document.createElement("canvas");
+        const ctx = c.getContext("2d");
+        c.width = 300;
+        c.height = 100;
         ctx.font = `24px ${selectedFont}`;
         ctx.fillStyle = "#039994";
         ctx.fillText(typedSignature, 10, 50);
-        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+        const blob = await new Promise((res) => c.toBlob(res, 'image/png'));
         formData.append("signature", blob, "signature.png");
-        signatureMethod = "typed";
-      } else if (activeTab === "upload") {
+        method = "typed";
+      } else {
         if (!selectedFile || !uploadComplete) {
-          toast.error("Please upload a signature image first");
+          toast.error("Upload a signature image first");
           return;
         }
         formData.append("signature", selectedFile);
-        signatureMethod = "uploaded";
+        method = "uploaded";
       }
 
+      // Append user info
       formData.append("userId", userId);
-      formData.append("email", loginResponse.data?.user?.email || "");
-      formData.append("name", `${loginResponse.data?.user?.firstName || ""} ${loginResponse.data?.user?.lastName || ""}`.trim());
+      formData.append("email", userEmail);
+      formData.append("name", userName);
 
-      const response = await fetch(
+      const resp = await fetch(
         `https://dcarbon-server.onrender.com/api/user/update-user-agreement/${userId}`,
         {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-          },
+          method: 'PUT',
+          headers: { Authorization: `Bearer ${authToken}` },
           body: formData,
         }
       );
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to save signature");
+      if (!resp.ok) {
+        const err = await resp.json();
+        throw new Error(err.message || 'Failed to save signature');
       }
 
-      const data = await response.json();
-      toast.success(`Signature (${signatureMethod}) saved successfully`);
-      onSaveSignature(data);
+      const result = await resp.json();
+      toast.success(`Signature (${method}) saved successfully`);
+      onSaveSignature(result);
       onClose();
-    } catch (error) {
-      console.error("Error saving signature:", error);
-      toast.error(error.message || "An error occurred while saving the signature");
-      if (error.message.includes('Unauthorized') || error.message.includes('expired')) {
+    } catch (err) {
+      console.error(err);
+      toast.error(err.message || 'Error saving signature');
+      if (err.message.includes('Unauthorized') || err.message.includes('expired')) {
+        localStorage.removeItem('authToken');
         localStorage.removeItem('loginResponse');
         window.location.href = '/login';
       }
@@ -183,13 +194,14 @@ const SignatureModal = ({ isOpen, onClose, onSaveSignature }) => {
   return (
     <div className={spinnerOverlay}>
       <div className="relative w-full max-w-xl bg-white rounded-md shadow-md font-sfpro">
+        {/* Modal Header */}
         <div className="flex justify-between items-center px-6 py-4">
           <h2 className={uploadHeading}>Upload Signature</h2>
           <button onClick={onClose} className="text-red-500 hover:text-red-600" aria-label="Close">
             <FaTimes size={20} />
           </button>
         </div>
-
+        {/* Tabs */}
         <div className="px-6">
           <ul className="flex space-x-6 border-b border-gray-200">
             {["draw", "type", "upload"].map((tab) => (
@@ -208,32 +220,25 @@ const SignatureModal = ({ isOpen, onClose, onSaveSignature }) => {
             ))}
           </ul>
         </div>
-
+        {/* Content */}
         <div className="px-6 py-4 min-h-[250px]">
           {activeTab === "draw" && (
             <div className="space-y-4">
-              <div 
+              <div
                 className="border border-gray-300 rounded-md h-64 bg-gray-50 relative"
                 onMouseDown={startDrawing}
                 onMouseMove={draw}
                 onMouseUp={endDrawing}
                 onMouseLeave={endDrawing}
               >
-                <canvas
-                  ref={canvasRef}
-                  width="100%"
-                  height="100%"
-                  className="absolute inset-0 w-full h-full"
-                />
+                <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
                 {!signatureData && (
                   <div className="absolute inset-0 flex items-center justify-center text-gray-400">
                     Draw your signature here
                   </div>
                 )}
               </div>
-              <button onClick={clearCanvas} className="text-sm text-[#039994] hover:text-[#02857f]">
-                Clear Signature
-              </button>
+              <button onClick={clearCanvas} className="text-sm text-[#039994] hover:text-[#02857f]">Clear Signature</button>
             </div>
           )}
 
@@ -241,16 +246,11 @@ const SignatureModal = ({ isOpen, onClose, onSaveSignature }) => {
             <div className="space-y-4">
               <div className="flex flex-col">
                 <label className={labelClass}>Select typeface</label>
-                <select 
-                  className={selectClass}
-                  value={selectedFont}
-                  onChange={(e) => setSelectedFont(e.target.value)}
-                >
+                <select className={selectClass} value={selectedFont} onChange={(e) => setSelectedFont(e.target.value)}>
                   <option value="Signika">Signika</option>
                   <option value="Great Vibes">Great Vibes</option>
                   <option value="Dancing Script">Dancing Script</option>
                 </select>
-
                 <label className={labelClass}>Enter Name</label>
                 <input
                   type="text"
@@ -260,16 +260,8 @@ const SignatureModal = ({ isOpen, onClose, onSaveSignature }) => {
                   placeholder="Your Name"
                 />
               </div>
-
               <div className="border border-gray-300 rounded-md h-24 flex items-center justify-center bg-gray-50">
-                <span 
-                  className="text-2xl" 
-                  style={{ 
-                    fontFamily: selectedFont, 
-                    color: "#039994",
-                    whiteSpace: "nowrap"
-                  }}
-                >
+                <span className="text-2xl" style={{ fontFamily: selectedFont, color: "#039994", whiteSpace: "nowrap" }}>
                   {typedSignature || "Typed Signature Preview"}
                 </span>
               </div>
@@ -278,41 +270,28 @@ const SignatureModal = ({ isOpen, onClose, onSaveSignature }) => {
 
           {activeTab === "upload" && (
             <div className="space-y-4">
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileChange}
-                accept="image/*"
-                className="hidden"
-              />
+              <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
 
               {!uploadComplete ? (
-                <>
-                  {uploadProgress > 0 ? (
-                    <div className="border-2 border-dashed border-[#039994] rounded-md p-4 flex flex-col items-center justify-center">
-                      <p className="text-gray-600">Uploading...</p>
-                      <div className="w-full bg-gray-200 h-2 rounded mt-2">
-                        <div
-                          className="bg-[#039994] h-2 rounded"
-                          style={{ width: `${uploadProgress}%` }}
-                        />
-                      </div>
-                      <div className="text-sm mt-2 text-gray-500">
-                        {selectedFile?.name} ({uploadProgress}%)
-                      </div>
+                uploadProgress > 0 ? (
+                  <div className="border-2 border-dashed border-[#039994] rounded-md p-4 flex flex-col items-center justify-center">
+                    <p className="text-gray-600">Uploading...</p>
+                    <div className="w-full bg-gray-200 h-2 rounded mt-2">
+                      <div className="bg-[#039994] h-2 rounded" style={{ width: `${uploadProgress}%` }} />
                     </div>
-                  ) : (
-                    <div className={fileInputWrapper}>
-                      <div className="flex flex-col items-center justify-center py-6">
-                        <p className="text-gray-500 mb-2">Drag & drop signature image</p>
-                        <p className="text-gray-400 text-sm mb-4">or</p>
-                        <button onClick={handleSelectImage} className={uploadButtonStyle}>
-                          Select image
-                        </button>
-                      </div>
+                    <div className="text-sm mt-2 text-gray-500">
+                      {selectedFile?.name} ({uploadProgress}%)
                     </div>
-                  )}
-                </>
+                  </div>
+                ) : (
+                  <div className={fileInputWrapper} onClick={handleSelectImage}>
+                    <div className="flex flex-col items-center justify-center py-6">
+                      <p className="text-gray-500 mb-2">Drag & drop signature image</p>
+                      <p className="text-gray-400 text-sm mb-4">or</p>
+                      <button className={uploadButtonStyle}>Select image</button>
+                    </div>
+                  </div>
+                )
               ) : (
                 <div className="border-2 border-[#039994] rounded-md p-4 flex flex-col items-center justify-center bg-[#f5fdfd]">
                   <p className="font-medium text-[#039994] text-lg mb-2">Signature uploaded</p>
@@ -327,17 +306,13 @@ const SignatureModal = ({ isOpen, onClose, onSaveSignature }) => {
         </div>
 
         <div className={termsTextContainer}>
-          By uploading this signature, I acknowledge it will be used wherever a
-          signature is required in my user profile.
+          By uploading this signature, I acknowledge it will be used wherever a signature is required in my user profile.
         </div>
 
         <hr className="my-4 border-gray-200" />
 
         <div className="flex justify-end space-x-4 px-6 pb-6">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-md bg-transparent text-gray-700 border border-gray-300 hover:bg-gray-100 font-sfpro"
-          >
+          <button onClick={onClose} className="px-4 py-2 rounded-md bg-transparent text-gray-700 border border-gray-300 hover:bg-gray-100 font-sfpro">
             Cancel
           </button>
           <button onClick={handleSignatureUpload} className={buttonPrimary}>
@@ -349,6 +324,7 @@ const SignatureModal = ({ isOpen, onClose, onSaveSignature }) => {
   );
 };
 
+// Below are Tailwind/Twind/CSS-in-JS class definitions
 const spinnerOverlay = 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 font-sfpro';
 const labelClass = 'block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]';
 const selectClass = 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#626060]';
