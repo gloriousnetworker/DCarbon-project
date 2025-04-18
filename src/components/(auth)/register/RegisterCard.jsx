@@ -39,9 +39,10 @@ function RegisterCardContent() {
 
   // Check for referral code in URL on component mount
   useEffect(() => {
-    const code = searchParams.get('referralCode');
+    const code = searchParams.get('referral');
     if (code) {
       setReferralCode(code);
+      console.log('Referral code:', referralCode)
       toast.success(`You've been invited with referral code: ${code}`);
     }
   }, [searchParams]);
