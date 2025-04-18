@@ -59,12 +59,13 @@ export default function VerificationContent({ token: propToken }) {
     }, 250);
   
     try {
-      const response = await fetch(`/api/auth/verify-utility-auth?token=${encodeURIComponent(token)}`, {
-        method: 'GET',
+      const response = await fetch('https://dcarbon-server.onrender.com/api/auth/check-utility-auth', {
+        method: 'POST',
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json'
-        }
+        },
+        body: JSON.stringify({ token })
       });
   
       // First check if the response is JSON
