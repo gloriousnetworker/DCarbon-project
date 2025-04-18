@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from 'react';
 import RegisterCard from '../../../components/(auth)/register/RegisterCard';
 
 export default function RegisterPage() {
@@ -16,7 +17,9 @@ export default function RegisterPage() {
 
       {/* Right Section - Login Card */}
       <div className="w-full md:w-1/2 p-6 flex justify-center items-center">
-        <RegisterCard />
+        <Suspense fallback={<div>Loading...</div>}>
+          <RegisterCard />
+        </Suspense>
       </div>
     </div>
   );

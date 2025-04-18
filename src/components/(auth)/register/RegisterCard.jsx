@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import axios from 'axios';
 import Loader from '../../../components/loader/Loader';
 import EmailModal from '../../../components/modals/EmailModal';
@@ -19,7 +19,8 @@ import {
   grayPlaceholder,
 } from './styles';
 
-export default function RegisterCard() {
+// Main component that will be wrapped in Suspense
+function RegisterCardContent() {
   const [loading, setLoading] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [userCategory, setUserCategory] = useState('');
@@ -397,5 +398,13 @@ export default function RegisterCard() {
 
       {showModal && <EmailModal closeModal={() => setShowModal(false)} />}
     </>
+  );
+}
+
+export default function RegisterCard() {
+  return (
+    <Suspense fallback={<div className="flex justify-center items-center h-full">Loading registration form...</div>}>
+      <RegisterCardContent />
+    </Suspense>
   );
 }
