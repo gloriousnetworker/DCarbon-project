@@ -12,6 +12,7 @@ import FilterModal from './FilterModal';
 import SendReminderModal from './SendReminderModal';
 import InviteIndividualModal from './InviteIndividualModal';
 import InviteBulkModal from './InviteBulkModal';
+import CustomerDetails from './CustomerDetails';
 
 // Styles
 import {
@@ -31,6 +32,7 @@ export default function PartnerCustomerReport() {
     totalExpired: 0
   });
   const [loadingStats, setLoadingStats] = useState(true);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
 
   // Modal states
   const [isFilterOpen, setFilterOpen] = useState(false);
@@ -176,6 +178,14 @@ export default function PartnerCustomerReport() {
     );
   };
 
+  const handleRowClick = (customer) => {
+    setSelectedCustomer(customer);
+  };
+
+  const handleBackToList = () => {
+    setSelectedCustomer(null);
+  };
+
   const renderRows = () => {
     return tableData.map((item, index) => {
       const sn = index + 1 + (currentPage - 1) * 10;
@@ -186,17 +196,21 @@ export default function PartnerCustomerReport() {
         : '16-03-2025';
 
       return (
-        <tr key={item.id || index} className="border-b hover:bg-gray-50">
-          <td className="py-3 px-2">{sn}</td>
-          <td className="py-3 px-2">{nameToShow}</td>
-          <td className="py-3 px-2">{customerType}</td>
-          <td className="py-3 px-2">Utility</td>
-          <td className="py-3 px-2">Finance Comp.</td>
-          <td className="py-3 px-2">Address</td>
-          <td className="py-3 px-2">{dateReg}</td>
-          <td className="py-3 px-2">
+        <tr 
+          key={item.id || index} 
+          className="border-b hover:bg-gray-50 cursor-pointer"
+          onClick={() => handleRowClick(item)}
+        >
+          <td className="py-3 px-2 text-sm">{sn}</td>
+          <td className="py-3 px-2 text-sm">{nameToShow}</td>
+          <td className="py-3 px-2 text-sm">{customerType}</td>
+          <td className="py-3 px-2 text-sm">Utility</td>
+          <td className="py-3 px-2 text-sm">Finance Comp.</td>
+          <td className="py-3 px-2 text-sm">Address</td>
+          <td className="py-3 px-2 text-sm">{dateReg}</td>
+          <td className="py-3 px-2 text-sm">
             <span
-              className="text-white px-2 py-1 rounded-full text-sm"
+              className="text-white px-2 py-1 rounded-full text-xs"
               style={{ backgroundColor: getStatusStyle(item.status) }}
             >
               {item.status?.toLowerCase() === 'accepted'
@@ -204,32 +218,38 @@ export default function PartnerCustomerReport() {
                 : item.status || 'Registered'}
             </span>
           </td>
-          <td className="py-3 px-2">{renderDocStatus(item.status)}</td>
+          <td className="py-3 px-2 text-sm">{renderDocStatus(item.status)}</td>
         </tr>
       );
     });
   };
 
+  if (selectedCustomer) {
+    return <CustomerDetails customer={selectedCustomer} onBack={handleBackToList} />;
+  }
+
   return (
     <div className={`rounded-md shadow-md p-6 w-full ${mainContainer}`}>
+      <h2 className={`${pageTitle} text-left mb-6 text-2xl`}>Customer Management</h2>
+      
       {/* Header row */}
       <div className="w-full flex flex-col md:flex-row items-start md:items-center justify-between mb-4">
         <button
           onClick={openFilterModal}
-          className="flex items-center border border-black text-black bg-transparent px-4 py-2 rounded hover:bg-gray-100 focus:outline-none focus:ring-1 focus:ring-black"
+          className="flex items-center border border-black text-black bg-transparent px-3 py-1 rounded hover:bg-gray-100 focus:outline-none focus:ring-1 focus:ring-black text-sm"
         >
-          <span className="mr-2">Filter By</span>
+          <span className="mr-1">Filter By</span>
         </button>
 
-        <div className="mt-2 md:mt-0 flex items-center space-x-4">
+        <div className="mt-2 md:mt-0 flex items-center space-x-2">
           <button
             onClick={openSendReminderModal}
-            className="flex items-center bg-[#1E1E1E] text-white px-4 py-2 rounded hover:opacity-90"
+            className="flex items-center bg-[#1E1E1E] text-white px-3 py-1 rounded hover:opacity-90 text-sm"
           >
             <img
               src="/vectors/Timer.png"
               alt="vector"
-              className="w-4 h-4 mr-2"
+              className="w-3 h-3 mr-1"
             />
             <span>Send Reminder</span>
           </button>
@@ -237,24 +257,24 @@ export default function PartnerCustomerReport() {
           <div className="relative">
             <button
               onClick={() => setInviteDropdownOpen(!isInviteDropdownOpen)}
-              className="flex items-center bg-[#039994] text-white px-4 py-2 rounded hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994]"
+              className="flex items-center bg-[#039994] text-white px-3 py-1 rounded hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] text-sm"
             >
               <img
                 src="/vectors/Share.png"
                 alt="invite"
-                className="w-4 h-4 mr-2"
+                className="w-3 h-3 mr-1"
               />
               <span>Invite New Customer</span>
             </button>
 
             {isInviteDropdownOpen && (
-              <div className="absolute right-0 mt-2 bg-white border border-gray-200 rounded shadow-lg z-10">
+              <div className="absolute right-0 mt-1 bg-white border border-gray-200 rounded shadow-lg z-10 w-40">
                 <button
                   onClick={() => {
                     setInviteDropdownOpen(false);
                     openInviteIndividualModal();
                   }}
-                  className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                  className="block w-full text-left px-3 py-1 hover:bg-gray-100 text-sm"
                 >
                   Individual Customer
                 </button>
@@ -263,7 +283,7 @@ export default function PartnerCustomerReport() {
                     setInviteDropdownOpen(false);
                     openInviteBulkModal();
                   }}
-                  className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                  className="block w-full text-left px-3 py-1 hover:bg-gray-100 text-sm"
                 >
                   Bulk Customer CSV
                 </button>
@@ -274,7 +294,7 @@ export default function PartnerCustomerReport() {
       </div>
 
       {/* Progress Bar */}
-      <div className="w-full h-2 bg-gray-200 rounded mb-6 relative overflow-hidden">
+      <div className="w-full h-2 bg-gray-200 rounded mb-4 relative overflow-hidden">
         {!loadingStats && (
           <>
             <div 
@@ -307,51 +327,51 @@ export default function PartnerCustomerReport() {
       </div>
 
       {/* Legend */}
-      <div className="flex items-center justify-end space-x-6 mb-4">
+      <div className="flex flex-wrap items-center justify-start gap-3 mb-4">
         <div className="flex items-center space-x-1">
           <span
-            className="inline-block w-3 h-3 rounded-full"
+            className="inline-block w-2 h-2 rounded-full"
             style={{ backgroundColor: '#FF0000' }}
           />
-          <span className="text-sm">Terminated ({statistics.totalExpired})</span>
+          <span className="text-xs">Terminated ({statistics.totalExpired})</span>
         </div>
         <div className="flex items-center space-x-1">
           <span
-            className="inline-block w-3 h-3 rounded-full"
+            className="inline-block w-2 h-2 rounded-full"
             style={{ backgroundColor: '#FFB200' }}
           />
-          <span className="text-sm">Invited ({statistics.totalInvited})</span>
+          <span className="text-xs">Invited ({statistics.totalInvited})</span>
         </div>
         <div className="flex items-center space-x-1">
           <span
-            className="inline-block w-3 h-3 rounded-full"
+            className="inline-block w-2 h-2 rounded-full"
             style={{ backgroundColor: '#00B4AE' }}
           />
-          <span className="text-sm">Active ({statistics.totalPending})</span>
+          <span className="text-xs">Active ({statistics.totalPending})</span>
         </div>
         <div className="flex items-center space-x-1">
           <span
-            className="inline-block w-3 h-3 rounded-full"
+            className="inline-block w-2 h-2 rounded-full"
             style={{ backgroundColor: '#000000' }}
           />
-          <span className="text-sm">Registered ({statistics.totalAccepted})</span>
+          <span className="text-xs">Registered ({statistics.totalAccepted})</span>
         </div>
       </div>
 
       {/* Table */}
-      <div className="w-full overflow-x-auto mb-6">
-        <table className="min-w-full border-collapse">
+      <div className="w-full overflow-x-auto mb-4">
+        <table className="min-w-full border-collapse text-sm">
           <thead>
             <tr className="border-b">
-              <th className="py-3 px-2 text-left">S/N</th>
-              <th className="py-3 px-2 text-left">Name</th>
-              <th className="py-3 px-2 text-left">Cus. Type</th>
-              <th className="py-3 px-2 text-left">Utility</th>
-              <th className="py-3 px-2 text-left">Finance Company</th>
-              <th className="py-3 px-2 text-left">Address</th>
-              <th className="py-3 px-2 text-left">Date Reg.</th>
-              <th className="py-3 px-2 text-left">Cus. Status</th>
-              <th className="py-3 px-2 text-left">Doc. Status</th>
+              <th className="py-2 px-1 text-left">S/N</th>
+              <th className="py-2 px-1 text-left">Name</th>
+              <th className="py-2 px-1 text-left">Cus. Type</th>
+              <th className="py-2 px-1 text-left">Utility</th>
+              <th className="py-2 px-1 text-left">Finance Company</th>
+              <th className="py-2 px-1 text-left">Address</th>
+              <th className="py-2 px-1 text-left">Date Reg.</th>
+              <th className="py-2 px-1 text-left">Cus. Status</th>
+              <th className="py-2 px-1 text-left">Doc. Status</th>
             </tr>
           </thead>
           <tbody>{renderRows()}</tbody>
@@ -359,7 +379,7 @@ export default function PartnerCustomerReport() {
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-center space-x-4">
+      <div className="flex items-center justify-center space-x-4 text-sm">
         <button
           onClick={handlePrevious}
           disabled={currentPage <= 1}

@@ -1,42 +1,42 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FiX } from "react-icons/fi";
+import {
+  labelClass,
+  selectClass,
+  buttonPrimary
+} from "./styles";
 
-/**
- * A modal for filtering facilities by:
- *  - Type (Individual/Company Owner/Operator)
- *  - Location
- *  - Time (Recent/Latest)
- *
- * Matches the design with:
- *  - Title in #039994
- *  - Red close icon (#F04438)
- *  - Horizontal lines (hr) between sections
- *  - Clear and Done buttons side by side
- */
-export default function FilterModal({ onClose, onApplyFilter }) {
-  // Local state for dropdowns
-  const [type, setType] = useState("Choose Type");
-  const [location, setLocation] = useState("Choose Location");
-  const [time, setTime] = useState("Recent");
+export default function FilterModal({
+  onClose,
+  onApplyFilter,
+  initialFilters = { status: "", customerType: "", time: "Recent" },
+}) {
+  const [status, setStatus] = useState(initialFilters.status);
+  const [customerType, setCustomerType] = useState(
+    initialFilters.customerType
+  );
+  const [time, setTime] = useState(initialFilters.time);
 
-  // Resets all fields to default
+  useEffect(() => {
+    setStatus(initialFilters.status);
+    setCustomerType(initialFilters.customerType);
+    setTime(initialFilters.time);
+  }, [initialFilters]);
+
   const handleClear = () => {
-    setType("Choose Type");
-    setLocation("Choose Location");
+    setStatus("");
+    setCustomerType("");
     setTime("Recent");
   };
 
-  // Applies the filters and closes
   const handleDone = () => {
-    onApplyFilter({ type, location, time });
+    onApplyFilter({ status, customerType, time });
     onClose();
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      {/* Modal container */}
       <div className="bg-white w-full max-w-md rounded-lg shadow-lg p-6 relative">
-        {/* Close Icon (X) - in red (#F04438) */}
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-[#F04438] hover:text-red-600"
@@ -44,80 +44,67 @@ export default function FilterModal({ onClose, onApplyFilter }) {
           <FiX size={20} />
         </button>
 
-        {/* Modal Title */}
-        <h2 className="text-xl font-semibold" style={{ color: "#039994" }}>
-          Filter Facilities
+        <h2 className="text-xl font-semibold text-[#039994] mb-4">
+          Filter Records
         </h2>
-        <hr className="my-4 border-gray-200" />
+        <hr className="mb-4 border-gray-200" />
 
-        {/* By Type */}
+        {/* By Status */}
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            By Type
-          </label>
+          <label className={labelClass}>By Status</label>
           <select
-            value={type}
-            onChange={(e) => setType(e.target.value)}
-            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#039994]"
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+            className={`${selectClass} text-sm`}
           >
-            <option value="Choose Type">Choose Type</option>
-            <option value="Individual Owner">Individual Owner</option>
-            <option value="Individual Operator">Individual Operator</option>
-            <option value="Company Owner">Company Owner</option>
-            <option value="Company Operator">Company Operator</option>
+            <option value="">All</option>
+            <option value="PENDING">PENDING</option>
+            <option value="ACCEPTED">ACCEPTED</option>
+            <option value="TERMINATED">TERMINATED</option>
           </select>
         </div>
         <hr className="mb-4 border-gray-200" />
 
-        {/* By Location */}
+        {/* By Customer Type */}
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            By Location
-          </label>
+          <label className={labelClass}>By Customer Type</label>
           <select
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#039994]"
+            value={customerType}
+            onChange={(e) => setCustomerType(e.target.value)}
+            className={`${selectClass} text-sm`}
           >
-            <option value="Choose Location">Choose Location</option>
-            <option value="New York">New York</option>
-            <option value="California">California</option>
-            <option value="Texas">Texas</option>
-            {/* Add more as needed */}
+            <option value="">All</option>
+            <option value="Residential">Residential</option>
+            <option value="Commercial">Commercial</option>
+            <option value="Partner">Partner</option>
           </select>
         </div>
         <hr className="mb-4 border-gray-200" />
 
         {/* By Time */}
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            By Time
-          </label>
+          <label className={labelClass}>By Time</label>
           <select
             value={time}
             onChange={(e) => setTime(e.target.value)}
-            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#039994]"
+            className={`${selectClass} text-sm`}
           >
-            <option value="Recent">Recent</option>
-            <option value="Latest">Latest</option>
+            <option value="Recent">Oldest First</option>
+            <option value="Latest">Newest First</option>
           </select>
         </div>
-
         <hr className="mb-4 border-gray-200" />
 
-        {/* Buttons: Clear and Done side by side */}
-        <div className="flex items-center justify-between">
+        <div className="flex space-x-2">
           <button
             onClick={handleClear}
-            className="w-1/2 py-2 bg-gray-100 text-gray-700 text-sm rounded-md hover:bg-gray-200"
+            className="flex-1 py-2 bg-gray-100 text-gray-700 text-sm rounded-md hover:bg-gray-200"
           >
             Clear
           </button>
-          <div className="mx-2" />
           <button
             onClick={handleDone}
-            className="w-1/2 py-2 text-white text-sm rounded-md hover:opacity-90"
-            style={{ backgroundColor: "#039994" }}
+            className={`${buttonPrimary} text-sm flex-1`}
           >
             Done
           </button>

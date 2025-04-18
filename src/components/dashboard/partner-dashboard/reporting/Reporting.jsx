@@ -1,171 +1,149 @@
-import React, { useState } from 'react';
+// src/components/FacilityManagement.jsx
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import {
   mainContainer,
   headingContainer,
-  pageTitle
-} from './styles';
+  pageTitle,
+  selectClass,
+  buttonPrimary,
+} from "./styles";
 
-// Optional modals - if you already have these, keep or remove as needed
-import AddFacilityModal from './AddFacilityModal';
-import FacilityCreatedModal from './FacilityCreatedModal';
-import FilterModal from './FilterModal';
+import AddFacilityModal from "./AddFacilityModal";
+import FacilityCreatedModal from "./FacilityCreatedModal";
+import FilterModal from "./FilterModal";
+
+const MONTHS = [
+  { label: "Month", value: "" },
+  { label: "Jan", value: "1" },
+  { label: "Feb", value: "2" },
+  { label: "Mar", value: "3" },
+  { label: "Apr", value: "4" },
+  { label: "May", value: "5" },
+  { label: "Jun", value: "6" },
+  { label: "Jul", value: "7" },
+  { label: "Aug", value: "8" },
+  { label: "Sep", value: "9" },
+  { label: "Oct", value: "10" },
+  { label: "Nov", value: "11" },
+  { label: "Dec", value: "12" },
+];
 
 export default function FacilityManagement() {
-  // State for modals (if applicable)
+  // modals
   const [showAddFacilityModal, setShowAddFacilityModal] = useState(false);
-  const [showFacilityCreatedModal, setShowFacilityCreatedModal] = useState(false);
+  const [showFacilityCreatedModal, setShowFacilityCreatedModal] =
+    useState(false);
   const [showFilterModal, setShowFilterModal] = useState(false);
 
-  // Sample table data
-  const tableData = [
-    {
-      sn: 1,
-      name: 'Name',
-      email: 'name@domain.com',
-      customerType: 'Residential',
-      utilityProvider: 'Utility',
-      address: '123 Street, City, State',
-      dateReg: '16-03-2025',
-      status: 'Terminated', // Will be displayed with a red tag
-    },
-    {
-      sn: 2,
-      name: 'Name',
-      email: 'name@domain.com',
-      customerType: 'Commercial',
-      utilityProvider: 'Utility',
-      address: '123 Street, City, State',
-      dateReg: '16-03-2025',
-      status: 'Invited', // Orange tag
-    },
-    {
-      sn: 3,
-      name: 'Name',
-      email: 'name@domain.com',
-      customerType: 'Resi. Group',
-      utilityProvider: 'Utility',
-      address: '123 Street, City, State',
-      dateReg: '16-03-2025',
-      status: 'Registered', // Black tag
-    },
-    {
-      sn: 4,
-      name: 'Name',
-      email: 'name@domain.com',
-      customerType: 'Commercial',
-      utilityProvider: 'Utility',
-      address: '123 Street, City, State',
-      dateReg: '16-03-2025',
-      status: 'Active', // #00B4AE tag
-    },
-    {
-      sn: 5,
-      name: 'Name',
-      email: 'name@domain.com',
-      customerType: 'Residential',
-      utilityProvider: 'Utility',
-      address: '123 Street, City, State',
-      dateReg: '16-03-2025',
-      status: 'Terminated',
-    },
-    {
-      sn: 6,
-      name: 'Name',
-      email: 'name@domain.com',
-      customerType: 'Commercial',
-      utilityProvider: 'Utility',
-      address: '123 Street, City, State',
-      dateReg: '16-03-2025',
-      status: 'Invited',
-    },
-    {
-      sn: 7,
-      name: 'Name',
-      email: 'name@domain.com',
-      customerType: 'Resi. Group',
-      utilityProvider: 'Utility',
-      address: '123 Street, City, State',
-      dateReg: '16-03-2025',
-      status: 'Registered',
-    },
-    {
-      sn: 8,
-      name: 'Name',
-      email: 'name@domain.com',
-      customerType: 'Commercial',
-      utilityProvider: 'Utility',
-      address: '123 Street, City, State',
-      dateReg: '16-03-2025',
-      status: 'Active',
-    },
-    {
-      sn: 9,
-      name: 'Name',
-      email: 'name@domain.com',
-      customerType: 'Residential',
-      utilityProvider: 'Utility',
-      address: '123 Street, City, State',
-      dateReg: '16-03-2025',
-      status: 'Terminated',
-    },
-    {
-      sn: 10,
-      name: 'Name',
-      email: 'name@domain.com',
-      customerType: 'Resi. Group',
-      utilityProvider: 'Utility',
-      address: '123 Street, City, State',
-      dateReg: '16-03-2025',
-      status: 'Registered',
-    },
-  ];
-
-  // Dummy pagination state
+  // filters & pagination
+  const [yearFilter, setYearFilter] = useState("");
+  const [monthFilter, setMonthFilter] = useState("");
+  const [filters, setFilters] = useState({
+    status: "",
+    customerType: "",
+    time: "Recent",
+  });
   const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = 4;
+  const [totalPages, setTotalPages] = useState(1);
 
-  // Handlers for modals / actions (optional)
+  // data
+  const [tableData, setTableData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const LIMIT = 10;
+  const baseUrl = "https://dcarbon-server.onrender.com";
+
+  useEffect(() => {
+    const fetchReferrals = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const token = localStorage.getItem("authToken");
+        const userId =
+          localStorage.getItem("userId") ||
+          "8b14b23d-3082-4846-9216-2c2e9f1e96bf";
+
+        const params = new URLSearchParams();
+        if (filters.status) params.append("status", filters.status);
+        if (filters.customerType)
+          params.append("customerType", filters.customerType);
+
+        // Year & month → startDate / endDate
+        if (yearFilter && monthFilter) {
+          const y = yearFilter;
+          const m = monthFilter.padStart(2, "0");
+          const lastDay = new Date(y, Number(monthFilter), 0).getDate();
+          params.append("startDate", `${y}-${m}-01`);
+          params.append("endDate", `${y}-${m}-${lastDay}`);
+        } else if (yearFilter) {
+          params.append("startDate", `${yearFilter}-01-01`);
+          params.append("endDate", `${yearFilter}-12-31`);
+        }
+
+        params.append("page", currentPage);
+        params.append("limit", LIMIT);
+
+        const res = await axios.get(
+          `${baseUrl}/api/user/get-users-referrals/${userId}?${params.toString()}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        let { referrals, metadata } = res.data.data;
+
+        // client‑side sort
+        referrals.sort((a, b) => {
+          const da = new Date(a.createdAt),
+            db = new Date(b.createdAt);
+          return filters.time === "Latest" ? db - da : da - db;
+        });
+
+        setTableData(referrals);
+        setTotalPages(metadata.totalPages);
+      } catch (err) {
+        console.error(err);
+        setError(err.message || "Failed to load data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchReferrals();
+  }, [currentPage, filters, yearFilter, monthFilter]);
+
+  const handleOpenFilterModal = () => setShowFilterModal(true);
+  const handleApplyFilter = (newFilters) => {
+    setFilters(newFilters);
+    setCurrentPage(1);
+    setShowFilterModal(false);
+  };
+
   const handleOpenAddFacilityModal = () => setShowAddFacilityModal(true);
   const handleFacilityAdded = () => {
     setShowAddFacilityModal(false);
     setShowFacilityCreatedModal(true);
   };
-  const handleCloseFacilityCreatedModal = () => {
+  const handleCloseFacilityCreatedModal = () =>
     setShowFacilityCreatedModal(false);
-  };
-  const handleOpenFilterModal = () => {
-    setShowFilterModal(true);
-  };
-  const handleApplyFilter = (filters) => {
-    console.log('Applied filters: ', filters);
-    setShowFilterModal(false);
-  };
 
-  // Pagination Handlers
   const handlePrevious = () => {
-    if (currentPage > 1) {
-      setCurrentPage((prev) => prev - 1);
-    }
+    if (currentPage > 1) setCurrentPage((p) => p - 1);
   };
-
   const handleNext = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage((prev) => prev + 1);
-    }
+    if (currentPage < totalPages) setCurrentPage((p) => p + 1);
   };
 
-  // Helper to render the status with correct background color
   const renderStatusTag = (status) => {
-    let bgColor = '#00B4AE'; // default Active color
-    if (status === 'Terminated') bgColor = '#FF0000';
-    else if (status === 'Invited') bgColor = '#FFB200';
-    else if (status === 'Registered') bgColor = '#000000';
-    else if (status === 'Active') bgColor = '#00B4AE';
-
+    let bg = "#00B4AE";
+    if (status === "PENDING") bg = "#FFB200";
+    if (status === "ACCEPTED") bg = "#000000";
+    if (status === "TERMINATED") bg = "#FF0000";
     return (
       <span
         className="inline-block px-3 py-1 rounded-full text-white text-sm"
-        style={{ backgroundColor: bgColor }}
+        style={{ backgroundColor: bg }}
       >
         {status}
       </span>
@@ -173,102 +151,97 @@ export default function FacilityManagement() {
   };
 
   return (
-    <div className={`relative ${mainContainer}`}>
-      {/* Top section: Year dropdown, 2025 dropdown, Filter button, Export button */}
+    <div className={`${mainContainer} text-sm`}>
+      {/* Top controls */}
       <div className="flex items-center justify-between w-full max-w-6xl mb-4">
-        {/* Left side: Year and 2025 dropdowns */}
         <div className="flex items-center space-x-2">
-          {/* "Year" dropdown */}
           <select
-            className="border border-black text-black bg-transparent rounded px-3 py-1 focus:outline-none focus:ring-1 focus:ring-black"
+            value={yearFilter}
+            onChange={(e) => {
+              setYearFilter(e.target.value);
+              setCurrentPage(1);
+            }}
+            className={selectClass}
           >
-            <option>Year</option>
+            <option value="">Year</option>
             <option>2023</option>
             <option>2024</option>
             <option>2025</option>
           </select>
-
-          {/* Another dropdown for actual year (e.g., 2025) */}
           <select
-            className="border border-black text-black bg-transparent rounded px-3 py-1 focus:outline-none focus:ring-1 focus:ring-black"
+            value={monthFilter}
+            onChange={(e) => {
+              setMonthFilter(e.target.value);
+              setCurrentPage(1);
+            }}
+            className={selectClass}
           >
-            <option>2025</option>
-            <option>2024</option>
-            <option>2023</option>
+            {MONTHS.map((m) => (
+              <option key={m.value} value={m.value}>
+                {m.label}
+              </option>
+            ))}
           </select>
         </div>
-
-        {/* Right side: Filter button and Export button */}
         <div className="flex items-center space-x-4">
           <button
             onClick={handleOpenFilterModal}
-            className="border border-black text-black bg-transparent px-4 py-1 rounded hover:bg-gray-100 focus:outline-none focus:ring-1 focus:ring-black"
+            className="border border-black px-4 py-1 rounded hover:bg-gray-100 text-sm"
           >
             Filter
           </button>
-          <button
-            className="bg-[#039994] text-white px-4 py-1 rounded hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994]"
-          >
+          <button className={`${buttonPrimary} text-sm`}>
             Export Report
           </button>
         </div>
       </div>
 
-      {/* Title section: "Customer Report" (with a dropdown if needed) */}
-      <div className="w-full max-w-6xl mb-6">
-        <div className="flex items-center space-x-2">
-          <span className="text-[#039994] text-2xl font-semibold">
-            Customer Report
-          </span>
-          {/* If you want a dropdown next to "Customer Report" */}
-          {/* 
-          <select
-            className="border border-gray-300 bg-white rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#039994]"
-          >
-            <option>Option 1</option>
-            <option>Option 2</option>
-          </select>
-          */}
-        </div>
+      {/* Title */}
+      <div className={headingContainer}>
+        <h1 className={pageTitle}>Customer Report</h1>
       </div>
 
       {/* Table */}
       <div className="w-full max-w-6xl overflow-auto">
-        <table className="min-w-full border-collapse">
-          {/* Table Head */}
-          <thead>
-            <tr className="border-b border-gray-300">
-              <th className="py-2 px-2 text-left">S/N</th>
-              <th className="py-2 px-2 text-left">Name</th>
-              <th className="py-2 px-2 text-left">Email Address</th>
-              <th className="py-2 px-2 text-left">Customer Type</th>
-              <th className="py-2 px-2 text-left">Utility Provider</th>
-              <th className="py-2 px-2 text-left">Address</th>
-              <th className="py-2 px-2 text-left">Date Reg.</th>
-              <th className="py-2 px-2 text-left">Cust. Status</th>
-            </tr>
-          </thead>
-          {/* Table Body */}
-          <tbody>
-            {tableData.map((item) => (
-              <tr
-                key={item.sn}
-                className="border-b border-gray-200 hover:bg-gray-50"
-              >
-                <td className="py-2 px-2">{item.sn}</td>
-                <td className="py-2 px-2">{item.name}</td>
-                <td className="py-2 px-2">{item.email}</td>
-                <td className="py-2 px-2">{item.customerType}</td>
-                <td className="py-2 px-2">{item.utilityProvider}</td>
-                <td className="py-2 px-2">{item.address}</td>
-                <td className="py-2 px-2">{item.dateReg}</td>
-                <td className="py-2 px-2">
-                  {renderStatusTag(item.status)}
-                </td>
+        {loading ? (
+          <p className="text-center text-gray-500">Loading…</p>
+        ) : error ? (
+          <p className="text-center text-red-500">{error}</p>
+        ) : (
+          <table className="min-w-full border-collapse">
+            <thead>
+              <tr className="border-b border-gray-300">
+                <th className="py-2 px-2 text-left">S/N</th>
+                <th className="py-2 px-2 text-left">Name</th>
+                <th className="py-2 px-2 text-left">Email</th>
+                <th className="py-2 px-2 text-left">Customer Type</th>
+                <th className="py-2 px-2 text-left">Date</th>
+                <th className="py-2 px-2 text-left">Status</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {tableData.map((ref, idx) => (
+                <tr
+                  key={ref.id}
+                  className="border-b border-gray-200 hover:bg-gray-50"
+                >
+                  <td className="py-2 px-2">
+                    {(currentPage - 1) * LIMIT + idx + 1}
+                  </td>
+                  <td className="py-2 px-2">{ref.name || "—"}</td>
+                  <td className="py-2 px-2">{ref.inviteeEmail}</td>
+                  <td className="py-2 px-2">
+                    {ref.customerType || "—"}
+                  </td>
+                  <td className="py-2 px-2">
+                    {new Date(ref.createdAt).toLocaleDateString()}
+                  </td>
+                  <td className="py-2 px-2">{renderStatusTag(ref.status)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
 
       {/* Pagination */}
@@ -276,40 +249,37 @@ export default function FacilityManagement() {
         <button
           onClick={handlePrevious}
           disabled={currentPage === 1}
-          className="text-[#00B4AE] disabled:opacity-50"
+          className="text-[#00B4AE] disabled:opacity-50 text-sm"
         >
           &lt; Previous
         </button>
-        <span>
-          {currentPage} of {totalPages}
-        </span>
+        <span>{currentPage} of {totalPages}</span>
         <button
           onClick={handleNext}
           disabled={currentPage === totalPages}
-          className="text-[#00B4AE] disabled:opacity-50"
+          className="text-[#00B4AE] disabled:opacity-50 text-sm"
         >
           Next &gt;
         </button>
       </div>
 
-      {/* Add Facility Modal (if used) */}
+      {/* Modals */}
       {showAddFacilityModal && (
         <AddFacilityModal
           onClose={() => setShowAddFacilityModal(false)}
           onFacilityAdded={handleFacilityAdded}
         />
       )}
-
-      {/* Facility Created Modal (if used) */}
       {showFacilityCreatedModal && (
-        <FacilityCreatedModal onClose={handleCloseFacilityCreatedModal} />
+        <FacilityCreatedModal
+          onClose={handleCloseFacilityCreatedModal}
+        />
       )}
-
-      {/* Filter Modal (if used) */}
       {showFilterModal && (
         <FilterModal
           onClose={() => setShowFilterModal(false)}
           onApplyFilter={handleApplyFilter}
+          initialFilters={filters}
         />
       )}
     </div>
