@@ -14,20 +14,37 @@ import toast from "react-hot-toast";
 
 export default function AgreementFormPage() {
   const [loading, setLoading] = useState(false);
-  const [showLoader, setShowLoader] = useState(false); // New state for loader visibility
+  const [showLoader, setShowLoader] = useState(false);
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [sentModalOpen, setSentModalOpen] = useState(false);
   const [registrationModalOpen, setRegistrationModalOpen] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
-  const [showRedirectLoader, setShowRedirectLoader] = useState(false); // New state for redirect loader
-
-  // Condition states: checkboxes and signature
+  const [showRedirectLoader, setShowRedirectLoader] = useState(false);
   const [allChecked, setAllChecked] = useState(false);
   const [showSignatureModal, setShowSignatureModal] = useState(false);
   const [signatureData, setSignatureData] = useState(null);
   const [accepted, setAccepted] = useState(true);
+  const [authToken, setAuthToken] = useState(null);
+  const [userId, setUserId] = useState(null);
 
   const router = useRouter();
+
+  // Load stored authToken and userId on component mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('authToken');
+      const id = localStorage.getItem('userId');
+      
+      if (!token || !id) {
+        toast.error('Authentication required. Redirecting...');
+        router.push('/register/operator-registration-verification/utility-verification');
+        return;
+      }
+      
+      setAuthToken(token);
+      setUserId(id);
+    }
+  }, [router]);
 
   // Effect for main loader delay
   useEffect(() => {
@@ -35,7 +52,6 @@ export default function AgreementFormPage() {
     if (loading) {
       setShowLoader(true);
     } else {
-      // Minimum display time of 500ms for the loader
       timer = setTimeout(() => setShowLoader(false), 500);
     }
     return () => clearTimeout(timer);
@@ -54,14 +70,11 @@ export default function AgreementFormPage() {
 
   // Function to call the accept user agreement endpoint
   const acceptUserAgreement = async () => {
+    if (!authToken || !userId) {
+      throw new Error("Authentication details not found");
+    }
+
     try {
-      const userId = localStorage.getItem("userId");
-      const authToken = localStorage.getItem("authToken");
-
-      if (!userId || !authToken) {
-        throw new Error("User authentication details not found");
-      }
-
       const response = await fetch(
         `https://dcarbon-server.onrender.com/api/user/accept-user-agreement-terms/${userId}`,
         {
@@ -80,15 +93,13 @@ export default function AgreementFormPage() {
         throw new Error("Failed to accept user agreement");
       }
 
-      const data = await response.json();
-      return data;
+      return await response.json();
     } catch (error) {
       console.error("Error accepting user agreement:", error);
       throw error;
     }
   };
 
-  // When Accept is clicked (and conditions met), start the flow by showing the invite modal.
   const handleSubmit = async () => {
     if (!allChecked) {
       toast.error("Please accept all agreements");
@@ -136,16 +147,13 @@ export default function AgreementFormPage() {
 
   return (
     <>
-      {/* Full-screen Loader Overlay with delay */}
       {showLoader && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
           <CustomerIDLoader />
         </div>
       )}
 
-      {/* Full-Screen Background Container */}
       <div className={mainContainer}>
-        {/* X (Close) Button */}
         <button
           onClick={() => router.back()}
           className={backArrow}
@@ -154,31 +162,24 @@ export default function AgreementFormPage() {
           <FaTimes size={24} />
         </button>
 
-        {/* Horizontal Rule */}
         <hr className="mb-4 border-gray-300 w-full max-w-3xl" />
 
-        {/* Heading + Icons */}
         <div className={headingContainer}>
-          <h1 className={pageTitle}>
-            Terms of Agreement
-          </h1>
+          <h1 className={pageTitle}>Terms of Agreement</h1>
           <div className="flex space-x-4">
             <FaDownload className="cursor-pointer text-[#039994]" size={20} />
             <FaPrint className="cursor-pointer text-[#039994]" size={20} />
           </div>
         </div>
 
-        {/* Horizontal Rule */}
         <hr className="mb-4 border-gray-300 w-full max-w-3xl" />
 
-        {/* Scrollable Agreement Sections */}
         <Agreement
           onAllCheckedChange={setAllChecked}
           signatureData={signatureData}
           onOpenSignatureModal={() => setShowSignatureModal(true)}
         />
 
-        {/* Accept / Decline Buttons */}
         <div className="flex w-full max-w-3xl justify-between mt-6 space-x-4 px-2 fixed bottom-8">
           <button
             onClick={() => {
@@ -209,7 +210,6 @@ export default function AgreementFormPage() {
         </div>
       </div>
 
-      {/* Modals */}
       {inviteModalOpen && (
         <InviteOwnerModal
           closeModal={handleCloseInviteModal}
@@ -227,14 +227,12 @@ export default function AgreementFormPage() {
         />
       )}
 
-      {/* Loader before redirect with delay */}
       {showRedirectLoader && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
           <Loader />
         </div>
       )}
 
-      {/* Signature Modal */}
       <SignatureModal
         isOpen={showSignatureModal}
         onClose={() => setShowSignatureModal(false)}

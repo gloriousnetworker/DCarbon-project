@@ -88,8 +88,10 @@ export default function VerificationContent({ token: propToken }) {
         style: { fontFamily: 'SF Pro', background: '#E8F5E9', color: '#1B5E20' }
       });
   
+      // Store both the token and user ID in localStorage
       if (typeof window !== 'undefined') {
         localStorage.setItem('authToken', token);
+        localStorage.setItem('userId', data.userId); // Assuming backend returns userId
         localStorage.setItem('utilityVerified', 'true');
       }
   
