@@ -1,9 +1,9 @@
 "use client";
 
 import { Suspense } from 'react';
-import VerificationContent from './VerificationContent';
+import VerificationContent from '../VerificationContent';
 
-export default function UtilityVerificationPage() {
+export default function TokenVerificationPage({ params }) {
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-[#FFFFFF]">
       {/* Left Section - Image */}
@@ -18,7 +18,7 @@ export default function UtilityVerificationPage() {
       {/* Right Section - Verification Card */}
       <div className="w-full md:w-1/2 p-6 flex justify-center items-center">
         <Suspense fallback={<div>Loading...</div>}>
-          <VerificationContent />
+          <VerificationContent token={params.token} />
         </Suspense>
       </div>
     </div>

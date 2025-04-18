@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 
 const styles = {
-  container: 'min-h-screen w-full flex flex-col items-center justify-center py-8 px-4 bg-white',
+  container: 'w-full flex flex-col items-center justify-center py-8 px-4',
   title: 'mb-4 font-[600] text-[32px] leading-[100%] text-[#039994] font-sfpro text-center',
   progressBarContainer: 'w-full max-w-md bg-gray-200 rounded-full h-2 overflow-hidden mb-4',
-  progressBar: (width) => `bg-[#039994] h-2 rounded-full transition-all duration-300` + ` w-[${width}%]`,
+  progressBar: (width) => `bg-[#039994] h-2 rounded-full transition-all duration-300 w-[${width}%]`,
   buttonPrimary: 'w-full max-w-md rounded-md bg-[#039994] text-white font-semibold py-2 mt-4 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro',
   buttonSkip: 'w-full max-w-md rounded-md border border-[#039994] text-[#039994] font-semibold py-2 mt-2 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro',
   statusMessage: 'mt-4 text-center font-sfpro',
@@ -16,7 +16,7 @@ const styles = {
   errorMessage: 'text-red-600',
 };
 
-function VerificationContent() {
+export default function VerificationContent({ token: propToken }) {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [verificationStatus, setVerificationStatus] = useState(null);
@@ -24,10 +24,10 @@ function VerificationContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Extract token from URL query parameters
-  const token = searchParams.get('token');
+  // Get token either from props (path param) or query param
+  const token = propToken || searchParams.get('token');
 
-  // Auto-verify if token is present in URL
+  // Auto-verify if token is present
   useEffect(() => {
     if (token && !loading && verificationStatus === null) {
       handleVerify();
@@ -159,13 +159,5 @@ function VerificationContent() {
         </p>
       )}
     </div>
-  );
-}
-
-export default function UtilityVerificationCard() {
-  return (
-    <Suspense fallback={<div className={styles.container}>Loading verification...</div>}>
-      <VerificationContent />
-    </Suspense>
   );
 }
