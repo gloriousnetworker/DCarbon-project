@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 
@@ -26,13 +26,6 @@ export default function VerificationContent({ token: propToken }) {
 
   // Get token either from props (path param) or query param
   const token = propToken || searchParams.get('token');
-
-  // Auto-verify if token is present
-  useEffect(() => {
-    if (token && !loading && verificationStatus === null) {
-      handleVerify();
-    }
-  }, [token]);
 
   // Function to verify the utility authorization
   const handleVerify = async () => {
@@ -87,17 +80,10 @@ export default function VerificationContent({ token: propToken }) {
       toast.success(data.message || 'Utility authorization verified', {
         style: { fontFamily: 'SF Pro', background: '#E8F5E9', color: '#1B5E20' }
       });
-  
-      // Store both the token and user ID in localStorage
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('authToken', token);
-        localStorage.setItem('userId', data.userId); // Assuming backend returns userId
-        localStorage.setItem('utilityVerified', 'true');
-      }
-  
-      setTimeout(() => {
-        router.push('/register/commercial-operator-registration/agreement');
-      }, 1500);
+
+      // Store verification data and proceed
+      storeVerificationData(token, data.userId, true);
+      navigateToAgreement();
   
     } catch (error) {
       setVerificationStatus('error');
@@ -114,15 +100,35 @@ export default function VerificationContent({ token: propToken }) {
   };
 
   const handleSkip = () => {
-    toast('You will be notified once your utility authorization is complete.', {
+    // Store basic auth data without verification
+    storeVerificationData(token, null, false);
+    toast('You can complete verification later. Proceeding to agreement...', {
       style: { fontFamily: 'SF Pro', background: '#E8F5E9', color: '#1B5E20' }
     });
-    router.push('/register/commercial-operator-registration/agreement');
+    navigateToAgreement();
+  };
+
+  const storeVerificationData = (token, userId, isVerified) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('authToken', token);
+      if (userId) localStorage.setItem('userId', userId);
+      localStorage.setItem('utilityVerified', String(isVerified));
+    }
+  };
+
+  const navigateToAgreement = () => {
+    setTimeout(() => {
+      router.push('/register/commercial-operator-registration/agreement');
+    }, 1500);
   };
 
   return (
     <div className={styles.container}>
       <h1 className={styles.title}>Verify Utility Authorization</h1>
+
+      <p className="mb-6 text-center font-sfpro text-gray-600 max-w-md">
+        Please authorize your utility account to continue registration or skip to proceed.
+      </p>
 
       {/* Display verification status message */}
       {verificationStatus && (
@@ -140,33 +146,24 @@ export default function VerificationContent({ token: propToken }) {
         </div>
       )}
 
-      {/* Only show buttons if not auto-verifying */}
-      {!loading && verificationStatus === null && (
-        <>
-          <button 
-            onClick={handleVerify} 
-            className={styles.buttonPrimary} 
-            disabled={loading}
-          >
-            {loading ? `Verifying... ${progress}%` : 'Verify Authorization'}
-          </button>
+      {/* Action Buttons */}
+      <div className="w-full max-w-md">
+        <button 
+          onClick={handleVerify} 
+          className={styles.buttonPrimary} 
+          disabled={loading}
+        >
+          {loading ? `Authorizing... ${progress}%` : 'Authorize Utility'}
+        </button>
 
-          <button 
-            onClick={handleSkip} 
-            className={styles.buttonSkip}
-            disabled={loading}
-          >
-            Skip and I'll be notified
-          </button>
-        </>
-      )}
-
-      {/* Show loading message during auto-verification */}
-      {loading && token && (
-        <p className="mt-4 text-center font-sfpro text-gray-600">
-          Verifying your utility authorization...
-        </p>
-      )}
+        <button 
+          onClick={handleSkip} 
+          className={styles.buttonSkip}
+          disabled={loading}
+        >
+          Skip for now
+        </button>
+      </div>
     </div>
   );
 }

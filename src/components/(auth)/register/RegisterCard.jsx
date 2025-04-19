@@ -355,7 +355,7 @@ function RegisterCardContent() {
                 </button>
               </div>
               <p className="mt-2 font-sfpro text-[12px] font-[400] leading-[100%] tracking-[-0.05em] text-[#626060]">
-                * Must be at least 8 characters
+                * Must be at least 6 characters
               </p>
             </div>
 

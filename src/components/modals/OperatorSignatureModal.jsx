@@ -1,13 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import { FaTimes } from "react-icons/fa";
 import toast from "react-hot-toast";
-import LoginModal from "./LoginModal"; 
+import LoginModal from "./LoginModal";
 
-/**
- * SignatureModal
- * Allows users to draw, type, or upload a signature.
- * Retrieves authToken and userId from localStorage based on utility authorization response.
- */
 const SignatureModal = ({ isOpen, onClose, onSaveSignature }) => {
   const [activeTab, setActiveTab] = useState("draw");
   const [typedSignature, setTypedSignature] = useState("");
@@ -23,7 +18,13 @@ const SignatureModal = ({ isOpen, onClose, onSaveSignature }) => {
   const canvasRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
 
-  // Initialize canvas when opening draw tab
+  // Get auth data from localStorage
+  const getAuthData = () => {
+    const authToken = localStorage.getItem("authToken");
+    const userId = localStorage.getItem("userId");
+    return { authToken, userId };
+  };
+
   useEffect(() => {
     if (activeTab === "draw" && isOpen) {
       initCanvas();
@@ -112,21 +113,11 @@ const SignatureModal = ({ isOpen, onClose, onSaveSignature }) => {
     }
   };
 
-  /**
-   * Uploads the signature by PUT /api/user/update-user-agreement/:userId
-   * Retrieves authToken and userId from localStorage.
-   */
   const handleSignatureUpload = async () => {
-    // Retrieve token and loginResponse
-    const authToken = localStorage.getItem("authToken");
-    const raw = localStorage.getItem("loginResponse");
-    const loginResponse = raw ? JSON.parse(raw) : {};
-    const userId = loginResponse.data?.authData?.userId;
-    const userEmail = loginResponse.data?.authData?.email || "";
-    const userName = localStorage.getItem("userFirstName") || userEmail;
-
+    const { authToken, userId } = getAuthData();
+    
     if (!authToken || !userId) {
-      toast.error("Authentication required");
+      toast.error("Please log in to continue");
       setPendingAction(() => handleSignatureUpload);
       setShowLoginModal(true);
       return;
@@ -169,35 +160,37 @@ const SignatureModal = ({ isOpen, onClose, onSaveSignature }) => {
         method = "uploaded";
       }
 
-      // Append user info
-      formData.append("userId", userId);
-      formData.append("email", userEmail);
-      formData.append("name", userName);
+      // Add required agreement fields
+      formData.append("termsAccepted", "true");
+      formData.append("agreementCompleted", "true");
 
-      const resp = await fetch(
+      const response = await fetch(
         `https://dcarbon-server.onrender.com/api/user/update-user-agreement/${userId}`,
         {
           method: 'PUT',
-          headers: { Authorization: `Bearer ${authToken}` },
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
           body: formData,
         }
       );
 
-      if (!resp.ok) {
-        const err = await resp.json();
-        throw new Error(err.message || 'Failed to save signature');
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to save signature');
       }
 
-      const result = await resp.json();
+      const result = await response.json();
       toast.success(`Signature (${method}) saved successfully`);
       onSaveSignature(result);
       onClose();
-    } catch (err) {
-      console.error(err);
-      toast.error(err.message || 'Error saving signature');
-      if (err.message.includes('Unauthorized') || err.message.includes('expired')) {
+    } catch (error) {
+      console.error("Signature upload error:", error);
+      toast.error(error.message || 'Error saving signature');
+      
+      if (error.message.includes('Unauthorized') || error.message.includes('expired')) {
         localStorage.removeItem('authToken');
-        localStorage.removeItem('loginResponse');
+        localStorage.removeItem('userId');
         setPendingAction(() => handleSignatureUpload);
         setShowLoginModal(true);
       }
@@ -348,7 +341,7 @@ const SignatureModal = ({ isOpen, onClose, onSaveSignature }) => {
   );
 };
 
-// Below are Tailwind/Twind/CSS-in-JS class definitions
+// Style constants
 const spinnerOverlay = 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 font-sfpro';
 const labelClass = 'block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]';
 const selectClass = 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#626060]';
