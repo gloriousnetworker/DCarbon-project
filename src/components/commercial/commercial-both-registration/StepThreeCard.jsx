@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState } from "react";
 import axios from "axios";
@@ -12,7 +12,6 @@ export default function OwnersDetailsCard() {
   const [phonePrefix, setPhonePrefix] = useState("+1");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [address, setAddress] = useState("");
-  const [website, setWebsite] = useState("");
 
   const validateForm = () => {
     if (!fullName.trim()) {
@@ -52,7 +51,6 @@ export default function OwnersDetailsCard() {
         ownerFullName: fullName,
         phoneNumber: `${phonePrefix}${phoneNumber.replace(/-/g, "")}`,
         ownerAddress: address,
-        ...(website && { ownerWebsite: website }) // Only include website if it exists
       };
 
       await axios.put(
@@ -61,14 +59,14 @@ export default function OwnersDetailsCard() {
         {
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
-          }
+            "Authorization": `Bearer ${token}`,
+          },
         }
       );
 
       localStorage.setItem("ownerDetails", JSON.stringify(payload));
       toast.success("Owner details updated successfully");
-      router.push("/register/commercial-both-registration/step-four");
+      router.push("/register/commercial-both-registration/step-two");
     } catch (err) {
       const errorMessage =
         err.response?.data?.message || err.message || "Update failed";
@@ -81,7 +79,7 @@ export default function OwnersDetailsCard() {
 
   const formatPhoneNumber = (value) => {
     // Remove all non-digit characters
-    const cleaned = value.replace(/\D/g, '');
+    const cleaned = value.replace(/\D/g, "");
     
     // Apply formatting: 000-0000-000
     let formatted = cleaned;
@@ -202,19 +200,6 @@ export default function OwnersDetailsCard() {
               required
             />
           </div>
-
-          <div>
-            <label className={labelClass}>
-              Website details <span className="text-gray-400 text-xs">(optional)</span>
-            </label>
-            <input
-              type="text"
-              placeholder="Enter website (e.g. www.example.com)"
-              value={website}
-              onChange={(e) => setWebsite(e.target.value)}
-              className={inputClass}
-            />
-          </div>
         </div>
 
         <div className="w-full max-w-md mt-6">
@@ -267,3 +252,6 @@ const termsTextContainer =
   "mt-6 text-center font-sfpro text-[10px] font-[800] leading-[100%] tracking-[-0.05em] underline text-[#1E1E1E]";
 const uploadHeading =
   "block mb-2 font-sfpro text-[24px] leading-[100%] tracking-[-0.05em] font-[400] text-[#039994]";
+
+
+

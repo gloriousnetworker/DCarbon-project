@@ -42,7 +42,6 @@ function RegisterCardContent() {
     const code = searchParams.get('referral');
     if (code) {
       setReferralCode(code);
-      console.log('Referral code:', referralCode)
       toast.success(`You've been invited with referral code: ${code}`);
     }
   }, [searchParams]);
@@ -53,6 +52,11 @@ function RegisterCardContent() {
     Commercial: 'COMMERCIAL',
     Partner: 'PARTNER',
   };
+
+  // Get available user categories based on referral status
+  const availableUserCategories = referralCode 
+    ? ['Resident', 'Commercial'] 
+    : ['Resident', 'Commercial', 'Partner'];
 
   // Validate the form before submission
   const validateForm = () => {
@@ -280,7 +284,7 @@ function RegisterCardContent() {
                 User Category <span className="text-red-500">*</span>
               </label>
               <div className="flex gap-4">
-                {['Resident', 'Commercial', 'Partner'].map((category) => (
+                {availableUserCategories.map((category) => (
                   <button
                     key={category}
                     type="button"

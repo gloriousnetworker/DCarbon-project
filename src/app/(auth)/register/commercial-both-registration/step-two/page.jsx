@@ -1,6 +1,6 @@
 "use client";
 
-import CommercialBothRegistrationCard from '../../../../../components/commercial/commercial-both-registration/StepTwoCard';
+import CommercialBothRegistrationCard from '../../../../../components/commercial/commercial-both-registration/step-two-utility-authorization/StepTwoCard';
 
 export default function CommercialBothRegistrationPage() {
   return (

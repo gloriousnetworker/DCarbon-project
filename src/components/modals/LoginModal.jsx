@@ -68,84 +68,74 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, redirectPa
         </div>
       )}
 
-      {/* Glass-Effect Card Container */}
+      {/* Compact Glass-Effect Card Container */}
       <div
-        className="w-full max-w-md space-y-6 p-8 rounded-xl shadow-lg relative"
+        className="w-full max-w-sm space-y-4 p-6 rounded-xl shadow-lg relative"
         style={{
-          background:
-            'linear-gradient(140.06deg, rgba(89, 89, 89, 0.4) -3.08%, rgba(255, 255, 255, 0.4) 106.56%)',
-          backdropFilter: 'blur(40px)',
-          border: '1px solid rgba(255, 255, 255, 0.2)'
+          background: 'linear-gradient(140.06deg, rgba(23, 33, 151, 0.4) -3.08%, rgba(13, 16, 110, 0.4) 106.56%)',
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(31, 31, 141, 0.2)'
         }}
       >
         {/* Close Button */}
         <button 
           onClick={onClose}
-          className="absolute top-4 right-4 text-white hover:text-gray-200"
+          className="absolute top-3 right-3 text-white hover:text-gray-200"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
 
         {/* Logo */}
-        <div className="relative w-full flex flex-col items-center mb-2">
+        <div className="flex justify-center mb-4">
           <img
             src="/auth_images/Login_logo.png"
             alt="DCarbon Logo"
-            className="h-10 object-contain"
+            className="h-8 object-contain"
           />
         </div>
 
         {/* Heading */}
-        <h2 className="mb-4 font-[600] text-[36px] leading-[100%] tracking-[-0.05em] text-[#FFFFFF] font-sfpro text-center">
-          Welcome back to DCarbon
+        <h2 className="text-2xl font-semibold text-white text-center mb-3">
+          Sign-in to Continue
         </h2>
 
         {/* Horizontal Line */}
-        <hr className="border-t-2 border-gray-200 mb-4 opacity-70" />
+        <hr className="border-t border-gray-300 opacity-30 mb-4" />
 
-        {/* Email Field */}
-        <div className="space-y-6">
+        {/* Form Fields */}
+        <div className="space-y-4">
           <div>
-            <label
-              htmlFor="email"
-              className="block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#FFFFFF]"
-            >
+            <label className="block text-sm font-medium text-white mb-1">
               Email Address
             </label>
             <input
               type="email"
-              id="email"
-              placeholder="@ e.g name@domain.com"
+              placeholder="name@domain.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E] bg-white bg-opacity-70"
+              className="w-full px-3 py-2 text-sm rounded-md bg-white bg-opacity-80 focus:outline-none focus:ring-2 focus:ring-[#039994]"
             />
           </div>
 
-          {/* Password Field with Forgot Password Link */}
           <div>
-            <label
-              htmlFor="password"
-              className="block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#FFFFFF]"
-            >
+            <label className="block text-sm font-medium text-white mb-1">
               Password
             </label>
             <input
               type="password"
-              id="password"
-              placeholder="Password"
+              placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E] mb-2 bg-white bg-opacity-70"
+              className="w-full px-3 py-2 text-sm rounded-md bg-white bg-opacity-80 focus:outline-none focus:ring-2 focus:ring-[#039994] mb-1"
             />
             <div className="text-right">
               <a
                 href="/forgot-password"
-                className="font-sfpro font-[600] text-[12px] leading-[100%] tracking-[-0.05em] text-[#FFFFFF] no-underline hover:text-[#02857f]"
+                className="text-xs text-white hover:text-[#039994] transition-colors"
               >
-                Forgot password
+                Forgot password?
               </a>
             </div>
           </div>
@@ -153,19 +143,18 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, redirectPa
 
         {/* Sign In Button */}
         <button
-          type="button"
           onClick={handleLogin}
-          className="w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro transition-colors duration-200"
+          className="w-full mt-4 py-2 bg-[#039994] text-white rounded-md hover:bg-[#02857f] transition-colors"
         >
           Sign in
         </button>
 
         {/* Create Account Link */}
-        <p className="mt-6 text-center font-sfpro font-[400] text-[14px] leading-[100%] tracking-[-0.05em] text-[#FFFFFF]">
+        <p className="text-center text-sm text-white mt-4">
           Don't have an account?{' '}
           <a
             href="/register"
-            className="font-sfpro font-[600] text-[14px] leading-[100%] tracking-[-0.05em] text-[#039994] no-underline hover:text-[#02857f]"
+            className="text-[#039994] font-medium hover:text-[#02857f] transition-colors"
           >
             Create account
           </a>

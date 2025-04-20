@@ -16,6 +16,7 @@ const styles = {
   progressStepText: 'text-sm font-medium text-gray-500 font-sfpro',
   formWrapper: 'w-full max-w-md space-y-6',
   labelClass: 'block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]',
+  inputClass: 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#626060]',
   selectClass: 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#626060]',
   buttonPrimary: 'w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro',
   spinnerOverlay: 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20',
@@ -27,15 +28,63 @@ const styles = {
 };
 
 export default function OperatorRegistrationCard() {
-  const commercialRole = 'operator';
-  const [entityType, setEntityType] = useState('');
+  const [formData, setFormData] = useState({
+    entityType: '',
+    commercialRole: 'operator',
+    ownerFullName: '',
+    phoneNumber: ''
+  });
   const [loading, setLoading] = useState(false);
   const [showUtilityModal, setShowUtilityModal] = useState(false);
   const router = useRouter();
 
   const localURL = 'https://dcarbon-server.onrender.com';
 
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const validateForm = () => {
+    if (!formData.entityType) {
+      toast.error('Please select entity type', {
+        style: {
+          fontFamily: 'SF Pro',
+          background: '#FFEBEE',
+          color: '#B71C1C'
+        }
+      });
+      return false;
+    }
+    if (!formData.ownerFullName.trim()) {
+      toast.error('Please enter operator full name', {
+        style: {
+          fontFamily: 'SF Pro',
+          background: '#FFEBEE',
+          color: '#B71C1C'
+        }
+      });
+      return false;
+    }
+    if (!formData.phoneNumber.trim()) {
+      toast.error('Please enter phone number', {
+        style: {
+          fontFamily: 'SF Pro',
+          background: '#FFEBEE',
+          color: '#B71C1C'
+        }
+      });
+      return false;
+    }
+    return true;
+  };
+
   const handleSubmit = async () => {
+    if (!validateForm()) return;
+
     const userId = localStorage.getItem('userId');
     const authToken = localStorage.getItem('authToken');
 
@@ -53,6 +102,33 @@ export default function OperatorRegistrationCard() {
     setLoading(true);
 
     try {
+      // First submit the operator registration data
+      const registrationResponse = await fetch(
+        `${localURL}/api/user/commercial-registration/${userId}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify(formData)
+        }
+      );
+
+      const registrationData = await registrationResponse.json();
+      if (!registrationResponse.ok || registrationData.status !== 'success') {
+        throw new Error(registrationData.message || 'Operator registration failed');
+      }
+
+      toast.success('Operator registration successful', {
+        style: {
+          fontFamily: 'SF Pro',
+          background: '#E8F5E9',
+          color: '#1B5E20'
+        }
+      });
+
+      // Then initiate utility authorization
       const initiateResponse = await fetch(
         `${localURL}/api/auth/initiate-utility-auth/${userId}`,
         {
@@ -69,7 +145,7 @@ export default function OperatorRegistrationCard() {
         throw new Error(initData.message || 'Utility authorization initiation failed');
       }
 
-      toast.success(initData.message || 'Utility authorization initiated successfully', {
+      toast.success('Utility authorization initiated successfully', {
         style: {
           fontFamily: 'SF Pro',
           background: '#E8F5E9',
@@ -80,7 +156,7 @@ export default function OperatorRegistrationCard() {
       window.open('https://utilityapi.com/authorize/DCarbon_Solutions', '_blank');
       setShowUtilityModal(true);
     } catch (error) {
-      toast.error(error.message || 'An error occurred during utility authorization', {
+      toast.error(error.message || 'An error occurred during registration', {
         style: {
           fontFamily: 'SF Pro',
           background: '#FFEBEE',
@@ -135,24 +211,63 @@ export default function OperatorRegistrationCard() {
               <label className={styles.labelClass}>Commercial Role</label>
               <span className={styles.mandatoryStar}>*</span>
             </div>
-            <div className={styles.selectClass}>Operator</div>
+            <input
+              type="text"
+              name="commercialRole"
+              value={formData.commercialRole}
+              readOnly
+              className={styles.inputClass}
+            />
           </div>
 
-          {/* Entity Type Dropdown (optional, for future use) */}
+          {/* Entity Type Dropdown */}
           <div>
             <div className={styles.labelContainer}>
               <label className={styles.labelClass}>Entity Type</label>
               <span className={styles.mandatoryStar}>*</span>
             </div>
             <select
-              value={entityType}
-              onChange={(e) => setEntityType(e.target.value)}
+              name="entityType"
+              value={formData.entityType}
+              onChange={handleChange}
               className={styles.selectClass}
             >
               <option value="">Choose Type</option>
               <option value="individual">Individual</option>
               <option value="company">Company</option>
             </select>
+          </div>
+
+          {/* Operator's Full Name */}
+          <div>
+            <div className={styles.labelContainer}>
+              <label className={styles.labelClass}>Operator's Full Name</label>
+              <span className={styles.mandatoryStar}>*</span>
+            </div>
+            <input
+              type="text"
+              name="ownerFullName"
+              value={formData.ownerFullName}
+              onChange={handleChange}
+              className={styles.inputClass}
+              placeholder="Enter operator's full name"
+            />
+          </div>
+
+          {/* Phone Number */}
+          <div>
+            <div className={styles.labelContainer}>
+              <label className={styles.labelClass}>Phone Number</label>
+              <span className={styles.mandatoryStar}>*</span>
+            </div>
+            <input
+              type="tel"
+              name="phoneNumber"
+              value={formData.phoneNumber}
+              onChange={handleChange}
+              className={styles.inputClass}
+              placeholder="Enter phone number with country code"
+            />
           </div>
         </div>
 

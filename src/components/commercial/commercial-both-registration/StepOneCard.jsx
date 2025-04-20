@@ -47,6 +47,7 @@ export default function StepOneCard() {
   const [financeType, setFinanceType] = useState('');
   const [financeCompany, setFinanceCompany] = useState('');
   const [installer, setInstaller] = useState('');
+  const [customInstaller, setCustomInstaller] = useState('');
   const [systemSize, setSystemSize] = useState('');
   const [cod, setCOD] = useState('');
   const [file, setFile] = useState(null);
@@ -54,6 +55,8 @@ export default function StepOneCard() {
   const router = useRouter();
 
   const showUploadField = documentRequiredTypes.includes(financeType.toLowerCase());
+  const showFinanceCompany = financeType.toLowerCase() !== 'cash';
+  const showCustomInstaller = installer === 'others';
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
@@ -86,13 +89,23 @@ export default function StepOneCard() {
 
   const handleNext = async () => {
     // Validate required fields
-    if (!financeType || !financeCompany) {
-      toast.error('Please fill in all required fields');
+    if (!financeType) {
+      toast.error('Please select a finance type');
+      return;
+    }
+
+    if (showFinanceCompany && !financeCompany) {
+      toast.error('Please select a finance company');
       return;
     }
 
     if (showUploadField && !uploadSuccess) {
       toast.error('Please upload the financial agreement');
+      return;
+    }
+
+    if (showCustomInstaller && !customInstaller) {
+      toast.error('Please enter your installer name');
       return;
     }
 
@@ -107,11 +120,14 @@ export default function StepOneCard() {
         throw new Error('Authentication required');
       }
 
+      // Determine the installer value
+      const finalInstaller = showCustomInstaller ? customInstaller : installer;
+
       // Prepare payload according to new endpoint structure
       const payload = {
         financialType: financeType,
-        financeCompany: financeCompany,
-        ...(installer && { installer }),
+        ...(showFinanceCompany && { financeCompany }), // Only include if not cash
+        ...(finalInstaller && { installer: finalInstaller }),
         ...(systemSize && { systemSize }),
         ...(cod && { cod }),
       };
@@ -164,7 +180,7 @@ export default function StepOneCard() {
         }
       }
 
-      router.push('/register/commercial-both-registration/utility-authorization');
+      router.push('/register/commercial-both-registration/step-three');
     } catch (err) {
       toast.error(err.response?.data?.message || err.message || 'Operation failed', { id: toastId });
     } finally {
@@ -216,6 +232,7 @@ export default function StepOneCard() {
               value={financeType}
               onChange={(e) => {
                 setFinanceType(e.target.value);
+                setFinanceCompany('');
                 setFile(null);
                 setUploadSuccess(false);
               }}
@@ -230,25 +247,27 @@ export default function StepOneCard() {
             </select>
           </div>
 
-          {/* Finance Company - Required */}
-          <div>
-            <label className={labelClass}>
-              Finance company <span className="text-red-500">*</span>
-            </label>
-            <select
-              value={financeCompany}
-              onChange={(e) => setFinanceCompany(e.target.value)}
-              className={selectClass}
-              required
-            >
-              <option value="">Choose company</option>
-              <option value="company1">Company 1</option>
-              <option value="company2">Company 2</option>
-              <option value="company3">Company 3</option>
-              <option value="others">Others</option>
-              <option value="n/a">N/A</option>
-            </select>
-          </div>
+          {/* Finance Company - Conditionally Required */}
+          {showFinanceCompany && (
+            <div>
+              <label className={labelClass}>
+                Finance company <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={financeCompany}
+                onChange={(e) => setFinanceCompany(e.target.value)}
+                className={selectClass}
+                required={showFinanceCompany}
+              >
+                <option value="">Choose company</option>
+                <option value="company1">Company 1</option>
+                <option value="company2">Company 2</option>
+                <option value="company3">Company 3</option>
+                <option value="others">Others</option>
+                <option value="n/a">N/A</option>
+              </select>
+            </div>
+          )}
 
           {/* Financial Agreement - Conditionally Required */}
           {showUploadField && (
@@ -341,7 +360,10 @@ export default function StepOneCard() {
             </label>
             <select
               value={installer}
-              onChange={(e) => setInstaller(e.target.value)}
+              onChange={(e) => {
+                setInstaller(e.target.value);
+                setCustomInstaller('');
+              }}
               className={selectClass}
             >
               <option value="">Choose installer</option>
@@ -352,6 +374,23 @@ export default function StepOneCard() {
               <option value="unknown">Don't know</option>
             </select>
           </div>
+
+          {/* Custom Installer Input - Conditionally Shown */}
+          {showCustomInstaller && (
+            <div>
+              <label className={labelClass}>
+                Installer Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                placeholder="Enter your installer name"
+                value={customInstaller}
+                onChange={(e) => setCustomInstaller(e.target.value)}
+                className={inputClass}
+                required={showCustomInstaller}
+              />
+            </div>
+          )}
 
           {/* System Size & COD - Both Optional */}
           <div className={rowWrapper}>

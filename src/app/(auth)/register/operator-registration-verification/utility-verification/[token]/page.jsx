@@ -1,7 +1,13 @@
 "use client";
 
-import { Suspense } from 'react';
+import { Suspense, use } from 'react';
 import VerificationContent from '../../../../../../components/operator-registration/Verification';
+
+// Create a wrapper component that handles the async params
+function VerificationWrapper({ paramsPromise }) {
+  const params = use(paramsPromise);
+  return <VerificationContent token={params.token} />;
+}
 
 export default function TokenVerificationPage({ params }) {
   return (
@@ -18,7 +24,7 @@ export default function TokenVerificationPage({ params }) {
       {/* Right Section - Verification Card */}
       <div className="w-full md:w-1/2 p-6 flex justify-center items-center">
         <Suspense fallback={<div>Loading...</div>}>
-          <VerificationContent token={params.token} />
+          <VerificationWrapper paramsPromise={params} />
         </Suspense>
       </div>
     </div>
