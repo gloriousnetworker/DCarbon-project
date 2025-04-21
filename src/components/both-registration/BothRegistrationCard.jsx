@@ -16,7 +16,9 @@ const styles = {
   formWrapper: 'w-full max-w-md space-y-6',
   labelClass: 'block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]',
   selectClass: 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#626060]',
+  disabledSelect: 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm bg-gray-100 text-gray-500 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400]',
   buttonPrimary: 'w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro',
+  buttonDisabled: 'w-full rounded-md bg-gray-300 text-gray-500 font-semibold py-2 cursor-not-allowed font-sfpro',
   spinnerOverlay: 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20',
   spinner: 'h-12 w-12 border-4 border-t-4 border-gray-300 border-t-[#039994] rounded-full animate-spin',
   termsTextContainer: 'mt-6 text-center font-sfpro text-[10px] leading-[100%] tracking-[-0.05em] text-[#1E1E1E]',
@@ -27,13 +29,12 @@ const styles = {
 
 export default function StepOneCard() {
   const [loading, setLoading] = useState(false);
-  const [commercialRole, setCommercialRole] = useState('both'); 
   const [entityType, setEntityType] = useState('');
   const router = useRouter();
 
   const handleSubmit = async () => {
-    if (!commercialRole || !entityType) {
-      toast.error('Please select both Commercial Role and Entity Type', {
+    if (!entityType) {
+      toast.error('Please select Entity Type', {
         style: {
           fontFamily: 'SF Pro',
           background: '#FFEBEE',
@@ -54,6 +55,7 @@ export default function StepOneCard() {
           color: '#B71C1C',
         },
       });
+      router.push('/login');
       return;
     }
 
@@ -70,7 +72,7 @@ export default function StepOneCard() {
           },
           body: JSON.stringify({
             entityType,
-            commercialRole,
+            commercialRole: 'both' 
           }),
         }
       );
@@ -80,6 +82,7 @@ export default function StepOneCard() {
         throw new Error(errorData.message || 'Registration update failed');
       }
 
+      const data = await response.json();
       toast.success('Registration updated successfully!', {
         style: {
           fontFamily: 'SF Pro',
@@ -135,17 +138,18 @@ export default function StepOneCard() {
         </div>
 
         <div className={styles.formWrapper}>
-          {/* Commercial Role Static Text */}
+          {/* Commercial Role - Fixed as "both" */}
           <div>
             <div className={styles.labelContainer}>
               <label className={styles.labelClass}>Commercial Role</label>
               <span className={styles.mandatoryStar}>*</span>
             </div>
-            <div className={styles.selectClass} disabled>
+            <div className={styles.disabledSelect}>
               Both Owner & Operator
             </div>
           </div>
 
+          {/* Entity Type Selection */}
           <div>
             <div className={styles.labelContainer}>
               <label className={styles.labelClass}>Entity Type</label>
@@ -155,6 +159,7 @@ export default function StepOneCard() {
               value={entityType}
               onChange={(e) => setEntityType(e.target.value)}
               className={styles.selectClass}
+              disabled={loading}
             >
               <option value="">Choose Type</option>
               <option value="individual">Individual</option>
@@ -166,8 +171,8 @@ export default function StepOneCard() {
         <div className="w-full max-w-md mt-6">
           <button
             onClick={handleSubmit}
-            className={styles.buttonPrimary}
-            disabled={loading}
+            className={loading || !entityType ? styles.buttonDisabled : styles.buttonPrimary}
+            disabled={loading || !entityType}
           >
             {loading ? 'Processing...' : 'Next'}
           </button>
