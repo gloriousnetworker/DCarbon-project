@@ -1,90 +1,136 @@
 import React, { useState } from "react";
-import { FiX } from "react-icons/fi";
+import { FiX, FiPaperclip } from "react-icons/fi";
+import axios from "axios";
+import toast from "react-hot-toast";
+import {
+  labelClass,
+  buttonPrimary,
+  spinnerOverlay,
+  spinner,
+  uploadInputLabel,
+  uploadIconContainer
+} from "./styles";
 
-export default function UploadFacilityDocumentModal({ onClose }) {
+export default function UploadFacilityDocumentModal({
+  facilityId,
+  docType,
+  onClose,
+  onUploadSuccess
+}) {
   const [selectedFile, setSelectedFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
 
-  // Called when user selects a file
   const handleFileChange = (e) => {
-    if (e.target.files && e.target.files[0]) {
+    if (e.target.files?.[0]) {
       setSelectedFile(e.target.files[0]);
     }
   };
 
-  // Called when user clicks the top "Upload" next to file input
-  const handleUploadClick = () => {
+  const handleUpload = async () => {
     if (!selectedFile) {
-      alert("Please select a file first.");
+      toast.error("Please select a file first.");
       return;
     }
-    console.log("File to upload:", selectedFile);
-    // Implement your file upload logic here (API call, etc.)
-  };
 
-  // Called when user clicks bottom "Upload" to finalize
-  const handleFinalUpload = () => {
-    if (!selectedFile) {
-      alert("Please select a file first.");
+    const userId = localStorage.getItem("userId");
+    const authToken = localStorage.getItem("authToken");
+
+    if (!userId || !authToken) {
+      toast.error("Authentication required");
       return;
     }
-    console.log("Final upload triggered for:", selectedFile);
-    // Implement final upload logic
-    onClose();
+
+    setUploading(true);
+
+    try {
+      const form = new FormData();
+      const fieldName = docType === "financeAgreement" 
+        ? "financeAgreementUrl" 
+        : "proofOfAddressUrl";
+      
+      form.append(fieldName, selectedFile);
+
+      const endpoints = {
+        financeAgreement: `https://dcarbon-server.onrender.com/api/facility/update-facility-financial-agreement/${facilityId}`,
+        proofOfAddress: `https://dcarbon-server.onrender.com/api/facility/update-facility-proof-of-address/${facilityId}`
+      };
+
+      const endpoint = endpoints[docType];
+
+      const { data } = await axios.put(endpoint, form, {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          "Content-Type": "multipart/form-data"
+        }
+      });
+
+      toast.success(data.message || "Document uploaded successfully");
+      onUploadSuccess(data.data);
+    } catch (err) {
+      console.error("Upload error:", err);
+      toast.error(err.response?.data?.message || "Upload failed. Please try again.");
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40"
-      aria-labelledby="upload-facility-document-modal"
-      role="dialog"
-      aria-modal="true"
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+      {uploading && (
+        <div className={spinnerOverlay}>
+          <div className={spinner} />
+        </div>
+      )}
+
       <div className="relative bg-white rounded-lg shadow-lg w-full max-w-md p-6">
-        {/* Close (X) button */}
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+          disabled={uploading}
         >
           <FiX size={20} />
         </button>
 
-        {/* Modal Title */}
-        <h2 className="text-lg font-semibold text-gray-800">
-          Upload Facility Document
+        <h2 className="text-lg font-semibold text-gray-800 mb-3">
+          Upload {docType === "financeAgreement" ? "Finance Agreement" : "Proof of Address"}
         </h2>
-        <hr className="my-3 border-gray-200" />
+        <hr className="mb-4 border-gray-200" />
 
-        {/* File Input + Green Upload Button side by side */}
-        <div className="flex items-center space-x-2 mb-4">
-          <input
-            type="file"
-            onChange={handleFileChange}
-            className="border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-[#039994] focus:outline-none p-2 w-full"
-          />
-          <button
-            onClick={handleUploadClick}
-            className="bg-[#039994] text-white text-sm px-3 py-2 rounded-md hover:bg-[#028c8c]"
-          >
-            Upload
-          </button>
+        <div className="mb-4">
+          <label className={labelClass}>
+            Select File (PDF or Image)
+          </label>
+          <div className="flex items-center space-x-2">
+            <label className={uploadInputLabel}>
+              {selectedFile ? selectedFile.name : "Choose file..."}
+              <FiPaperclip className={uploadIconContainer} />
+              <input
+                type="file"
+                accept="application/pdf,image/*"
+                className="absolute inset-0 opacity-0 cursor-pointer"
+                onChange={handleFileChange}
+                disabled={uploading}
+              />
+            </label>
+          </div>
         </div>
 
         <hr className="mb-4 border-gray-200" />
 
-        {/* Bottom buttons: Cancel & Upload, equal width */}
         <div className="flex items-center space-x-4">
           <button
             onClick={onClose}
+            disabled={uploading}
             className="w-1/2 py-2 bg-gray-100 text-gray-700 text-sm rounded-md hover:bg-gray-200"
           >
             Cancel
           </button>
           <button
-            onClick={handleFinalUpload}
-            className="w-1/2 py-2 text-white text-sm rounded-md"
-            style={{ backgroundColor: "#039994" }}
+            onClick={handleUpload}
+            disabled={uploading || !selectedFile}
+            className={`w-1/2 ${buttonPrimary}`}
           >
-            Upload
+            {uploading ? "Uploading..." : "Upload"}
           </button>
         </div>
       </div>

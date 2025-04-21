@@ -1,126 +1,186 @@
 import React, { useState } from "react";
 import { FiX } from "react-icons/fi";
+import axios from "axios";
+import toast from "react-hot-toast";
+import {
+  labelClass,
+  inputClass,
+  buttonPrimary,
+  spinnerOverlay,
+  spinner
+} from "./styles";
 
 export default function EditFacilityDetailsModal({ facility, onClose, onSave }) {
-  // Local state for each editable field
-  const [ownerName, setOwnerName] = useState(facility.ownerName);
-  const [operatorName, setOperatorName] = useState(facility.operatorName);
-  const [utilityProvider, setUtilityProvider] = useState(facility.utilityProvider);
-  const [meterId, setMeterId] = useState(facility.meterId);
-  const [address, setAddress] = useState(facility.address);
+  const [formData, setFormData] = useState({
+    facilityName: facility.facilityName || "",
+    address: facility.address || "",
+    utilityProvider: facility.utilityProvider || "",
+    meterId: facility.meterId || "",
+    commercialRole: facility.commercialRole || "",
+    entityType: facility.entityType || ""
+  });
+  const [loading, setLoading] = useState(false);
 
-  // Called when user clicks "Save"
-  const handleSave = () => {
-    const updatedData = {
-      ...facility,
-      ownerName,
-      operatorName,
-      utilityProvider,
-      meterId,
-      address,
-    };
-    onSave(updatedData);
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSave = async () => {
+    const userId = localStorage.getItem("userId");
+    const authToken = localStorage.getItem("authToken");
+
+    if (!userId || !authToken) {
+      toast.error("Authentication required");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await axios.put(
+        `https://dcarbon-server.onrender.com/api/facility/update-facility/${facility.id}`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            "Content-Type": "application/json"
+          }
+        }
+      );
+
+      if (response.data.status === "success") {
+        toast.success("Facility updated successfully");
+        onSave(response.data.data);
+        onClose();
+      } else {
+        throw new Error(response.data.message || "Failed to update facility");
+      }
+    } catch (error) {
+      console.error("Error updating facility:", error);
+      toast.error(error.response?.data?.message || "Failed to update facility");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40"
-      aria-labelledby="edit-facility-modal"
-      role="dialog"
-      aria-modal="true"
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+      {loading && (
+        <div className={spinnerOverlay}>
+          <div className={spinner}></div>
+        </div>
+      )}
+
       <div className="relative bg-white rounded-lg shadow-lg w-full max-w-md p-6">
-        {/* Close (X) button */}
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+          disabled={loading}
         >
           <FiX size={20} />
         </button>
 
-        {/* Modal Title */}
         <h2 className="text-lg font-semibold text-gray-800">Edit Facility Details</h2>
         <hr className="my-3 border-gray-200" />
 
-        {/* Form Fields */}
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Owner Name
-            </label>
+            <label className={labelClass}>Facility Name</label>
             <input
               type="text"
-              value={ownerName}
-              onChange={(e) => setOwnerName(e.target.value)}
-              className="border border-gray-300 rounded-md w-full p-2 text-sm focus:ring-1 focus:ring-[#039994] focus:outline-none"
+              name="facilityName"
+              value={formData.facilityName}
+              onChange={handleChange}
+              className={inputClass}
+              disabled={loading}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Operator Name
-            </label>
-            <input
-              type="text"
-              value={operatorName}
-              onChange={(e) => setOperatorName(e.target.value)}
-              className="border border-gray-300 rounded-md w-full p-2 text-sm focus:ring-1 focus:ring-[#039994] focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Utility Provider
-            </label>
-            <input
-              type="text"
-              value={utilityProvider}
-              onChange={(e) => setUtilityProvider(e.target.value)}
-              className="border border-gray-300 rounded-md w-full p-2 text-sm focus:ring-1 focus:ring-[#039994] focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Meter ID
-            </label>
-            <input
-              type="text"
-              value={meterId}
-              onChange={(e) => setMeterId(e.target.value)}
-              className="border border-gray-300 rounded-md w-full p-2 text-sm focus:ring-1 focus:ring-[#039994] focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Address
-            </label>
+            <label className={labelClass}>Address</label>
             <textarea
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              className="border border-gray-300 rounded-md w-full p-2 text-sm focus:ring-1 focus:ring-[#039994] focus:outline-none"
+              name="address"
+              value={formData.address}
+              onChange={handleChange}
+              className={inputClass}
               rows={2}
+              disabled={loading}
             />
+          </div>
+
+          <div>
+            <label className={labelClass}>Utility Provider</label>
+            <input
+              type="text"
+              name="utilityProvider"
+              value={formData.utilityProvider}
+              onChange={handleChange}
+              className={inputClass}
+              disabled={loading}
+            />
+          </div>
+
+          <div>
+            <label className={labelClass}>Meter ID</label>
+            <input
+              type="text"
+              name="meterId"
+              value={formData.meterId}
+              onChange={handleChange}
+              className={inputClass}
+              disabled={loading}
+            />
+          </div>
+
+          <div>
+            <label className={labelClass}>Commercial Role</label>
+            <select
+              name="commercialRole"
+              value={formData.commercialRole}
+              onChange={handleChange}
+              className={inputClass}
+              disabled={loading}
+            >
+              <option value="owner">Owner</option>
+              <option value="operator">Operator</option>
+              <option value="both">Both</option>
+            </select>
+          </div>
+
+          <div>
+            <label className={labelClass}>Entity Type</label>
+            <select
+              name="entityType"
+              value={formData.entityType}
+              onChange={handleChange}
+              className={inputClass}
+              disabled={loading}
+            >
+              <option value="individual">Individual</option>
+              <option value="company">Company</option>
+            </select>
           </div>
         </div>
 
         <hr className="my-4 border-gray-200" />
 
-        {/* Buttons: Cancel and Save */}
         <div className="flex items-center space-x-4">
           <button
             onClick={onClose}
+            disabled={loading}
             className="w-1/2 py-2 bg-gray-100 text-gray-700 text-sm rounded-md hover:bg-gray-200"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
-            className="w-1/2 py-2 text-white text-sm rounded-md"
-            style={{ backgroundColor: "#039994" }}
+            disabled={loading}
+            className={`w-1/2 ${buttonPrimary}`}
           >
-            Save
+            {loading ? "Saving..." : "Save"}
           </button>
         </div>
       </div>

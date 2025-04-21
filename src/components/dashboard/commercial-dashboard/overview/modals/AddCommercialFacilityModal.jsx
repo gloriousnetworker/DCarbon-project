@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { pageTitle, labelClass, inputClass, buttonPrimary } from "../styles";
@@ -13,6 +13,44 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
     entityType: "individual"
   });
   const [loading, setLoading] = useState(false);
+  const [utilityProviders, setUtilityProviders] = useState([]);
+  const [utilityProvidersLoading, setUtilityProvidersLoading] = useState(false);
+
+  // Fetch utility providers on component mount
+  useEffect(() => {
+    if (isOpen) {
+      fetchUtilityProviders();
+    }
+  }, [isOpen]);
+
+  const fetchUtilityProviders = async () => {
+    const userId = localStorage.getItem("userId");
+    const authToken = localStorage.getItem("authToken");
+
+    if (!userId || !authToken) return;
+
+    setUtilityProvidersLoading(true);
+    try {
+      const response = await axios.get(
+        "https://dcarbon-server.onrender.com/api/auth/utility-providers",
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`
+          }
+        }
+      );
+
+      if (response.data.status === "success") {
+        setUtilityProviders(response.data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching utility providers:", error);
+      toast.error("Failed to load utility providers");
+    } finally {
+      setUtilityProvidersLoading(false);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -20,6 +58,32 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
       ...prev,
       [name]: value
     }));
+  };
+
+  const storeFacilityData = (facilityData) => {
+    const userId = localStorage.getItem("userId");
+    const userFacilitiesKey = `user_${userId}_facilities`;
+    
+    try {
+      // Get existing facilities from localStorage
+      const existingFacilities = JSON.parse(localStorage.getItem(userFacilitiesKey)) || [];
+      
+      // Add new facility
+      const updatedFacilities = [
+        ...existingFacilities,
+        {
+          id: facilityData.id,
+          facilityName: facilityData.facilityName,
+          commercialRole: facilityData.commercialRole,
+          createdAt: facilityData.createdAt
+        }
+      ];
+      
+      // Save back to localStorage
+      localStorage.setItem(userFacilitiesKey, JSON.stringify(updatedFacilities));
+    } catch (error) {
+      console.error("Error storing facility data:", error);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -49,6 +113,19 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
 
       if (response.data.status === "success") {
         toast.success("Facility created successfully");
+        
+        // Store the facility data in localStorage
+        storeFacilityData(response.data.data);
+        
+        // Reset form and close modal
+        setFormData({
+          facilityName: "",
+          address: "",
+          utilityProvider: "",
+          meterId: "",
+          commercialRole: "both",
+          entityType: "individual"
+        });
         onClose();
       } else {
         throw new Error(response.data.message || "Failed to create facility");
@@ -74,6 +151,7 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
         <button
           onClick={onClose}
           className="absolute right-4 top-4 text-gray-500 hover:text-gray-700 focus:outline-none"
+          disabled={loading}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -96,7 +174,10 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
         <form onSubmit={handleSubmit} className="space-y-4 mt-6">
           {/* Facility Name */}
           <div>
-            <label className={labelClass}>Facility Name</label>
+            <div className="flex items-center">
+              <label className={labelClass}>Facility Name</label>
+              <span className="text-red-500 ml-1">*</span>
+            </div>
             <input
               type="text"
               name="facilityName"
@@ -105,12 +186,16 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
               className={inputClass}
               placeholder="Enter facility name"
               required
+              disabled={loading}
             />
           </div>
 
           {/* Address */}
           <div>
-            <label className={labelClass}>Address</label>
+            <div className="flex items-center">
+              <label className={labelClass}>Address</label>
+              <span className="text-red-500 ml-1">*</span>
+            </div>
             <input
               type="text"
               name="address"
@@ -119,44 +204,71 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
               className={inputClass}
               placeholder="Enter facility address"
               required
+              disabled={loading}
             />
           </div>
 
           {/* Utility Provider */}
           <div>
-            <label className={labelClass}>Utility Provider</label>
-            <input
-              type="text"
+            <div className="flex items-center">
+              <label className={labelClass}>Utility Provider</label>
+              <span className="text-red-500 ml-1">*</span>
+            </div>
+            <select
               name="utilityProvider"
               value={formData.utilityProvider}
               onChange={handleChange}
               className={inputClass}
-              placeholder="Enter utility provider"
-            />
+              required
+              disabled={loading || utilityProvidersLoading}
+            >
+              <option value="">Select utility provider</option>
+              {utilityProvidersLoading ? (
+                <option value="" disabled>Loading providers...</option>
+              ) : (
+                utilityProviders.map(provider => (
+                  <option key={provider.id} value={provider.name}>
+                    {provider.name}
+                  </option>
+                ))
+              )}
+            </select>
           </div>
 
           {/* Meter ID */}
           <div>
-            <label className={labelClass}>Meter ID</label>
+            <div className="flex items-center">
+              <label className={labelClass}>Meter ID</label>
+              <span className="text-red-500 ml-1">*</span>
+            </div>
             <input
               type="text"
               name="meterId"
               value={formData.meterId}
               onChange={handleChange}
               className={inputClass}
-              placeholder="Enter meter ID"
+              placeholder="Enter unique meter ID"
+              required
+              disabled={loading}
             />
+            <p className="mt-1 text-xs text-gray-500">
+              This must be a unique identifier for your meter
+            </p>
           </div>
 
           {/* Commercial Role */}
           <div>
-            <label className={labelClass}>Commercial Role</label>
+            <div className="flex items-center">
+              <label className={labelClass}>Commercial Role</label>
+              <span className="text-red-500 ml-1">*</span>
+            </div>
             <select
               name="commercialRole"
               value={formData.commercialRole}
               onChange={handleChange}
               className={inputClass}
               required
+              disabled={loading}
             >
               <option value="owner">Owner</option>
               <option value="operator">Operator</option>
@@ -166,13 +278,17 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
 
           {/* Entity Type */}
           <div>
-            <label className={labelClass}>Entity Type</label>
+            <div className="flex items-center">
+              <label className={labelClass}>Entity Type</label>
+              <span className="text-red-500 ml-1">*</span>
+            </div>
             <select
               name="entityType"
               value={formData.entityType}
               onChange={handleChange}
               className={inputClass}
               required
+              disabled={loading}
             >
               <option value="individual">Individual</option>
               <option value="company">Company</option>
@@ -192,7 +308,7 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
             <button
               type="submit"
               className={`flex-1 ${buttonPrimary}`}
-              disabled={loading}
+              disabled={loading || !formData.facilityName || !formData.address || !formData.utilityProvider || !formData.meterId}
             >
               {loading ? "Processing..." : "Add Facility"}
             </button>
