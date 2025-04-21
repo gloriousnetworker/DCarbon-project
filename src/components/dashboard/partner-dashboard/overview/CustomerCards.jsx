@@ -18,67 +18,82 @@ export default function ThreeCardsDashboard() {
 
   const [selectedEmail, setSelectedEmail] = useState("");
   const [showReminderModal, setShowReminderModal] = useState(false);
+  const [showAllPending, setShowAllPending] = useState(false);
 
   useEffect(() => {
     const storedUserId = localStorage.getItem("userId") || "8b14b23d-3082-4846-9216-2c2e9f1e96bf";
     const authToken = localStorage.getItem("authToken") || "";
 
-    const fetchReferralStats = async () => {
+    const fetchData = async () => {
       try {
         setLoadingStats(true);
-        const response = await axios.get(
-          `https://dcarbon-server.onrender.com/api/user/referral-statistics/${storedUserId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${authToken}`,
-            },
-          }
-        );
-        setReferralStats(response.data.data || {});
+        setLoadingPending(true);
+        
+        // Fetch both endpoints in parallel
+        const [statsResponse, pendingResponse] = await Promise.all([
+          axios.get(
+            `https://dcarbon-server.onrender.com/api/user/referral-statistics/${storedUserId}`,
+            { headers: { Authorization: `Bearer ${authToken}` } }
+          ),
+          axios.get(
+            `https://dcarbon-server.onrender.com/api/user/pending-referrals/${storedUserId}`,
+            { headers: { Authorization: `Bearer ${authToken}` } }
+          )
+        ]);
+
+        const backendData = statsResponse.data.data || {};
+        const pendingData = pendingResponse.data.data?.pendingReferrals || [];
+
+        // Get truly pending referrals (status = PENDING)
+        const trulyPending = pendingData.filter(item => item.status === "PENDING");
+
+        // Update stats directly from backend
+        setReferralStats({
+          totalInvited: backendData.totalInvited || 0,
+          totalPending: trulyPending.length, // Use actual pending count from filtered list
+          totalAccepted: backendData.totalAccepted || 0,
+          totalExpired: backendData.totalExpired || 0
+        });
+
+        // Set pending referrals
+        setPendingReferrals(trulyPending);
       } catch (err) {
-        setErrorStats(err.message);
+        setErrorStats(err.message || "Failed to load stats");
+        setErrorPending(err.message || "Failed to load pending referrals");
       } finally {
         setLoadingStats(false);
-      }
-    };
-
-    const fetchPendingReferrals = async () => {
-      try {
-        setLoadingPending(true);
-        const response = await axios.get(
-          `https://dcarbon-server.onrender.com/api/user/pending-referrals/${storedUserId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${authToken}`,
-            },
-          }
-        );
-        setPendingReferrals(response.data.data?.pendingReferrals || []);
-      } catch (err) {
-        setErrorPending(err.message);
-      } finally {
         setLoadingPending(false);
       }
     };
 
-    fetchReferralStats();
-    fetchPendingReferrals();
+    fetchData();
+
+    // Refresh data every 5 minutes
+    const refreshInterval = setInterval(fetchData, 300000);
+    return () => clearInterval(refreshInterval);
   }, []);
 
-  const totalRefCount =
-    referralStats.totalInvited +
-    referralStats.totalPending +
-    referralStats.totalAccepted +
-    referralStats.totalExpired || 0;
+  const totalRefCount = referralStats.totalInvited || 1;
 
   const getProgress = (value) => {
-    if (!totalRefCount) return 0;
-    return Math.round((value / totalRefCount) * 100);
+    const maxValue = Math.max(10, totalRefCount);
+    return Math.min(100, Math.round((value / maxValue) * 100));
+  };
+
+  const getStarCount = () => {
+    if (referralStats.totalInvited >= 25) return 3;
+    if (referralStats.totalInvited >= 15) return 2;
+    if (referralStats.totalInvited >= 5) return 1;
+    return 0;
   };
 
   const handleEmailClick = (email) => {
     setSelectedEmail(email);
     setShowReminderModal(true);
+  };
+
+  const toggleShowAllPending = () => {
+    setShowAllPending(!showAllPending);
   };
 
   return (
@@ -94,6 +109,12 @@ export default function ThreeCardsDashboard() {
           <h3 className="text-[#1E1E1E] font-semibold text-sm">
             Customer Range
           </h3>
+          {/* Stars for milestones */}
+          <div className="flex ml-auto space-x-1">
+            {[...Array(getStarCount())].map((_, i) => (
+              <span key={i} className="text-yellow-400">★</span>
+            ))}
+          </div>
         </div>
         {loadingStats ? (
           <div className="flex justify-center items-center h-16">
@@ -106,27 +127,31 @@ export default function ThreeCardsDashboard() {
             <hr className="my-2 border-black" />
             <ProgressBarRow
               label="Invited Customers"
-              color="#FFB200"
+              color="#039994"
               value={referralStats.totalInvited}
               progress={getProgress(referralStats.totalInvited)}
+              milestone={referralStats.totalInvited}
             />
             <ProgressBarRow
-              label="Active Customers"
-              color="#039994"
+              label="Pending Customers"
+              color="#FFB200"
               value={referralStats.totalPending}
-              progress={getProgress(referralStats.totalPending)} 
+              progress={getProgress(referralStats.totalPending)}
+              milestone={referralStats.totalPending}
             />
             <ProgressBarRow
               label="Registered Customers"
               color="#1E1E1E"
-              value={referralStats.totalAccepted} 
+              value={referralStats.totalAccepted}
               progress={getProgress(referralStats.totalAccepted)}
+              milestone={referralStats.totalAccepted}
             />
             <ProgressBarRow
-              label="Active Resi. Groups"
-              color="#039994"
+              label="Expired Invitations"
+              color="#FF0000"
               value={referralStats.totalExpired}
               progress={getProgress(referralStats.totalExpired)}
+              milestone={referralStats.totalExpired}
             />
           </>
         )}
@@ -141,7 +166,7 @@ export default function ThreeCardsDashboard() {
             className="h-5 w-5 object-contain"
           />
           <h3 className="text-[#1E1E1E] font-semibold text-sm">
-            Pending Customer Registrations
+            Pending Customer Registrations ({pendingReferrals.length})
           </h3>
         </div>
         {loadingPending ? (
@@ -155,26 +180,27 @@ export default function ThreeCardsDashboard() {
             <hr className="my-2 border-black" />
             <div className="overflow-y-auto max-h-52 pr-2">
               {pendingReferrals.length > 0 ? (
-                pendingReferrals.slice(0, 5).map((item, idx) => (
+                (showAllPending ? pendingReferrals : pendingReferrals.slice(0, 5)).map((item, idx) => (
                   <div
                     key={idx}
-                    className="flex items-center justify-between mb-2"
+                    className="flex items-center justify-between mb-2 gap-2"
                   >
                     <button
                       onClick={() => handleEmailClick(item.inviteeEmail)}
-                      className="text-[#1E1E1E] text-sm font-medium hover:underline"
+                      className="text-[#1E1E1E] text-sm font-medium hover:underline truncate flex-1 text-left min-w-0"
+                      title={item.inviteeEmail}
                     >
-                      {item.inviteeEmail || "Unknown User"}
+                      <span className="truncate block">{item.inviteeEmail || "Unknown User"}</span>
                     </button>
                     <span
-                      className="text-xs px-2 py-1 rounded-full"
+                      className="text-xs px-2 py-0.5 rounded-full whitespace-nowrap flex-shrink-0"
                       style={{
                         border: "0.5px solid #FFB200",
                         backgroundColor: "#FFFAED",
                         color: "#FFB200",
                       }}
                     >
-                      {item.status || "Pending"}
+                      Pending
                     </span>
                   </div>
                 ))
@@ -184,15 +210,20 @@ export default function ThreeCardsDashboard() {
                 </div>
               )}
             </div>
-            <hr className="my-2 border-black" />
-            <div className="flex justify-end">
-              <button
-                className="text-white text-xs px-3 py-1 rounded"
-                style={{ backgroundColor: "#039994" }}
-              >
-                View more
-              </button>
-            </div>
+            {pendingReferrals.length > 5 && (
+              <>
+                <hr className="my-2 border-black" />
+                <div className="flex justify-end">
+                  <button
+                    onClick={toggleShowAllPending}
+                    className="text-white text-xs px-3 py-1 rounded"
+                    style={{ backgroundColor: "#039994" }}
+                  >
+                    {showAllPending ? "Show less" : "View more"}
+                  </button>
+                </div>
+              </>
+            )}
           </>
         )}
       </div>
@@ -243,14 +274,16 @@ export default function ThreeCardsDashboard() {
   );
 }
 
-function ProgressBarRow({ label, color, value, progress }) {
+function ProgressBarRow({ label, color, value, progress, milestone }) {
+  const showMilestone = milestone > 0 && (milestone % 5 === 0);
+  
   return (
-    <div className="mb-3">
+    <div className="mb-3 relative">
       <div className="flex items-center justify-between">
         <span className="text-[#1E1E1E] text-sm">{label}</span>
         <span className="text-[#1E1E1E] text-sm font-medium">{value}</span>
       </div>
-      <div className="w-full h-2 mt-1 bg-[#EEEEEE] rounded-full overflow-hidden">
+      <div className="w-full h-2 mt-1 bg-[#EEEEEE] rounded-full overflow-hidden relative">
         <div
           className="h-full rounded-full transition-all duration-300"
           style={{
@@ -258,6 +291,14 @@ function ProgressBarRow({ label, color, value, progress }) {
             backgroundColor: color,
           }}
         ></div>
+        {showMilestone && (
+          <div 
+            className="absolute -top-1 text-yellow-400 text-xs"
+            style={{ left: `${Math.min(100, progress + 5)}%` }}
+          >
+            ★
+          </div>
+        )}
       </div>
     </div>
   );

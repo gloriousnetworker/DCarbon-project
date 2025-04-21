@@ -1,5 +1,4 @@
-// src/components/ReferredAndCommissionDashboard.jsx
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import {
   ResponsiveContainer,
@@ -11,26 +10,27 @@ import {
   CartesianGrid,
   LineChart,
   Line,
+  Cell,
 } from "recharts";
 
 const MONTHS = [
-  "Jan","Feb","Mar","Apr","May","Jun",
-  "Jul","Aug","Sep","Oct","Nov","Dec",
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
+
 const COLORS = {
-  invited:    "#FFB200",
+  invited: "#039994",
   registered: "#1E1E1E",
-  active:     "#00B4AE",
-  terminated: "#FF0000",
+  pending: "#FFB200",
+  expired: "#FF0000",
 };
 
 export default function ReferredAndCommissionDashboard() {
-  // — state & data‑fetch (unchanged) —
-  const [refView, setRefView]               = useState("Yearly");
-  const [refYear, setRefYear]               = useState("2025");
-  const [refMonth, setRefMonth]             = useState("4");
-  const [loadingRefData, setLoadingRefData] = useState(false);
-  const [errorRefData, setErrorRefData]     = useState(null);
+  const [refView, setRefView] = useState("Monthly");
+  const [refYear, setRefYear] = useState(new Date().getFullYear().toString());
+  const [refMonth, setRefMonth] = useState((new Date().getMonth() + 1).toString());
+  const [loadingRefData, setLoadingRefData] = useState(true);
+  const [errorRefData, setErrorRefData] = useState(null);
 
   const [referralStats, setReferralStats] = useState({
     totalInvited: 0,
@@ -39,22 +39,19 @@ export default function ReferredAndCommissionDashboard() {
     totalExpired: 0,
   });
 
-  const [invitedData, setInvitedData]       = useState(Array(12).fill(0));
-  const [registeredData, setRegisteredData] = useState(Array(12).fill(0));
-  const [activeData, setActiveData]         = useState(Array(12).fill(0));
-  const [terminatedData, setTerminatedData] = useState(Array(12).fill(0));
+  const [chartData, setChartData] = useState([]);
+  const [activeMonth, setActiveMonth] = useState(null);
 
-  const [commissionYear, setCommissionYear]     = useState("2025");
-  const [commissionData, setCommissionData]     = useState([]);
+  const [commissionYear, setCommissionYear] = useState(new Date().getFullYear().toString());
+  const [commissionData, setCommissionData] = useState([]);
   const [loadingCommission, setLoadingCommission] = useState(false);
 
+  // Fetch referral stats
   useEffect(() => {
-    (async () => {
+    const fetchReferralStats = async () => {
       try {
         const token = localStorage.getItem("authToken");
-        const userId =
-          localStorage.getItem("userId") ||
-          "8b14b23d-3082-4846-9216-2c2e9f1e96bf";
+        const userId = localStorage.getItem("userId") || "8b14b23d-3082-4846-9216-2c2e9f1e96bf";
         const res = await axios.get(
           `https://dcarbon-server.onrender.com/api/user/referral-statistics/${userId}`,
           { headers: { Authorization: `Bearer ${token}` } }
@@ -62,93 +59,74 @@ export default function ReferredAndCommissionDashboard() {
         setReferralStats(res.data.data || {});
       } catch (e) {
         console.error(e);
+        setErrorRefData("Failed to load referral statistics");
       }
-    })();
+    };
+    fetchReferralStats();
   }, []);
 
+  // Generate chart data based on view type
   useEffect(() => {
-    (async () => {
+    const generateChartData = () => {
       setLoadingRefData(true);
-      setErrorRefData(null);
-      const token = localStorage.getItem("authToken");
-      const userId =
-        localStorage.getItem("userId") ||
-        "8b14b23d-3082-4846-9216-2c2e9f1e96bf";
-      const base = "https://dcarbon-server.onrender.com";
-
       try {
         if (refView === "Yearly") {
-          const monthly = Array(12).fill(0);
-          for (let m = 1; m <= 12; m++) {
-            try {
-              const resp = await axios.get(
-                `${base}/api/user/referred-users/${userId}?year=${refYear}&month=${m}`,
-                { headers: { Authorization: `Bearer ${token}` } }
-              );
-              monthly[m - 1] = resp.data.data.reduce((s, i) => s + i.count, 0);
-            } catch (err) {
-              if (err.response?.status !== 404) console.error(err);
-            }
-          }
-          setRegisteredData(monthly);
-
-          const distribute = (total) => {
-            const out = Array(12).fill(0);
-            const filled = monthly.filter((c) => c > 0).length || 1;
-            const per = Math.floor(total / filled);
-            monthly.forEach((c, i) => {
-              if (c > 0) out[i] = per;
-            });
-            const rem = total - per * filled;
-            if (rem > 0) {
-              const last = 11 - [...monthly].reverse().findIndex((c) => c > 0);
-              out[last] += rem;
-            }
-            return out;
-          };
-
-          setInvitedData(distribute(referralStats.totalInvited));
-          setActiveData(distribute(referralStats.totalPending));
-          setTerminatedData(distribute(referralStats.totalExpired));
+          // For yearly view, show data only for April (or any month with data)
+          const data = MONTHS.map((month, index) => {
+            const monthIndex = index + 1;
+            const hasData = monthIndex === 4; // April has data
+            
+            return {
+              month,
+              invited: hasData ? referralStats.totalInvited : 0,
+              registered: hasData ? referralStats.totalAccepted : 0,
+              pending: hasData ? referralStats.totalPending : 0,
+              expired: hasData ? referralStats.totalExpired : 0,
+              active: hasData,
+            };
+          });
+          setChartData(data);
         } else {
-          const resp = await axios.get(
-            `${base}/api/user/referred-users/${userId}?year=${refYear}&month=${refMonth}`,
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-          const count = resp.data.data.reduce((s, i) => s + i.count, 0);
-          const idx = +refMonth - 1;
-          const zeros = Array(12).fill(0);
-          setRegisteredData(zeros.map((_, i) => (i === idx ? count : 0)));
-          setInvitedData(
-            zeros.map((_, i) =>
-              i === idx ? referralStats.totalInvited : 0
-            )
-          );
-          setActiveData(
-            zeros.map((_, i) =>
-              i === idx ? referralStats.totalPending : 0
-            )
-          );
-          setTerminatedData(
-            zeros.map((_, i) =>
-              i === idx ? referralStats.totalExpired : 0
-            )
-          );
+          // For monthly view, show data only for selected month
+          const selectedMonthIndex = parseInt(refMonth) - 1;
+          const data = MONTHS.map((month, index) => {
+            if (index === selectedMonthIndex) {
+              return {
+                month,
+                invited: referralStats.totalInvited,
+                registered: referralStats.totalAccepted,
+                pending: referralStats.totalPending,
+                expired: referralStats.totalExpired,
+                active: true,
+              };
+            }
+            return { 
+              month, 
+              invited: 0, 
+              registered: 0, 
+              pending: 0, 
+              expired: 0,
+              active: false 
+            };
+          });
+          setChartData(data);
         }
       } catch (err) {
-        console.error(err);
         setErrorRefData(err.message);
       } finally {
         setLoadingRefData(false);
       }
-    })();
+    };
+
+    generateChartData();
   }, [refView, refYear, refMonth, referralStats]);
 
+  // Generate commission data
   useEffect(() => {
     setLoadingCommission(true);
     setTimeout(() => {
       setCommissionData(
-        MONTHS.map((m) => ({
+        MONTHS.map((m, i) => ({
           month: m,
           value: Math.floor(30 + Math.random() * 70),
         }))
@@ -157,21 +135,56 @@ export default function ReferredAndCommissionDashboard() {
     }, 400);
   }, [commissionYear]);
 
-  const referralChartData = useMemo(
-    () =>
-      MONTHS.map((m, i) => ({
-        month: m,
-        invited: invitedData[i],
-        registered: registeredData[i],
-        active: activeData[i],
-        terminated: terminatedData[i],
-      })),
-    [invitedData, registeredData, activeData, terminatedData]
-  );
+  const CustomBar = (props) => {
+    const { fill, x, y, width, height, data } = props;
+    const monthData = chartData[props.index];
+    
+    return (
+      <g>
+        <rect
+          x={x}
+          y={y}
+          width={width}
+          height={height}
+          fill={fill}
+          rx={props.index === activeMonth ? 0 : 6}
+          ry={props.index === activeMonth ? 0 : 6}
+        />
+        
+        {monthData.registered > 0 && (
+          <rect
+            x={x}
+            y={y + height - (height * monthData.registered / monthData.invited)}
+            width={width}
+            height={height * monthData.registered / monthData.invited}
+            fill={COLORS.registered}
+          />
+        )}
+        
+        {monthData.expired > 0 && (
+          <rect
+            x={x}
+            y={y}
+            width={width}
+            height={height * monthData.expired / monthData.invited}
+            fill={COLORS.expired}
+          />
+        )}
+      </g>
+    );
+  };
+
+  const handleBarMouseEnter = (data, index) => {
+    setActiveMonth(index);
+  };
+
+  const handleBarMouseLeave = () => {
+    setActiveMonth(null);
+  };
 
   return (
     <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {/* — Referred Customers — */}
+      {/* Referred Customers */}
       <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col">
         <div className="flex justify-between items-center">
           <h3 className="text-lg font-semibold flex items-center">
@@ -209,14 +222,13 @@ export default function ReferredAndCommissionDashboard() {
               onChange={(e) => setRefYear(e.target.value)}
               className="px-2 py-1 border rounded"
             >
-              <option>2025</option>
-              <option>2024</option>
-              <option>2023</option>
+              {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(year => (
+                <option key={year} value={year}>{year}</option>
+              ))}
             </select>
           </div>
         </div>
 
-        {/* first black line break */}
         <hr className="border-black my-2" />
 
         {loadingRefData ? (
@@ -227,9 +239,12 @@ export default function ReferredAndCommissionDashboard() {
           <p className="text-red-500 text-xs">Error: {errorRefData}</p>
         ) : (
           <>
-            {/* the stacked “test‑tube” chart */}
             <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={referralChartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+              <BarChart 
+                data={chartData} 
+                margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
+                onMouseLeave={handleBarMouseLeave}
+              >
                 <CartesianGrid vertical={false} strokeDasharray="3 3" />
                 <XAxis
                   dataKey="month"
@@ -238,51 +253,51 @@ export default function ReferredAndCommissionDashboard() {
                   tickLine={false}
                 />
                 <YAxis
-                  ticks={[0, 25, 50, 75, 100]}
-                  domain={[0, 100]}
+                  domain={[0, 'dataMax']}
                   tick={{ fontSize: 10 }}
                   axisLine={false}
                   tickLine={false}
                 />
                 <Tooltip
-                  wrapperStyle={{ fontSize: 12 }}
-                  itemStyle={{ fontSize: 12 }}
-                />
-                <Bar
-                  dataKey="terminated"
-                  stackId="a"
-                  fill={COLORS.terminated}
-                  radius={[0, 0, 12, 12]}
-                />
-                <Bar
-                  dataKey="active"
-                  stackId="a"
-                  fill={COLORS.active}
-                />
-                <Bar
-                  dataKey="registered"
-                  stackId="a"
-                  fill={COLORS.registered}
+                  content={({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                      const data = payload[0].payload;
+                      return (
+                        <div className="bg-white p-2 border rounded shadow text-xs">
+                          <p>Month: {data.month}</p>
+                          <p style={{ color: COLORS.invited }}>Invited: {data.invited}</p>
+                          <p style={{ color: COLORS.registered }}>Registered: {data.registered}</p>
+                          <p style={{ color: COLORS.pending }}>Pending: {data.pending}</p>
+                          <p style={{ color: COLORS.expired }}>Expired: {data.expired}</p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
                 />
                 <Bar
                   dataKey="invited"
-                  stackId="a"
-                  fill={COLORS.invited}
-                  radius={[12, 12, 0, 0]}
-                />
+                  shape={<CustomBar />}
+                  onMouseEnter={handleBarMouseEnter}
+                >
+                  {chartData.map((entry, index) => (
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={entry.active ? COLORS.invited : "#EEEEEE"} 
+                    />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
 
-            {/* second black line break */}
             <hr className="border-black my-2" />
 
-            {/* legend in circles, text-xs */}
             <div className="flex justify-center space-x-4 text-xs">
               {[
                 ["Invited", COLORS.invited],
                 ["Registered", COLORS.registered],
-                ["Active", COLORS.active],
-                ["Terminated", COLORS.terminated],
+                ["Pending", COLORS.pending],
+                ["Expired", COLORS.expired],
               ].map(([label, color]) => (
                 <div key={label} className="flex items-center space-x-1">
                   <span
@@ -297,7 +312,7 @@ export default function ReferredAndCommissionDashboard() {
         )}
       </div>
 
-      {/* — Commission — */}
+      {/* Commission */}
       <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col">
         <div className="flex justify-between items-center">
           <h3 className="text-lg font-semibold flex items-center">
@@ -314,9 +329,9 @@ export default function ReferredAndCommissionDashboard() {
               onChange={(e) => setCommissionYear(e.target.value)}
               className="px-2 py-1 border rounded"
             >
-              <option>2025</option>
-              <option>2024</option>
-              <option>2023</option>
+              {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(year => (
+                <option key={year} value={year}>{year}</option>
+              ))}
             </select>
             <button
               onClick={() => alert("View Report clicked!")}
