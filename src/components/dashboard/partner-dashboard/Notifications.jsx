@@ -1,10 +1,9 @@
 "use client";
 
 import React, { useState } from 'react';
-import toast from 'react-hot-toast';
 
 const DashboardNotifications = () => {
-  // Define style constants inline
+  // Style constants
   const mainContainer = 'bg-white p-6 rounded-lg shadow w-full';
   const labelClass = 'block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]';
 
@@ -12,26 +11,22 @@ const DashboardNotifications = () => {
   const toggleButtonBase = 'relative inline-flex h-6 w-11 items-center rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2';
   const toggleHandleBase = 'inline-block h-4 w-4 transform rounded-full bg-white transition-transform';
 
+  // Local toggle state
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [onScreenNotifications, setOnScreenNotifications] = useState(true);
   const [systemNotifications, setSystemNotifications] = useState(true);
 
+  // Handlers no longer fire toast, just flip the boolean
   const handleToggleEmail = () => {
-    const newState = !emailNotifications;
-    setEmailNotifications(newState);
-    toast.success(`Email Notifications ${newState ? 'enabled' : 'disabled'}`);
+    setEmailNotifications((prev) => !prev);
   };
 
   const handleToggleOnScreen = () => {
-    const newState = !onScreenNotifications;
-    setOnScreenNotifications(newState);
-    toast.success(`On-screen Notifications ${newState ? 'enabled' : 'disabled'}`);
+    setOnScreenNotifications((prev) => !prev);
   };
 
   const handleToggleSystem = () => {
-    const newState = !systemNotifications;
-    setSystemNotifications(newState);
-    toast.success(`System Notifications ${newState ? 'enabled' : 'disabled'}`);
+    setSystemNotifications((prev) => !prev);
   };
 
   return (

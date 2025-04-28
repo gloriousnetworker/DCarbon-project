@@ -16,6 +16,16 @@ export default function ThreeCardsDashboard() {
   const [loadingPending, setLoadingPending] = useState(true);
   const [errorPending, setErrorPending] = useState(null);
 
+  const [workProgress, setWorkProgress] = useState({
+    pendingRegistrations: 0,
+    incompleteDocumentation: 0,
+    documentRejections: 0,
+    pendingApproval: 0,
+    completeDocumentation: 0
+  });
+  const [loadingWorkProgress, setLoadingWorkProgress] = useState(true);
+  const [errorWorkProgress, setErrorWorkProgress] = useState(null);
+
   const [selectedEmail, setSelectedEmail] = useState("");
   const [showReminderModal, setShowReminderModal] = useState(false);
   const [showAllPending, setShowAllPending] = useState(false);
@@ -28,9 +38,10 @@ export default function ThreeCardsDashboard() {
       try {
         setLoadingStats(true);
         setLoadingPending(true);
+        setLoadingWorkProgress(true);
         
-        // Fetch both endpoints in parallel
-        const [statsResponse, pendingResponse] = await Promise.all([
+        // Fetch all endpoints in parallel
+        const [statsResponse, pendingResponse, workProgressResponse] = await Promise.all([
           axios.get(
             `https://services.dcarbon.solutions/api/user/referral-statistics/${storedUserId}`,
             { headers: { Authorization: `Bearer ${authToken}` } }
@@ -38,11 +49,16 @@ export default function ThreeCardsDashboard() {
           axios.get(
             `https://services.dcarbon.solutions/api/user/pending-referrals/${storedUserId}`,
             { headers: { Authorization: `Bearer ${authToken}` } }
+          ),
+          axios.get(
+            `https://services.dcarbon.solutions/api/user/partner-working-progress/${storedUserId}`,
+            { headers: { Authorization: `Bearer ${authToken}` } }
           )
         ]);
 
         const backendData = statsResponse.data.data || {};
         const pendingData = pendingResponse.data.data?.pendingReferrals || [];
+        const workProgressData = workProgressResponse.data.data || {};
 
         // Get truly pending referrals (status = PENDING)
         const trulyPending = pendingData.filter(item => item.status === "PENDING");
@@ -57,12 +73,23 @@ export default function ThreeCardsDashboard() {
 
         // Set pending referrals
         setPendingReferrals(trulyPending);
+
+        // Set work progress data
+        setWorkProgress({
+          pendingRegistrations: workProgressData.pendingRegistrations || 0,
+          incompleteDocumentation: workProgressData.incompleteDocumentation || 0,
+          documentRejections: workProgressData.documentRejections || 0,
+          pendingApproval: workProgressData.pendingApproval || 0,
+          completeDocumentation: workProgressData.completeDocumentation || 0
+        });
       } catch (err) {
         setErrorStats(err.message || "Failed to load stats");
         setErrorPending(err.message || "Failed to load pending referrals");
+        setErrorWorkProgress(err.message || "Failed to load work progress");
       } finally {
         setLoadingStats(false);
         setLoadingPending(false);
+        setLoadingWorkProgress(false);
       }
     };
 
@@ -238,28 +265,42 @@ export default function ThreeCardsDashboard() {
           />
           <h3 className="text-[#1E1E1E] font-semibold text-sm">Work Progress</h3>
         </div>
-        <hr className="my-2 border-black" />
-        <WorkProgressItem
-          label="Incomplete Registrations"
-          color="#FFB200"
-          value="12"
-        />
-        <WorkProgressItem
-          label="Incomplete Documentation"
-          color="#FFB200"
-          value="12"
-        />
-        <WorkProgressItem
-          label="Document Rejections"
-          color="#FF0000"
-          value="12"
-        />
-        <WorkProgressItem
-          label="Final Approval Review"
-          color="#039994"
-          value="12"
-        />
-        <WorkProgressItem label="Terminated" color="#FF0000" value="12" />
+        {loadingWorkProgress ? (
+          <div className="flex justify-center items-center h-16">
+            <p className="animate-pulse text-gray-500">Loading progress...</p>
+          </div>
+        ) : errorWorkProgress ? (
+          <p className="text-red-500 text-sm">Error: {errorWorkProgress}</p>
+        ) : (
+          <>
+            <hr className="my-2 border-black" />
+            <WorkProgressItem
+              label="Pending Registrations"
+              color="#FFB200"
+              value={workProgress.pendingRegistrations}
+            />
+            <WorkProgressItem
+              label="Incomplete Documentation"
+              color="#FFB200"
+              value={workProgress.incompleteDocumentation}
+            />
+            <WorkProgressItem
+              label="Document Rejections"
+              color="#FF0000"
+              value={workProgress.documentRejections}
+            />
+            <WorkProgressItem
+              label="Pending Approval"
+              color="#039994"
+              value={workProgress.pendingApproval}
+            />
+            <WorkProgressItem 
+              label="Complete Documentation" 
+              color="#1E1E1E" 
+              value={workProgress.completeDocumentation} 
+            />
+          </>
+        )}
       </div>
 
       {/* Send Reminder Modal */}

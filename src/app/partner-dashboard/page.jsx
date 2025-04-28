@@ -85,6 +85,7 @@ export default function UserDashboard() {
           toggleSidebar={toggleSidebar}
           selectedSection={activeSection}
           sectionDisplayMap={sectionDisplayMap}
+          onSectionChange={handleSectionChange}    // ← pass the handler here
         />
 
         {/* Mobile Sidebar Overlay */}

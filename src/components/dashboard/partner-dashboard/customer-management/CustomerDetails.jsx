@@ -49,6 +49,7 @@ export default function CustomerDetails({ customer, onBack }) {
   const [error, setError] = useState(null);
   const [docs, setDocs] = useState({});
   const [showModal, setShowModal] = useState(false);
+  const [userNotFound, setUserNotFound] = useState(false);
 
   useEffect(() => {
     const fetch = async () => {
@@ -83,7 +84,12 @@ export default function CustomerDetails({ customer, onBack }) {
         }
       } catch (err) {
         console.error(err);
-        setError(err.message || 'Failed to load');
+        // Check specifically for 404 status to handle user not found scenario
+        if (err.response && err.response.status === 404) {
+          setUserNotFound(true);
+        } else {
+          setError(err.message || 'Failed to load');
+        }
       } finally {
         setLoading(false);
       }
@@ -94,15 +100,15 @@ export default function CustomerDetails({ customer, onBack }) {
   const handleFileChange = async (key, e) => {
     const file = e.target.files[0];
     if (!file) return;
-
+  
     const userId = customerDetails.id;
     const authToken = localStorage.getItem('authToken');
     const formData = new FormData();
     formData.append('file', file);
-
+  
     const field = documentationFields.find(f => f.key === key);
     const url = `https://services.dcarbon.solutions/api/user/documentation/${field.endpoint}/${userId}`;
-
+  
     try {
       const res = await axios.put(url, formData, {
         headers: {
@@ -110,40 +116,64 @@ export default function CustomerDetails({ customer, onBack }) {
           'Content-Type': 'multipart/form-data',
         },
       });
-
+  
       if (res.data.status === 'success') {
         const data = res.data.data;
-
+        console.log('Upload response:', data); // Add this for debugging
+  
+        // Enhanced field mapping
         const urlKeyMap = {
-          nemAgreement: 'interconnectionAgreement',
-          meterIdPhoto: 'meterIdPhoto',
-          installerAgreement: 'installerAgreement',
-          singleLineDiagram: 'singleLineDiagram',
-          utilityPtoLetter: 'utilityPTOLetter',
+          nemAgreement: 'interconnectionAgreementUrl',
+          meterIdPhoto: 'meterIdPhotoUrl',
+          installerAgreement: 'installerAgreementUrl',
+          singleLineDiagram: 'singleLineDiagramUrl',
+          utilityPtoLetter: 'utilityPTOLetterUrl',
         };
+  
         const statusKeyMap = {
-          nemAgreement: 'interconnectionStatus',
-          meterIdPhoto: 'meterIdStatus',
+          nemAgreement: 'interconnectionAgreementStatus',
+          meterIdPhoto: 'meterIdPhotoStatus',
           installerAgreement: 'installerAgreementStatus',
           singleLineDiagram: 'singleLineDiagramStatus',
           utilityPtoLetter: 'utilityPTOLetterStatus',
         };
-
-        const newUrl = data[urlKeyMap[key]];
-        const newStatus = data[statusKeyMap[key]];
-
+  
+        // Get the URL and status from the response
+        const newUrl = data[urlKeyMap[key]] || data[field.endpoint + 'Url'];
+        const newStatus = data[statusKeyMap[key]] || 
+                         data[field.endpoint + 'Status'] || 
+                         'submitted';
+  
+        // Update the state with the new document info
         setDocs(prev => ({
           ...prev,
           [key]: {
             file: file.name,
             url: newUrl,
-            status: newStatus.charAt(0) + newStatus.slice(1).toLowerCase(),
+            status: newStatus ? (newStatus.charAt(0).toUpperCase() + newStatus.slice(1).toLowerCase()) : 'Submitted',
           }
         }));
-        toast.success(res.data.message);
+        
+        // Also update the customerDetails state to ensure persistence
+        if (customerDetails && customerDetails.documentation) {
+          setCustomerDetails(prev => ({
+            ...prev,
+            documentation: {
+              ...prev.documentation,
+              [key]: {
+                fileName: file.name,
+                url: newUrl,
+                approved: newStatus.toLowerCase() === 'approved',
+                rejected: newStatus.toLowerCase() === 'rejected',
+              }
+            }
+          }));
+        }
+        
+        toast.success(res.data.message || 'Document uploaded successfully');
       }
     } catch (err) {
-      console.error(err);
+      console.error('Upload error:', err.response?.data || err);
       toast.error(err.response?.data?.message || 'Upload failed');
     }
   };
@@ -151,6 +181,10 @@ export default function CustomerDetails({ customer, onBack }) {
   const handleView = key => {
     const url = docs[key]?.url;
     if (url) window.open(url, '_blank');
+  };
+
+  const handleSendReminder = () => {
+    setShowModal(true);
   };
 
   // static 40% for mock alignment
@@ -163,10 +197,60 @@ export default function CustomerDetails({ customer, onBack }) {
       </div>
     );
   }
+  
+  if (userNotFound) {
+    return (
+      <div className={`${mainContainer} flex flex-col items-center justify-center`}>
+        <div className="bg-[#069B960D] border border-[#039994] rounded-lg p-8 max-w-lg text-center">
+          <div className="text-4xl mb-4 text-[#039994]">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-20 w-20 mx-auto" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold text-[#1E1E1E] mb-3">User Not Found</h2>
+          <p className="text-[#626060] mb-6">
+            This user has not been registered with DCarbon. You can send them a reminder to complete their registration.
+          </p>
+          <div className="flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4">
+            <button 
+              onClick={handleSendReminder} 
+              className="bg-[#039994] text-white px-6 py-2 rounded-md hover:opacity-90 transition-opacity"
+            >
+              Send Registration Reminder
+            </button>
+            <button 
+              onClick={onBack} 
+              className="border border-[#039994] text-[#039994] px-6 py-2 rounded-md hover:bg-[#069B960D] transition-colors"
+            >
+              Back to List
+            </button>
+          </div>
+        </div>
+        
+        {/* Send Reminder Modal */}
+        {showModal && (
+          <Suspense fallback={<div>Loading…</div>}>
+            <SendReminderModal
+              email={customer.inviteeEmail || customer.email}
+              onClose={() => setShowModal(false)}
+            />
+          </Suspense>
+        )}
+      </div>
+    );
+  }
+  
   if (error || !customerDetails) {
     return (
       <div className={`${mainContainer} flex flex-col items-center justify-center`}>
-        {error && <div className="text-red-500 mb-4">{error}</div>}
+        <div className="bg-red-50 border border-red-300 rounded-lg p-6 mb-6 max-w-lg text-center">
+          <div className="text-red-500 text-lg mb-4">
+            {error || 'Failed to load customer details'}
+          </div>
+          <p className="text-gray-600 mb-4">
+            There was a problem loading the customer information. Please try again or contact support.
+          </p>
+        </div>
         <button onClick={onBack} className={`${buttonPrimary} px-4 py-2`}>
           Back to List
         </button>
@@ -270,7 +354,10 @@ export default function CustomerDetails({ customer, onBack }) {
                     {file ? (
                       <HiOutlineEye 
                         size={18} 
-                        onClick={() => handleView(f.key)} 
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleView(f.key);
+                        }} 
                         className="text-gray-600 hover:text-[#039994] cursor-pointer"
                       />
                     ) : (

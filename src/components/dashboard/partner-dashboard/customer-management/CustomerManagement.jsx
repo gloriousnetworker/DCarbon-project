@@ -32,7 +32,11 @@ export default function PartnerCustomerReport() {
     totalExpired: 0
   });
   const [loadingStats, setLoadingStats] = useState(true);
+  const [loadingTable, setLoadingTable] = useState(true);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
+  
+  // Filter states
+  const [statusFilter, setStatusFilter] = useState('');
 
   // Modal states
   const [isFilterOpen, setFilterOpen] = useState(false);
@@ -44,21 +48,34 @@ export default function PartnerCustomerReport() {
   useEffect(() => {
     fetchTableData(1);
     fetchStatistics();
-  }, []);
+  }, [statusFilter]);
 
   const fetchTableData = async (pageNumber = 1) => {
     try {
+      setLoadingTable(true);
       const userId = localStorage.getItem('userId');
       const authToken = localStorage.getItem('authToken');
+
+      if (!userId || !authToken) {
+        console.error('User credentials not found in localStorage');
+        setLoadingTable(false);
+        return;
+      }
+
+      const params = {
+        page: pageNumber,
+        limit: 10,
+      };
+      
+      // Add status filter if selected
+      if (statusFilter) {
+        params.status = statusFilter;
+      }
 
       const response = await axios.get(
         `https://services.dcarbon.solutions/api/user/get-users-referrals/${userId}`,
         {
-          params: {
-            status: 'ACCEPTED',
-            page: pageNumber,
-            limit: 10,
-          },
+          params,
           headers: {
             Authorization: `Bearer ${authToken}`,
           },
@@ -75,6 +92,8 @@ export default function PartnerCustomerReport() {
       }
     } catch (error) {
       console.error('Error fetching table data:', error);
+    } finally {
+      setLoadingTable(false);
     }
   };
 
@@ -83,6 +102,12 @@ export default function PartnerCustomerReport() {
       setLoadingStats(true);
       const userId = localStorage.getItem('userId');
       const authToken = localStorage.getItem('authToken');
+
+      if (!userId || !authToken) {
+        console.error('User credentials not found in localStorage');
+        setLoadingStats(false);
+        return;
+      }
 
       const response = await axios.get(
         `https://services.dcarbon.solutions/api/user/referral-statistics/${userId}`,
@@ -101,6 +126,12 @@ export default function PartnerCustomerReport() {
     } finally {
       setLoadingStats(false);
     }
+  };
+
+  // Apply filters
+  const handleFilterApply = (filters) => {
+    setStatusFilter(filters.status || '');
+    closeFilterModal();
   };
 
   // Calculate total count for progress bar
@@ -141,41 +172,89 @@ export default function PartnerCustomerReport() {
     }
   };
 
+  // Format date
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+  };
+
   // Status styling
   const getStatusStyle = (status) => {
-    switch (status?.toLowerCase()) {
-      case 'terminated':
+    switch (status?.toUpperCase()) {
+      case 'EXPIRED':
+      case 'TERMINATED':
         return '#FF0000';
-      case 'invited':
+      case 'INVITED':
         return '#FFB200';
-      case 'active':
+      case 'ACTIVE':
+      case 'PENDING':
         return '#00B4AE';
-      case 'registered':
-      case 'accepted':
+      case 'REGISTERED':
+      case 'ACCEPTED':
         return '#000000';
       default:
         return '#000000';
     }
   };
 
+  const getDocumentStatus = (status) => {
+    // This is a placeholder logic - adjust based on actual business rules
+    // Typically you would have a separate field for document status
+    switch (status?.toUpperCase()) {
+      case 'ACCEPTED':
+        return { status: 'Verified', icon: 'check' };
+      case 'PENDING':
+        return { status: 'Pending', icon: 'warning' };
+      default:
+        return { status: 'Not Submitted', icon: 'none' };
+    }
+  };
+
   const renderDocStatus = (status) => {
-    if (status?.toLowerCase() === 'accepted' || status?.toLowerCase() === 'active') {
+    const docStatus = getDocumentStatus(status);
+    
+    if (docStatus.icon === 'check') {
       return (
-        <span
-          className="inline-block w-3 h-3 rounded-full"
-          style={{ backgroundColor: '#039994' }}
-        />
+        <div className="flex items-center">
+          <span
+            className="inline-block w-3 h-3 rounded-full mr-1"
+            style={{ backgroundColor: '#039994' }}
+          />
+          <span className="text-xs">Verified</span>
+        </div>
+      );
+    } else if (docStatus.icon === 'warning') {
+      return (
+        <div className="flex items-center">
+          <svg
+            className="inline-block w-3 h-3 mr-1"
+            viewBox="0 0 100 100"
+            fill="#FFB200"
+          >
+            <polygon points="50,15 90,85 10,85" />
+          </svg>
+          <span className="text-xs">Pending</span>
+        </div>
+      );
+    } else {
+      return (
+        <div className="flex items-center">
+          <svg
+            className="inline-block w-3 h-3 mr-1"
+            viewBox="0 0 100 100"
+            fill="#FF0000"
+          >
+            <polygon points="50,15 90,85 10,85" />
+          </svg>
+          <span className="text-xs">Not Submitted</span>
+        </div>
       );
     }
-    return (
-      <svg
-        className="inline-block w-3 h-3"
-        viewBox="0 0 100 100"
-        fill="#FF0000"
-      >
-        <polygon points="50,15 90,85 10,85" />
-      </svg>
-    );
   };
 
   const handleRowClick = (customer) => {
@@ -187,13 +266,34 @@ export default function PartnerCustomerReport() {
   };
 
   const renderRows = () => {
+    if (loadingTable) {
+      return (
+        <tr>
+          <td colSpan="7" className="py-4 text-center">
+            Loading...
+          </td>
+        </tr>
+      );
+    }
+
+    if (tableData.length === 0) {
+      return (
+        <tr>
+          <td colSpan="7" className="py-4 text-center">
+            No records found
+          </td>
+        </tr>
+      );
+    }
+
     return tableData.map((item, index) => {
       const sn = index + 1 + (currentPage - 1) * 10;
-      const nameToShow = item.name || item.inviteeEmail || 'Name';
-      const customerType = item.customerType || 'Residential';
-      const dateReg = item.createdAt
-        ? new Date(item.createdAt).toLocaleDateString()
-        : '16-03-2025';
+      const nameToShow = item.name || 'N/A';
+      const email = item.inviteeEmail || 'N/A';
+      const role = item.role || 'N/A';
+      const customerType = item.customerType || 'N/A';
+      const dateCreated = formatDate(item.createdAt);
+      const status = item.status || 'N/A';
 
       return (
         <tr 
@@ -203,22 +303,19 @@ export default function PartnerCustomerReport() {
         >
           <td className="py-3 px-2 text-sm">{sn}</td>
           <td className="py-3 px-2 text-sm">{nameToShow}</td>
+          <td className="py-3 px-2 text-sm">{email}</td>
+          <td className="py-3 px-2 text-sm">{role}</td>
           <td className="py-3 px-2 text-sm">{customerType}</td>
-          <td className="py-3 px-2 text-sm">Utility</td>
-          <td className="py-3 px-2 text-sm">Finance Comp.</td>
-          <td className="py-3 px-2 text-sm">Address</td>
-          <td className="py-3 px-2 text-sm">{dateReg}</td>
+          <td className="py-3 px-2 text-sm">{dateCreated}</td>
           <td className="py-3 px-2 text-sm">
             <span
               className="text-white px-2 py-1 rounded-full text-xs"
-              style={{ backgroundColor: getStatusStyle(item.status) }}
+              style={{ backgroundColor: getStatusStyle(status) }}
             >
-              {item.status?.toLowerCase() === 'accepted'
-                ? 'Registered'
-                : item.status || 'Registered'}
+              {status}
             </span>
           </td>
-          <td className="py-3 px-2 text-sm">{renderDocStatus(item.status)}</td>
+          <td className="py-3 px-2 text-sm">{renderDocStatus(status)}</td>
         </tr>
       );
     });
@@ -239,6 +336,11 @@ export default function PartnerCustomerReport() {
           className="flex items-center border border-black text-black bg-transparent px-3 py-1 rounded hover:bg-gray-100 focus:outline-none focus:ring-1 focus:ring-black text-sm"
         >
           <span className="mr-1">Filter By</span>
+          {statusFilter && (
+            <span className="bg-gray-200 px-2 py-0.5 rounded-full text-xs ml-1">
+              Status: {statusFilter}
+            </span>
+          )}
         </button>
 
         <div className="mt-2 md:mt-0 flex items-center space-x-2">
@@ -365,13 +467,12 @@ export default function PartnerCustomerReport() {
             <tr className="border-b">
               <th className="py-2 px-1 text-left">S/N</th>
               <th className="py-2 px-1 text-left">Name</th>
-              <th className="py-2 px-1 text-left">Cus. Type</th>
-              <th className="py-2 px-1 text-left">Utility</th>
-              <th className="py-2 px-1 text-left">Finance Company</th>
-              <th className="py-2 px-1 text-left">Address</th>
-              <th className="py-2 px-1 text-left">Date Reg.</th>
-              <th className="py-2 px-1 text-left">Cus. Status</th>
-              <th className="py-2 px-1 text-left">Doc. Status</th>
+              <th className="py-2 px-1 text-left">Email</th>
+              <th className="py-2 px-1 text-left">Role</th>
+              <th className="py-2 px-1 text-left">Customer Type</th>
+              <th className="py-2 px-1 text-left">Created At</th>
+              <th className="py-2 px-1 text-left">Status</th>
+              <th className="py-2 px-1 text-left">Document Status</th>
             </tr>
           </thead>
           <tbody>{renderRows()}</tbody>
@@ -379,28 +480,47 @@ export default function PartnerCustomerReport() {
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-center space-x-4 text-sm">
-        <button
-          onClick={handlePrevious}
-          disabled={currentPage <= 1}
-          className="text-[#00B4AE] disabled:opacity-50"
-        >
-          &lt; Previous
-        </button>
-        <span>
-          {currentPage} of {totalPages}
-        </span>
-        <button
-          onClick={handleNext}
-          disabled={currentPage >= totalPages}
-          className="text-[#00B4AE] disabled:opacity-50"
-        >
-          Next &gt;
-        </button>
+      <div className="flex items-center justify-between mt-4">
+        <div className="text-sm text-gray-500">
+          {tableData.length > 0 ? (
+            <span>Showing {(currentPage - 1) * 10 + 1} to {Math.min(currentPage * 10, tableData.length + (currentPage - 1) * 10)} of {tableData.length}</span>
+          ) : (
+            <span>No records found</span>
+          )}
+        </div>
+        
+        <div className="flex items-center space-x-4 text-sm">
+          <button
+            onClick={handlePrevious}
+            disabled={currentPage <= 1}
+            className="flex items-center text-[#00B4AE] disabled:opacity-50"
+          >
+            <HiOutlineChevronLeft />
+            <span>Previous</span>
+          </button>
+          <span>
+            Page {currentPage} of {totalPages}
+          </span>
+          <button
+            onClick={handleNext}
+            disabled={currentPage >= totalPages}
+            className="flex items-center text-[#00B4AE] disabled:opacity-50"
+          >
+            <span>Next</span>
+            <HiOutlineChevronRight />
+          </button>
+        </div>
       </div>
 
       {/* Modals */}
-      {isFilterOpen && <FilterModal isOpen={isFilterOpen} onClose={closeFilterModal} />}
+      {isFilterOpen && (
+        <FilterModal 
+          isOpen={isFilterOpen} 
+          onClose={closeFilterModal} 
+          onApply={handleFilterApply}
+          initialFilters={{ status: statusFilter }}
+        />
+      )}
       {isSendReminderOpen && (
         <SendReminderModal isOpen={isSendReminderOpen} onClose={closeSendReminderModal} />
       )}

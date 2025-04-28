@@ -1,92 +1,169 @@
-// SendReminderModal.jsx
-import React, { useState, useEffect } from 'react'
-import axios from 'axios'
-import { FiX } from 'react-icons/fi'
-import { FaSearch, FaCheck, FaTimes } from 'react-icons/fa'
-import { toast } from 'react-hot-toast'
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { FiX } from 'react-icons/fi';
+import { FaSearch, FaCheck, FaTimes } from 'react-icons/fa';
+import { toast } from 'react-hot-toast';
 
 const SendReminderModal = ({ email: initialEmail, onClose }) => {
-  const [rangeType, setRangeType] = useState('individual')
-  const [singleEmail, setSingleEmail] = useState(initialEmail || '')
-  const [bulkEmails, setBulkEmails]   = useState([''])
-  const [reason, setReason]           = useState('')
-  const [description, setDescription] = useState('')
-  const [isSending, setIsSending]     = useState(false)
-  const [results, setResults]         = useState([])
+  const [rangeType, setRangeType] = useState('individual');
+  const [singleEmail, setSingleEmail] = useState(initialEmail || '');
+  const [bulkEmails, setBulkEmails] = useState(['']);
+  const [reminderReason, setReminderReason] = useState('');
+  const [reminderDescription, setReminderDescription] = useState('');
+  const [isSending, setIsSending] = useState(false);
+  const [emailStatuses, setEmailStatuses] = useState([]);
+  const [showResults, setShowResults] = useState(false);
+  const [summary, setSummary] = useState({
+    totalEmails: 0,
+    pendingReferrals: 0,
+    nonExistentReferrals: 0,
+    processedEmails: 0
+  });
 
   useEffect(() => {
-    setSingleEmail(initialEmail || '')
-  }, [initialEmail])
+    setSingleEmail(initialEmail || '');
+  }, [initialEmail]);
 
   const resetForm = () => {
-    setRangeType('individual')
-    setSingleEmail(initialEmail || '')
-    setBulkEmails([''])
-    setReason('')
-    setDescription('')
-    setResults([])
-  }
+    setRangeType('individual');
+    setSingleEmail(initialEmail || '');
+    setBulkEmails(['']);
+    setReminderReason('');
+    setReminderDescription('');
+    setEmailStatuses([]);
+    setSummary({
+      totalEmails: 0,
+      pendingReferrals: 0,
+      nonExistentReferrals: 0,
+      processedEmails: 0
+    });
+    setShowResults(false);
+  };
+
+  const handleAddBulkEmail = () => {
+    setBulkEmails([...bulkEmails, '']);
+  };
+
+  const handleBulkEmailChange = (index, value) => {
+    const updated = [...bulkEmails];
+    updated[index] = value;
+    setBulkEmails(updated);
+  };
+
+  const handleRemoveBulkEmail = (index) => {
+    const updated = [...bulkEmails];
+    updated.splice(index, 1);
+    setBulkEmails(updated);
+  };
 
   const validateEmails = (emails) => {
-    const re = /\S+@\S+\.\S+/
-    return emails.every(e => re.test(e))
-  }
+    const emailRegex = /\S+@\S+\.\S+/;
+    return emails.every(email => emailRegex.test(email));
+  };
 
-  const handleSend = async () => {
-    const emails = rangeType === 'individual'
-      ? [singleEmail]
-      : bulkEmails.filter(Boolean)
-
-    if (emails.length === 0) {
-      toast.error('Please enter at least one email')
-      return
-    }
-    if (!validateEmails(emails)) {
-      toast.error('Please enter valid email(s)')
-      return
-    }
-    if (!reason) {
-      toast.error('Select a reminder reason')
-      return
-    }
-
-    setIsSending(true)
-    try {
-      const authToken = localStorage.getItem('authToken')
-      const body = { emails, reason, description }
-
-      const res = await axios.post(
-        'https://services.dcarbon.solutions/api/user/referral-reminders',
-        body,
-        { headers: { Authorization: `Bearer ${authToken}` } }
-      )
-
-      if (res.data.status === 'success') {
-        const { emailStatuses, summary } = res.data.data
-        setResults(emailStatuses)
-        // show toasts per email
-        emailStatuses.forEach(s => {
-          s.canSendReminder
-            ? toast.success(`Sent: ${s.email}`)
-            : toast.error(`Failed: ${s.email}`)
-        })
-        // summary toast
-        toast(
-          summary.processedEmails > 0
-            ? `${summary.processedEmails} reminder(s) sent`
-            : 'No reminders sent',
-          { icon: summary.processedEmails > 0 ? <FaCheck /> : <FaTimes /> }
-        )
+  const showEmailStatusToasts = (statuses) => {
+    statuses.forEach(status => {
+      if (status.canSendReminder) {
+        toast.success(`Reminder sent to: ${status.email} (${status.status})`);
       } else {
-        toast.error('Failed to send reminders')
+        toast.error(`No referral found for: ${status.email} (${status.status})`, {
+          icon: <FaTimes className="text-red-500" />
+        });
       }
-    } catch (err) {
-      console.error(err)
-      toast.error(err.response?.data?.message || 'Error sending reminders')
-    } finally {
-      setIsSending(false)
+    });
+  };
+
+  const handleSendReminder = async () => {
+    const emails = rangeType === 'individual' 
+      ? [singleEmail] 
+      : bulkEmails.filter(Boolean);
+
+    // Validate emails
+    if (emails.length === 0) {
+      toast.error('Please enter at least one email address');
+      return;
     }
-  }
+
+    if (!validateEmails(emails)) {
+      toast.error('Please enter valid email addresses');
+      return;
+    }
+
+    if (!reminderReason) {
+      toast.error('Please select a reminder reason');
+      return;
+    }
+
+    setIsSending(true);
+    setShowResults(false);
+
+    try {
+      const authToken = localStorage.getItem('authToken');
+      const userId = localStorage.getItem('userId');
+      
+      if (!authToken) {
+        toast.error('Authentication credentials not found. Please log in again.');
+        setIsSending(false);
+        return;
+      }
+
+      const body = {
+        emails,
+        reason: reminderReason,
+        description: reminderDescription,
+      };
+
+      const url = userId 
+        ? `https://services.dcarbon.solutions/api/user/referral-reminders/${userId}`
+        : 'https://services.dcarbon.solutions/api/user/referral-reminders';
+
+      const response = await axios.post(
+        url,
+        body,
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
+        }
+      );
+
+      if (response?.data?.status === 'success') {
+        const { emailStatuses, summary } = response.data.data;
+        setEmailStatuses(emailStatuses);
+        setSummary(summary);
+        setShowResults(true);
+        
+        // Show detailed toasts for each email status
+        showEmailStatusToasts(emailStatuses);
+
+        // Show summary toast
+        if (summary.processedEmails > 0) {
+          toast.success(
+            `Successfully sent ${summary.processedEmails} reminder(s)`,
+            {
+              duration: 3000,
+              icon: <FaCheck className="text-green-500" />
+            }
+          );
+        } else {
+          toast.error(
+            'No reminders sent - no valid referrals found',
+            {
+              duration: 3000,
+              icon: <FaTimes className="text-red-500" />
+            }
+          );
+        }
+      } else {
+        toast.error('Failed to send reminders');
+      }
+    } catch (error) {
+      console.error('Error sending reminder:', error);
+      toast.error(error.response?.data?.message || 'Error sending reminders');
+    } finally {
+      setIsSending(false);
+    }
+  };
 
   return (
     <div
@@ -96,67 +173,77 @@ const SendReminderModal = ({ email: initialEmail, onClose }) => {
     >
       <div className="relative bg-white rounded-lg shadow-lg w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
         <button
-          onClick={() => { resetForm(); onClose() }}
+          onClick={() => { resetForm(); onClose(); }}
           className="absolute top-4 right-4 text-[#F04438] hover:text-red-600"
         >
           <FiX size={20} />
         </button>
 
-        <h2 className="text-xl font-semibold mb-2 text-[#039994]">Send Reminder</h2>
+        <h2 className="text-xl font-semibold mb-2 text-[#039994]">
+          Send Reminder
+        </h2>
+
         <hr className="border-black my-2" />
 
-        {results.length === 0 ? (
+        {!showResults ? (
           <>
-            {/* Range selector */}
+            <label className="block text-sm font-medium mt-2 mb-2">
+              Select Range
+            </label>
             <div className="flex items-center space-x-6 mb-4">
-              {['individual','bulk'].map(rt => (
-                <label key={rt} className="inline-flex items-center space-x-2">
-                  <input
-                    type="radio"
-                    name="range"
-                    checked={rangeType === rt}
-                    onChange={() => setRangeType(rt)}
-                  />
-                  <span className="text-sm">{rt === 'individual' ? 'Individual' : 'Bulk'}</span>
-                </label>
-              ))}
+              <label className="inline-flex items-center space-x-2">
+                <input
+                  type="radio"
+                  name="rangeType"
+                  checked={rangeType === 'individual'}
+                  onChange={() => setRangeType('individual')}
+                />
+                <span className="text-sm">Individual Customer</span>
+              </label>
+
+              <label className="inline-flex items-center space-x-2">
+                <input
+                  type="radio"
+                  name="rangeType"
+                  checked={rangeType === 'bulk'}
+                  onChange={() => setRangeType('bulk')}
+                />
+                <span className="text-sm">Bulk Customer</span>
+              </label>
             </div>
 
-            {/* Email inputs */}
+            <label className="block text-sm font-medium mb-2">
+              Search Customer
+            </label>
+            
             {rangeType === 'individual' ? (
               <div className="relative mb-4">
                 <input
                   type="email"
-                  placeholder="Enter email"
+                  placeholder="Enter registered email address"
                   className="w-full px-10 py-2 rounded-md focus:outline-none text-sm bg-[#F1F1F1]"
                   value={singleEmail}
-                  onChange={e => setSingleEmail(e.target.value)}
+                  onChange={(e) => setSingleEmail(e.target.value)}
                 />
                 <FaSearch className="absolute top-3 left-3 text-gray-400" />
               </div>
             ) : (
               <div className="space-y-2 mb-4">
-                {bulkEmails.map((em, i) => (
-                  <div key={i} className="relative">
+                {bulkEmails.map((email, idx) => (
+                  <div key={idx} className="relative">
                     <input
                       type="email"
-                      placeholder="Enter email"
+                      placeholder="Enter registered email address"
                       className="w-full px-10 py-2 rounded-md focus:outline-none text-sm bg-[#F1F1F1]"
-                      value={em}
-                      onChange={e => {
-                        const arr = [...bulkEmails]
-                        arr[i] = e.target.value
-                        setBulkEmails(arr)
-                      }}
+                      value={email}
+                      onChange={(e) => handleBulkEmailChange(idx, e.target.value)}
                     />
                     <FaSearch className="absolute top-3 left-3 text-gray-400" />
-                    {i > 0 && (
+                    {idx > 0 && (
                       <button
-                        onClick={() => {
-                          const arr = bulkEmails.filter((_, idx) => idx !== i)
-                          setBulkEmails(arr)
-                        }}
-                        className="absolute right-2 top-2 text-red-500 hover:text-red-700 text-sm"
+                        type="button"
+                        className="absolute right-2 top-2 text-sm text-red-500 hover:text-red-700"
+                        onClick={() => handleRemoveBulkEmail(idx)}
                       >
                         Remove
                       </button>
@@ -164,7 +251,8 @@ const SendReminderModal = ({ email: initialEmail, onClose }) => {
                   </div>
                 ))}
                 <button
-                  onClick={() => setBulkEmails([...bulkEmails, ''])}
+                  type="button"
+                  onClick={handleAddBulkEmail}
                   className="text-sm text-[#039994] hover:underline"
                 >
                   + Add another email
@@ -172,73 +260,94 @@ const SendReminderModal = ({ email: initialEmail, onClose }) => {
               </div>
             )}
 
-            {/* Reason */}
-            <label className="block text-sm mb-1">Reason</label>
+            <label className="block text-sm font-medium mb-2">
+              Reminder Reason
+            </label>
             <select
               className="w-full px-3 py-2 rounded-md mb-4 text-sm bg-[#F1F1F1]"
-              value={reason}
-              onChange={e => setReason(e.target.value)}
+              value={reminderReason}
+              onChange={(e) => setReminderReason(e.target.value)}
             >
-              <option value="" disabled>Choose reason</option>
-              <option>Registration</option>
-              <option>Incorrect Customer Information</option>
-              <option>Document Upload</option>
-              <option>Document Verification</option>
-              <option>Document Rejection</option>
-              <option>Document Requirement</option>
+              <option value="" disabled>
+                Choose reason
+              </option>
+              <option value="Registration">Registration</option>
+              <option value="Incorrect Customer Information">
+                Incorrect Customer Information
+              </option>
+              <option value="Document Upload">Document Upload</option>
+              <option value="Document Verification">Document Verification</option>
+              <option value="Document Rejection">Document Rejection</option>
+              <option value="Document Requirement">Document Requirement</option>
+              <option value="Don't miss out!">Don't miss out!</option>
             </select>
 
-            {/* Description */}
-            <label className="block text-sm mb-1">Description (optional)</label>
+            <label className="block text-sm font-medium mb-2">
+              Reminder Description
+            </label>
             <textarea
               className="w-full px-3 py-2 rounded-md mb-4 text-sm bg-[#F1F1F1]"
               rows={3}
-              placeholder="Add details…"
-              value={description}
-              onChange={e => setDescription(e.target.value)}
+              placeholder="Description"
+              value={reminderDescription}
+              onChange={(e) => setReminderDescription(e.target.value)}
             />
 
             <hr className="my-4" />
+
             <div className="flex space-x-4">
               <button
                 onClick={resetForm}
-                disabled={isSending}
                 className="w-1/2 py-2 rounded-md text-sm bg-[#F2F2F2]"
+                disabled={isSending}
               >
                 Clear
               </button>
               <button
-                onClick={handleSend}
-                disabled={isSending}
+                onClick={handleSendReminder}
                 className="w-1/2 py-2 rounded-md text-white text-sm bg-[#039994] hover:bg-[#02857f] disabled:opacity-50"
+                disabled={isSending}
               >
-                {isSending ? 'Sending…' : 'Send Reminder'}
+                {isSending ? 'Sending...' : 'Send Reminder'}
               </button>
             </div>
           </>
         ) : (
           <>
-            {/* Results */}
             <div className="mb-4">
               <h3 className="font-medium text-lg mb-2">Reminder Results</h3>
-              <div className="space-y-2">
-                {results.map((r,i) => (
-                  <div key={i} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                    <div>
-                      <p className="font-medium">{r.email}</p>
-                      <p className="text-sm text-gray-600">{r.status}</p>
+              <div className="space-y-3">
+                {emailStatuses.map((status, index) => (
+                  <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                    <div className="flex-1">
+                      <p className="font-medium">{status.email}</p>
+                      <p className="text-sm text-gray-600">{status.status}</p>
                     </div>
-                    {r.canSendReminder ? (
-                      <FaCheck className="text-green-500"/>
+                    {status.canSendReminder ? (
+                      <FaCheck className="text-green-500" />
                     ) : (
-                      <FaTimes className="text-red-500"/>
+                      <FaTimes className="text-red-500" />
                     )}
                   </div>
                 ))}
               </div>
             </div>
+
+            <div className="bg-blue-50 p-3 rounded mb-4">
+              <h4 className="font-medium mb-1">Summary</h4>
+              <p className="text-sm">
+                Total emails: {summary.totalEmails} | 
+                Processed: {summary.processedEmails} | 
+                Pending referrals: {summary.pendingReferrals} | 
+                Non-existent referrals: {summary.nonExistentReferrals}
+              </p>
+            </div>
+
             <button
-              onClick={() => { resetForm(); onClose() }}
+              onClick={() => {
+                resetForm();
+                onClose();
+              }}
               className="w-full py-2 rounded-md text-white text-sm bg-[#039994] hover:bg-[#02857f]"
             >
               Close
@@ -247,7 +356,7 @@ const SendReminderModal = ({ email: initialEmail, onClose }) => {
         )}
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default SendReminderModal
+export default SendReminderModal;

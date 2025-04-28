@@ -1,4 +1,3 @@
-// src/components/FacilityManagement.jsx
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import {
@@ -12,6 +11,7 @@ import {
 import AddFacilityModal from "./AddFacilityModal";
 import FacilityCreatedModal from "./FacilityCreatedModal";
 import FilterModal from "./FilterModal";
+import ExportReportModal from "./ExportReportModal";
 
 const MONTHS = [
   { label: "Month", value: "" },
@@ -32,9 +32,9 @@ const MONTHS = [
 export default function FacilityManagement() {
   // modals
   const [showAddFacilityModal, setShowAddFacilityModal] = useState(false);
-  const [showFacilityCreatedModal, setShowFacilityCreatedModal] =
-    useState(false);
+  const [showFacilityCreatedModal, setShowFacilityCreatedModal] = useState(false);
   const [showFilterModal, setShowFilterModal] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
 
   // filters & pagination
   const [yearFilter, setYearFilter] = useState("");
@@ -135,6 +135,58 @@ export default function FacilityManagement() {
     if (currentPage < totalPages) setCurrentPage((p) => p + 1);
   };
 
+  const handleExportReport = async (exportParams) => {
+    try {
+      const token = localStorage.getItem("authToken");
+      const userId = localStorage.getItem("userId") || "8b14b23d-3082-4846-9216-2c2e9f1e96bf";
+      
+      // Prepare the request body
+      const requestBody = {
+        format: exportParams.format,
+        email: exportParams.email,
+        filters: exportParams.includeFilters ? {
+          ...filters,
+          year: yearFilter,
+          month: monthFilter,
+          page: currentPage,
+          limit: LIMIT
+        } : null
+      };
+
+      // In a real app, you would call your export API endpoint here
+      console.log("Exporting with params:", requestBody);
+      
+      // Mock API call (replace with actual API call)
+      const response = await axios.post(
+        `${baseUrl}/api/reports/export-customer-report`,
+        requestBody,
+        { 
+          headers: { Authorization: `Bearer ${token}` },
+          responseType: 'blob' // Important for file downloads
+        }
+      );
+
+      // Handle the file download
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `customer-report.${exportParams.format}`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+
+      // If email was provided, show success message
+      if (exportParams.email) {
+        alert(`Report exported successfully and sent to ${exportParams.email}`);
+      } else {
+        alert("Report exported successfully");
+      }
+    } catch (error) {
+      console.error("Export error:", error);
+      throw error;
+    }
+  };
+
   const renderStatusTag = (status) => {
     let bg = "#00B4AE";
     if (status === "PENDING") bg = "#FFB200";
@@ -190,7 +242,10 @@ export default function FacilityManagement() {
           >
             Filter
           </button>
-          <button className={`${buttonPrimary} text-sm`}>
+          <button 
+            onClick={() => setShowExportModal(true)}
+            className={`${buttonPrimary} text-sm`}
+          >
             Export Report
           </button>
         </div>
@@ -280,6 +335,15 @@ export default function FacilityManagement() {
           onClose={() => setShowFilterModal(false)}
           onApplyFilter={handleApplyFilter}
           initialFilters={filters}
+        />
+      )}
+      {showExportModal && (
+        <ExportReportModal
+          onClose={() => setShowExportModal(false)}
+          onExport={handleExportReport}
+          initialFilters={filters}
+          yearFilter={yearFilter}
+          monthFilter={monthFilter}
         />
       )}
     </div>

@@ -25,6 +25,12 @@ const SendReminderModal = ({ isOpen, onClose }) => {
   const [isSending, setIsSending] = useState(false);
   const [emailStatuses, setEmailStatuses] = useState([]);
   const [showResults, setShowResults] = useState(false);
+  const [summary, setSummary] = useState({
+    totalEmails: 0,
+    pendingReferrals: 0,
+    nonExistentReferrals: 0,
+    processedEmails: 0
+  });
 
   // Reset form when modal opens/closes
   useEffect(() => {
@@ -40,6 +46,12 @@ const SendReminderModal = ({ isOpen, onClose }) => {
     setReminderReason('');
     setReminderDescription('');
     setEmailStatuses([]);
+    setSummary({
+      totalEmails: 0,
+      pendingReferrals: 0,
+      nonExistentReferrals: 0,
+      processedEmails: 0
+    });
     setShowResults(false);
   };
 
@@ -102,6 +114,14 @@ const SendReminderModal = ({ isOpen, onClose }) => {
 
     try {
       const authToken = localStorage.getItem('authToken');
+      const userId = localStorage.getItem('userId');
+      
+      if (!authToken || !userId) {
+        toast.error('Authentication credentials not found. Please log in again.');
+        setIsSending(false);
+        return;
+      }
+
       const body = {
         emails,
         reason: reminderReason,
@@ -109,7 +129,7 @@ const SendReminderModal = ({ isOpen, onClose }) => {
       };
 
       const response = await axios.post(
-        'https://services.dcarbon.solutions/api/user/referral-reminders',
+        `https://services.dcarbon.solutions/api/user/referral-reminders/${userId}`,
         body,
         {
           headers: {
@@ -121,6 +141,7 @@ const SendReminderModal = ({ isOpen, onClose }) => {
       if (response?.data?.status === 'success') {
         const { emailStatuses, summary } = response.data.data;
         setEmailStatuses(emailStatuses);
+        setSummary(summary);
         setShowResults(true);
         
         // Show detailed toasts for each email status
@@ -271,6 +292,7 @@ const SendReminderModal = ({ isOpen, onClose }) => {
               <option value="Document Verification">Document Verification</option>
               <option value="Document Rejection">Document Rejection</option>
               <option value="Document Requirement">Document Requirement</option>
+              <option value="Don't miss out!">Don't miss out!</option>
             </select>
 
             <label className="block font-sfpro text-sm font-medium mb-2">
@@ -327,9 +349,10 @@ const SendReminderModal = ({ isOpen, onClose }) => {
             <div className="bg-blue-50 p-3 rounded mb-4">
               <h4 className="font-sfpro font-medium mb-1">Summary</h4>
               <p className="text-sm">
-                Total emails: {emailStatuses.length} | 
-                Sent: {emailStatuses.filter(s => s.canSendReminder).length} | 
-                Failed: {emailStatuses.filter(s => !s.canSendReminder).length}
+                Total emails: {summary.totalEmails} | 
+                Processed: {summary.processedEmails} | 
+                Pending referrals: {summary.pendingReferrals} | 
+                Non-existent referrals: {summary.nonExistentReferrals}
               </p>
             </div>
 
