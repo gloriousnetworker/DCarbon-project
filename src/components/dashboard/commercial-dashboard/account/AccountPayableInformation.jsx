@@ -81,7 +81,7 @@ const AccountPayableInformation = ({ stripeEnabled, setStripeEnabled }) => {
 
     try {
       const response = await axios.put(
-        `https://dcarbon-server.onrender.com/api/user/${userId}`,
+        `https://services.dcarbon.solutions/api/user/${userId}`,
         payload,
         {
           headers: {

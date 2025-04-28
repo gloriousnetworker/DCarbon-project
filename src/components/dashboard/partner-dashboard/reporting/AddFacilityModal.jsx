@@ -57,7 +57,7 @@ export default function AddFacilityModal({ onClose, onFacilityAdded }) {
       };
 
       const response = await fetch(
-        `https://dcarbon-server.onrender.com/api/facility/create-new-facility/${userId}`,
+        `https://services.dcarbon.solutions/api/facility/create-new-facility/${userId}`,
         {
           method: "POST",
           headers: {

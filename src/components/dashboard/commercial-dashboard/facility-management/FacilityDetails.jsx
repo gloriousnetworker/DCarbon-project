@@ -82,8 +82,8 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
     try {
       setLoading(true);
       const endpoint = docType === "financeAgreement" 
-        ? `https://dcarbon-server.onrender.com/api/facility/update-facility-financial-agreement/${facility.id}`
-        : `https://dcarbon-server.onrender.com/api/facility/update-facility-proof-of-address/${facility.id}`;
+        ? `https://services.dcarbon.solutions/facility/update-facility-financial-agreement/${facility.id}`
+        : `https://services.dcarbon.solutions/api/facility/update-facility-proof-of-address/${facility.id}`;
 
       const fieldName = docType === "financeAgreement" 
         ? "financeAgreementUrl" 

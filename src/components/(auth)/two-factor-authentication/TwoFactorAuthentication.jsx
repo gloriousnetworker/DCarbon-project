@@ -110,7 +110,7 @@ export default function TwoFactorAuthentication() {
 
     try {
       const response = await axios.post(
-        "https://dcarbon-server.onrender.com/api/auth/verify-2fa-login",
+        "https://services.dcarbon.solutions/api/auth/verify-2fa-login",
         {
           userId,
           token: enteredOtp,

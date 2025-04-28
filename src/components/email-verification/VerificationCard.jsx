@@ -82,7 +82,7 @@ export default function EmailVerificationCard() {
     }
     try {
       await axios.post(
-        'https://dcarbon-server.onrender.com/api/user/verify-otp',
+        'https://services.dcarbon.solutions/api/user/verify-otp',
         { email: userEmail, otp: Number(enteredOtp) },
         { headers: { 'Content-Type': 'application/json' } }
       );
@@ -104,7 +104,7 @@ export default function EmailVerificationCard() {
     setLoading(true);
     try {
       await axios.post(
-        'https://dcarbon-server.onrender.com/api/user/resend-otp',
+        'https://services.dcarbon.solutions/api/user/resend-otp',
         { email: userEmail },
         { headers: { 'Content-Type': 'application/json' } }
       );

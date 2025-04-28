@@ -89,7 +89,7 @@ const SendReminderModal = ({ isOpen, onClose, initialEmail = '' }) => {
       };
 
       const response = await axios.post(
-        'https://dcarbon-server.onrender.com/api/user/referral-reminders',
+        'https://services.dcarbon.solutions/api/user/referral-reminders',
         body,
         {
           headers: {

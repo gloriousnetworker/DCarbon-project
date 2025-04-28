@@ -168,7 +168,7 @@ const SignatureModal = ({ isOpen, onClose, onSaveSignature }) => {
       }
 
       const response = await fetch(
-        `https://dcarbon-server.onrender.com/api/user/update-user-agreement/${userId}`,
+        `https://services.dcarbon.solutions/api/user/update-user-agreement/${userId}`,
         {
           method: "PUT",
           headers: {

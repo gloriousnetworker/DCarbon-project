@@ -56,7 +56,7 @@ const SendReminderModal = ({ email: initialEmail, onClose }) => {
       const body = { emails, reason, description }
 
       const res = await axios.post(
-        'https://dcarbon-server.onrender.com/api/user/referral-reminders',
+        'https://services.dcarbon.solutions/api/user/referral-reminders',
         body,
         { headers: { Authorization: `Bearer ${authToken}` } }
       )

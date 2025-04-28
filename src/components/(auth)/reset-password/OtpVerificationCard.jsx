@@ -55,7 +55,7 @@ export default function ResetPasswordCard() {
     setLoading(true);
     try {
       await axios.post(
-        'https://dcarbon-server.onrender.com/api/auth/reset-password',
+        'https://services.dcarbon.solutions/api/auth/reset-password',
         { email, otp: Number(enteredOtp), password: newPassword },
         { headers: { 'Content-Type': 'application/json' } }
       );

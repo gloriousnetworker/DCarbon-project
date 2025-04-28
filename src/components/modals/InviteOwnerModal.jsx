@@ -35,7 +35,7 @@ export default function EmailVerificationModal({ closeModal }) {
 
     try {
       const response = await fetch(
-        `https://dcarbon-server.onrender.com/api/user/invite-user/${userId}`,
+        `https://services.dcarbon.solutions/api/user/invite-user/${userId}`,
         {
           method: 'POST',
           headers: {

@@ -48,15 +48,15 @@ function RegisterCardContent() {
 
   // Mapping UI labels to API expected values
   const userTypeMapping = {
-    Resident: 'RESIDENTIAL',
+    Residential: 'RESIDENTIAL',
     Commercial: 'COMMERCIAL',
     Partner: 'PARTNER',
   };
 
   // Get available user categories based on referral status
-  const availableUserCategories = referralCode 
-    ? ['Resident', 'Commercial'] 
-    : ['Resident', 'Commercial', 'Partner'];
+  const availableUserCategories = referralCode
+    ? ['Residential', 'Commercial']
+    : ['Residential', 'Commercial', 'Partner'];
 
   // Validate the form before submission
   const validateForm = () => {
@@ -94,11 +94,10 @@ function RegisterCardContent() {
     return true;
   };
 
-  // Register the user using Axios
   const handleRegister = async () => {
     if (!validateForm()) return;
     setLoading(true);
-
+  
     const payload = {
       email,
       firstName,
@@ -107,25 +106,27 @@ function RegisterCardContent() {
       userType: userTypeMapping[userCategory],
       password,
     };
-
+  
     try {
-      let url = 'https://dcarbon-server.onrender.com/api/user/register';
-      
-      // If referral code exists, use the referral endpoint
+      // Clean URL construction
+      const baseUrl = 'https://services.dcarbon.solutions';
+      let url = `${baseUrl}/api/user/register`;
+  
       if (referralCode) {
-        url = `${url}?referralCode=${referralCode}`;
+        url += `?referralCode=${referralCode}`;
       }
-
+  
       const response = await axios.post(
         url,
         payload,
         { headers: { 'Content-Type': 'application/json' } }
       );
-      
+  
       localStorage.setItem('userEmail', response.data.data.email);
       toast.success('Registration successful');
       setShowModal(true);
     } catch (err) {
+      console.error('Registration error:', err);
       toast.error(err.response?.data?.message || 'Registration failed');
     } finally {
       setLoading(false);
@@ -178,7 +179,7 @@ function RegisterCardContent() {
               You're registering with referral code: <strong>{referralCode}</strong>
             </div>
           )}
-          
+
           <form
             className={formWrapper}
             onSubmit={(e) => {
@@ -281,7 +282,7 @@ function RegisterCardContent() {
             {/* User Category */}
             <div>
               <label className={labelClass}>
-                User Category <span className="text-red-500">*</span>
+                Solar System Type <span className="text-red-500">*</span>
               </label>
               <div className="flex gap-4">
                 {availableUserCategories.map((category) => (

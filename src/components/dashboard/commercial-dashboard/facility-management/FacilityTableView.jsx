@@ -27,7 +27,7 @@ export default function FacilityTableView({ onSelectFacility }) {
     try {
       const params = { page, limit, ...filters };
       const res = await axios.get(
-        "https://dcarbon-server.onrender.com/api/facility/get-all-facilities",
+        "https://services.dcarbon.solutions/api/facility/get-all-facilities",
         {
           headers: { Authorization: `Bearer ${token}` },
           params,

@@ -23,7 +23,7 @@ export default function UtilityAuthorizationModal({ onAuthorized, onClose }) {
 
     try {
       // Hitting the endpoint from the provided URL
-      const response = await fetch('https://dcarbon-server.onrender.com/api/auth/fetch-utility-data', {
+      const response = await fetch('https://services.dcarbon.solutions/api/auth/fetch-utility-data', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

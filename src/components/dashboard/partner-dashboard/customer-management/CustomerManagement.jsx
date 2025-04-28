@@ -52,7 +52,7 @@ export default function PartnerCustomerReport() {
       const authToken = localStorage.getItem('authToken');
 
       const response = await axios.get(
-        `https://dcarbon-server.onrender.com/api/user/get-users-referrals/${userId}`,
+        `https://services.dcarbon.solutions/api/user/get-users-referrals/${userId}`,
         {
           params: {
             status: 'ACCEPTED',
@@ -85,7 +85,7 @@ export default function PartnerCustomerReport() {
       const authToken = localStorage.getItem('authToken');
 
       const response = await axios.get(
-        `https://dcarbon-server.onrender.com/api/user/referral-statistics/${userId}`,
+        `https://services.dcarbon.solutions/api/user/referral-statistics/${userId}`,
         {
           headers: {
             Authorization: `Bearer ${authToken}`,

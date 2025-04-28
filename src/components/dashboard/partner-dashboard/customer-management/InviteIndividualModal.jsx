@@ -40,7 +40,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
 
     try {
       const response = await axios.post(
-        `https://dcarbon-server.onrender.com/api/user/invite-user/${userId}`,
+        `https://services.dcarbon.solutions/api/user/invite-user/${userId}`,
         formData,
         {
           headers: {

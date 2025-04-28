@@ -32,7 +32,7 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
     setUtilityProvidersLoading(true);
     try {
       const response = await axios.get(
-        "https://dcarbon-server.onrender.com/api/auth/utility-providers",
+        "https://services.dcarbon.solutions/api/auth/utility-providers",
         {
           headers: {
             "Content-Type": "application/json",
@@ -101,7 +101,7 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
 
     try {
       const response = await axios.post(
-        `https://dcarbon-server.onrender.com/api/facility/create-new-facility/${userId}`,
+        `https://services.dcarbon.solutions/api/facility/create-new-facility/${userId}`,
         formData,
         {
           headers: {

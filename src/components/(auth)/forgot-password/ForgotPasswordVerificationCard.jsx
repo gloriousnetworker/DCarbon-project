@@ -29,11 +29,10 @@ export default function ForgotPasswordCard() {
       toast.error('Please enter your email address');
       return;
     }
-
     setLoading(true);
     try {
       await axios.post(
-        'https://dcarbon-server.onrender.com/api/auth/forgot-password',
+        'https://services.dcarbon.solutions/api/auth/forgot-password',
         { email },
         { headers: { 'Content-Type': 'application/json' } }
       );

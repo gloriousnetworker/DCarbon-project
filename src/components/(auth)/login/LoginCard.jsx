@@ -18,13 +18,16 @@ export default function LoginCard() {
   const handleLogin = async () => {
     setLoading(true);
     try {
+      // Updated base URL
+      const baseUrl = 'https://services.dcarbon.solutions';
+      const url = `${baseUrl}/api/auth/login`;
+
       const response = await axios.post(
-        'https://dcarbon-server.onrender.com/api/auth/login',
+        url,
         { email, password },
         { headers: { 'Content-Type': 'application/json' } }
       );
 
-      // Store the full response for debugging
       localStorage.setItem('loginResponse', JSON.stringify(response.data));
 
       const { user, token, requiresTwoFactor, tempToken } = response.data.data;

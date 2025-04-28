@@ -27,7 +27,7 @@ const DashboardContactSupport = () => {
     const loadingToast = toast.loading('Submitting your request...');
 
     try {
-      const response = await fetch(`https://dcarbon-server.onrender.com/api/contact/${userId}`, {
+      const response = await fetch(`https://services.dcarbon.solutions/api/contact/${userId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

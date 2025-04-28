@@ -119,7 +119,7 @@ export default function StepOneCard() {
 
       // First save the financial info
       const infoResponse = await axios.put(
-        `https://dcarbon-server.onrender.com/api/user/financial-info/${userId}`,
+        `https://services.dcarbon.solutions/api/user/financial-info/${userId}`,
         payload,
         {
           headers: {
@@ -147,7 +147,7 @@ export default function StepOneCard() {
           formData.append('financialAgreement', fileToUpload);
 
           await axios.put(
-            `https://dcarbon-server.onrender.com/api/user/update-financial-agreement/${userId}`,
+            `https://services.dcarbon.solutions/api/user/update-financial-agreement/${userId}`,
             formData,
             {
               headers: {

@@ -18,7 +18,7 @@ export default function Graph() {
       try {
         const authToken = localStorage.getItem("authToken");
         const response = await fetch(
-          "https://dcarbon-server.onrender.com/api/facility/get-all-facilities",
+          "https://services.dcarbon.solutions/api/facility/get-all-facilities",
           {
             headers: {
               Authorization: `Bearer ${authToken}`,

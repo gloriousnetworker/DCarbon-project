@@ -54,7 +54,7 @@ export default function OwnersDetailsCard() {
       };
 
       await axios.put(
-        `https://dcarbon-server.onrender.com/api/user/commercial-registration/${userId}`,
+        `https://services.dcarbon.solutions/api/user/commercial-registration/${userId}`,
         payload,
         {
           headers: {

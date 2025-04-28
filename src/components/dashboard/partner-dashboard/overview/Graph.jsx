@@ -53,7 +53,7 @@ export default function ReferredAndCommissionDashboard() {
         const token = localStorage.getItem("authToken");
         const userId = localStorage.getItem("userId") || "8b14b23d-3082-4846-9216-2c2e9f1e96bf";
         const res = await axios.get(
-          `https://dcarbon-server.onrender.com/api/user/referral-statistics/${userId}`,
+          `https://services.dcarbon.solutions/api/user/referral-statistics/${userId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         setReferralStats(res.data.data || {});

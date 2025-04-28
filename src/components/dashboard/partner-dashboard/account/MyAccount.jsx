@@ -30,7 +30,7 @@ const MyAccount = () => {
         }
 
         const response = await fetch(
-          `https://dcarbon-server.onrender.com/api/user/get-one-user/${userId}`,
+          `https://services.dcarbon.solutions/api/user/get-one-user/${userId}`,
           {
             method: "GET",
             headers: { Authorization: `Bearer ${authToken}` },

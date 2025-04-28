@@ -33,7 +33,7 @@ export default function FacilityCardView() {
       }
       try {
         const { data } = await axios.get(
-          `https://dcarbon-server.onrender.com/api/facility/get-user-facilities-by-userId/${userId}`,
+          `https://services.dcarbon.solutions/api/facility/get-user-facilities-by-userId/${userId}`,
           { headers: { Authorization: `Bearer ${authToken}` } }
         );
         if (data.status === "success") setFacilities(data.data.facilities);

@@ -58,7 +58,7 @@ export default function CustomerDetails({ customer, onBack }) {
         const email = customer.inviteeEmail || customer.email;
         if (!email) throw new Error('No email for customer');
         const { data } = await axios.get(
-          `https://dcarbon-server.onrender.com/api/user/partner/details/${email}`,
+          `https://services.dcarbon.solutions/api/user/partner/details/${email}`,
           { headers: { Authorization: `Bearer ${authToken}` } }
         );
         if (data.status === 'success') {
@@ -101,7 +101,7 @@ export default function CustomerDetails({ customer, onBack }) {
     formData.append('file', file);
 
     const field = documentationFields.find(f => f.key === key);
-    const url = `https://dcarbon-server.onrender.com/api/user/documentation/${field.endpoint}/${userId}`;
+    const url = `https://services.dcarbon.solutions/api/user/documentation/${field.endpoint}/${userId}`;
 
     try {
       const res = await axios.put(url, formData, {

@@ -38,7 +38,7 @@ const ContactInformation = () => {
 
       try {
         const response = await axios.get(
-          `https://dcarbon-server.onrender.com/api/user/get-commercial-user/${userId}`,
+          `https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`,
           {
             headers: {
               Authorization: `Bearer ${authToken}`,

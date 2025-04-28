@@ -53,7 +53,7 @@ export default function FacilityManagement() {
   const [error, setError] = useState(null);
 
   const LIMIT = 10;
-  const baseUrl = "https://dcarbon-server.onrender.com";
+  const baseUrl = "https://services.dcarbon.solutions";
 
   useEffect(() => {
     const fetchReferrals = async () => {

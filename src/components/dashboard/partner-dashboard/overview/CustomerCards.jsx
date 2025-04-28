@@ -32,11 +32,11 @@ export default function ThreeCardsDashboard() {
         // Fetch both endpoints in parallel
         const [statsResponse, pendingResponse] = await Promise.all([
           axios.get(
-            `https://dcarbon-server.onrender.com/api/user/referral-statistics/${storedUserId}`,
+            `https://services.dcarbon.solutions/api/user/referral-statistics/${storedUserId}`,
             { headers: { Authorization: `Bearer ${authToken}` } }
           ),
           axios.get(
-            `https://dcarbon-server.onrender.com/api/user/pending-referrals/${storedUserId}`,
+            `https://services.dcarbon.solutions/api/user/pending-referrals/${storedUserId}`,
             { headers: { Authorization: `Bearer ${authToken}` } }
           )
         ]);

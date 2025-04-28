@@ -21,7 +21,7 @@ export default function UserFacilities() {
     try {
       const authToken = localStorage.getItem("authToken");
       const response = await fetch(
-        `https://dcarbon-server.onrender.com/api/facility/get-user-facilities-by-userId/${userId}`,
+        `https://services.dcarbon.solutions/api/facility/get-user-facilities-by-userId/${userId}`,
         {
           headers: {
             Authorization: `Bearer ${authToken}`,

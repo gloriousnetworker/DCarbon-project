@@ -14,7 +14,7 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, redirectPa
     setLoading(true);
     try {
       const response = await axios.post(
-        'https://dcarbon-server.onrender.com/api/auth/login',
+        'https://services.dcarbon.solutions/api/auth/login',
         { email, password },
         { headers: { 'Content-Type': 'application/json' } }
       );

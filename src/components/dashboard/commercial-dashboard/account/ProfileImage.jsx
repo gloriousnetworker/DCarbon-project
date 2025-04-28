@@ -45,7 +45,7 @@ const ProfileImage = () => {
     try {
       setIsLoading(true);
       const response = await fetch(
-        `https://dcarbon-server.onrender.com/api/user/upload-profile-picture/${userId}`,
+        `https://services.dcarbon.solutions/api/user/upload-profile-picture/${userId}`,
         {
           method: "POST",
           headers: {

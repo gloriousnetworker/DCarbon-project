@@ -49,7 +49,7 @@ export default function StepOneCard() {
       };
 
       const response = await axios.post(
-        `https://dcarbon-server.onrender.com/api/user/create-partner/${userId}`,
+        `https://services.dcarbon.solutions/api/user/create-partner/${userId}`,
         payload,
         {
           headers: {

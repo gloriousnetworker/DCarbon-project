@@ -38,7 +38,7 @@ export default function OperatorRegistrationCard() {
   const [showUtilityModal, setShowUtilityModal] = useState(false);
   const router = useRouter();
 
-  const localURL = 'https://dcarbon-server.onrender.com';
+  const localURL = 'https://services.dcarbon.solutions';
 
   const handleChange = (e) => {
     const { name, value } = e.target;

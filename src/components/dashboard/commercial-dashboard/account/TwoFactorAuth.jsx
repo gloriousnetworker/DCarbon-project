@@ -24,7 +24,7 @@ const TwoFactorAuth = ({ onBack }) => {
     const getQRCode = async () => {
       try {
         const response = await fetch(
-          `https://dcarbon-server.onrender.com/api/auth/2fa/generate/${userId}`,
+          `https://services.dcarbon.solutions/api/auth/2fa/generate/${userId}`,
           {
             method: "GET",
             headers: {

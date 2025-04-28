@@ -41,7 +41,7 @@ export default function EditFacilityDetailsModal({ facility, onClose, onSave }) 
     try {
       setLoading(true);
       const response = await axios.put(
-        `https://dcarbon-server.onrender.com/api/facility/update-facility/${facility.id}`,
+        `https://services.dcarbon.solutions/api/facility/update-facility/${facility.id}`,
         formData,
         {
           headers: {
