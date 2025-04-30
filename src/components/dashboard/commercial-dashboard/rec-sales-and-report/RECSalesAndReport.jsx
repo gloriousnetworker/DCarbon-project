@@ -6,191 +6,186 @@ import {
   HiOutlineChevronLeft,
   HiOutlineChevronRight,
 } from 'react-icons/hi';
-
-// Import your newly created modals
 import FilterModal from './FilterModal';
 import ExportReportModal from './ExportReportModal';
-
-// Import style constants from styles.js
 import {
   mainContainer,
   headingContainer,
   pageTitle,
-  selectClass,
   buttonPrimary,
 } from './styles';
 
 const RECSalesAndReport = () => {
-  // Example table data (replace with your own or fetch dynamically)
   const tableData = [
     {
-      sn: 1,
-      recId: 'REC ID',
-      facilityId: 'Facility ID',
-      recGen: 1,
-      recSold: 1,
-      avgPrice: '$10.00',
-      totalPrice: '$10.00',
-      date: '16-03-2025',
-      status: 'Pending',
+      generatorId: 'W23135',
+      reportingUnitId: 'W23135',
+      vintage: 'Mar-25',
+      startDate: '01/01/2025',
+      endDate: '03/31/2025',
+      totalMWh: '0.0524',
     },
     {
-      sn: 2,
-      recId: 'REC ID',
-      facilityId: 'Facility ID',
-      recGen: 1,
-      recSold: 1,
-      avgPrice: '$10.00',
-      totalPrice: '$10.00',
-      date: '16-03-2025',
-      status: 'Successful',
+      generatorId: 'W23134',
+      reportingUnitId: 'W23134',
+      vintage: 'Mar-25',
+      startDate: '01/01/2025',
+      endDate: '03/31/2025',
+      totalMWh: '0.10234',
     },
     {
-      sn: 3,
-      recId: 'REC ID',
-      facilityId: 'Facility ID',
-      recGen: 1,
-      recSold: 1,
-      avgPrice: '$10.00',
-      totalPrice: '$10.00',
-      date: '16-03-2025',
-      status: 'Successful',
+      generatorId: 'W23111',
+      reportingUnitId: 'W23111',
+      vintage: 'Mar-25',
+      startDate: '01/01/2025',
+      endDate: '03/31/2025',
+      totalMWh: '1.2344',
     },
     {
-      sn: 4,
-      recId: 'REC ID',
-      facilityId: 'Facility ID',
-      recGen: 1,
-      recSold: 1,
-      avgPrice: '$10.00',
-      totalPrice: '$10.00',
-      date: '16-03-2025',
-      status: 'Successful',
+      generatorId: 'W23112',
+      reportingUnitId: 'W23112',
+      vintage: 'Apr-25',
+      startDate: '04/01/2025',
+      endDate: '04/30/2025',
+      totalMWh: '0.8765',
     },
     {
-      sn: 5,
-      recId: 'REC ID',
-      facilityId: 'Facility ID',
-      recGen: 1,
-      recSold: 1,
-      avgPrice: '$10.00',
-      totalPrice: '$10.00',
-      date: '16-03-2025',
-      status: 'Pending',
+      generatorId: 'W23113',
+      reportingUnitId: 'W23113',
+      vintage: 'Apr-25',
+      startDate: '04/01/2025',
+      endDate: '04/30/2025',
+      totalMWh: '1.5432',
     },
-    {
-      sn: 6,
-      recId: 'REC ID',
-      facilityId: 'Facility ID',
-      recGen: 1,
-      recSold: 1,
-      avgPrice: '$10.00',
-      totalPrice: '$10.00',
-      date: '16-03-2025',
-      status: 'Successful',
-    },
-    {
-      sn: 7,
-      recId: 'REC ID',
-      facilityId: 'Facility ID',
-      recGen: 1,
-      recSold: 1,
-      avgPrice: '$10.00',
-      totalPrice: '$10.00',
-      date: '16-03-2025',
-      status: 'Successful',
-    },
-    {
-      sn: 8,
-      recId: 'REC ID',
-      facilityId: 'Facility ID',
-      recGen: 1,
-      recSold: 1,
-      avgPrice: '$10.00',
-      totalPrice: '$10.00',
-      date: '16-03-2025',
-      status: 'Successful',
-    },
-    {
-      sn: 9,
-      recId: 'REC ID',
-      facilityId: 'Facility ID',
-      recGen: 1,
-      recSold: 1,
-      avgPrice: '$10.00',
-      totalPrice: '$10.00',
-      date: '16-03-2025',
-      status: 'Pending',
-    },
-    {
-      sn: 10,
-      recId: 'REC ID',
-      facilityId: 'Facility ID',
-      recGen: 1,
-      recSold: 1,
-      avgPrice: '$10.00',
-      totalPrice: '$10.00',
-      date: '16-03-2025',
-      status: 'Successful',
-    },
-    // Add any "Failed" entry if you want to test the "Failed" color
   ];
 
-  // For demo purposes, these can be your pagination states
-  const currentPage = 1;
-  const totalPages = 4;
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+  const totalPages = Math.ceil(tableData.length / itemsPerPage);
 
-  // Modal open states
+  const [filters, setFilters] = useState({
+    generatorId: '',
+    reportingUnitId: '',
+    vintage: '',
+    startDate: '',
+    endDate: '',
+  });
+
   const [isFilterOpen, setFilterOpen] = useState(false);
   const [isExportOpen, setExportOpen] = useState(false);
+  const [exportRange, setExportRange] = useState('all');
+  const [exportCustomStart, setExportCustomStart] = useState('');
+  const [exportCustomEnd, setExportCustomEnd] = useState('');
 
-  const openFilterModal = () => setFilterOpen(true);
-  const closeFilterModal = () => setFilterOpen(false);
+  const filteredData = tableData.filter((item) => {
+    return (
+      (filters.generatorId === '' || item.generatorId.includes(filters.generatorId)) &&
+      (filters.reportingUnitId === '' || item.reportingUnitId.includes(filters.reportingUnitId)) &&
+      (filters.vintage === '' || item.vintage.includes(filters.vintage)) &&
+      (filters.startDate === '' || new Date(item.startDate) >= new Date(filters.startDate)) &&
+      (filters.endDate === '' || new Date(item.endDate) <= new Date(filters.endDate))
+    );
+  });
 
-  const openExportModal = () => setExportOpen(true);
-  const closeExportModal = () => setExportOpen(false);
+  const paginatedData = filteredData.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
-  // Status color logic (text-only, no backgrounds)
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'Successful':
-        return 'text-[#039994]'; // green text
-      case 'Pending':
-        return 'text-[#FFB200]'; // orange text
-      case 'Failed':
-        return 'text-[#FF0000]'; // red text
-      default:
-        return 'text-gray-700';
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters(prev => ({ ...prev, [name]: value }));
+  };
+
+  const applyFilters = () => {
+    setCurrentPage(1);
+    setFilterOpen(false);
+  };
+
+  const resetFilters = () => {
+    setFilters({
+      generatorId: '',
+      reportingUnitId: '',
+      vintage: '',
+      startDate: '',
+      endDate: '',
+    });
+  };
+
+  const handleExport = () => {
+    let dataToExport = [...filteredData];
+    
+    if (exportRange === '3months') {
+      const threeMonthsAgo = new Date();
+      threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+      dataToExport = dataToExport.filter(item => 
+        new Date(item.startDate) >= threeMonthsAgo
+      );
+    } else if (exportRange === 'custom' && exportCustomStart && exportCustomEnd) {
+      dataToExport = dataToExport.filter(item => 
+        new Date(item.startDate) >= new Date(exportCustomStart) &&
+        new Date(item.endDate) <= new Date(exportCustomEnd)
+      );
     }
+    
+    const headers = Object.keys(dataToExport[0]).join(',');
+    const csv = [
+      headers,
+      ...dataToExport.map(row => 
+        Object.values(row).map(value => 
+          typeof value === 'string' && value.includes(',') ? `"${value}"` : value
+        ).join(',')
+      )
+    ].join('\n');
+    
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.setAttribute('hidden', '');
+    a.setAttribute('href', url);
+    a.setAttribute('download', 'rec_sales_export.csv');
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    
+    setExportOpen(false);
+  };
+
+  const goToPreviousPage = () => {
+    if (currentPage > 1) setCurrentPage(currentPage - 1);
+  };
+
+  const goToNextPage = () => {
+    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
   };
 
   return (
     <div className={`${mainContainer} bg-white p-6 rounded-lg shadow w-full`}>
       {/* Header Section */}
       <div className={`${headingContainer} flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4`}>
-        {/* Title with #039994 color */}
         <h2 className={pageTitle} style={{ color: '#039994' }}>
           REC Sales
         </h2>
 
-        <div className="mt-2 sm:mt-0 flex items-center space-x-2">
-          {/* Filter Button */}
+        <div className="mt-2 sm:mt-0 flex items-center space-x-4">
+          {/* Filter Button with adjusted width */}
           <button
             type="button"
-            onClick={openFilterModal}
-            className="inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-200 rounded-md"
+            onClick={() => setFilterOpen(true)}
+            className="inline-flex items-center px-3 py-2 border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-200 rounded-md text-sm min-w-[120px] justify-center"
           >
-            <HiOutlineFilter className="mr-2" />
+            <HiOutlineFilter className="mr-2 h-4 w-3" />
             Filter by
-            <HiOutlineChevronDown className="ml-2" />
+            <HiOutlineChevronDown className="ml-2 h-4 w-3" />
           </button>
+          
           {/* Export Button */}
           <button
             type="button"
-            onClick={openExportModal}
-            className={`inline-flex items-center px-4 py-2 rounded-lg ${buttonPrimary}`}
+            onClick={() => setExportOpen(true)}
+            className={`inline-flex items-center px-4 py-2 rounded-md text-sm ${buttonPrimary}`}
           >
-            <HiOutlineDownload className="mr-2" />
+            <HiOutlineDownload className="mr-2 h-4 w-4" />
             Export Report
           </button>
         </div>
@@ -201,31 +196,23 @@ const RECSalesAndReport = () => {
         <table className="min-w-full text-sm text-left text-gray-700">
           <thead className="border-b border-gray-200 text-xs font-medium uppercase text-gray-700">
             <tr>
-              <th scope="col" className="px-4 py-3">S/N</th>
-              <th scope="col" className="px-4 py-3">REC ID</th>
-              <th scope="col" className="px-4 py-3">Facility ID</th>
-              <th scope="col" className="px-4 py-3">RECs Gen.</th>
-              <th scope="col" className="px-4 py-3">RECs Sold</th>
-              <th scope="col" className="px-4 py-3">Av. Price/REC</th>
-              <th scope="col" className="px-4 py-3">Total Price</th>
-              <th scope="col" className="px-4 py-3">Date</th>
-              <th scope="col" className="px-4 py-3">Status</th>
+              <th scope="col" className="px-4 py-3">Generator ID</th>
+              <th scope="col" className="px-4 py-3">Reporting Unit ID</th>
+              <th scope="col" className="px-4 py-3">Vintage</th>
+              <th scope="col" className="px-4 py-3">Start Date</th>
+              <th scope="col" className="px-4 py-3">End Date</th>
+              <th scope="col" className="px-4 py-3">Total MWh</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {tableData.map((item, idx) => (
+            {paginatedData.map((item, idx) => (
               <tr key={idx} className="hover:bg-gray-50">
-                <td className="px-4 py-3">{item.sn}</td>
-                <td className="px-4 py-3">{item.recId}</td>
-                <td className="px-4 py-3">{item.facilityId}</td>
-                <td className="px-4 py-3">{item.recGen}</td>
-                <td className="px-4 py-3">{item.recSold}</td>
-                <td className="px-4 py-3">{item.avgPrice}</td>
-                <td className="px-4 py-3">{item.totalPrice}</td>
-                <td className="px-4 py-3">{item.date}</td>
-                <td className={`px-4 py-3 font-medium ${getStatusColor(item.status)}`}>
-                  {item.status}
-                </td>
+                <td className="px-4 py-3">{item.generatorId}</td>
+                <td className="px-4 py-3">{item.reportingUnitId}</td>
+                <td className="px-4 py-3">{item.vintage}</td>
+                <td className="px-4 py-3">{item.startDate}</td>
+                <td className="px-4 py-3">{item.endDate}</td>
+                <td className="px-4 py-3">{item.totalMWh}</td>
               </tr>
             ))}
           </tbody>
@@ -235,32 +222,54 @@ const RECSalesAndReport = () => {
       {/* Pagination Section */}
       <div className="flex flex-col sm:flex-row items-center justify-between mt-4">
         <p className="text-sm text-gray-600">
-          Page <span className="font-medium">{currentPage}</span> of{' '}
-          <span className="font-medium">{totalPages}</span>
+          Showing {paginatedData.length} of {filteredData.length} entries
         </p>
         <div className="mt-2 sm:mt-0 flex items-center space-x-2">
           <button
             type="button"
             className="inline-flex items-center px-3 py-1 text-sm font-medium text-gray-700 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
             disabled={currentPage === 1}
+            onClick={goToPreviousPage}
           >
-            <HiOutlineChevronLeft className="mr-1" />
+            <HiOutlineChevronLeft className="mr-1 h-4 w-4" />
             Previous
           </button>
+          <span className="px-3 py-1 text-sm font-medium text-gray-700">
+            {currentPage} of {totalPages}
+          </span>
           <button
             type="button"
             className="inline-flex items-center px-3 py-1 text-sm font-medium text-gray-700 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
             disabled={currentPage === totalPages}
+            onClick={goToNextPage}
           >
             Next
-            <HiOutlineChevronRight className="ml-1" />
+            <HiOutlineChevronRight className="ml-1 h-4 w-4" />
           </button>
         </div>
       </div>
 
       {/* Modals */}
-      <FilterModal isOpen={isFilterOpen} onClose={closeFilterModal} />
-      <ExportReportModal isOpen={isExportOpen} onClose={closeExportModal} />
+      <FilterModal
+        isOpen={isFilterOpen}
+        onClose={() => setFilterOpen(false)}
+        filters={filters}
+        onFilterChange={handleFilterChange}
+        onApplyFilters={applyFilters}
+        onResetFilters={resetFilters}
+      />
+      
+      <ExportReportModal
+        isOpen={isExportOpen}
+        onClose={() => setExportOpen(false)}
+        exportRange={exportRange}
+        setExportRange={setExportRange}
+        exportCustomStart={exportCustomStart}
+        setExportCustomStart={setExportCustomStart}
+        exportCustomEnd={exportCustomEnd}
+        setExportCustomEnd={setExportCustomEnd}
+        onExport={handleExport}
+      />
     </div>
   );
 };

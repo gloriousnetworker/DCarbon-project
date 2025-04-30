@@ -3,7 +3,7 @@ import { FiLogOut } from 'react-icons/fi';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 
-const Logout = () => {
+const Logout = ({ onClose, onNavigateToOverview }) => {
   const router = useRouter();
 
   const handleLogout = () => {
@@ -19,8 +19,16 @@ const Logout = () => {
   };
 
   const handleCancel = () => {
-    // Go back to previous page
-    router.back();
+    if (onNavigateToOverview) {
+      // Use the provided navigation function to go to overview
+      onNavigateToOverview();
+    } else if (onClose) {
+      // Fallback to closing the modal if no navigation function provided
+      onClose();
+    } else {
+      // Final fallback to going back
+      router.back();
+    }
   };
 
   return (
@@ -35,9 +43,14 @@ const Logout = () => {
         Do you wish to leave DCarbon?
       </h2>
 
+      {/* Description */}
+      <p className={logoutDescription}>
+        You'll need to log in again to access your account
+      </p>
+
       {/* Buttons */}
       <div className={buttonGroup}>
-        {/* "Not Yet" button */}
+        {/* "Not Yet" button - now navigates to overview */}
         <button
           onClick={handleCancel}
           className={cancelButton}
@@ -60,9 +73,10 @@ const Logout = () => {
 // Style constants
 const logoutContainer = 'min-h-screen w-full flex flex-col items-center justify-center py-8 px-4 bg-white font-sfpro';
 const logoutIconContainer = 'flex items-center justify-center w-16 h-16 mb-6 border-2 border-[#039994] rounded-full';
-const logoutTitle = 'text-lg font-semibold text-[#1E1E1E] mb-6 font-sfpro';
+const logoutTitle = 'text-lg font-semibold text-[#1E1E1E] mb-2 font-sfpro';
+const logoutDescription = 'text-sm text-[#626060] mb-6 font-sfpro';
 const buttonGroup = 'flex flex-col gap-4 w-full max-w-xs px-4';
-const cancelButton = 'w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro';
-const logoutButton = 'w-full rounded-md border border-[#039994] text-[#039994] font-semibold py-2 hover:bg-[#039994] hover:text-white focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro transition';
+const cancelButton = 'w-full rounded-md border border-[#039994] text-[#039994] font-semibold py-2 hover:bg-[#03999419] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro transition';
+const logoutButton = 'w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro transition';
 
 export default Logout;

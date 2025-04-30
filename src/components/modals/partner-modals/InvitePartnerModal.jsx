@@ -2,16 +2,38 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
+import axios from 'axios';
 
 export default function EmailVerificationModal({ closeModal, onSkip }) {
-  const [email, setEmail] = useState('');
-  const [selectedLabel, setSelectedLabel] = useState('');
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phoneNumber: "",
+    customerType: "RESIDENTIAL",
+    role: "OPERATOR",
+    message: ""
+  });
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const roleOptions = [
-    { label: 'Solar Owner', value: 'owner' },
-  ];
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      email: "",
+      phoneNumber: "",
+      customerType: "RESIDENTIAL",
+      role: "OPERATOR",
+      message: ""
+    });
+  };
 
   const handleSubmit = async () => {
     setLoading(true);
@@ -25,44 +47,57 @@ export default function EmailVerificationModal({ closeModal, onSkip }) {
       return;
     }
 
-    const roleMapping = roleOptions.find(opt => opt.label === selectedLabel);
-
-    if (!email || !roleMapping) {
-      toast.error('Please fill out all required fields.');
+    if (!formData.email) {
+      toast.error('Please enter an email address.');
       setLoading(false);
       return;
     }
 
+    const payload = {
+      invitees: [
+        {
+          name: formData.name,
+          email: formData.email,
+          phoneNumber: formData.phoneNumber,
+          customerType: formData.customerType,
+          role: formData.role,
+          ...(formData.message && { message: formData.message })
+        }
+      ]
+    };
+
     try {
-      const response = await fetch(`https://services.dcarbon.solutions/api/user/invite-user/${userId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${authToken}`,
-        },
-        body: JSON.stringify({
-          inviteeEmail: email,
-          role: roleMapping.value,
-        }),
-      });
+      const response = await axios.post(
+        `https://services.dcarbon.solutions/api/user/invite-user/${userId}`,
+        payload,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${authToken}`,
+          }
+        }
+      );
 
-      const result = await response.json();
-
-      if (response.ok) {
-        toast.success(result.message || 'Invitation sent successfully!');
+      if (response.data.status === 'success') {
+        toast.success('Invitation sent successfully!');
+        resetForm();
         closeModal(); // This will trigger the next modal in the parent component
       } else {
-        throw new Error(result.message || 'Failed to send invitation');
+        throw new Error(response.data.message || 'Failed to send invitation');
       }
     } catch (error) {
-      toast.error(`Error: ${error.message}`);
+      toast.error(
+        error.response?.data?.message || 
+        error.message || 
+        'Failed to send invitation'
+      );
     } finally {
       setLoading(false);
     }
   };
 
   const handleSkip = () => {
-    toast('You can invite owners later from your dashboard', {
+    toast('You can invite operators later from your dashboard', {
       icon: 'ℹ️',
     });
     onSkip(); // Call the onSkip prop to trigger the registration modal
@@ -70,12 +105,12 @@ export default function EmailVerificationModal({ closeModal, onSkip }) {
 
   return (
     <div className={spinnerOverlay}>
-      <div className="relative w-full max-w-md bg-white rounded-md shadow-md p-6 space-y-6">
+      <div className="relative w-full max-w-md bg-white rounded-md shadow-md p-6 space-y-4">
         {/* Invite Owner Icon */}
         <div className="flex justify-center">
           <Image 
             src="/vectors/CloudArrowDown.png" // Replace with your actual image path
-            alt="Invite owner"
+            alt="Invite operator"
             width={80}
             height={80}
             className="mb-2"
@@ -83,46 +118,81 @@ export default function EmailVerificationModal({ closeModal, onSkip }) {
         </div>
         
         <h2 className={modalHeading}>
-          Invite a Solar Owner
+          Invite a Solar Operator
         </h2>
 
-        {/* Email Input */}
-        <div>
-          <label htmlFor="email" className={labelClass}>
-            Email Address <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="E.g. name@domain.com"
-            className={inputClass}
-            required
-          />
-        </div>
+        <form className="space-y-4">
+          {/* Name Input */}
+          <div>
+            <label htmlFor="name" className={labelClass}>
+              Name <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              id="name"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              placeholder="Enter operator's name"
+              className={inputClass}
+              required
+            />
+          </div>
 
-        {/* Role Dropdown */}
-        <div>
-          <label htmlFor="role" className={labelClass}>
-            Select Role <span className="text-red-500">*</span>
-          </label>
-          <select
-            id="role"
-            value={selectedLabel}
-            onChange={(e) => setSelectedLabel(e.target.value)}
-            className={selectClass}
-            required
-          >
-            <option value="" disabled>Select a role</option>
-            {roleOptions.map((option) => (
-              <option key={option.label} value={option.label}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
+          {/* Email Input */}
+          <div>
+            <label htmlFor="email" className={labelClass}>
+              Email Address <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              placeholder="E.g. name@domain.com"
+              className={inputClass}
+              required
+            />
+          </div>
+
+          {/* Phone Input */}
+          <div>
+            <label htmlFor="phoneNumber" className={labelClass}>
+              Phone Number
+            </label>
+            <input
+              type="tel"
+              id="phoneNumber"
+              name="phoneNumber"
+              value={formData.phoneNumber}
+              onChange={handleChange}
+              placeholder="Enter phone number"
+              className={inputClass}
+            />
+          </div>
+
+          {/* Message */}
+          <div>
+            <label htmlFor="message" className={labelClass}>
+              Message
+            </label>
+            <textarea
+              id="message"
+              name="message"
+              value={formData.message}
+              onChange={handleChange}
+              placeholder="Add a custom message (optional)"
+              className={`${inputClass} h-16 resize-none`}
+            />
+          </div>
+
+          {/* Hidden Customer Type Input - since it's always "RESIDENTIAL" */}
+          <input type="hidden" name="customerType" value={formData.customerType} />
+          
+          {/* Hidden Role Input - since it's always "OPERATOR" */}
+          <input type="hidden" name="role" value={formData.role} />
+        </form>
 
         <hr className="my-4 border-gray-200" />
 

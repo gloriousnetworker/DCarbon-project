@@ -1,23 +1,23 @@
 import React from "react";
 import { FaBars, FaSearch, FaBell, FaHeadset } from "react-icons/fa";
 
-const DashboardNavbar = ({ toggleSidebar, selectedSection, sectionDisplayMap }) => {
+const DashboardNavbar = ({ 
+  toggleSidebar, 
+  selectedSection, 
+  sectionDisplayMap,
+  onSectionChange // Add this prop
+}) => {
   return (
     <header className="bg-white border-b border-gray-200">
       <div className="max-w-full px-4 py-3 flex items-center justify-between">
-        {/* Left side: Hamburger (mobile) + current section title + Operator pending button */}
+        {/* Left side: Hamburger (mobile) + current section title */}
         <div className="flex items-center space-x-4">
           <button className="md:hidden" onClick={toggleSidebar}>
             <FaBars className="text-gray-700" size={20} />
           </button>
-          {/* Updated header text style from pageTitle */}
           <h1 className="font-[550] text-[16px] leading-[50%] tracking-[-0.05em] text-[#1E1E1E] font-sfpro text-center">
             {sectionDisplayMap[selectedSection]}
           </h1>
-          {/* Yellow Operator Pending button with consistent font styling
-          <button className="bg-[#FFC107] text-black px-4 py-1.5 rounded-full text-sm font-medium font-sfpro">
-            Operator pending
-          </button> */}
         </div>
 
         {/* Middle: Search bar */}
@@ -39,10 +39,20 @@ const DashboardNavbar = ({ toggleSidebar, selectedSection, sectionDisplayMap }) 
         {/* Right side: Notification & Support icons */}
         <div className="flex items-center space-x-6">
           <div className="relative">
-            <FaBell className="text-[#039994]" size={20} />
-            <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500" />
+            <button 
+              onClick={() => onSectionChange("notifications")}
+              className="focus:outline-none"
+            >
+              <FaBell className="text-[#039994]" size={20} />
+              <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500" />
+            </button>
           </div>
-          <FaHeadset className="text-[#039994]" size={20} />
+          <button 
+            onClick={() => onSectionChange("contactSupport")}
+            className="focus:outline-none"
+          >
+            <FaHeadset className="text-[#039994]" size={20} />
+          </button>
         </div>
       </div>
     </header>

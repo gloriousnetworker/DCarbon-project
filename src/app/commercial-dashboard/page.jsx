@@ -23,6 +23,10 @@ export default function UserDashboard() {
     setSidebarOpen(false);
   };
 
+  const handleNavigateToOverview = () => {
+    setActiveSection('overview');
+  };
+
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
@@ -90,6 +94,7 @@ export default function UserDashboard() {
           toggleSidebar={toggleSidebar}
           selectedSection={activeSection}
           sectionDisplayMap={sectionDisplayMap}
+          onSectionChange={handleSectionChange} // Pass the handler
         />
 
         {/* Mobile Sidebar Overlay */}
@@ -114,7 +119,13 @@ export default function UserDashboard() {
         {/* Main Content */}
         <main className="flex-1">
           <div className="max-w-7xl mx-auto p-6">
-            <SectionComponent />
+            {activeSection === 'logout' ? (
+              <DashboardLogout 
+                onNavigateToOverview={handleNavigateToOverview}
+              />
+            ) : (
+              <SectionComponent />
+            )}
           </div>
         </main>
       </div>

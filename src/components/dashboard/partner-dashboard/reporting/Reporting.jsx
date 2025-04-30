@@ -137,50 +137,64 @@ export default function FacilityManagement() {
 
   const handleExportReport = async (exportParams) => {
     try {
-      const token = localStorage.getItem("authToken");
-      const userId = localStorage.getItem("userId") || "8b14b23d-3082-4846-9216-2c2e9f1e96bf";
-      
-      // Prepare the request body
-      const requestBody = {
-        format: exportParams.format,
-        email: exportParams.email,
-        filters: exportParams.includeFilters ? {
-          ...filters,
-          year: yearFilter,
-          month: monthFilter,
-          page: currentPage,
-          limit: LIMIT
-        } : null
-      };
+      // For non-CSV formats or when email is provided
+      if (exportParams.format !== "csv" || exportParams.email) {
+        const token = localStorage.getItem("authToken");
+        const userId = localStorage.getItem("userId") || "8b14b23d-3082-4846-9216-2c2e9f1e96bf";
+        
+        // Prepare the request body
+        const requestBody = {
+          format: exportParams.format,
+          email: exportParams.email,
+          filters: exportParams.includeFilters ? {
+            ...filters,
+            year: yearFilter,
+            month: monthFilter,
+            page: currentPage,
+            limit: LIMIT
+          } : null
+        };
 
-      // In a real app, you would call your export API endpoint here
-      console.log("Exporting with params:", requestBody);
-      
-      // Mock API call (replace with actual API call)
-      const response = await axios.post(
-        `${baseUrl}/api/reports/export-customer-report`,
-        requestBody,
-        { 
-          headers: { Authorization: `Bearer ${token}` },
-          responseType: 'blob' // Important for file downloads
+        console.log("Exporting with params:", requestBody);
+        
+        // If we have an endpoint to call
+        if (exportParams.format !== "csv") {
+          try {
+            const response = await axios.post(
+              `${baseUrl}/api/reports/export-customer-report`,
+              requestBody,
+              { 
+                headers: { Authorization: `Bearer ${token}` },
+                responseType: 'blob' // Important for file downloads
+              }
+            );
+            
+            // Handle the file download
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `customer-report.${exportParams.format}`);
+            document.body.appendChild(link);
+            link.click();
+            link.parentNode.removeChild(link);
+          } catch (error) {
+            console.error("Backend export error:", error);
+            // Fall back to only showing an alert for the email case
+            if (exportParams.email) {
+              alert(`Report will be sent to ${exportParams.email} when ready`);
+            } else {
+              throw error; // Re-throw to show the error alert
+            }
+          }
+        } else if (exportParams.email) {
+          // For CSV with email, just show a message (since CSV is handled client-side)
+          alert(`CSV report will also be sent to ${exportParams.email} when ready`);
         }
-      );
-
-      // Handle the file download
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `customer-report.${exportParams.format}`);
-      document.body.appendChild(link);
-      link.click();
-      link.parentNode.removeChild(link);
-
-      // If email was provided, show success message
-      if (exportParams.email) {
-        alert(`Report exported successfully and sent to ${exportParams.email}`);
-      } else {
-        alert("Report exported successfully");
       }
+      
+      // CSV is already handled in the ExportReportModal component through direct download
+      
+      return true;
     } catch (error) {
       console.error("Export error:", error);
       throw error;
@@ -344,6 +358,7 @@ export default function FacilityManagement() {
           initialFilters={filters}
           yearFilter={yearFilter}
           monthFilter={monthFilter}
+          tableData={tableData} // Pass the table data to the export modal
         />
       )}
     </div>
