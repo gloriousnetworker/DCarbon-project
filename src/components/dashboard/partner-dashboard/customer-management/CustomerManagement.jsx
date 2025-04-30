@@ -360,7 +360,7 @@ export default function PartnerCustomerReport() {
 
   return (
     <div className={`rounded-md shadow-md p-6 w-full ${mainContainer}`}>
-      <h2 className={`${pageTitle} text-left mb-6 text-2xl`}>Customer Management</h2>
+      <h2 className={`${pageTitle} text-left mb-6 text-2xl text-[#039994]`}>Customer Management</h2>
       
       {/* Header row */}
       <div className="w-full flex flex-col md:flex-row items-start md:items-center justify-between mb-4">
