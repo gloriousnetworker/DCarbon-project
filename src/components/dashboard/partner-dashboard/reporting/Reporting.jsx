@@ -29,6 +29,8 @@ const MONTHS = [
   { label: "Dec", value: "12" },
 ];
 
+const YEARS = ["2023", "2024", "2025"];
+
 export default function FacilityManagement() {
   // modals
   const [showAddFacilityModal, setShowAddFacilityModal] = useState(false);
@@ -42,7 +44,7 @@ export default function FacilityManagement() {
   const [filters, setFilters] = useState({
     status: "",
     customerType: "",
-    time: "Recent",
+    time: "Oldest",
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -97,7 +99,7 @@ export default function FacilityManagement() {
         referrals.sort((a, b) => {
           const da = new Date(a.createdAt),
             db = new Date(b.createdAt);
-          return filters.time === "Latest" ? db - da : da - db;
+          return filters.time === "Newest" ? db - da : da - db;
         });
 
         setTableData(referrals);
@@ -201,6 +203,17 @@ export default function FacilityManagement() {
     }
   };
 
+  const handleClearFilters = () => {
+    setYearFilter("");
+    setMonthFilter("");
+    setFilters({
+      status: "",
+      customerType: "",
+      time: "Oldest"
+    });
+    setCurrentPage(1);
+  };
+
   const renderStatusTag = (status) => {
     let bg = "#00B4AE";
     if (status === "PENDING") bg = "#FFB200";
@@ -230,9 +243,11 @@ export default function FacilityManagement() {
             className={selectClass}
           >
             <option value="">Year</option>
-            <option>2023</option>
-            <option>2024</option>
-            <option>2025</option>
+            {YEARS.map((year) => (
+              <option key={year} value={year}>
+                {year}
+              </option>
+            ))}
           </select>
           <select
             value={monthFilter}
@@ -248,6 +263,14 @@ export default function FacilityManagement() {
               </option>
             ))}
           </select>
+          {(yearFilter || monthFilter || filters.status || filters.customerType) && (
+            <button
+              onClick={handleClearFilters}
+              className="text-xs text-gray-500 hover:text-gray-700 underline ml-2"
+            >
+              Clear All
+            </button>
+          )}
         </div>
         <div className="flex items-center space-x-4">
           <button
@@ -268,6 +291,13 @@ export default function FacilityManagement() {
       {/* Title */}
       <div className={headingContainer}>
         <h1 className={pageTitle}>Customer Report</h1>
+        {(filters.status || filters.customerType) && (
+          <div className="text-sm text-gray-600 mt-1">
+            {filters.status && <span>Status: {filters.status} </span>}
+            {filters.customerType && <span>Type: {filters.customerType} </span>}
+            {filters.time && <span>Sort: {filters.time} first </span>}
+          </div>
+        )}
       </div>
 
       {/* Table */}
@@ -276,6 +306,8 @@ export default function FacilityManagement() {
           <p className="text-center text-gray-500">Loading…</p>
         ) : error ? (
           <p className="text-center text-red-500">{error}</p>
+        ) : tableData.length === 0 ? (
+          <p className="text-center text-gray-500 py-8">No records found with these filters</p>
         ) : (
           <table className="min-w-full border-collapse">
             <thead>
@@ -325,7 +357,7 @@ export default function FacilityManagement() {
         <span>{currentPage} of {totalPages}</span>
         <button
           onClick={handleNext}
-          disabled={currentPage === totalPages}
+          disabled={currentPage === totalPages || totalPages === 0}
           className="text-[#00B4AE] disabled:opacity-50 text-sm"
         >
           Next &gt;

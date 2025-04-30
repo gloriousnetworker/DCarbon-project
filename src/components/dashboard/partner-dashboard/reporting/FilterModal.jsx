@@ -9,7 +9,7 @@ import {
 export default function FilterModal({
   onClose,
   onApplyFilter,
-  initialFilters = { status: "", customerType: "", time: "Recent" },
+  initialFilters = { status: "", customerType: "", time: "Oldest" },
 }) {
   const [status, setStatus] = useState(initialFilters.status);
   const [customerType, setCustomerType] = useState(
@@ -26,7 +26,7 @@ export default function FilterModal({
   const handleClear = () => {
     setStatus("");
     setCustomerType("");
-    setTime("Recent");
+    setTime("Oldest");
   };
 
   const handleDone = () => {
@@ -74,9 +74,9 @@ export default function FilterModal({
             className={`${selectClass} text-sm`}
           >
             <option value="">All</option>
-            <option value="Residential">Residential</option>
-            <option value="Commercial">Commercial</option>
-            <option value="Partner">Partner</option>
+            <option value="RESIDENTIAL">RESIDENTIAL</option>
+            <option value="COMMERCIAL">COMMERCIAL</option>
+            <option value="PARTNER">PARTNER</option>
           </select>
         </div>
         <hr className="mb-4 border-gray-200" />
@@ -89,8 +89,8 @@ export default function FilterModal({
             onChange={(e) => setTime(e.target.value)}
             className={`${selectClass} text-sm`}
           >
-            <option value="Recent">Oldest First</option>
-            <option value="Latest">Newest First</option>
+            <option value="Oldest">Oldest First</option>
+            <option value="Newest">Newest First</option>
           </select>
         </div>
         <hr className="mb-4 border-gray-200" />
