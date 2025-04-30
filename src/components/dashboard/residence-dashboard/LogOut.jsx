@@ -3,7 +3,7 @@ import { FiLogOut } from 'react-icons/fi';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 
-const Logout = ({ onClose }) => {
+const Logout = ({ onClose, onNavigateToOverview }) => {
   const router = useRouter();
 
   const handleLogout = () => {
@@ -19,11 +19,14 @@ const Logout = ({ onClose }) => {
   };
 
   const handleCancel = () => {
-    // Close the modal instead of redirecting
-    if (onClose) {
+    if (onNavigateToOverview) {
+      // Use the provided navigation function to go to overview
+      onNavigateToOverview();
+    } else if (onClose) {
+      // Fallback to closing the modal if no navigation function provided
       onClose();
     } else {
-      // Fallback to going back if no onClose prop provided
+      // Final fallback to going back
       router.back();
     }
   };
@@ -47,7 +50,7 @@ const Logout = ({ onClose }) => {
 
       {/* Buttons */}
       <div className={buttonGroup}>
-        {/* "Not Yet" button - now closes modal */}
+        {/* "Not Yet" button - now navigates to overview */}
         <button
           onClick={handleCancel}
           className={cancelButton}

@@ -55,6 +55,8 @@ export default function StepOneCard() {
   const router = useRouter();
 
   const showUploadField = documentRequiredTypes.includes(financeType.toLowerCase());
+  const showFinanceCompany = financeType.toLowerCase() !== 'cash';
+  const showCustomInstaller = installer === 'others';
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
@@ -85,15 +87,25 @@ export default function StepOneCard() {
     }
   };
 
-  const handleSubmit = async () => {
+  const handleNext = async () => {
     // Validate required fields
-    if (!financeType || !financeCompany) {
-      toast.error('Please fill in all required fields');
+    if (!financeType) {
+      toast.error('Please select a finance type');
+      return;
+    }
+
+    if (showFinanceCompany && !financeCompany) {
+      toast.error('Please select a finance company');
       return;
     }
 
     if (showUploadField && !uploadSuccess) {
       toast.error('Please upload the financial agreement');
+      return;
+    }
+
+    if (showCustomInstaller && !customInstaller) {
+      toast.error('Please enter your installer name');
       return;
     }
 
@@ -108,13 +120,16 @@ export default function StepOneCard() {
         throw new Error('Authentication required');
       }
 
-      // Prepare payload with all fields
+      // Determine the installer value
+      const finalInstaller = showCustomInstaller ? customInstaller : installer;
+
+      // Prepare payload according to new endpoint structure
       const payload = {
         financialType: financeType,
-        financeCompany: financeCompany,
-        ...(installer && { installer: installer === 'others' ? customInstaller : installer }),
+        ...(showFinanceCompany && { financeCompany }), // Only include if not cash
+        ...(finalInstaller && { installer: finalInstaller }),
         ...(systemSize && { systemSize }),
-        ...(cod && { cod })
+        ...(cod && { cod }),
       };
 
       // First save the financial info
@@ -197,33 +212,34 @@ export default function StepOneCard() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
           </div>
-          <h1 className={pageTitle}>Finance Information</h1>
+          <h1 className={pageTitle}>Finance &amp; Installer information</h1>
         </div>
 
         <div className={progressContainer}>
           <div className={progressBarWrapper}>
             <div className={progressBarActive} />
           </div>
-          <span className={progressStepText}>02/05</span>
+          <span className={progressStepText}>02/03</span>
         </div>
 
         <div className={formWrapper}>
           {/* Finance Type - Required */}
           <div>
             <label className={labelClass}>
-              Finance Type <span className="text-red-500">*</span>
+              Finance type <span className="text-red-500">*</span>
             </label>
             <select
               value={financeType}
               onChange={(e) => {
                 setFinanceType(e.target.value);
+                setFinanceCompany('');
                 setFile(null);
                 setUploadSuccess(false);
               }}
               className={selectClass}
               required
             >
-              <option value="">Select Finance Type</option>
+              <option value="">Choose type</option>
               <option value="cash">Cash</option>
               <option value="loan">Loan</option>
               <option value="ppa">PPA</option>
@@ -231,25 +247,27 @@ export default function StepOneCard() {
             </select>
           </div>
 
-          {/* Finance Company - Required */}
-          <div>
-            <label className={labelClass}>
-              Finance Company <span className="text-red-500">*</span>
-            </label>
-            <select
-              value={financeCompany}
-              onChange={(e) => setFinanceCompany(e.target.value)}
-              className={selectClass}
-              required
-            >
-              <option value="">Select Finance Company</option>
-              <option value="company1">Company 1</option>
-              <option value="company2">Company 2</option>
-              <option value="company3">Company 3</option>
-              <option value="others">Others</option>
-              <option value="n/a">N/A</option>
-            </select>
-          </div>
+          {/* Finance Company - Conditionally Required */}
+          {showFinanceCompany && (
+            <div>
+              <label className={labelClass}>
+                Finance company <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={financeCompany}
+                onChange={(e) => setFinanceCompany(e.target.value)}
+                className={selectClass}
+                required={showFinanceCompany}
+              >
+                <option value="">Choose company</option>
+                <option value="company1">Company 1</option>
+                <option value="company2">Company 2</option>
+                <option value="company3">Company 3</option>
+                <option value="others">Others</option>
+                <option value="n/a">N/A</option>
+              </select>
+            </div>
+          )}
 
           {/* Financial Agreement - Conditionally Required */}
           {showUploadField && (
@@ -338,31 +356,43 @@ export default function StepOneCard() {
           {/* Installer - Optional */}
           <div>
             <label className={labelClass}>
-              Select Installer <span className="text-gray-500 text-xs">(optional)</span>
+              Select installer <span className="text-gray-500 text-xs">(optional)</span>
             </label>
             <select
               value={installer}
-              onChange={(e) => setInstaller(e.target.value)}
+              onChange={(e) => {
+                setInstaller(e.target.value);
+                setCustomInstaller('');
+              }}
               className={selectClass}
             >
-              <option value="">Select Installer</option>
+              <option value="">Choose installer</option>
               <option value="installer1">Installer 1</option>
               <option value="installer2">Installer 2</option>
               <option value="installer3">Installer 3</option>
               <option value="others">Others</option>
+              <option value="unknown">Don't know</option>
             </select>
-            {installer === 'others' && (
-              <input
-                type="text"
-                value={customInstaller}
-                onChange={(e) => setCustomInstaller(e.target.value)}
-                placeholder="Enter installer name"
-                className={`${inputClass} mt-2`}
-              />
-            )}
           </div>
 
-          {/* System Size & COD - Both Optional - Now on same row */}
+          {/* Custom Installer Input - Conditionally Shown */}
+          {showCustomInstaller && (
+            <div>
+              <label className={labelClass}>
+                Installer Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                placeholder="Enter your installer name"
+                value={customInstaller}
+                onChange={(e) => setCustomInstaller(e.target.value)}
+                className={inputClass}
+                required={showCustomInstaller}
+              />
+            </div>
+          )}
+
+          {/* System Size & COD - Both Optional */}
           <div className={rowWrapper}>
             <div className={halfWidth}>
               <label className={labelClass}>
@@ -370,7 +400,7 @@ export default function StepOneCard() {
               </label>
               <input
                 type="text"
-                placeholder="e.g., 5kW (watch video guide)"
+                placeholder="Input system size (watch video guide)"
                 value={systemSize}
                 onChange={(e) => setSystemSize(e.target.value)}
                 className={`${inputClass} ${grayPlaceholder}`}
@@ -382,7 +412,7 @@ export default function StepOneCard() {
               </label>
               <input
                 type="text"
-                placeholder="e.g., 12345 (watch video guide)"
+                placeholder="Input COD (watch video guide)"
                 value={cod}
                 onChange={(e) => setCOD(e.target.value)}
                 className={`${inputClass} ${grayPlaceholder}`}
@@ -392,7 +422,7 @@ export default function StepOneCard() {
         </div>
 
         <div className="w-full max-w-md mt-6">
-          <button onClick={handleSubmit} className={buttonPrimary}>
+          <button onClick={handleNext} className={buttonPrimary}>
             Next
           </button>
         </div>

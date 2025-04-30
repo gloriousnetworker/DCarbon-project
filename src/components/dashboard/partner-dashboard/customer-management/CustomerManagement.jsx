@@ -1,25 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-
-// Icons
 import {
   HiOutlineChevronLeft,
   HiOutlineChevronRight,
 } from 'react-icons/hi';
-
-// Modals
 import FilterModal from './FilterModal';
 import SendReminderModal from './SendReminderModal';
 import InviteIndividualModal from './InviteIndividualModal';
 import InviteBulkModal from './InviteBulkModal';
 import CustomerDetails from './CustomerDetails';
 
-// Styles
-import {
-  mainContainer,
-  headingContainer,
-  pageTitle,
-} from './styles';
+const mainContainer = "bg-white";
+const headingContainer = "flex justify-between items-center mb-6";
+const pageTitle = "font-sfpro font-semibold";
 
 export default function PartnerCustomerReport() {
   const [tableData, setTableData] = useState([]);
@@ -36,7 +29,11 @@ export default function PartnerCustomerReport() {
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   
   // Filter states
-  const [statusFilter, setStatusFilter] = useState('');
+  const [filters, setFilters] = useState({
+    status: '',
+    customerType: '',
+    dateRange: ''
+  });
 
   // Modal states
   const [isFilterOpen, setFilterOpen] = useState(false);
@@ -48,7 +45,7 @@ export default function PartnerCustomerReport() {
   useEffect(() => {
     fetchTableData(1);
     fetchStatistics();
-  }, [statusFilter]);
+  }, [filters]);
 
   const fetchTableData = async (pageNumber = 1) => {
     try {
@@ -67,9 +64,13 @@ export default function PartnerCustomerReport() {
         limit: 10,
       };
       
-      // Add status filter if selected
-      if (statusFilter) {
-        params.status = statusFilter;
+      // Add filters if selected
+      if (filters.status) params.status = filters.status;
+      if (filters.customerType) params.customerType = filters.customerType;
+      if (filters.dateRange) {
+        const dateRange = getDateRange(filters.dateRange);
+        if (dateRange.startDate) params.startDate = dateRange.startDate;
+        if (dateRange.endDate) params.endDate = dateRange.endDate;
       }
 
       const response = await axios.get(
@@ -94,6 +95,40 @@ export default function PartnerCustomerReport() {
       console.error('Error fetching table data:', error);
     } finally {
       setLoadingTable(false);
+    }
+  };
+
+  const getDateRange = (range) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    switch (range) {
+      case 'today':
+        return {
+          startDate: today.toISOString(),
+          endDate: new Date(today.getTime() + 86400000).toISOString()
+        };
+      case 'week':
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(today.getDate() - today.getDay());
+        return {
+          startDate: startOfWeek.toISOString(),
+          endDate: new Date(startOfWeek.getTime() + 7 * 86400000).toISOString()
+        };
+      case 'month':
+        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        return {
+          startDate: startOfMonth.toISOString(),
+          endDate: new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString()
+        };
+      case 'year':
+        const startOfYear = new Date(today.getFullYear(), 0, 1);
+        return {
+          startDate: startOfYear.toISOString(),
+          endDate: new Date(today.getFullYear() + 1, 0, 0).toISOString()
+        };
+      default:
+        return {};
     }
   };
 
@@ -129,8 +164,8 @@ export default function PartnerCustomerReport() {
   };
 
   // Apply filters
-  const handleFilterApply = (filters) => {
-    setStatusFilter(filters.status || '');
+  const handleFilterApply = (newFilters) => {
+    setFilters(newFilters);
     closeFilterModal();
   };
 
@@ -203,8 +238,6 @@ export default function PartnerCustomerReport() {
   };
 
   const getDocumentStatus = (status) => {
-    // This is a placeholder logic - adjust based on actual business rules
-    // Typically you would have a separate field for document status
     switch (status?.toUpperCase()) {
       case 'ACCEPTED':
         return { status: 'Verified', icon: 'check' };
@@ -336,9 +369,9 @@ export default function PartnerCustomerReport() {
           className="flex items-center border border-black text-black bg-transparent px-3 py-1 rounded hover:bg-gray-100 focus:outline-none focus:ring-1 focus:ring-black text-sm"
         >
           <span className="mr-1">Filter By</span>
-          {statusFilter && (
+          {(filters.status || filters.customerType || filters.dateRange) && (
             <span className="bg-gray-200 px-2 py-0.5 rounded-full text-xs ml-1">
-              Status: {statusFilter}
+              {[filters.status, filters.customerType, filters.dateRange].filter(Boolean).join(', ')}
             </span>
           )}
         </button>
@@ -518,7 +551,7 @@ export default function PartnerCustomerReport() {
           isOpen={isFilterOpen} 
           onClose={closeFilterModal} 
           onApply={handleFilterApply}
-          initialFilters={{ status: statusFilter }}
+          initialFilters={filters}
         />
       )}
       {isSendReminderOpen && (

@@ -1,90 +1,122 @@
 import React from 'react';
-import { FiX } from 'react-icons/fi';
+import { HiOutlineX } from 'react-icons/hi';
+import { inputClass, labelClass, buttonPrimary } from './styles';
 
-/**
- * A modal that closely replicates the third uploaded image:
- * - Gray overlay
- * - White modal with "Export Report" heading
- * - Red "X" icon top-right (#F04438)
- * - Rounded corners (rounded-lg)
- * - Thin <hr> lines after heading and below "Choose document type"
- * - Extended "Cancel" & "Export" buttons side by side
- */
-const ExportReportModal = ({ isOpen, onClose }) => {
+const ExportReportModal = ({ 
+  isOpen, 
+  onClose, 
+  exportRange, 
+  setExportRange, 
+  exportCustomStart, 
+  setExportCustomStart, 
+  exportCustomEnd, 
+  setExportCustomEnd, 
+  onExport 
+}) => {
   if (!isOpen) return null;
 
-  const handleCancel = () => {
-    // Any additional cancel logic
-    onClose();
-  };
-
-  const handleExport = () => {
-    // Export logic here (PDF, Excel, etc.)
-    console.log('Export triggered');
-    onClose();
-  };
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40"
-      aria-labelledby="export-modal"
-      role="dialog"
-      aria-modal="true"
-    >
-      <div className="relative bg-white rounded-lg shadow-lg w-full max-w-sm p-6">
-        {/* Close (X) button in red (#F04438) */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-[#F04438] hover:text-red-600"
-        >
-          <FiX size={20} />
-        </button>
-
-        {/* Modal Title */}
-        <h2 className="text-lg font-semibold text-gray-800">Export Report</h2>
-        <hr className="my-3 border-gray-200" />
-
-        {/* By Facility */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            By Facility:
-          </label>
-          <select className="border border-gray-300 rounded-md w-full p-2 text-sm focus:ring-1 focus:ring-[#039994] focus:outline-none">
-            <option>None</option>
-            <option>Facility 1</option>
-            <option>Facility 2</option>
-            {/* Add more facilities as needed */}
-          </select>
-        </div>
-
-        {/* Choose document type */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Choose document type
-          </label>
-          <select className="border border-gray-300 rounded-md w-full p-2 text-sm focus:ring-1 focus:ring-[#039994] focus:outline-none">
-            <option>PDF</option>
-            <option>Excel</option>
-            {/* Add more doc types as needed */}
-          </select>
-        </div>
-
-        <hr className="mb-4 border-gray-200" />
-
-        {/* Buttons: extended width, side by side */}
-        <div className="flex items-center space-x-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+        <div className="flex items-center justify-between p-4 border-b">
+          <h3 className="text-lg font-medium text-gray-900">Export REC Sales Data</h3>
           <button
-            onClick={handleCancel}
-            className="w-1/2 py-2 bg-gray-100 text-gray-700 text-sm rounded-md"
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-500"
+          >
+            <HiOutlineX className="h-6 w-6" />
+          </button>
+        </div>
+        <div className="p-4 space-y-4">
+          <div>
+            <label className={labelClass}>Export Range</label>
+            <div className="space-y-2">
+              <div className="flex items-center">
+                <input
+                  type="radio"
+                  id="exportAll"
+                  name="exportRange"
+                  value="all"
+                  checked={exportRange === 'all'}
+                  onChange={() => setExportRange('all')}
+                  className="h-4 w-4 text-[#039994] focus:ring-[#039994]"
+                />
+                <label htmlFor="exportAll" className="ml-2 text-sm text-gray-700">
+                  All data
+                </label>
+              </div>
+              <div className="flex items-center">
+                <input
+                  type="radio"
+                  id="export3Months"
+                  name="exportRange"
+                  value="3months"
+                  checked={exportRange === '3months'}
+                  onChange={() => setExportRange('3months')}
+                  className="h-4 w-4 text-[#039994] focus:ring-[#039994]"
+                />
+                <label htmlFor="export3Months" className="ml-2 text-sm text-gray-700">
+                  Last 3 months
+                </label>
+              </div>
+              <div className="flex items-center">
+                <input
+                  type="radio"
+                  id="exportCustom"
+                  name="exportRange"
+                  value="custom"
+                  checked={exportRange === 'custom'}
+                  onChange={() => setExportRange('custom')}
+                  className="h-4 w-4 text-[#039994] focus:ring-[#039994]"
+                />
+                <label htmlFor="exportCustom" className="ml-2 text-sm text-gray-700">
+                  Custom range
+                </label>
+              </div>
+            </div>
+          </div>
+          {exportRange === 'custom' && (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="customStart" className={labelClass}>
+                  Start Date
+                </label>
+                <input
+                  type="date"
+                  id="customStart"
+                  value={exportCustomStart}
+                  onChange={(e) => setExportCustomStart(e.target.value)}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label htmlFor="customEnd" className={labelClass}>
+                  End Date
+                </label>
+                <input
+                  type="date"
+                  id="customEnd"
+                  value={exportCustomEnd}
+                  onChange={(e) => setExportCustomEnd(e.target.value)}
+                  className={inputClass}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="flex justify-end p-4 border-t space-x-2">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
           >
             Cancel
           </button>
           <button
-            onClick={handleExport}
-            className="w-1/2 py-2 text-white text-sm rounded-md"
-            style={{ backgroundColor: '#039994' }}
+            onClick={onExport}
+            className={`px-4 py-2 text-sm font-medium text-white rounded-md ${buttonPrimary}`}
+            disabled={exportRange === 'custom' && (!exportCustomStart || !exportCustomEnd)}
           >
-            Export
+            Export CSV
           </button>
         </div>
       </div>

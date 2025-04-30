@@ -5,7 +5,7 @@ import DashboardSidebar from '../../components/dashboard/residence-dashboard/Das
 import DashboardNavbar from '../../components/dashboard/residence-dashboard/DashboardNavbar';
 import DashboardOverview from '../../components/dashboard/residence-dashboard/overview/DashboardOverview';
 import Transaction from '../../components/dashboard/residence-dashboard/transaction/Transaction';
-import ResidentialManagement from '../../components/dashboard/residence-dashboard/residential-management/ResidentialManagement';
+import ResidentialManagement from '../../components/dashboard/residence-dashboard/residential-management/RECSalesAndReport';
 import DashboardContactSupport from '../../components/dashboard/residence-dashboard/ContactSupport';
 import DashboardHelpCentre from '../../components/dashboard/residence-dashboard/HelpCentre';
 import DashboardNotifications from '../../components/dashboard/residence-dashboard/Notifications';
@@ -18,8 +18,11 @@ export default function UserDashboard() {
 
   const handleSectionChange = (section) => {
     setActiveSection(section);
-    // Close sidebar on mobile after selection
     setSidebarOpen(false);
+  };
+
+  const handleNavigateToOverview = () => {
+    setActiveSection('overview');
   };
 
   const toggleSidebar = () => {
@@ -86,6 +89,7 @@ export default function UserDashboard() {
           toggleSidebar={toggleSidebar}
           selectedSection={activeSection}
           sectionDisplayMap={sectionDisplayMap}
+          onSectionChange={handleSectionChange}
         />
 
         {/* Mobile Sidebar Overlay */}
@@ -110,7 +114,13 @@ export default function UserDashboard() {
         {/* Main Content */}
         <main className="flex-1">
           <div className="max-w-7xl mx-auto p-6">
-            <SectionComponent />
+            {activeSection === 'logout' ? (
+              <DashboardLogout 
+                onNavigateToOverview={handleNavigateToOverview}
+              />
+            ) : (
+              <SectionComponent />
+            )}
           </div>
         </main>
       </div>

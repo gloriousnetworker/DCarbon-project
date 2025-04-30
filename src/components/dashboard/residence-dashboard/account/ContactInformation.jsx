@@ -5,7 +5,6 @@ import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
 
 const ContactInformation = () => {
-  // Inline style classes
   const sectionHeader = "flex items-center justify-between cursor-pointer";
   const sectionTitle = "text-lg font-semibold text-[#039994] font-sfpro";
   const labelClass = "text-sm text-gray-700 mb-1 block font-sfpro";
@@ -13,20 +12,18 @@ const ContactInformation = () => {
     "border border-gray-300 rounded w-full px-3 py-2 focus:outline-none font-sfpro text-[14px] leading-[100%] tracking-[-0.05em]";
   const inputStyle = { backgroundColor: "#F0F0F0" };
 
-  // Local state for collapsible section and fields
   const [isOpen, setIsOpen] = useState(true);
-  const [ownerFullName, setOwnerFullName] = useState("");
-  const [ownerWebsite, setOwnerWebsite] = useState("");
-  const [phonePrefix, setPhonePrefix] = useState("+234");
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [ownerAddress, setOwnerAddress] = useState("");
-  const [commercialRole, setCommercialRole] = useState("");
-  const [entityType, setEntityType] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [userType, setUserType] = useState("");
+  const [referralCode, setReferralCode] = useState("");
   const [loading, setLoading] = useState(true);
 
-  // Fetch contact information from API
+  const baseUrl = "https://services.dcarbon.solutions";
+
   useEffect(() => {
-    const fetchContactInfo = async () => {
+    const fetchUserInfo = async () => {
       const userId = localStorage.getItem("userId");
       const authToken = localStorage.getItem("authToken");
 
@@ -38,7 +35,7 @@ const ContactInformation = () => {
 
       try {
         const response = await axios.get(
-          `https://dcarbon-server.onrender.com/api/user/get-commercial-user/${userId}`,
+          `${baseUrl}/api/user/get-one-user/${userId}`,
           {
             headers: {
               Authorization: `Bearer ${authToken}`,
@@ -46,41 +43,26 @@ const ContactInformation = () => {
           }
         );
 
-        const { commercialUser } = response.data.data;
-        
-        if (commercialUser) {
-          setOwnerFullName(commercialUser.ownerFullName || "");
-          setOwnerWebsite(commercialUser.ownerWebsite || "");
-          
-          // Handle phone number
-          if (commercialUser.phoneNumber) {
-            if (commercialUser.phoneNumber.startsWith("+")) {
-              setPhonePrefix(commercialUser.phoneNumber.slice(0, 4));
-              setPhoneNumber(commercialUser.phoneNumber.slice(4));
-            } else {
-              setPhoneNumber(commercialUser.phoneNumber);
-            }
-          }
-          
-          setOwnerAddress(commercialUser.ownerAddress || "");
-          setCommercialRole(commercialUser.commercialRole || "");
-          setEntityType(commercialUser.entityType || "");
-        }
+        const user = response.data.data;
+
+        setFirstName(user.firstName || "");
+        setLastName(user.lastName || "");
+        setEmail(user.email || "");
+        setUserType(user.userType || "");
+        setReferralCode(user.referralCode || "");
       } catch (error) {
-        console.error("Error fetching contact information:", error);
         toast.error(
-          error.response?.data?.message || 
-          "Failed to fetch contact information"
+          error.response?.data?.message || "Failed to fetch user information"
         );
+        console.error("Error fetching user data:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchContactInfo();
+    fetchUserInfo();
   }, []);
 
-  // Handle update to send PUT request with the correct payload
   const handleUpdate = async () => {
     const userId = localStorage.getItem("userId");
     const authToken = localStorage.getItem("authToken");
@@ -91,17 +73,14 @@ const ContactInformation = () => {
     }
 
     const payload = {
-      entityType: "individual",
-      commercialRole: "owner",
-      ownerFullName: ownerFullName,
-      phoneNumber: `${phonePrefix}${phoneNumber}`,
-      ownerAddress: ownerAddress,
-      ownerWebsite: ownerWebsite || undefined,
+      firstName,
+      lastName,
+      email,
     };
 
     try {
       await axios.put(
-        `https://dcarbon-server.onrender.com/api/user/commercial-registration/${userId}`,
+        `${baseUrl}/api/user/${userId}`,
         payload,
         {
           headers: {
@@ -110,11 +89,11 @@ const ContactInformation = () => {
           },
         }
       );
-      toast.success("Contact information updated successfully");
+      toast.success("User information updated successfully");
     } catch (error) {
-      const errorMessage =
-        error.response?.data?.message || error.message || "Update failed";
-      toast.error(errorMessage);
+      toast.error(
+        error.response?.data?.message || "Failed to update user information"
+      );
       console.error("Update error:", error);
     }
   };
@@ -132,13 +111,9 @@ const ContactInformation = () => {
         </div>
         {isOpen && (
           <div className="mt-4 space-y-4">
-            <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
-            <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
-            <div className="flex gap-2">
-              <div className="h-8 bg-gray-200 rounded w-20 animate-pulse"></div>
-              <div className="h-8 bg-gray-200 rounded flex-1 animate-pulse"></div>
-            </div>
-            <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-8 bg-gray-200 rounded animate-pulse"></div>
+            ))}
           </div>
         )}
       </div>
@@ -149,7 +124,7 @@ const ContactInformation = () => {
     <div className="border-b border-gray-200 pb-4 mb-4">
       <Toaster />
       <div className={sectionHeader} onClick={() => setIsOpen(!isOpen)}>
-        <h2 className={sectionTitle}>Contact Information</h2>
+        <h2 className={sectionTitle}>Personal Information</h2>
         {isOpen ? (
           <FaChevronUp className="text-[#039994]" size={20} />
         ) : (
@@ -159,86 +134,69 @@ const ContactInformation = () => {
 
       {isOpen && (
         <div className="mt-4 space-y-4">
-          {/* Full Name */}
-          <div>
-            <label className={labelClass}>Full Name</label>
-            <input
-              type="text"
-              value={ownerFullName}
-              onChange={(e) => setOwnerFullName(e.target.value)}
-              className={inputClass}
-              style={inputStyle}
-              placeholder="Owner's Full Name"
-            />
-          </div>
-          {/* Website */}
-          <div>
-            <label className={labelClass}>Website</label>
-            <input
-              type="text"
-              value={ownerWebsite}
-              onChange={(e) => setOwnerWebsite(e.target.value)}
-              className={inputClass}
-              style={inputStyle}
-              placeholder="e.g. www.example.com"
-            />
-          </div>
-          {/* Phone Number */}
-          <div>
-            <label className={labelClass}>Phone Number</label>
-            <div className="grid grid-cols-[80px_1fr] gap-2">
+          {/* First and Last Name in a single row */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass}>First Name</label>
               <input
                 type="text"
-                value={phonePrefix}
-                onChange={(e) => setPhonePrefix(e.target.value)}
-                className={`${inputClass} w-20`}
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                className={inputClass}
                 style={inputStyle}
-                placeholder="+234"
+                placeholder="First Name"
               />
+            </div>
+            <div>
+              <label className={labelClass}>Last Name</label>
               <input
-                type="tel"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                className={`${inputClass} flex-1`}
+                type="text"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                className={inputClass}
                 style={inputStyle}
-                placeholder="e.g. 1234567890"
+                placeholder="Last Name"
               />
             </div>
           </div>
-          {/* Address */}
+
+          {/* Email */}
           <div>
-            <label className={labelClass}>Address</label>
+            <label className={labelClass}>Email</label>
             <input
-              type="text"
-              value={ownerAddress}
-              onChange={(e) => setOwnerAddress(e.target.value)}
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className={inputClass}
               style={inputStyle}
-              placeholder="e.g. Nigeria, Uyo"
+              placeholder="Email"
             />
           </div>
-          {/* Commercial Role (read-only) */}
-          <div>
-            <label className={labelClass}>Commercial Role</label>
-            <input
-              type="text"
-              value={commercialRole}
-              readOnly
-              className={inputClass}
-              style={inputStyle}
-            />
+
+          {/* User Type & Referral Code */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass}>User Type</label>
+              <input
+                type="text"
+                value={userType}
+                readOnly
+                className={inputClass}
+                style={inputStyle}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Referral Code</label>
+              <input
+                type="text"
+                value={referralCode}
+                readOnly
+                className={inputClass}
+                style={inputStyle}
+              />
+            </div>
           </div>
-          {/* Entity Type (read-only) */}
-          <div>
-            <label className={labelClass}>Entity Type</label>
-            <input
-              type="text"
-              value={entityType}
-              readOnly
-              className={inputClass}
-              style={inputStyle}
-            />
-          </div>
+
           {/* Update Button */}
           <div>
             <button
