@@ -119,38 +119,53 @@ export default function CustomerDetails({ customer, onBack }) {
   
       if (res.data.status === 'success') {
         const data = res.data.data;
-        console.log('Upload response:', data); // Add this for debugging
-  
-        // Enhanced field mapping
-        const urlKeyMap = {
-          nemAgreement: 'interconnectionAgreementUrl',
-          meterIdPhoto: 'meterIdPhotoUrl',
-          installerAgreement: 'installerAgreementUrl',
-          singleLineDiagram: 'singleLineDiagramUrl',
-          utilityPtoLetter: 'utilityPTOLetterUrl',
-        };
-  
+        
+        // Create a mapping between our keys and the API response keys
         const statusKeyMap = {
-          nemAgreement: 'interconnectionAgreementStatus',
-          meterIdPhoto: 'meterIdPhotoStatus',
+          nemAgreement: 'interconnectionStatus',
+          meterIdPhoto: 'meterIdStatus',
           installerAgreement: 'installerAgreementStatus',
           singleLineDiagram: 'singleLineDiagramStatus',
           utilityPtoLetter: 'utilityPTOLetterStatus',
         };
-  
-        // Get the URL and status from the response
-        const newUrl = data[urlKeyMap[key]] || data[field.endpoint + 'Url'];
-        const newStatus = data[statusKeyMap[key]] || 
-                         data[field.endpoint + 'Status'] || 
-                         'submitted';
-  
+        
+        // Get the status from the response
+        const statusFromApi = data[statusKeyMap[key]]?.toLowerCase() || 'submitted';
+        
+        // Determine the display status
+        let displayStatus;
+        switch(statusFromApi) {
+          case 'approved':
+            displayStatus = 'Approved';
+            break;
+          case 'rejected':
+            displayStatus = 'Rejected';
+            break;
+          case 'required':
+            displayStatus = 'Required';
+            break;
+          default:
+            displayStatus = 'Submitted';
+        }
+        
+        // Get the URL from the response
+        const urlKeyMap = {
+          nemAgreement: 'interconnectionAgreement',
+          meterIdPhoto: 'meterIdPhoto',
+          installerAgreement: 'installerAgreement',
+          singleLineDiagram: 'singleLineDiagram',
+          utilityPtoLetter: 'utilityPTOLetter',
+        };
+        
+        const newUrl = data[urlKeyMap[key]] || null;
+
         // Update the state with the new document info
         setDocs(prev => ({
           ...prev,
           [key]: {
             file: file.name,
             url: newUrl,
-            status: newStatus ? (newStatus.charAt(0).toUpperCase() + newStatus.slice(1).toLowerCase()) : 'Submitted',
+            status: displayStatus,
           }
         }));
         
@@ -163,8 +178,8 @@ export default function CustomerDetails({ customer, onBack }) {
               [key]: {
                 fileName: file.name,
                 url: newUrl,
-                approved: newStatus.toLowerCase() === 'approved',
-                rejected: newStatus.toLowerCase() === 'rejected',
+                approved: displayStatus === 'Approved',
+                rejected: displayStatus === 'Rejected',
               }
             }
           }));
