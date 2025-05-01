@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense } from 'react';
-import VerificationContent from '../../../../../components/residence/Verification';
+import VerificationContent from '../../../../../components/operator-registration/Verification';
 
 export default function UtilityVerificationPage() {
   return (

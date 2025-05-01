@@ -20,8 +20,6 @@ import {
   labelClass,
   selectClass,
   inputClass,
-  fileInputWrapper,
-  noteText,
   rowWrapper,
   halfWidth,
   grayPlaceholder,
@@ -144,6 +142,9 @@ export default function StepOneCard() {
         }
       );
 
+      // Save response to local storage
+      localStorage.setItem('financialInfoResponse', JSON.stringify(infoResponse.data));
+
       toast.success('Financial information saved successfully!', { id: toastId });
 
       // If document is required, upload it
@@ -161,7 +162,7 @@ export default function StepOneCard() {
           const formData = new FormData();
           formData.append('financialAgreement', fileToUpload);
 
-          await axios.put(
+          const uploadResponse = await axios.put(
             `https://services.dcarbon.solutions/api/user/update-financial-agreement/${userId}`,
             formData,
             {
@@ -171,6 +172,9 @@ export default function StepOneCard() {
               }
             }
           );
+
+          // Save upload response to local storage
+          localStorage.setItem('financialAgreementResponse', JSON.stringify(uploadResponse.data));
 
           toast.success('Financial agreement uploaded successfully!', { id: uploadToastId });
           localStorage.removeItem('tempFinancialAgreement');
