@@ -5,7 +5,7 @@ import DashboardSidebar from '../../components/dashboard/residence-dashboard/Das
 import DashboardNavbar from '../../components/dashboard/residence-dashboard/DashboardNavbar';
 import DashboardOverview from '../../components/dashboard/residence-dashboard/overview/DashboardOverview';
 import Transaction from '../../components/dashboard/residence-dashboard/transaction/Transaction';
-import ResidentialManagement from '../../components/dashboard/residence-dashboard/residential-management/RECSalesAndReport';
+import ResidentialManagement from '../../components/dashboard/residence-dashboard/residential-management/ResidentialManagement';
 import DashboardContactSupport from '../../components/dashboard/residence-dashboard/ContactSupport';
 import DashboardHelpCentre from '../../components/dashboard/residence-dashboard/HelpCentre';
 import DashboardNotifications from '../../components/dashboard/residence-dashboard/Notifications';

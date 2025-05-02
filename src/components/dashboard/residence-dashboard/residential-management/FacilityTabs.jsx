@@ -37,19 +37,19 @@ export default function FacilityTabs({
 
       {/* Right side: Filter + Add Facility */}
       <div className="flex items-center space-x-2">
-        <button
+        {/* <button
           onClick={onFilter}
           className="flex items-center space-x-1 border border-gray-300 px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-gray-50"
         >
           <FiFilter />
           <span>Filter by</span>
-        </button>
+        </button> */}
 
         <button
           onClick={onAddFacility}
           className="bg-[#039994] text-white px-3 py-2 rounded-md text-sm hover:bg-[#028c8c]"
         >
-          + Add Commercial Facility
+          + Add Residential Facility
         </button>
       </div>
     </div>

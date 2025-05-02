@@ -1,129 +1,171 @@
-import React from 'react';
-import { HiOutlineX } from 'react-icons/hi';
-import { inputClass, labelClass, buttonPrimary } from './styles';
+// FilterModal.jsx
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { FiX } from "react-icons/fi";
+import { labelClass, selectClass, buttonPrimary } from "./styles";
 
-const FilterModal = ({
-  isOpen,
-  onClose,
-  filters,
-  onFilterChange,
-  onApplyFilters,
-  onResetFilters
-}) => {
-  if (!isOpen) return null;
+export default function FilterModal({ onClose, onApplyFilter }) {
+  const [name, setName] = useState("");
+  const [role, setRole] = useState("All");
+  const [entityType, setEntityType] = useState("All");
+  const [utilities, setUtilities] = useState([]);
+  const [utility, setUtility] = useState("All");
+  const [meterId, setMeterId] = useState("");
+  const [status, setStatus] = useState("All");
+  const [createdDate, setCreatedDate] = useState("");
+
+  useEffect(() => {
+    const fetchUtilities = async () => {
+      const authToken = localStorage.getItem("authToken");
+      try {
+        const res = await axios.get(
+          "https://services.dcarbon.solutions/api/auth/utility-providers",
+          { headers: { Authorization: `Bearer ${authToken}` } }
+        );
+        setUtilities(res.data.data || []);
+      } catch (err) {
+        console.error("Failed to load utilities", err);
+      }
+    };
+    fetchUtilities();
+  }, []);
+
+  const handleClear = () => {
+    setName("");
+    setRole("All");
+    setEntityType("All");
+    setUtility("All");
+    setMeterId("");
+    setStatus("All");
+    setCreatedDate("");
+  };
+
+  const handleDone = () => {
+    onApplyFilter({ name, role, entityType, utility, meterId, status, createdDate });
+    onClose();
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b">
-          <h3 className="text-lg font-medium text-gray-900">Filter REC Sales</h3>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-500"
-          >
-            <HiOutlineX className="h-6 w-6" />
-          </button>
+      <div className="bg-white w-full max-w-md rounded-lg shadow-lg p-4 relative">
+        <button onClick={onClose} className="absolute top-3 right-3 text-[#F04438] hover:text-red-600">
+          <FiX size={18} />
+        </button>
+
+        <h2 className="text-lg font-semibold mb-4" style={{ color: "#039994" }}>
+          Filter Facilities
+        </h2>
+
+        {/* Name (full width) */}
+        <div className="mb-4">
+          <label className={labelClass}>By Name</label>
+          <input
+            type="text"
+            value={name}
+            onChange={e => setName(e.target.value)}
+            className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none text-sm"
+            placeholder="Type facility name"
+          />
         </div>
 
-        {/* Form Fields */}
-        <div className="p-4 space-y-4">
+        {/* Role & Entity Type */}
+        <div className="grid grid-cols-2 gap-4 mb-4">
           <div>
-            <label htmlFor="generatorId" className={labelClass}>
-              Generator ID
-            </label>
-            <input
-              type="text"
-              id="generatorId"
-              name="generatorId"
-              value={filters.generatorId}
-              onChange={onFilterChange}
-              className={inputClass}
-              placeholder="Enter Generator ID"
-            />
+            <label className={labelClass}>By Role</label>
+            <select
+              value={role}
+              onChange={e => setRole(e.target.value)}
+              className={selectClass}
+            >
+              <option>All</option>
+              <option>Owner</option>
+              <option>Operator</option>
+              <option>Both</option>
+            </select>
           </div>
           <div>
-            <label htmlFor="reportingUnitId" className={labelClass}>
-              Reporting Unit ID
-            </label>
-            <input
-              type="text"
-              id="reportingUnitId"
-              name="reportingUnitId"
-              value={filters.reportingUnitId}
-              onChange={onFilterChange}
-              className={inputClass}
-              placeholder="Enter Reporting Unit ID"
-            />
-          </div>
-          <div>
-            <label htmlFor="vintage" className={labelClass}>
-              Vintage
-            </label>
-            <input
-              type="text"
-              id="vintage"
-              name="vintage"
-              value={filters.vintage}
-              onChange={onFilterChange}
-              className={inputClass}
-              placeholder="Enter Vintage"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="startDate" className={labelClass}>
-                Start Date
-              </label>
-              <input
-                type="date"
-                id="startDate"
-                name="startDate"
-                value={filters.startDate}
-                onChange={onFilterChange}
-                className={inputClass}
-              />
-            </div>
-            <div>
-              <label htmlFor="endDate" className={labelClass}>
-                End Date
-              </label>
-              <input
-                type="date"
-                id="endDate"
-                name="endDate"
-                value={filters.endDate}
-                onChange={onFilterChange}
-                className={inputClass}
-              />
-            </div>
+            <label className={labelClass}>By Entity Type</label>
+            <select
+              value={entityType}
+              onChange={e => setEntityType(e.target.value)}
+              className={selectClass}
+            >
+              <option>All</option>
+              <option>Individual</option>
+              <option>Company</option>
+            </select>
           </div>
         </div>
 
-        {/* Footer Buttons */}
-        <div className="flex justify-end items-center gap-3 p-4 border-t">
-          <button
-            onClick={onResetFilters}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
+        {/* Utility (full width) */}
+        <div className="mb-4">
+          <label className={labelClass}>By Utility</label>
+          <select
+            value={utility}
+            onChange={e => setUtility(e.target.value)}
+            className={selectClass}
           >
-            Reset Filters
+            <option>All</option>
+            {utilities.map(u => (
+              <option key={u.id} value={u.name}>{u.name}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Meter ID & Status */}
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className={labelClass}>By Meter ID</label>
+            <input
+              type="text"
+              value={meterId}
+              onChange={e => setMeterId(e.target.value)}
+              className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none text-sm"
+              placeholder="Meter ID"
+            />
+          </div>
+          <div>
+            <label className={labelClass}>By Status</label>
+            <select
+              value={status}
+              onChange={e => setStatus(e.target.value)}
+              className={selectClass}
+            >
+              <option>All</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Created Date (full width) */}
+        <div className="mb-4">
+          <label className={labelClass}>By Creation Date</label>
+          <input
+            type="date"
+            value={createdDate}
+            onChange={e => setCreatedDate(e.target.value)}
+            className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none text-sm"
+          />
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center justify-between mt-2">
+          <button
+            onClick={handleClear}
+            className="flex-1 py-2 bg-gray-100 text-gray-700 text-sm rounded hover:bg-gray-200 mr-2"
+          >
+            Clear
           </button>
           <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+            onClick={handleDone}
+            className={`flex-1 py-2 text-sm rounded ${buttonPrimary}`}
           >
-            Cancel
-          </button>
-          <button
-            onClick={onApplyFilters}
-            className={`px-4 py-2 text-sm font-medium text-white rounded-md ${buttonPrimary}`}
-          >
-            Apply Filters
+            Apply
           </button>
         </div>
       </div>
     </div>
-  );
-};
-
-export default FilterModal;
+);
+}
