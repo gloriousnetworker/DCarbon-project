@@ -1,11 +1,11 @@
-// FacilityCardView.jsx
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { FiChevronRight } from "react-icons/fi";
+import { FiChevronRight, FiEdit2, FiTrash2 } from "react-icons/fi";
 import toast from "react-hot-toast";
 import FilterModal from "./FilterModal";
 import FacilityDetails from "./FacilityDetails";
 import { pageTitle } from "./styles";
+import ConfirmationModal from "./ConfirmationModal";
 
 export default function FacilityCardView() {
   const [facilities, setFacilities] = useState([]);
@@ -21,33 +21,37 @@ export default function FacilityCardView() {
     installer: "All"
   });
   const [selectedFacility, setSelectedFacility] = useState(null);
+  const [facilityToDelete, setFacilityToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const fetchFacilities = async () => {
+    const userId = localStorage.getItem("userId");
+    const authToken = localStorage.getItem("authToken");
+    if (!userId || !authToken) {
+      toast.error("Authentication required");
+      setLoading(false);
+      return;
+    }
+    try {
+      const { data } = await axios.get(
+        `https://services.dcarbon.solutions/api/residential-facility/get-user-facilities/${userId}`,
+        { headers: { Authorization: `Bearer ${authToken}` } }
+      );
+      if (data.status === "success") {
+        setFacilities(data.data.facilities);
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error(err.message || "Failed to load facilities");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    (async () => {
-      const userId = localStorage.getItem("userId");
-      const authToken = localStorage.getItem("authToken");
-      if (!userId || !authToken) {
-        toast.error("Authentication required");
-        setLoading(false);
-        return;
-      }
-      try {
-        const { data } = await axios.get(
-          `https://services.dcarbon.solutions/api/residential-facility/get-user-facilities/${userId}`,
-          { headers: { Authorization: `Bearer ${authToken}` } }
-        );
-        if (data.status === "success") {
-          setFacilities(data.data.facilities);
-        } else {
-          throw new Error(data.message);
-        }
-      } catch (err) {
-        console.error(err);
-        toast.error(err.message || "Failed to load facilities");
-      } finally {
-        setLoading(false);
-      }
-    })();
+    fetchFacilities();
   }, []);
 
   const handleApplyFilter = newFilters => {
@@ -62,6 +66,35 @@ export default function FacilityCardView() {
       month: "short",
       day: "numeric",
     });
+  };
+
+  const handleDeleteFacility = async () => {
+    if (!facilityToDelete) return;
+    
+    setIsDeleting(true);
+    try {
+      const authToken = localStorage.getItem("authToken");
+      const { data } = await axios.delete(
+        `https://services.dcarbon.solutions/api/residential-facility/${facilityToDelete.id}`,
+        { headers: { Authorization: `Bearer ${authToken}` } }
+      );
+
+      if (data.status === "success") {
+        toast.success("Facility deleted successfully");
+        setFacilityToDelete(null);
+        fetchFacilities();
+        if (selectedFacility?.id === facilityToDelete.id) {
+          setSelectedFacility(null);
+        }
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error(err.message || "Failed to delete facility");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const filteredFacilities = facilities
@@ -108,12 +141,32 @@ export default function FacilityCardView() {
         <FacilityDetails
           facility={selectedFacility}
           onBack={() => setSelectedFacility(null)}
+          onFacilityUpdated={(updatedFacility) => {
+            setFacilities(prev => prev.map(f => 
+              f.id === updatedFacility.id ? updatedFacility : f
+            ));
+            setSelectedFacility(updatedFacility);
+          }}
+          onDelete={async () => {
+            try {
+              const authToken = localStorage.getItem("authToken");
+              await axios.delete(
+                `https://services.dcarbon.solutions/api/residential-facility/${selectedFacility.id}`,
+                { headers: { Authorization: `Bearer ${authToken}` } }
+              );
+              toast.success("Facility deleted successfully");
+              setSelectedFacility(null);
+              fetchFacilities();
+            } catch (err) {
+              console.error(err);
+              toast.error(err.message || "Failed to delete facility");
+            }
+          }}
         />
       </div>
     );
   }
 
-  // Otherwise render the filter + grid
   return (
     <div className="p-2">
       <div className="flex justify-between items-center mb-4">
@@ -141,13 +194,36 @@ export default function FacilityCardView() {
           {filteredFacilities.map(facility => (
             <div
               key={facility.id}
-              onClick={() => setSelectedFacility(facility)}
-              className="border border-[#039994] rounded-lg bg-white cursor-pointer hover:shadow transition-shadow flex flex-col justify-between p-2"
+              className="border border-[#039994] rounded-lg bg-white hover:shadow transition-shadow flex flex-col justify-between p-2"
             >
               <div>
-                <h3 className="font-semibold text-base text-[#039994] mb-1">
-                  {facility.address}
-                </h3>
+                <div className="flex justify-between items-start mb-1">
+                  <h3 className="font-semibold text-base text-[#039994]">
+                    {facility.address}
+                  </h3>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedFacility(facility);
+                      }}
+                      className="text-[#039994] hover:text-[#027a76]"
+                      title="Edit"
+                    >
+                      <FiEdit2 size={16} />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setFacilityToDelete(facility);
+                      }}
+                      className="text-red-500 hover:text-red-700"
+                      title="Delete"
+                    >
+                      <FiTrash2 size={16} />
+                    </button>
+                  </div>
+                </div>
                 <div className="grid grid-cols-2 gap-y-1 text-xs">
                   <span className="font-medium">Utility:</span>
                   <span>{facility.utilityProvider}</span>
@@ -175,7 +251,8 @@ export default function FacilityCardView() {
                 </div>
               </div>
               <div
-                className="flex items-center justify-between mt-2 px-1 py-1"
+                onClick={() => setSelectedFacility(facility)}
+                className="flex items-center justify-between mt-2 px-1 py-1 cursor-pointer"
                 style={{ backgroundColor: "#069B9621" }}
               >
                 <span className="text-[#039994] text-xs font-medium">
@@ -192,6 +269,17 @@ export default function FacilityCardView() {
         <FilterModal
           onClose={() => setShowFilterModal(false)}
           onApplyFilter={handleApplyFilter}
+        />
+      )}
+
+      {facilityToDelete && (
+        <ConfirmationModal
+          isOpen={!!facilityToDelete}
+          onClose={() => setFacilityToDelete(null)}
+          onConfirm={handleDeleteFacility}
+          title="Confirm Delete"
+          message={`Are you sure you want to delete the facility at ${facilityToDelete.address}?`}
+          isLoading={isDeleting}
         />
       )}
     </div>

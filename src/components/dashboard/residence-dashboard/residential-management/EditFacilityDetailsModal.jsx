@@ -1,188 +1,223 @@
 import React, { useState } from "react";
-import { FiX } from "react-icons/fi";
 import axios from "axios";
 import toast from "react-hot-toast";
-import {
-  labelClass,
-  inputClass,
-  buttonPrimary,
-  spinnerOverlay,
-  spinner
-} from "./styles";
+import { FiX } from "react-icons/fi";
 
 export default function EditFacilityDetailsModal({ facility, onClose, onSave }) {
   const [formData, setFormData] = useState({
-    facilityName: facility.facilityName || "",
-    address: facility.address || "",
-    utilityProvider: facility.utilityProvider || "",
-    meterId: facility.meterId || "",
-    commercialRole: facility.commercialRole || "",
-    entityType: facility.entityType || ""
+    address: facility.address,
+    utilityProvider: facility.utilityProvider,
+    meterId: facility.meterId,
+    status: facility.status,
+    financeType: facility.financeType,
+    financeCompany: facility.financeCompany,
+    installer: facility.installer,
+    zipCode: facility.zipCode,
+    facilityName: facility.facilityName,
+    commercialRole: facility.commercialRole,
+    entityType: facility.entityType
   });
+
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSave = async () => {
-    const userId = localStorage.getItem("userId");
-    const authToken = localStorage.getItem("authToken");
-
-    if (!userId || !authToken) {
-      toast.error("Authentication required");
-      return;
-    }
-
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
     try {
-      setLoading(true);
-      const response = await axios.put(
-        `https://services.dcarbon.solutions/api/facility/update-facility/${facility.id}`,
+      const authToken = localStorage.getItem("authToken");
+      const { data } = await axios.put(
+        `https://services.dcarbon.solutions/api/residential-facility/update-facility/${facility.id}`,
         formData,
-        {
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-            "Content-Type": "application/json"
-          }
-        }
+        { headers: { Authorization: `Bearer ${authToken}` } }
       );
 
-      if (response.data.status === "success") {
+      if (data.status === "success") {
         toast.success("Facility updated successfully");
-        onSave(response.data.data);
+        onSave(data.data.facility);
         onClose();
       } else {
-        throw new Error(response.data.message || "Failed to update facility");
+        throw new Error(data.message);
       }
-    } catch (error) {
-      console.error("Error updating facility:", error);
-      toast.error(error.response?.data?.message || "Failed to update facility");
+    } catch (err) {
+      console.error(err);
+      toast.error(err.message || "Failed to update facility");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-      {loading && (
-        <div className={spinnerOverlay}>
-          <div className={spinner}></div>
-        </div>
-      )}
-
-      <div className="relative bg-white rounded-lg shadow-lg w-full max-w-md p-6">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
-          disabled={loading}
-        >
-          <FiX size={20} />
-        </button>
-
-        <h2 className="text-lg font-semibold text-gray-800">Edit Facility Details</h2>
-        <hr className="my-3 border-gray-200" />
-
-        <div className="space-y-4">
-          <div>
-            <label className={labelClass}>Facility Name</label>
-            <input
-              type="text"
-              name="facilityName"
-              value={formData.facilityName}
-              onChange={handleChange}
-              className={inputClass}
-              disabled={loading}
-            />
-          </div>
-
-          <div>
-            <label className={labelClass}>Address</label>
-            <textarea
-              name="address"
-              value={formData.address}
-              onChange={handleChange}
-              className={inputClass}
-              rows={2}
-              disabled={loading}
-            />
-          </div>
-
-          <div>
-            <label className={labelClass}>Utility Provider</label>
-            <input
-              type="text"
-              name="utilityProvider"
-              value={formData.utilityProvider}
-              onChange={handleChange}
-              className={inputClass}
-              disabled={loading}
-            />
-          </div>
-
-          <div>
-            <label className={labelClass}>Meter ID</label>
-            <input
-              type="text"
-              name="meterId"
-              value={formData.meterId}
-              onChange={handleChange}
-              className={inputClass}
-              disabled={loading}
-            />
-          </div>
-
-          <div>
-            <label className={labelClass}>Commercial Role</label>
-            <select
-              name="commercialRole"
-              value={formData.commercialRole}
-              onChange={handleChange}
-              className={inputClass}
-              disabled={loading}
-            >
-              <option value="owner">Owner</option>
-              <option value="operator">Operator</option>
-              <option value="both">Both</option>
-            </select>
-          </div>
-
-          <div>
-            <label className={labelClass}>Entity Type</label>
-            <select
-              name="entityType"
-              value={formData.entityType}
-              onChange={handleChange}
-              className={inputClass}
-              disabled={loading}
-            >
-              <option value="individual">Individual</option>
-              <option value="company">Company</option>
-            </select>
-          </div>
-        </div>
-
-        <hr className="my-4 border-gray-200" />
-
-        <div className="flex items-center space-x-4">
-          <button
-            onClick={onClose}
-            disabled={loading}
-            className="w-1/2 py-2 bg-gray-100 text-gray-700 text-sm rounded-md hover:bg-gray-200"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={loading}
-            className={`w-1/2 ${buttonPrimary}`}
-          >
-            {loading ? "Saving..." : "Save"}
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-2xl">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-semibold">Edit Facility Details</h3>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+            <FiX size={24} />
           </button>
         </div>
+        
+        <form onSubmit={handleSubmit}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Facility Name</label>
+              <input
+                type="text"
+                name="facilityName"
+                value={formData.facilityName}
+                onChange={handleChange}
+                className="w-full p-2 border border-gray-300 rounded"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Commercial Role</label>
+              <select
+                name="commercialRole"
+                value={formData.commercialRole}
+                onChange={handleChange}
+                className="w-full p-2 border border-gray-300 rounded"
+              >
+                <option value="producer">Residential</option>
+                <option value="consumer">Owner</option>
+                <option value="prosumer">Operator</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Entity Type</label>
+              <select
+                name="entityType"
+                value={formData.entityType}
+                onChange={handleChange}
+                className="w-full p-2 border border-gray-300 rounded"
+              >
+                <option value="individual">Individual</option>
+                <option value="business">Business</option>
+                <option value="government">Government</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+              <input
+                type="text"
+                name="address"
+                value={formData.address}
+                onChange={handleChange}
+                className="w-full p-2 border border-gray-300 rounded"
+                required
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Utility Provider</label>
+              <input
+                type="text"
+                name="utilityProvider"
+                value={formData.utilityProvider}
+                onChange={handleChange}
+                className="w-full p-2 border border-gray-300 rounded"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Meter ID</label>
+              <input
+                type="text"
+                name="meterId"
+                value={formData.meterId}
+                onChange={handleChange}
+                className="w-full p-2 border border-gray-300 rounded"
+                required
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <select
+                name="status"
+                value={formData.status}
+                onChange={handleChange}
+                className="w-full p-2 border border-gray-300 rounded"
+              >
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="pending">Pending</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Finance Type</label>
+              <select
+                name="financeType"
+                value={formData.financeType}
+                onChange={handleChange}
+                className="w-full p-2 border border-gray-300 rounded"
+              >
+                <option value="owned">Owned</option>
+                <option value="leased">Leased</option>
+                <option value="ppa">PPA</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Finance Company</label>
+              <input
+                type="text"
+                name="financeCompany"
+                value={formData.financeCompany}
+                onChange={handleChange}
+                className="w-full p-2 border border-gray-300 rounded"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Installer</label>
+              <input
+                type="text"
+                name="installer"
+                value={formData.installer}
+                onChange={handleChange}
+                className="w-full p-2 border border-gray-300 rounded"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Zip Code</label>
+              <input
+                type="text"
+                name="zipCode"
+                value={formData.zipCode}
+                onChange={handleChange}
+                className="w-full p-2 border border-gray-300 rounded"
+              />
+            </div>
+          </div>
+          
+          <div className="mt-6 flex justify-end space-x-3">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={loading}
+              className="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-4 py-2 bg-[#039994] text-white rounded hover:bg-[#027a76] disabled:opacity-50"
+            >
+              {loading ? "Saving..." : "Save Changes"}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

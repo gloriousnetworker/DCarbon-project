@@ -22,7 +22,12 @@ import {
 import EditFacilityDetailsModal from "./EditFacilityDetailsModal";
 import UploadFacilityDocumentModal from "./UploadFacilityDocumentModal";
 
-export default function FacilityDetails({ facility, onBack, onFacilityUpdated }) {
+export default function FacilityDetails({ 
+  facility, 
+  onBack, 
+  onFacilityUpdated,
+  onDelete 
+}) {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [documents, setDocuments] = useState([]);
@@ -132,13 +137,28 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
         <h3 className="text-2xl font-semibold" style={{ color: "#039994" }}>
           Residential Facility Details
         </h3>
-        <button
-          onClick={() => setShowEditModal(true)}
-          className="flex items-center gap-2 bg-[#1E1E1E] text-white px-4 py-2 rounded-full text-sm hover:bg-black transition-colors"
-        >
-          <FiEdit size={16} />
-          <span>Edit Residential Facility Details</span>
-        </button>
+        <div className="flex space-x-3">
+          <button
+            onClick={() => setShowEditModal(true)}
+            className="flex items-center gap-2 bg-[#1E1E1E] text-white px-4 py-2 rounded-full text-sm hover:bg-black transition-colors"
+          >
+            <FiEdit size={16} />
+            <span>Edit</span>
+          </button>
+          {onDelete && (
+            <button
+              onClick={() => {
+                if (window.confirm("Are you sure you want to delete this facility?")) {
+                  onDelete();
+                }
+              }}
+              className="flex items-center gap-2 bg-red-500 text-white px-4 py-2 rounded-full text-sm hover:bg-red-600 transition-colors"
+            >
+              <FiTrash2 size={16} />
+              <span>Delete</span>
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
