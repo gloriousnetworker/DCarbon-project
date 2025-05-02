@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
 import {
   ResponsiveContainer,
   BarChart,
@@ -10,295 +9,239 @@ import {
   CartesianGrid,
   LineChart,
   Line,
-  Cell,
 } from "recharts";
+import { ChevronDown } from "lucide-react";
 
 const MONTHS = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
 
+// Color constants
 const COLORS = {
-  invited: "#039994",
-  registered: "#1E1E1E",
-  pending: "#FFB200",
-  expired: "#FF0000",
+  solarProduction: "#039994",
+  earnings: "#1E1E1E",
+  netEnergy: "#4CAF50",
+  recsGenerated: "#FF9800",
 };
 
-export default function ReferredAndCommissionDashboard() {
-  const [refView, setRefView] = useState("Monthly");
-  const [refYear, setRefYear] = useState(new Date().getFullYear().toString());
-  const [refMonth, setRefMonth] = useState((new Date().getMonth() + 1).toString());
-  const [loadingRefData, setLoadingRefData] = useState(true);
-  const [errorRefData, setErrorRefData] = useState(null);
+export default function SolarProductionAndEarningsDashboard() {
+  // State for view controls
+  const [solarView, setSolarView] = useState("Yearly");
+  const [solarYear, setSolarYear] = useState(new Date().getFullYear().toString());
+  const [earningsYear, setEarningsYear] = useState(new Date().getFullYear().toString());
+  
+  // State for data loading
+  const [loadingSolarData, setLoadingSolarData] = useState(true);
+  const [loadingEarningsData, setLoadingEarningsData] = useState(true);
+  
+  // State for display type
+  const [displayType, setDisplayType] = useState("Solar Production");
+  
+  // State for chart data
+  const [solarProductionData, setSolarProductionData] = useState([]);
+  const [netEnergyData, setNetEnergyData] = useState([]);
+  const [recsGeneratedData, setRecsGeneratedData] = useState([]);
+  const [earningsData, setEarningsData] = useState([]);
 
-  const [referralStats, setReferralStats] = useState({
-    totalInvited: 0,
-    totalPending: 0,
-    totalAccepted: 0,
-    totalExpired: 0,
-  });
+  // Dropdown state
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
-  const [chartData, setChartData] = useState([]);
-  const [activeMonth, setActiveMonth] = useState(null);
-
-  const [commissionYear, setCommissionYear] = useState(new Date().getFullYear().toString());
-  const [commissionData, setCommissionData] = useState([]);
-  const [loadingCommission, setLoadingCommission] = useState(false);
-  const [downloadingReport, setDownloadingReport] = useState(false);
-
-  // Fetch referral statistics
+  // Generate solar production data
   useEffect(() => {
-    const fetchReferralStats = async () => {
-      try {
-        setLoadingRefData(true);
+    setLoadingSolarData(true);
+    
+    // Generate realistic data for solar production
+    setTimeout(() => {
+      const solarData = MONTHS.map((month, index) => {
+        // Base value with seasonal variation (more in summer months)
+        const monthIndex = index;
+        const seasonalFactor = Math.sin((monthIndex / 11) * Math.PI * 2);
         
-        // Get authentication details from localStorage
-        const token = localStorage.getItem("authToken");
-        const userId = localStorage.getItem("userId") || "33385a49-a036-4a8f-a6de-5534ad69601c";
+        // Higher in summer (May-Aug), lower in winter
+        let value = 50 + seasonalFactor * 40;
         
-        // Make API call - replace with your actual API endpoint
-        const res = await axios.get(
-          `https://services.dcarbon.solutions/api/user/referral-statistics/${userId}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        // Add some random variation
+        value += Math.floor(Math.random() * 15) - 5;
         
-        if (res.data.status === "success") {
-          const { totalInvited, totalPending, totalAccepted, totalExpired } = res.data.data;
-          
-          setReferralStats({
-            totalInvited,
-            totalPending,
-            totalAccepted,
-            totalExpired,
-          });
-          
-          // Generate chart data with only current month's data (no dummy data)
-          const currentMonth = new Date().getMonth();
-          const data = MONTHS.map((month, index) => ({
-            month,
-            invited: index === currentMonth ? totalInvited : 0,
-            pending: index === currentMonth ? totalPending : 0,
-            registered: index === currentMonth ? totalAccepted : 0,
-            expired: index === currentMonth ? totalExpired : 0,
-            active: index === currentMonth,
-          }));
-          
-          setChartData(data);
-        } else {
-          throw new Error("Failed to retrieve referral statistics");
-        }
+        // Adjust for specific months to match the image
+        if (month === "May" || month === "Nov") value = 90;
+        if (month === "Apr" || month === "Aug") value = 30;
+        if (month === "Jan" || month === "Dec") value = 75;
+        if (month === "Feb") value = 50;
+        if (month === "Jun" || month === "Jul") value = 75;
+        if (month === "Sep") value = 50;
+        if (month === "Oct") value = 75;
+        if (month === "Mar") value = 65;
         
-        setLoadingRefData(false);
-      } catch (e) {
-        console.error(e);
-        // Fallback to mock data if API fails (for demo purposes)
-        const mockStats = {
-          totalInvited: 18,
-          totalPending: 5,
-          totalAccepted: 10,
-          totalExpired: 3,
-        };
-        
-        setReferralStats(mockStats);
-        
-        const currentMonth = new Date().getMonth();
-        const data = MONTHS.map((month, index) => ({
+        return {
           month,
-          invited: index === currentMonth ? mockStats.totalInvited : 0,
-          pending: index === currentMonth ? mockStats.totalPending : 0,
-          registered: index === currentMonth ? mockStats.totalAccepted : 0,
-          expired: index === currentMonth ? mockStats.totalExpired : 0,
-          active: index === currentMonth,
-        }));
-        
-        setChartData(data);
-        setLoadingRefData(false);
-      }
-    };
-    
-    fetchReferralStats();
-  }, []);
+          value: Math.max(0, Math.min(100, Math.floor(value))),
+        };
+      });
+      
+      setSolarProductionData(solarData);
+      
+      // Generate data for Net Energy Exported (different pattern)
+      const netEnergyData = MONTHS.map((month, index) => {
+        const monthIndex = index;
+        let value = 40 + Math.sin((monthIndex / 11) * Math.PI * 2) * 35;
+        value += Math.floor(Math.random() * 10);
+        return {
+          month,
+          value: Math.max(0, Math.min(100, Math.floor(value))),
+        };
+      });
+      
+      setNetEnergyData(netEnergyData);
+      
+      // Generate data for RECs Generated (different pattern)
+      const recsData = MONTHS.map((month, index) => {
+        const monthIndex = index;
+        let value = 60 + Math.cos((monthIndex / 11) * Math.PI * 2) * 25;
+        value += Math.floor(Math.random() * 10);
+        return {
+          month,
+          value: Math.max(0, Math.min(100, Math.floor(value))),
+        };
+      });
+      
+      setRecsGeneratedData(recsData);
+      setLoadingSolarData(false);
+    }, 600);
+  }, [solarYear, solarView]);
 
-  // Generate commission data
+  // Generate earnings data
   useEffect(() => {
-    setLoadingCommission(true);
+    setLoadingEarningsData(true);
     
-    // Generate realistic commission data for the selected year
+    // Generate realistic earnings data that follows the pattern in the image
     setTimeout(() => {
       const data = MONTHS.map((month, index) => {
-        // Base value with some variation
-        const baseValue = 30 + Math.floor(Math.random() * 40);
+        // Pattern from image: starts low, peaks in Nov, drops in Dec
+        let value;
         
-        // Add a seasonal pattern
-        const seasonal = Math.sin((index / 11) * Math.PI * 2) * 15;
-        
-        // Add slight upward trend
-        const trend = (index / 11) * 20;
-        
-        // Combine factors with some random noise
-        let value = Math.floor(baseValue + seasonal + trend + (Math.random() * 10 - 5));
-        
-        // Ensure value stays within reasonable range
-        value = Math.max(15, Math.min(90, value));
+        switch (month) {
+          case "Jan": value = 0; break;  // Start at 0
+          case "Feb": value = 10; break;
+          case "Mar": value = 20; break;
+          case "Apr": value = 5; break;
+          case "May": value = 30; break;
+          case "Jun": value = 30; break;
+          case "Jul": value = 55; break;
+          case "Aug": value = 20; break;
+          case "Sep": value = 80; break;
+          case "Oct": value = 80; break;
+          case "Nov": value = 95; break;
+          case "Dec": value = 65; break;
+          default: value = 50;
+        }
         
         return {
           month,
           value
         };
       });
-      setCommissionData(data);
-      setLoadingCommission(false);
+      
+      setEarningsData(data);
+      setLoadingEarningsData(false);
     }, 600);
-  }, [commissionYear]);
+  }, [earningsYear]);
 
-  // Custom bar component that shows all 4 statuses stacked
-  const CustomBar = (props) => {
-    const { x, y, width, height } = props;
-    const monthData = chartData[props.index];
-    
-    // If no data for this month, just render an empty bar
-    if (!monthData.active) {
-      return (
-        <rect
-          x={x}
-          y={y}
-          width={width}
-          height={height}
-          fill="#EEEEEE"
-          rx={6}
-          ry={6}
-        />
-      );
+  // Get current chart data based on selected display type
+  const getCurrentChartData = () => {
+    switch (displayType) {
+      case "Solar Production":
+        return solarProductionData;
+      case "Net Energy Exported":
+        return netEnergyData;
+      case "RECs Generated":
+        return recsGeneratedData;
+      default:
+        return solarProductionData;
     }
-    
-    const total = monthData.invited;
-    if (total === 0) return null;
-    
-    // Calculate heights for each status
-    const registeredHeight = (monthData.registered / total) * height;
-    const pendingHeight = (monthData.pending / total) * height;
-    const expiredHeight = (monthData.expired / total) * height;
-    
-    return (
-      <g>
-        {/* Base bar (Invited) */}
-        <rect
-          x={x}
-          y={y}
-          width={width}
-          height={height}
-          fill={COLORS.invited}
-          rx={props.index === activeMonth ? 0 : 6}
-          ry={props.index === activeMonth ? 0 : 6}
-        />
-        
-        {/* Registered portion */}
-        {monthData.registered > 0 && (
-          <rect
-            x={x}
-            y={y + height - registeredHeight}
-            width={width}
-            height={registeredHeight}
-            fill={COLORS.registered}
-            rx={props.index === activeMonth ? 0 : 6}
-            ry={props.index === activeMonth ? 0 : 6}
-          />
-        )}
-        
-        {/* Pending portion */}
-        {monthData.pending > 0 && (
-          <rect
-            x={x}
-            y={y + height - registeredHeight - pendingHeight}
-            width={width}
-            height={pendingHeight}
-            fill={COLORS.pending}
-            rx={props.index === activeMonth ? 0 : 6}
-            ry={props.index === activeMonth ? 0 : 6}
-          />
-        )}
-        
-        {/* Expired portion */}
-        {monthData.expired > 0 && (
-          <rect
-            x={x}
-            y={y + height - registeredHeight - pendingHeight - expiredHeight}
-            width={width}
-            height={expiredHeight}
-            fill={COLORS.expired}
-            rx={props.index === activeMonth ? 0 : 6}
-            ry={props.index === activeMonth ? 0 : 6}
-          />
-        )}
-      </g>
-    );
   };
 
-  const handleBarMouseEnter = (data, index) => {
-    setActiveMonth(index);
-  };
-
-  const handleBarMouseLeave = () => {
-    setActiveMonth(null);
-  };
-
-  const downloadCommissionReport = async () => {
-    try {
-      setDownloadingReport(true);
-      
-      // Simulate download delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // In a real app, you would create and download a CSV here
-      console.log("Downloading commission report for", commissionYear);
-      
-    } catch (error) {
-      console.error("Error downloading report:", error);
-      alert("Failed to download report. Please try again.");
-    } finally {
-      setDownloadingReport(false);
+  // Get current chart color based on selected display type
+  const getCurrentChartColor = () => {
+    switch (displayType) {
+      case "Solar Production":
+        return COLORS.solarProduction;
+      case "Net Energy Exported":
+        return COLORS.netEnergy;
+      case "RECs Generated":
+        return COLORS.recsGenerated;
+      default:
+        return COLORS.solarProduction;
     }
+  };
+
+  // Toggle dropdown
+  const toggleDropdown = () => {
+    setDropdownOpen(!dropdownOpen);
+  };
+
+  // Select display type
+  const selectDisplayType = (type) => {
+    setDisplayType(type);
+    setDropdownOpen(false);
   };
 
   return (
     <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {/* Referred Customers */}
+      {/* Solar Production Card */}
       <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col">
         <div className="flex justify-between items-center">
-          <h3 className="text-lg font-semibold flex items-center">
-            <img
-              src="/vectors/UserSound.png"
-              alt=""
-              className="h-5 w-5 mr-2"
-            />
-            Referred Customers
-          </h3>
+          <div className="relative">
+            <h3 
+              className="text-lg font-semibold flex items-center cursor-pointer"
+              style={{ color: COLORS.solarProduction }}
+              onClick={toggleDropdown}
+            >
+              {displayType}
+              <ChevronDown className="h-5 w-5 ml-1" />
+            </h3>
+            
+            {/* Dropdown menu */}
+            {dropdownOpen && (
+              <div className="absolute z-10 mt-1 w-48 bg-white rounded-md shadow-lg">
+                <div className="py-1">
+                  <div 
+                    className="px-4 py-2 text-sm hover:bg-gray-100 cursor-pointer"
+                    onClick={() => selectDisplayType("Solar Production")}
+                  >
+                    Solar Production
+                  </div>
+                  <div 
+                    className="px-4 py-2 text-sm hover:bg-gray-100 cursor-pointer"
+                    onClick={() => selectDisplayType("Net Energy Exported")}
+                  >
+                    Net Energy Exported
+                  </div>
+                  <div 
+                    className="px-4 py-2 text-sm hover:bg-gray-100 cursor-pointer"
+                    onClick={() => selectDisplayType("RECs Generated")}
+                  >
+                    RECs Generated
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          
           <div className="flex items-center space-x-2 text-xs">
             <select
-              value={refView}
-              onChange={(e) => setRefView(e.target.value)}
+              value={solarView}
+              onChange={(e) => setSolarView(e.target.value)}
               className="px-2 py-1 border rounded"
             >
               <option>Yearly</option>
               <option>Monthly</option>
             </select>
-            {refView === "Monthly" && (
-              <select
-                value={refMonth}
-                onChange={(e) => setRefMonth(e.target.value)}
-                className="px-2 py-1 border rounded"
-              >
-                {MONTHS.map((m, i) => (
-                  <option key={m} value={i + 1}>
-                    {m}
-                  </option>
-                ))}
-              </select>
-            )}
+            
             <select
-              value={refYear}
-              onChange={(e) => setRefYear(e.target.value)}
+              value={solarYear}
+              onChange={(e) => setSolarYear(e.target.value)}
               className="px-2 py-1 border rounded"
             >
               {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(year => (
@@ -308,23 +251,21 @@ export default function ReferredAndCommissionDashboard() {
           </div>
         </div>
 
-        <hr className="border-black my-2" />
+        <hr className="my-4" />
 
-        {loadingRefData ? (
+        {loadingSolarData ? (
           <div className="flex-1 flex items-center justify-center">
             <p className="text-gray-500 animate-pulse text-xs">Loading…</p>
           </div>
-        ) : errorRefData ? (
-          <p className="text-red-500 text-xs">Error: {errorRefData}</p>
         ) : (
           <>
+            <div className="text-xs ml-2 mb-2">MWh</div>
             <ResponsiveContainer width="100%" height={250}>
               <BarChart 
-                data={chartData} 
-                margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
-                onMouseLeave={handleBarMouseLeave}
+                data={getCurrentChartData()} 
+                margin={{ top: 10, right: 10, left: 0, bottom: 10 }}
               >
-                <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#f5f5f5" />
                 <XAxis
                   dataKey="month"
                   tick={{ fontSize: 10 }}
@@ -332,7 +273,8 @@ export default function ReferredAndCommissionDashboard() {
                   tickLine={false}
                 />
                 <YAxis
-                  domain={[0, 'dataMax']}
+                  domain={[0, 100]}
+                  ticks={[0, 25, 50, 75, 100]}
                   tick={{ fontSize: 10 }}
                   axisLine={false}
                   tickLine={false}
@@ -344,10 +286,7 @@ export default function ReferredAndCommissionDashboard() {
                       return (
                         <div className="bg-white p-2 border rounded shadow text-xs">
                           <p>Month: {data.month}</p>
-                          <p style={{ color: COLORS.invited }}>Invited: {data.invited}</p>
-                          <p style={{ color: COLORS.registered }}>Registered: {data.registered}</p>
-                          <p style={{ color: COLORS.pending }}>Pending: {data.pending}</p>
-                          <p style={{ color: COLORS.expired }}>Expired: {data.expired}</p>
+                          <p style={{ color: getCurrentChartColor() }}>{displayType}: {data.value} MWh</p>
                         </div>
                       );
                     }
@@ -355,115 +294,77 @@ export default function ReferredAndCommissionDashboard() {
                   }}
                 />
                 <Bar
-                  dataKey="invited"
-                  shape={<CustomBar />}
-                  onMouseEnter={handleBarMouseEnter}
-                >
-                  {chartData.map((entry, index) => (
-                    <Cell 
-                      key={`cell-${index}`} 
-                      fill={entry.active ? COLORS.invited : "#EEEEEE"} 
-                    />
-                  ))}
-                </Bar>
+                  dataKey="value"
+                  fill={getCurrentChartColor()}
+                  radius={[8, 8, 0, 0]}
+                  background={{ fill: '#f5f5f5', radius: [8, 8, 0, 0] }}
+                />
               </BarChart>
             </ResponsiveContainer>
-
-            <hr className="border-black my-2" />
-
-            <div className="flex justify-center flex-wrap gap-4 text-xs">
-              {[
-                ["Invited", COLORS.invited],
-                ["Registered", COLORS.registered],
-                ["Pending", COLORS.pending],
-                ["Expired", COLORS.expired],
-              ].map(([label, color]) => (
-                <div key={label} className="flex items-center space-x-1">
-                  <span
-                    className="w-3 h-3 rounded-full block"
-                    style={{ backgroundColor: color }}
-                  />
-                  <span>{label}</span>
-                </div>
-              ))}
-            </div>
           </>
         )}
       </div>
 
-      {/* Commission */}
+      {/* Earnings Card */}
       <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col">
         <div className="flex justify-between items-center">
-          <h3 className="text-lg font-semibold flex items-center">
-            <img
-              src="/vectors/UserSound.png"
-              alt=""
-              className="h-5 w-5 mr-2"
-            />
-            Commission
+          <h3 
+            className="text-lg font-semibold flex items-center"
+            style={{ color: COLORS.earnings }}
+          >
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+              <path d="M12 20V10" />
+              <path d="M18 20V4" />
+              <path d="M6 20v-6" />
+            </svg>
+            Earnings
           </h3>
+          
           <div className="flex items-center space-x-2 text-xs">
             <select
-              value={commissionYear}
-              onChange={(e) => setCommissionYear(e.target.value)}
+              value={earningsYear}
+              onChange={(e) => setEarningsYear(e.target.value)}
               className="px-2 py-1 border rounded"
             >
               {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(year => (
                 <option key={year} value={year}>{year}</option>
               ))}
             </select>
-            <button
-              onClick={downloadCommissionReport}
-              disabled={loadingCommission || downloadingReport}
-              className="px-3 py-1 bg-[#039994] text-white rounded text-xs flex items-center"
-            >
-              {downloadingReport ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-2 h-3 w-3 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Downloading...
-                </>
-              ) : (
-                <>
-                  <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-                  </svg>
-                  Download Report
-                </>
-              )}
-            </button>
           </div>
         </div>
 
-        <hr className="border-black my-2" />
+        <hr className="my-4" />
 
-        {loadingCommission ? (
+        {loadingEarningsData ? (
           <div className="flex-1 flex items-center justify-center">
             <p className="text-gray-500 animate-pulse text-xs">Loading…</p>
           </div>
         ) : (
           <>
+            <div className="text-xs mb-2">
+              <div>Earnings</div>
+            </div>
             <ResponsiveContainer width="100%" height={250}>
               <LineChart
-                data={commissionData}
-                margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
+                data={earningsData}
+                margin={{ top: 10, right: 10, left: 0, bottom: 5 }}
               >
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f5f5f5" />
                 <XAxis
                   dataKey="month"
                   tick={{ fontSize: 10 }}
-                  axisLine={false}
+                  axisLine={{ stroke: '#E0E0E0' }}
                   tickLine={false}
                 />
-                <YAxis
-                  ticks={[0, 25, 50, 75, 100]}
-                  domain={[0, 100]}
-                  tickFormatter={(v) => `${v}k`}
+                <YAxis 
+                  width={30}
+                  orientation="right"
                   tick={{ fontSize: 10 }}
-                  axisLine={false}
+                  axisLine={{ stroke: '#E0E0E0' }}
                   tickLine={false}
+                  domain={[0, 100]}
+                  ticks={[0, 25, 50, 75, 100]}
+                  tickFormatter={(v) => `${v}k`}
                 />
                 <Tooltip
                   formatter={(v) => `${v}k`}
@@ -472,25 +373,13 @@ export default function ReferredAndCommissionDashboard() {
                 <Line
                   type="monotone"
                   dataKey="value"
-                  stroke="#039994"
+                  stroke={COLORS.solarProduction}
                   strokeWidth={2}
-                  dot={{ r: 4 }}
-                  activeDot={{ r: 6 }}
+                  dot={{ r: 3, fill: COLORS.solarProduction }}
+                  activeDot={{ r: 5, fill: COLORS.solarProduction }}
                 />
               </LineChart>
             </ResponsiveContainer>
-
-            <hr className="border-black my-2" />
-            
-            <div className="flex justify-center items-center text-xs">
-              <div className="flex items-center space-x-1">
-                <span
-                  className="w-3 h-3 block"
-                  style={{ backgroundColor: "#039994" }}
-                />
-                <span>Commission (k)</span>
-              </div>
-            </div>
           </>
         )}
       </div>
