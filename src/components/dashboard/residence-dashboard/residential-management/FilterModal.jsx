@@ -6,42 +6,59 @@ import { labelClass, selectClass, buttonPrimary } from "./styles";
 
 export default function FilterModal({ onClose, onApplyFilter }) {
   const [name, setName] = useState("");
-  const [role, setRole] = useState("All");
-  const [entityType, setEntityType] = useState("All");
   const [utilities, setUtilities] = useState([]);
   const [utility, setUtility] = useState("All");
   const [meterId, setMeterId] = useState("");
   const [status, setStatus] = useState("All");
   const [createdDate, setCreatedDate] = useState("");
+  const [financeType, setFinanceType] = useState("All");
+  const [installer, setInstaller] = useState("All");
+  const [installers, setInstallers] = useState([]);
 
   useEffect(() => {
-    const fetchUtilities = async () => {
+    const fetchData = async () => {
       const authToken = localStorage.getItem("authToken");
       try {
-        const res = await axios.get(
+        // Fetch utilities
+        const utilitiesRes = await axios.get(
           "https://services.dcarbon.solutions/api/auth/utility-providers",
           { headers: { Authorization: `Bearer ${authToken}` } }
         );
-        setUtilities(res.data.data || []);
+        setUtilities(utilitiesRes.data.data || []);
+
+        // Fetch installers (you might need to replace this with actual endpoint)
+        const installersRes = await axios.get(
+          "https://services.dcarbon.solutions/api/installers", // Replace with actual endpoint
+          { headers: { Authorization: `Bearer ${authToken}` } }
+        );
+        setInstallers(installersRes.data.data || []);
       } catch (err) {
-        console.error("Failed to load utilities", err);
+        console.error("Failed to load filter data", err);
       }
     };
-    fetchUtilities();
+    fetchData();
   }, []);
 
   const handleClear = () => {
     setName("");
-    setRole("All");
-    setEntityType("All");
     setUtility("All");
     setMeterId("");
     setStatus("All");
     setCreatedDate("");
+    setFinanceType("All");
+    setInstaller("All");
   };
 
   const handleDone = () => {
-    onApplyFilter({ name, role, entityType, utility, meterId, status, createdDate });
+    onApplyFilter({ 
+      name, 
+      utility, 
+      meterId, 
+      status, 
+      createdDate,
+      financeType,
+      installer
+    });
     onClose();
   };
 
@@ -56,45 +73,16 @@ export default function FilterModal({ onClose, onApplyFilter }) {
           Filter Facilities
         </h2>
 
-        {/* Name (full width) */}
+        {/* Address (full width) */}
         <div className="mb-4">
-          <label className={labelClass}>By Name</label>
+          <label className={labelClass}>By Address</label>
           <input
             type="text"
             value={name}
             onChange={e => setName(e.target.value)}
             className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none text-sm"
-            placeholder="Type facility name"
+            placeholder="Type facility address"
           />
-        </div>
-
-        {/* Role & Entity Type */}
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div>
-            <label className={labelClass}>By Role</label>
-            <select
-              value={role}
-              onChange={e => setRole(e.target.value)}
-              className={selectClass}
-            >
-              <option>All</option>
-              <option>Owner</option>
-              <option>Operator</option>
-              <option>Both</option>
-            </select>
-          </div>
-          <div>
-            <label className={labelClass}>By Entity Type</label>
-            <select
-              value={entityType}
-              onChange={e => setEntityType(e.target.value)}
-              className={selectClass}
-            >
-              <option>All</option>
-              <option>Individual</option>
-              <option>Company</option>
-            </select>
-          </div>
         </div>
 
         {/* Utility (full width) */}
@@ -134,7 +122,38 @@ export default function FilterModal({ onClose, onApplyFilter }) {
               <option>All</option>
               <option value="pending">Pending</option>
               <option value="approved">Approved</option>
-              <option value="other">Other</option>
+              <option value="rejected">Rejected</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Finance Type & Installer */}
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className={labelClass}>By Finance Type</label>
+            <select
+              value={financeType}
+              onChange={e => setFinanceType(e.target.value)}
+              className={selectClass}
+            >
+              <option>All</option>
+              <option value="loan">Loan</option>
+              <option value="lease">Lease</option>
+              <option value="cash">Cash</option>
+              <option value="ppa">PPA</option>
+            </select>
+          </div>
+          <div>
+            <label className={labelClass}>By Installer</label>
+            <select
+              value={installer}
+              onChange={e => setInstaller(e.target.value)}
+              className={selectClass}
+            >
+              <option>All</option>
+              {installers.map(inst => (
+                <option key={inst.id} value={inst.name}>{inst.name}</option>
+              ))}
             </select>
           </div>
         </div>
@@ -167,5 +186,5 @@ export default function FilterModal({ onClose, onApplyFilter }) {
         </div>
       </div>
     </div>
-);
+  );
 }

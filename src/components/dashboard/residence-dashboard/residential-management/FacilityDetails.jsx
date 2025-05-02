@@ -130,14 +130,14 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
 
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-2xl font-semibold" style={{ color: "#039994" }}>
-          Facility Details
+          Residential Facility Details
         </h3>
         <button
           onClick={() => setShowEditModal(true)}
           className="flex items-center gap-2 bg-[#1E1E1E] text-white px-4 py-2 rounded-full text-sm hover:bg-black transition-colors"
         >
           <FiEdit size={16} />
-          <span>Edit Facility Details</span>
+          <span>Edit Residential Facility Details</span>
         </button>
       </div>
 
@@ -178,7 +178,7 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
 
         <div className="bg-white rounded-md p-4 shadow-sm border border-gray-200">
           <h4 className="font-semibold text-gray-800 text-base mb-4">
-            Facility Documents
+            Residential Facility Documents
           </h4>
           
           <div className="flex space-x-2 mb-4">

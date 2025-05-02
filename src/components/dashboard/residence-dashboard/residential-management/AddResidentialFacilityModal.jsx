@@ -1,44 +1,40 @@
 import React, { useState } from "react";
-import { FiX } from "react-icons/fi";
+import axios from "axios";
 import toast from "react-hot-toast";
-import {
-  labelClass,
-  selectClass,
-  inputClass,
+import { 
+  pageTitle, 
+  labelClass, 
+  inputClass, 
   buttonPrimary,
-  pageTitle,
   uploadHeading,
   uploadFieldWrapper,
   uploadInputLabel,
   uploadIconContainer,
   uploadButtonStyle,
-  uploadNoteStyle
+  uploadNoteStyle,
+  spinnerOverlay
 } from "./styles";
-import Loader from "@/components/loader/Loader.jsx";
 
-export default function AddFacilityModal({ onClose, onFacilityAdded }) {
-  // Form states
+export default function AddResidentialFacilityModal({ onClose, onFacilityAdded }) {
   const [formData, setFormData] = useState({
-    facilityName: "",
-    address: "",
     utilityProvider: "",
-    meterId: "",
-    commercialRole: "",
-    entityType: "company", // Default to company
+    installer: "",
     financeType: "",
     financeCompany: "",
-    financeAgreement: null
+    financeAgreement: null,
+    address: "",
+    meterId: "",
+    zipCode: ""
   });
-  
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [file, setFile] = useState(null);
+  const [fileUrl, setFileUrl] = useState(null);
 
-  // Handle form input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [name]: value
     }));
@@ -55,7 +51,6 @@ export default function AddFacilityModal({ onClose, onFacilityAdded }) {
     setUploading(true);
     
     try {
-      // Simulate a successful upload
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       setFormData(prev => ({
@@ -76,136 +71,139 @@ export default function AddFacilityModal({ onClose, onFacilityAdded }) {
     e.preventDefault();
     setLoading(true);
 
+    const userId = localStorage.getItem("userId");
+    const authToken = localStorage.getItem("authToken");
+
+    if (!userId || !authToken) {
+      toast.error("Authentication required");
+      setLoading(false);
+      return;
+    }
+
+    // Validate required fields
+    if (!formData.address || !formData.meterId || !formData.zipCode) {
+      toast.error("Please fill in all required fields");
+      setLoading(false);
+      return;
+    }
+
+    if (formData.financeType && formData.financeType !== "cash" && !formData.financeAgreement) {
+      toast.error("Please upload the financial agreement");
+      setLoading(false);
+      return;
+    }
+
     try {
-      const userId = localStorage.getItem("userId");
-      const authToken = localStorage.getItem("authToken");
-
-      if (!userId || !authToken) {
-        toast.error("Authentication required");
-        setLoading(false);
-        return;
-      }
-
-      // Validate required fields
-      if (!formData.facilityName || !formData.address || !formData.meterId) {
-        toast.error("Please fill in all required fields");
-        setLoading(false);
-        return;
-      }
-
-      if (formData.financeType && formData.financeType !== "cash" && !formData.financeAgreement) {
-        toast.error("Please upload the financial agreement");
-        setLoading(false);
-        return;
-      }
-
-      // Prepare the payload
-      // Prepare the request body - including the original fields plus new finance fields
       const payload = {
-        facilityName: formData.facilityName,
-        address: formData.address,
         utilityProvider: formData.utilityProvider,
-        meterId: formData.meterId,
-        commercialRole: formData.commercialRole,
-        entityType: formData.entityType,
+        installer: formData.installer,
         financeType: formData.financeType,
         financeCompany: formData.financeCompany,
-        financeAgreement: formData.financeAgreement
+        financeAgreement: formData.financeAgreement,
+        address: formData.address,
+        meterId: formData.meterId,
+        zipCode: formData.zipCode
       };
 
-      const response = await fetch(
-        `https://dcarbon-server.onrender.com/api/facility/create-new-facility/${userId}`,
+      const response = await axios.post(
+        `https://services.dcarbon.solutions/api/residential-facility/create-residential-facility/${userId}`,
+        payload,
         {
-          method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${authToken}`,
-          },
-          body: JSON.stringify(payload),
+            Authorization: `Bearer ${authToken}`
+          }
         }
       );
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to create facility");
+      if (response.data.status === "success") {
+        toast.success("Residence created successfully");
+        onClose();
+        onFacilityAdded(); // Call this after successful creation
+      } else {
+        throw new Error(response.data.message || "Failed to create residence");
       }
-
-      const data = await response.json();
-      toast.success("Facility added successfully");
-      onFacilityAdded(data.data); // Pass the created facility data to parent
-      onClose();
-    } catch (err) {
-      toast.error(err.message || "Failed to create facility");
-      console.error("Error creating facility:", err);
+    } catch (error) {
+      console.error("Error creating residence:", error);
+      toast.error(
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to create residence"
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  // No isOpen check here as this component doesn't use that pattern
-
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20">
       {loading && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-white bg-opacity-70 rounded-md">
-          <Loader />
+        <div className={spinnerOverlay}>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#039994]"></div>
         </div>
       )}
       
-      <div className="bg-white w-full max-w-lg rounded-md shadow-lg p-6 relative">
-        {/* Close Icon */}
+      <div className="relative bg-white p-6 rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
+        {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+          className="absolute right-4 top-4 text-gray-500 hover:text-gray-700 focus:outline-none"
+          disabled={loading}
         >
-          <FiX size={24} />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
         </button>
 
-        <h2 className={`${pageTitle} text-left mb-6`}>
-          Add Commercial Facility
-        </h2>
+        <h2 className={pageTitle}>Add Residence</h2>
 
-        <form onSubmit={handleSubmit}>
-          {/* Facility Name */}
-          <div className="mb-4">
-            <label className={labelClass}>
-              Facility Name <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              name="facilityName"
-              value={formData.facilityName}
-              onChange={handleChange}
-              className={inputClass}
-              placeholder="Enter facility name"
-              required
-            />
-          </div>
-
+        <form onSubmit={handleSubmit} className="space-y-4 mt-6">
+          {/* Rest of your form remains exactly the same */}
           {/* Utility Provider */}
-          <div className="mb-4">
-            <label className={labelClass}>
-              Utility Provider <span className="text-red-500">*</span>
-            </label>
+          <div>
+            <label className={labelClass}>Utility Provider</label>
             <input
               type="text"
               name="utilityProvider"
               value={formData.utilityProvider}
               onChange={handleChange}
               className={inputClass}
-              placeholder="Utility company name"
-              required
+              placeholder="Enter utility provider"
             />
           </div>
 
-          {/* Finance Type - New field */}
-          <div className="mb-4">
+          {/* Installer */}
+          <div>
+            <label className={labelClass}>Installer</label>
+            <input
+              type="text"
+              name="installer"
+              value={formData.installer}
+              onChange={handleChange}
+              className={inputClass}
+              placeholder="Enter installer name"
+            />
+          </div>
+
+          {/* Finance Type */}
+          <div>
             <label className={labelClass}>Finance Type</label>
             <select
               name="financeType"
               value={formData.financeType}
               onChange={handleChange}
-              className={selectClass}
+              className={inputClass}
             >
               <option value="">Select finance type</option>
               <option value="cash">Cash</option>
@@ -215,9 +213,9 @@ export default function AddFacilityModal({ onClose, onFacilityAdded }) {
             </select>
           </div>
 
-          {/* Finance Company - Conditionally shown */}
+          {/* Finance Company */}
           {formData.financeType && formData.financeType !== "cash" && (
-            <div className="mb-4">
+            <div>
               <label className={labelClass}>Finance Company</label>
               <input
                 type="text"
@@ -230,9 +228,9 @@ export default function AddFacilityModal({ onClose, onFacilityAdded }) {
             </div>
           )}
 
-          {/* Finance Agreement Upload - Conditionally shown */}
+          {/* Finance Agreement Upload */}
           {formData.financeType && formData.financeType !== "cash" && (
-            <div className="mb-4">
+            <div>
               <label className={uploadHeading}>
                 Finance Agreement <span className="text-red-500">*</span>
               </label>
@@ -316,7 +314,7 @@ export default function AddFacilityModal({ onClose, onFacilityAdded }) {
           )}
 
           {/* Address */}
-          <div className="mb-4">
+          <div>
             <label className={labelClass}>
               Address <span className="text-red-500">*</span>
             </label>
@@ -326,13 +324,13 @@ export default function AddFacilityModal({ onClose, onFacilityAdded }) {
               value={formData.address}
               onChange={handleChange}
               className={inputClass}
-              placeholder="Street, City, County, State"
+              placeholder="Enter address"
               required
             />
           </div>
 
           {/* Meter ID */}
-          <div className="mb-4">
+          <div>
             <label className={labelClass}>
               Meter ID <span className="text-red-500">*</span>
             </label>
@@ -342,45 +340,25 @@ export default function AddFacilityModal({ onClose, onFacilityAdded }) {
               value={formData.meterId}
               onChange={handleChange}
               className={inputClass}
-              placeholder="Meter identification number"
+              placeholder="Enter meter ID"
               required
             />
           </div>
 
-          {/* Commercial Role */}
-          <div className="mb-4">
+          {/* Zip Code */}
+          <div>
             <label className={labelClass}>
-              Commercial Role <span className="text-red-500">*</span>
+              Zip Code <span className="text-red-500">*</span>
             </label>
-            <select
-              name="commercialRole"
-              value={formData.commercialRole}
+            <input
+              type="text"
+              name="zipCode"
+              value={formData.zipCode}
               onChange={handleChange}
-              className={selectClass}
+              className={inputClass}
+              placeholder="Enter zip code"
               required
-            >
-              <option value="">Choose role</option>
-              <option value="owner">Owner</option>
-              <option value="operator">Operator</option>
-              <option value="both">Both</option>
-            </select>
-          </div>
-
-          {/* Entity Type */}
-          <div className="mb-4">
-            <label className={labelClass}>
-              Entity Type <span className="text-red-500">*</span>
-            </label>
-            <select
-              name="entityType"
-              value={formData.entityType}
-              onChange={handleChange}
-              className={selectClass}
-              required
-            >
-              <option value="company">Company</option>
-              <option value="individual">Individual</option>
-            </select>
+            />
           </div>
 
           {/* Form Actions */}
@@ -398,7 +376,7 @@ export default function AddFacilityModal({ onClose, onFacilityAdded }) {
               className={`flex-1 ${buttonPrimary}`}
               disabled={loading}
             >
-              {loading ? "Processing..." : "Add Facility"}
+              {loading ? "Processing..." : "Add Residence"}
             </button>
           </div>
         </form>

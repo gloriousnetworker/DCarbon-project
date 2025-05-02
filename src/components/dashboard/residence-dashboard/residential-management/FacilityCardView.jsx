@@ -13,12 +13,12 @@ export default function FacilityCardView() {
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [filters, setFilters] = useState({
     name: "",
-    role: "All",
-    entityType: "All",
     utility: "All",
     meterId: "",
     status: "All",
     createdDate: "",
+    financeType: "All",
+    installer: "All"
   });
   const [selectedFacility, setSelectedFacility] = useState(null);
 
@@ -33,11 +33,14 @@ export default function FacilityCardView() {
       }
       try {
         const { data } = await axios.get(
-          `https://services.dcarbon.solutions/api/facility/get-user-facilities-by-userId/${userId}`,
+          `https://services.dcarbon.solutions/api/residential-facility/get-user-facilities/${userId}`,
           { headers: { Authorization: `Bearer ${authToken}` } }
         );
-        if (data.status === "success") setFacilities(data.data.facilities);
-        else throw new Error(data.message);
+        if (data.status === "success") {
+          setFacilities(data.data.facilities);
+        } else {
+          throw new Error(data.message);
+        }
       } catch (err) {
         console.error(err);
         toast.error(err.message || "Failed to load facilities");
@@ -65,17 +68,7 @@ export default function FacilityCardView() {
     .filter(f => {
       if (
         filters.name &&
-        !f.facilityName.toLowerCase().includes(filters.name.toLowerCase())
-      )
-        return false;
-      if (
-        filters.role !== "All" &&
-        f.commercialRole.toLowerCase() !== filters.role.toLowerCase()
-      )
-        return false;
-      if (
-        filters.entityType !== "All" &&
-        f.entityType.toLowerCase() !== filters.entityType.toLowerCase()
+        !f.address.toLowerCase().includes(filters.name.toLowerCase())
       )
         return false;
       if (filters.utility !== "All" && f.utilityProvider !== filters.utility)
@@ -94,6 +87,16 @@ export default function FacilityCardView() {
         const d = new Date(f.createdAt).toISOString().slice(0, 10);
         if (d !== filters.createdDate) return false;
       }
+      if (
+        filters.financeType !== "All" &&
+        f.financeType.toLowerCase() !== filters.financeType.toLowerCase()
+      )
+        return false;
+      if (
+        filters.installer !== "All" &&
+        f.installer.toLowerCase() !== filters.installer.toLowerCase()
+      )
+        return false;
       return true;
     })
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -143,20 +146,26 @@ export default function FacilityCardView() {
             >
               <div>
                 <h3 className="font-semibold text-base text-[#039994] mb-1">
-                  {facility.facilityName}
+                  {facility.address}
                 </h3>
                 <div className="grid grid-cols-2 gap-y-1 text-xs">
-                  <span className="font-medium">Role:</span>
-                  <span className="capitalize">{facility.commercialRole}</span>
-
-                  <span className="font-medium">Type:</span>
-                  <span className="capitalize">{facility.entityType}</span>
-
                   <span className="font-medium">Utility:</span>
                   <span>{facility.utilityProvider}</span>
 
+                  <span className="font-medium">Installer:</span>
+                  <span>{facility.installer}</span>
+
+                  <span className="font-medium">Finance Type:</span>
+                  <span className="capitalize">{facility.financeType}</span>
+
+                  <span className="font-medium">Finance Company:</span>
+                  <span>{facility.financeCompany}</span>
+
                   <span className="font-medium">Meter ID:</span>
                   <span>{facility.meterId}</span>
+
+                  <span className="font-medium">Zip Code:</span>
+                  <span>{facility.zipCode}</span>
 
                   <span className="font-medium">Status:</span>
                   <span className="capitalize">{facility.status}</span>
