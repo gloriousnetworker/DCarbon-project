@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { 
@@ -30,7 +30,57 @@ export default function AddResidentialFacilityModal({ onClose, onFacilityAdded }
   const [uploading, setUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [file, setFile] = useState(null);
-  const [fileUrl, setFileUrl] = useState(null);
+  const [utilityProviders, setUtilityProviders] = useState([]);
+  const [userMeters, setUserMeters] = useState([]);
+  const [fetchingData, setFetchingData] = useState(false);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const userId = localStorage.getItem("userId");
+      const authToken = localStorage.getItem("authToken");
+
+      if (!userId || !authToken) {
+        toast.error("Authentication required");
+        return;
+      }
+
+      setFetchingData(true);
+      try {
+        // Fetch utility providers
+        const providersResponse = await axios.get(
+          "https://services.dcarbon.solutions/api/auth/utility-providers",
+          {
+            headers: {
+              Authorization: `Bearer ${authToken}`
+            }
+          }
+        );
+        setUtilityProviders(providersResponse.data.data || []);
+
+        // Fetch user meters
+        const metersResponse = await axios.get(
+          `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${authToken}`
+            }
+          }
+        );
+        setUserMeters(metersResponse.data.data || []);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        toast.error(
+          error.response?.data?.message ||
+          error.message ||
+          "Failed to load required data"
+        );
+      } finally {
+        setFetchingData(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -81,7 +131,7 @@ export default function AddResidentialFacilityModal({ onClose, onFacilityAdded }
     }
 
     // Validate required fields
-    if (!formData.address || !formData.meterId || !formData.zipCode) {
+    if (!formData.utilityProvider || !formData.address || !formData.meterId || !formData.zipCode) {
       toast.error("Please fill in all required fields");
       setLoading(false);
       return;
@@ -137,7 +187,7 @@ export default function AddResidentialFacilityModal({ onClose, onFacilityAdded }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20">
-      {loading && (
+      {(loading || fetchingData) && (
         <div className={spinnerOverlay}>
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#039994]"></div>
         </div>
@@ -148,7 +198,7 @@ export default function AddResidentialFacilityModal({ onClose, onFacilityAdded }
         <button
           onClick={onClose}
           className="absolute right-4 top-4 text-gray-500 hover:text-gray-700 focus:outline-none"
-          disabled={loading}
+          disabled={loading || fetchingData}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -169,18 +219,26 @@ export default function AddResidentialFacilityModal({ onClose, onFacilityAdded }
         <h2 className={pageTitle}>Add Residence</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4 mt-6">
-          {/* Rest of your form remains exactly the same */}
           {/* Utility Provider */}
           <div>
-            <label className={labelClass}>Utility Provider</label>
-            <input
-              type="text"
+            <label className={labelClass}>
+              Utility Provider <span className="text-red-500">*</span>
+            </label>
+            <select
               name="utilityProvider"
               value={formData.utilityProvider}
               onChange={handleChange}
               className={inputClass}
-              placeholder="Enter utility provider"
-            />
+              required
+              disabled={fetchingData}
+            >
+              <option value="">Select utility provider</option>
+              {utilityProviders.map((provider) => (
+                <option key={provider._id} value={provider._id}>
+                  {provider.name}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Installer */}
@@ -193,6 +251,7 @@ export default function AddResidentialFacilityModal({ onClose, onFacilityAdded }
               onChange={handleChange}
               className={inputClass}
               placeholder="Enter installer name"
+              disabled={loading || fetchingData}
             />
           </div>
 
@@ -204,6 +263,7 @@ export default function AddResidentialFacilityModal({ onClose, onFacilityAdded }
               value={formData.financeType}
               onChange={handleChange}
               className={inputClass}
+              disabled={loading || fetchingData}
             >
               <option value="">Select finance type</option>
               <option value="cash">Cash</option>
@@ -224,6 +284,7 @@ export default function AddResidentialFacilityModal({ onClose, onFacilityAdded }
                 onChange={handleChange}
                 className={inputClass}
                 placeholder="Enter finance company"
+                disabled={loading || fetchingData}
               />
             </div>
           )}
@@ -241,6 +302,7 @@ export default function AddResidentialFacilityModal({ onClose, onFacilityAdded }
                     type="file"
                     className="absolute inset-0 opacity-0 cursor-pointer"
                     onChange={handleFileChange}
+                    disabled={loading || fetchingData}
                   />
                   <span className={uploadIconContainer}>
                     <svg
@@ -262,9 +324,9 @@ export default function AddResidentialFacilityModal({ onClose, onFacilityAdded }
                 <button
                   type="button"
                   onClick={handleUpload}
-                  disabled={!file || uploading || uploadSuccess}
+                  disabled={!file || uploading || uploadSuccess || loading || fetchingData}
                   className={`${uploadButtonStyle} ${
-                    !file || uploading || uploadSuccess ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#039994]'
+                    !file || uploading || uploadSuccess || loading || fetchingData ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#039994]'
                   }`}
                 >
                   {uploading ? (
@@ -326,6 +388,7 @@ export default function AddResidentialFacilityModal({ onClose, onFacilityAdded }
               className={inputClass}
               placeholder="Enter address"
               required
+              disabled={loading || fetchingData}
             />
           </div>
 
@@ -334,15 +397,24 @@ export default function AddResidentialFacilityModal({ onClose, onFacilityAdded }
             <label className={labelClass}>
               Meter ID <span className="text-red-500">*</span>
             </label>
-            <input
-              type="text"
+            <select
               name="meterId"
               value={formData.meterId}
               onChange={handleChange}
               className={inputClass}
-              placeholder="Enter meter ID"
               required
-            />
+              disabled={loading || fetchingData || userMeters.length === 0}
+            >
+              <option value="">Select meter</option>
+              {userMeters.map((meter) => (
+                <option key={meter._id} value={meter._id}>
+                  {meter.meterId} ({meter.type})
+                </option>
+              ))}
+            </select>
+            {userMeters.length === 0 && (
+              <p className="text-sm text-red-500 mt-1">No meters found for this user</p>
+            )}
           </div>
 
           {/* Zip Code */}
@@ -358,6 +430,7 @@ export default function AddResidentialFacilityModal({ onClose, onFacilityAdded }
               className={inputClass}
               placeholder="Enter zip code"
               required
+              disabled={loading || fetchingData}
             />
           </div>
 
@@ -367,14 +440,14 @@ export default function AddResidentialFacilityModal({ onClose, onFacilityAdded }
               type="button"
               onClick={onClose}
               className="flex-1 rounded-md border border-gray-300 text-gray-700 font-semibold py-2 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300 font-sfpro"
-              disabled={loading}
+              disabled={loading || fetchingData}
             >
               Cancel
             </button>
             <button
               type="submit"
               className={`flex-1 ${buttonPrimary}`}
-              disabled={loading}
+              disabled={loading || fetchingData || userMeters.length === 0}
             >
               {loading ? "Processing..." : "Add Residence"}
             </button>
