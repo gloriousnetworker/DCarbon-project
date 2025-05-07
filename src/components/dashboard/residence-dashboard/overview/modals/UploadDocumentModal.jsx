@@ -31,7 +31,9 @@ const DOCUMENT_TYPES = [
   { id: 'alternate-location', label: 'Alternate Location Agreement' },
 ];
 
-export default function UploadDocumentsModal({ isOpen, onClose, userId }) {
+const API_BASE_URL = 'https://services.dcarbon.solutions';
+
+export default function UploadDocumentsModal({ isOpen, onClose }) {
   const [selectedDocumentType, setSelectedDocumentType] = useState('');
   const [file, setFile] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -46,7 +48,7 @@ export default function UploadDocumentsModal({ isOpen, onClose, userId }) {
         toast.error('File size exceeds 10MB limit');
         return;
       }
-      
+
       // Validate file type
       const validTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
       if (!validTypes.includes(selectedFile.type)) {
@@ -61,7 +63,7 @@ export default function UploadDocumentsModal({ isOpen, onClose, userId }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!selectedDocumentType) {
       toast.error('Please select a document type');
       return;
@@ -81,10 +83,18 @@ export default function UploadDocumentsModal({ isOpen, onClose, userId }) {
         throw new Error('Authentication token not found');
       }
 
+      // Extract userId from token
+      const tokenPayload = JSON.parse(atob(authToken.split('.')[1]));
+      const userId = tokenPayload?.userId || tokenPayload?.sub;
+      
+      if (!userId) {
+        throw new Error('User ID not found in authentication token');
+      }
+
       const formData = new FormData();
       formData.append('file', file);
 
-      const endpoint = `https://services.dcarbon.solutions/api/user/residential-docs/${selectedDocumentType}/${userId}`;
+      const endpoint = `${API_BASE_URL}/api/residential-facility/residential-docs/${selectedDocumentType}/${userId}`;
 
       const response = await fetch(endpoint, {
         method: 'PUT',
@@ -95,12 +105,13 @@ export default function UploadDocumentsModal({ isOpen, onClose, userId }) {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || 'Failed to upload document');
       }
 
       toast.success('Document uploaded successfully!', { id: uploadToast });
       resetForm();
+      onClose(); // Close the modal after successful upload
     } catch (err) {
       toast.error(err.message || 'An error occurred during upload', { id: uploadToast });
     } finally {
@@ -142,13 +153,16 @@ export default function UploadDocumentsModal({ isOpen, onClose, userId }) {
           },
         }}
       />
-      
+
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20">
         <div className="relative bg-white p-8 rounded-lg w-full max-w-md">
-          <div className={backArrow} onClick={() => {
-            resetForm();
-            onClose();
-          }}>
+          <div
+            className={backArrow}
+            onClick={() => {
+              resetForm();
+              onClose();
+            }}
+          >
             &#8592; Back
           </div>
           <h2 className={pageTitle}>Upload Residential Documents</h2>
@@ -185,9 +199,7 @@ export default function UploadDocumentsModal({ isOpen, onClose, userId }) {
                     accept=".pdf,.jpg,.jpeg,.png"
                     required
                   />
-                  <span>
-                    {file ? file.name : 'Choose a file...'}
-                  </span>
+                  <span>{file ? file.name : 'Choose a file...'}</span>
                   <div className={uploadIconContainer}>
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
