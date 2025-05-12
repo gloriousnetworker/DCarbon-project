@@ -1,8 +1,8 @@
 "use client";
 
-import PartnerStepOneCard from '../../../../../components/partner/StepOneCard';
+import PartnerFinanceCompany from '../../../../../components/partner/FinanceCompany';
 
-export default function ResidenceStepOnePage() {
+export default function PartnerFinanceCompanyPage() {
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-[#FFFFFF]">
       {/* Left Section - Image */}
@@ -16,7 +16,7 @@ export default function ResidenceStepOnePage() {
 
       {/* Right Section - Login Card */}
       <div className="w-full md:w-1/2 p-6 flex justify-center items-center">
-        <PartnerStepOneCard />
+        <PartnerFinanceCompany />
       </div>
     </div>
   );

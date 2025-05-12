@@ -59,7 +59,7 @@ export default function AgreementFormPage() {
       }
 
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/user/accept-user-agreement-terms/${userId}`,
+        `https://dcarbon-server.onrender.com/api/user/accept-user-agreement-terms/${userId}`,
         {
           method: "PUT",
           headers: {

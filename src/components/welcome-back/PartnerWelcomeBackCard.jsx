@@ -13,7 +13,7 @@ export default function PartnerWelcomeBackCard() {
     
     // Add a delay before navigation
     setTimeout(() => {
-      router.push('/register/partner-user-registration/step-one');
+      router.push('/register/partner-user-registration');
     }, 1000); // 1 second delay
   };
 
