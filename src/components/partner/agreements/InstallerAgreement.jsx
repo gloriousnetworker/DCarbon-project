@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 
-export default function Agreement({
+export default function InstallerAgreement({
   onAllCheckedChange,
   signatureData,
   onOpenSignatureModal,

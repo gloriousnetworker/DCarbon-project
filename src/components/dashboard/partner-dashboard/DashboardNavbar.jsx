@@ -1,30 +1,50 @@
-import React from "react";
+'use client';
+
+import React, { useEffect, useState } from "react";
 import { FaBars, FaSearch, FaBell, FaHeadset } from "react-icons/fa";
 
 const DashboardNavbar = ({
   toggleSidebar,
   selectedSection,
   sectionDisplayMap,
-  onSectionChange,      // ← new prop
+  onSectionChange,
 }) => {
+  const [partnerType, setPartnerType] = useState('');
+  
+  useEffect(() => {
+    // Get partner type from localStorage when component mounts
+    const storedPartnerType = localStorage.getItem('partnerType');
+    if (storedPartnerType) {
+      setPartnerType(storedPartnerType);
+    }
+  }, []);
+  
+  const getDisplayPartnerType = (type) => {
+    switch(type) {
+      case 'sales_agent': return 'Sales Agent';
+      case 'finance_company': return 'Finance Company';
+      case 'installer': return 'Installer';
+      default: return 'Partner';
+    }
+  };
+  
   return (
     <header className="bg-white border-b border-gray-200">
       <div className="max-w-full px-4 py-3 flex items-center justify-between">
-        {/* Left: Hamburger + Title + Sales Agent */}
+        {/* Left: Hamburger + Title + Partner Type */}
         <div className="flex items-center space-x-4">
           <button className="md:hidden" onClick={toggleSidebar}>
             <FaBars className="text-gray-700" size={20} />
           </button>
-
           <h1 className="font-[550] text-[16px] leading-[50%] tracking-[-0.05em] text-[#1E1E1E] font-sfpro text-center">
             {sectionDisplayMap[selectedSection]}
           </h1>
-
-          <button className="bg-[#1E1E1E] text-white px-2 py-1.5 rounded-full text-[10px] font-medium font-sfpro">
-            Sales Agent
-          </button>
+          {partnerType && (
+            <button className="bg-[#1E1E1E] text-white px-2 py-1.5 rounded-full text-[10px] font-medium font-sfpro">
+              {getDisplayPartnerType(partnerType)}
+            </button>
+          )}
         </div>
-
         {/* Center: Search Bar */}
         <div className="flex-1 flex justify-center mx-4">
           <div className="relative w-full max-w-md">
@@ -40,7 +60,6 @@ const DashboardNavbar = ({
             />
           </div>
         </div>
-
         {/* Right: Notifications & Support */}
         <div className="flex items-center space-x-6">
           {/* Bell → routes to notifications section */}
@@ -58,7 +77,6 @@ const DashboardNavbar = ({
             />
             <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500" />
           </button>
-
           {/* Support icon stays unchanged */}
           <FaHeadset className="text-[#039994]" size={20} />
         </div>

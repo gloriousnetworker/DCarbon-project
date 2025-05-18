@@ -62,7 +62,7 @@ export default function StepOneCard() {
 
       if (response.data.status === 'success') {
         toast.success('Partner registration successful');
-        router.push('/register/partner-user-registration/agreement');
+        router.push('/register/partner-user-registration/sales-agent-agreement');
       } else {
         throw new Error(response.data.message || 'Partner registration failed');
       }
