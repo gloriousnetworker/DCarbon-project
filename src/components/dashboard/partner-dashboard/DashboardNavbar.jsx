@@ -1,5 +1,4 @@
 'use client';
-
 import React, { useEffect, useState } from "react";
 import { FaBars, FaSearch, FaBell, FaHeadset } from "react-icons/fa";
 
@@ -10,15 +9,71 @@ const DashboardNavbar = ({
   onSectionChange,
 }) => {
   const [partnerType, setPartnerType] = useState('');
-  
+  const [isLoading, setIsLoading] = useState(true);
+ 
   useEffect(() => {
-    // Get partner type from localStorage when component mounts
-    const storedPartnerType = localStorage.getItem('partnerType');
-    if (storedPartnerType) {
-      setPartnerType(storedPartnerType);
-    }
+    const fetchUserData = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Get userId and authToken from localStorage
+        const userId = localStorage.getItem('userId');
+        const authToken = localStorage.getItem('authToken');
+        
+        if (!userId || !authToken) {
+          // Fallback to partnerType in localStorage if userId or authToken is missing
+          const storedPartnerType = localStorage.getItem('partnerType');
+          if (storedPartnerType) {
+            setPartnerType(storedPartnerType);
+          }
+          setIsLoading(false);
+          return;
+        }
+        
+        // Fetch user data from API
+        const response = await fetch(
+          `https://services.dcarbon.solutions/api/user/partner/user/${userId}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${authToken}`
+            }
+          }
+        );
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch user data');
+        }
+        
+        const responseData = await response.json();
+        
+        if (responseData.status === 'success' && responseData.data) {
+          setPartnerType(responseData.data.partnerType);
+          
+          // Update localStorage with the latest partnerType
+          localStorage.setItem('partnerType', responseData.data.partnerType);
+        } else {
+          // Fallback to localStorage if API doesn't return valid data
+          const storedPartnerType = localStorage.getItem('partnerType');
+          if (storedPartnerType) {
+            setPartnerType(storedPartnerType);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        
+        // Fallback to localStorage on error
+        const storedPartnerType = localStorage.getItem('partnerType');
+        if (storedPartnerType) {
+          setPartnerType(storedPartnerType);
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchUserData();
   }, []);
-  
+ 
   const getDisplayPartnerType = (type) => {
     switch(type) {
       case 'sales_agent': return 'Sales Agent';
@@ -27,7 +82,7 @@ const DashboardNavbar = ({
       default: return 'Partner';
     }
   };
-  
+ 
   return (
     <header className="bg-white border-b border-gray-200">
       <div className="max-w-full px-4 py-3 flex items-center justify-between">
@@ -39,11 +94,15 @@ const DashboardNavbar = ({
           <h1 className="font-[550] text-[16px] leading-[50%] tracking-[-0.05em] text-[#1E1E1E] font-sfpro text-center">
             {sectionDisplayMap[selectedSection]}
           </h1>
-          {partnerType && (
+          {isLoading ? (
+            <div className="bg-gray-200 text-gray-500 px-2 py-1.5 rounded-full text-[10px] font-medium font-sfpro">
+              Loading...
+            </div>
+          ) : partnerType ? (
             <button className="bg-[#1E1E1E] text-white px-2 py-1.5 rounded-full text-[10px] font-medium font-sfpro">
               {getDisplayPartnerType(partnerType)}
             </button>
-          )}
+          ) : null}
         </div>
         {/* Center: Search Bar */}
         <div className="flex-1 flex justify-center mx-4">
