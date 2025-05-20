@@ -234,7 +234,6 @@ export default function OperatorRegistrationCard() {
         throw new Error(data.message || 'Failed to submit provider request');
       }
 
-      // Store the request in local storage
       localStorage.setItem('utilityProviderRequest', JSON.stringify(data.data));
 
       toast.success('Provider request submitted successfully!', {
@@ -245,7 +244,6 @@ export default function OperatorRegistrationCard() {
         }
       });
 
-      // Skip utility authorization and go straight to agreement
       router.push('/register/commercial-operator-registration/agreement');
     } catch (error) {
       toast.error(error.message || 'Error submitting provider request', {
@@ -291,9 +289,9 @@ export default function OperatorRegistrationCard() {
 
     try {
       // First update the utility auth email
-      const emailUpdateResponse = await updateUtilityAuthEmail(userId, authToken);
+      await updateUtilityAuthEmail(userId, authToken);
 
-      // Then submit the operator registration data
+      // Then submit the operator registration data (without utilityProvider)
       const registrationResponse = await fetch(
         `${localURL}/api/user/commercial-registration/${userId}`,
         {
@@ -306,8 +304,7 @@ export default function OperatorRegistrationCard() {
             entityType: formData.entityType,
             commercialRole: formData.commercialRole,
             ownerFullName: formData.ownerFullName,
-            phoneNumber: formData.phoneNumber,
-            utilityProvider: selectedProvider.id
+            phoneNumber: formData.phoneNumber
           })
         }
       );
@@ -324,6 +321,9 @@ export default function OperatorRegistrationCard() {
           color: '#1B5E20'
         }
       });
+
+      // Store the selected provider in local storage for later use
+      localStorage.setItem('selectedUtilityProvider', JSON.stringify(selectedProvider));
 
       // Then initiate utility authorization
       const initiateResponse = await fetch(
@@ -350,6 +350,7 @@ export default function OperatorRegistrationCard() {
         }
       });
 
+      // Open utility authorization in new tab
       window.open('https://utilityapi.com/authorize/DCarbon_Solutions', '_blank');
       setShowUtilityModal(true);
     } catch (error) {
