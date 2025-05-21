@@ -1,27 +1,38 @@
 import React, { useState, useEffect } from "react";
+import { FiX } from "react-icons/fi";
 import axios from "axios";
 import toast from "react-hot-toast";
-import { pageTitle, labelClass, inputClass, buttonPrimary } from "../styles";
+import {
+  labelClass,
+  selectClass,
+  inputClass,
+  buttonPrimary,
+  pageTitle,
+} from "./styles";
+import Loader from "@/components/loader/Loader.jsx";
 
-export default function AddCommercialFacilityModal({ isOpen, onClose }) {
+export default function AddFacilityModal({ onClose, onFacilityAdded }) {
   const [formData, setFormData] = useState({
     facilityName: "",
     address: "",
     utilityProvider: "",
     meterId: "",
     commercialRole: "both",
-    entityType: "individual"
+    entityType: "company",
+    isAddressSame: ""
   });
   const [loading, setLoading] = useState(false);
   const [utilityProviders, setUtilityProviders] = useState([]);
   const [utilityProvidersLoading, setUtilityProvidersLoading] = useState(false);
+  const [userMeters, setUserMeters] = useState([]);
+  const [userMetersLoading, setUserMetersLoading] = useState(false);
+  const [selectedMeter, setSelectedMeter] = useState(null);
 
-  // Fetch utility providers on component mount
+  // Fetch utility providers on modal open
   useEffect(() => {
-    if (isOpen) {
-      fetchUtilityProviders();
-    }
-  }, [isOpen]);
+    fetchUtilityProviders();
+    fetchUserMeters();
+  }, []);
 
   const fetchUtilityProviders = async () => {
     const userId = localStorage.getItem("userId");
@@ -52,12 +63,75 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
     }
   };
 
+  const fetchUserMeters = async () => {
+    const userId = localStorage.getItem("userId");
+    const authToken = localStorage.getItem("authToken");
+
+    if (!userId || !authToken) return;
+
+    setUserMetersLoading(true);
+    try {
+      const response = await axios.get(
+        `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`
+          }
+        }
+      );
+
+      if (response.data.status === "success") {
+        // Filter only electric meters
+        const electricMeters = response.data.data.meters.filter(
+          meter => meter.base.service_class === "electric"
+        );
+        setUserMeters(electricMeters);
+      }
+    } catch (error) {
+      console.error("Error fetching user meters:", error);
+      toast.error("Failed to load meter information");
+    } finally {
+      setUserMetersLoading(false);
+    }
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
+
+    // If meter ID is selected, update the selectedMeter and address
+    if (name === "meterId" && value) {
+      const meter = userMeters.find(m => m.uid === value);
+      if (meter) {
+        setSelectedMeter(meter);
+        // Reset the isAddressSame value when meter changes
+        setFormData(prev => ({
+          ...prev,
+          [name]: value,
+          isAddressSame: ""
+        }));
+      }
+    }
+  };
+
+  const handleAddressConfirm = (isAddressSame) => {
+    if (isAddressSame === "yes") {
+      setFormData(prev => ({
+        ...prev,
+        address: selectedMeter?.base?.service_address || "",
+        isAddressSame: "yes"
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        address: "",
+        isAddressSame: "no"
+      }));
+    }
   };
 
   const storeFacilityData = (facilityData) => {
@@ -65,10 +139,7 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
     const userFacilitiesKey = `user_${userId}_facilities`;
     
     try {
-      // Get existing facilities from localStorage
       const existingFacilities = JSON.parse(localStorage.getItem(userFacilitiesKey)) || [];
-      
-      // Add new facility
       const updatedFacilities = [
         ...existingFacilities,
         {
@@ -78,8 +149,6 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
           createdAt: facilityData.createdAt
         }
       ];
-      
-      // Save back to localStorage
       localStorage.setItem(userFacilitiesKey, JSON.stringify(updatedFacilities));
     } catch (error) {
       console.error("Error storing facility data:", error);
@@ -113,19 +182,20 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
 
       if (response.data.status === "success") {
         toast.success("Facility created successfully");
-        
-        // Store the facility data in localStorage
         storeFacilityData(response.data.data);
+        onFacilityAdded(response.data.data);
         
-        // Reset form and close modal
+        // Reset form
         setFormData({
           facilityName: "",
           address: "",
           utilityProvider: "",
           meterId: "",
           commercialRole: "both",
-          entityType: "individual"
+          entityType: "company",
+          isAddressSame: ""
         });
+        setSelectedMeter(null);
         onClose();
       } else {
         throw new Error(response.data.message || "Failed to create facility");
@@ -142,42 +212,44 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
     }
   };
 
-  if (!isOpen) return null;
+  // Check if form is complete
+  const isFormComplete = 
+    formData.facilityName && 
+    formData.address && 
+    formData.utilityProvider && 
+    formData.meterId && 
+    formData.isAddressSame;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20">
-      <div className="relative bg-white p-6 rounded-lg w-full max-w-md">
+    <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
+      <div className="bg-white w-full max-w-lg rounded-md shadow-lg p-6 relative">
+        {/* Loader Overlay */}
+        {loading && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-white bg-opacity-70 rounded-md">
+            <Loader />
+          </div>
+        )}
+        
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute right-4 top-4 text-gray-500 hover:text-gray-700 focus:outline-none"
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
           disabled={loading}
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
+          <FiX size={24} />
         </button>
 
-        <h2 className={pageTitle}>Add Commercial Facility</h2>
+        {/* Heading */}
+        <h2 className={`${pageTitle} text-left mb-6`}>
+          Add Commercial Facility
+        </h2>
 
-        <form onSubmit={handleSubmit} className="space-y-4 mt-6">
+        <form onSubmit={handleSubmit}>
           {/* Facility Name */}
-          <div>
-            <div className="flex items-center">
-              <label className={labelClass}>Facility Name</label>
-              <span className="text-red-500 ml-1">*</span>
-            </div>
+          <div className="mb-4">
+            <label className={labelClass}>
+              Facility Name <span className="text-red-500">*</span>
+            </label>
             <input
               type="text"
               name="facilityName"
@@ -190,35 +262,16 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
             />
           </div>
 
-          {/* Address */}
-          <div>
-            <div className="flex items-center">
-              <label className={labelClass}>Address</label>
-              <span className="text-red-500 ml-1">*</span>
-            </div>
-            <input
-              type="text"
-              name="address"
-              value={formData.address}
-              onChange={handleChange}
-              className={inputClass}
-              placeholder="Enter facility address"
-              required
-              disabled={loading}
-            />
-          </div>
-
           {/* Utility Provider */}
-          <div>
-            <div className="flex items-center">
-              <label className={labelClass}>Utility Provider</label>
-              <span className="text-red-500 ml-1">*</span>
-            </div>
+          <div className="mb-4">
+            <label className={labelClass}>
+              Utility Provider <span className="text-red-500">*</span>
+            </label>
             <select
               name="utilityProvider"
               value={formData.utilityProvider}
               onChange={handleChange}
-              className={inputClass}
+              className={selectClass}
               required
               disabled={loading || utilityProvidersLoading}
             >
@@ -235,38 +288,106 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
             </select>
           </div>
 
-          {/* Meter ID */}
-          <div>
-            <div className="flex items-center">
-              <label className={labelClass}>Meter ID</label>
-              <span className="text-red-500 ml-1">*</span>
-            </div>
-            <input
-              type="text"
+          {/* Meter ID - Changed to dropdown */}
+          <div className="mb-4">
+            <label className={labelClass}>
+              Meter ID <span className="text-red-500">*</span>
+            </label>
+            <select
               name="meterId"
               value={formData.meterId}
               onChange={handleChange}
-              className={inputClass}
-              placeholder="Enter unique meter ID"
+              className={selectClass}
               required
-              disabled={loading}
-            />
+              disabled={loading || userMetersLoading}
+            >
+              <option value="">Select meter ID</option>
+              {userMetersLoading ? (
+                <option value="" disabled>Loading meters...</option>
+              ) : userMeters.length === 0 ? (
+                <option value="" disabled>No electric meters found</option>
+              ) : (
+                userMeters.map(meter => (
+                  <option key={meter.uid} value={meter.uid}>
+                    {meter.base.meter_numbers[0]} - {meter.base.service_tariff}
+                  </option>
+                ))
+              )}
+            </select>
             <p className="mt-1 text-xs text-gray-500">
-              This must be a unique identifier for your meter
+              Only electric meters are available for selection
             </p>
           </div>
 
-          {/* Commercial Role */}
-          <div>
-            <div className="flex items-center">
-              <label className={labelClass}>Commercial Role</label>
-              <span className="text-red-500 ml-1">*</span>
+          {/* Billing Address Display */}
+          {selectedMeter && (
+            <div className="mb-4 p-3 bg-gray-50 rounded-md border border-gray-200">
+              <h3 className="font-medium text-gray-700 mb-1">Billing Information</h3>
+              <p className="text-sm text-gray-600">{selectedMeter.base.billing_address}</p>
+              
+              <div className="mt-3">
+                <p className="text-sm font-medium text-gray-700">
+                  Is this the same address for solar installation?
+                </p>
+                <div className="mt-2 flex gap-3">
+                  <button
+                    type="button"
+                    className={`px-4 py-2 rounded-md border ${
+                      formData.isAddressSame === "yes" 
+                        ? "bg-green-100 border-green-500 text-green-700" 
+                        : "border-gray-300 hover:bg-gray-50"
+                    }`}
+                    onClick={() => handleAddressConfirm("yes")}
+                    disabled={loading}
+                  >
+                    Yes
+                  </button>
+                  <button
+                    type="button"
+                    className={`px-4 py-2 rounded-md border ${
+                      formData.isAddressSame === "no" 
+                        ? "bg-blue-100 border-blue-500 text-blue-700" 
+                        : "border-gray-300 hover:bg-gray-50"
+                    }`}
+                    onClick={() => handleAddressConfirm("no")}
+                    disabled={loading}
+                  >
+                    No
+                  </button>
+                </div>
+              </div>
             </div>
+          )}
+
+          {/* Address Input Field - Only show if "No" is selected */}
+          {formData.isAddressSame === "no" && (
+            <div className="mb-4">
+              <label className={labelClass}>
+                Installation Address <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="address"
+                value={formData.address}
+                onChange={handleChange}
+                className={inputClass}
+                placeholder="Street, City, County, State"
+                required
+                disabled={loading}
+              />
+            </div>
+          )}
+
+          {/* Commercial Role */}
+          <div className="mb-4">
+            <label className={labelClass}>
+              Commercial Role <span className="text-red-500">*</span>
+            </label>
             <select
               name="commercialRole"
               value={formData.commercialRole}
               onChange={handleChange}
-              className={inputClass}
+              className={selectClass}
               required
               disabled={loading}
             >
@@ -277,42 +398,31 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
           </div>
 
           {/* Entity Type */}
-          <div>
-            <div className="flex items-center">
-              <label className={labelClass}>Entity Type</label>
-              <span className="text-red-500 ml-1">*</span>
-            </div>
+          <div className="mb-4">
+            <label className={labelClass}>
+              Entity Type <span className="text-red-500">*</span>
+            </label>
             <select
               name="entityType"
               value={formData.entityType}
               onChange={handleChange}
-              className={inputClass}
+              className={selectClass}
               required
               disabled={loading}
             >
-              <option value="individual">Individual</option>
               <option value="company">Company</option>
+              <option value="individual">Individual</option>
             </select>
           </div>
 
-          {/* Form Actions */}
-          <div className="flex space-x-4 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 rounded-md border border-gray-300 text-gray-700 font-semibold py-2 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300 font-sfpro"
-              disabled={loading}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className={`flex-1 ${buttonPrimary}`}
-              disabled={loading || !formData.facilityName || !formData.address || !formData.utilityProvider || !formData.meterId}
-            >
-              {loading ? "Processing..." : "Add Facility"}
-            </button>
-          </div>
+          {/* Submit Button */}
+          <button
+            type="submit"
+            className={`${buttonPrimary} mt-6 w-full ${!isFormComplete ? 'opacity-50 cursor-not-allowed' : ''}`}
+            disabled={loading || !isFormComplete}
+          >
+            {loading ? "Processing..." : "Add Facility"}
+          </button>
         </form>
       </div>
     </div>

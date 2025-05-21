@@ -30,8 +30,10 @@ export default function UtilityAuthorizationCard() {
   const [selectedMeter, setSelectedMeter] = useState(null);
   const [isSameLocation, setIsSameLocation] = useState(null);
   const [apiError, setApiError] = useState(null);
+  const [metersFetched, setMetersFetched] = useState(false);
+  const [metersData, setMetersData] = useState(null);
 
-  // Fetch utility data from localStorage
+  // Fetch utility data from localStorage and API
   useEffect(() => {
     const fetchUtilityData = async () => {
       try {
@@ -65,10 +67,8 @@ export default function UtilityAuthorizationCard() {
 
         setUtilityData(utilityData);
         
-        // If we have meter data in localStorage, use it
-        if (authData.meters) {
-          setSelectedMeter(authData.meters[0]);
-        }
+        // Fetch user meters from API
+        await fetchUserMeters(authData.userId);
 
       } catch (error) {
         console.error("Error fetching utility data:", error);
@@ -81,6 +81,44 @@ export default function UtilityAuthorizationCard() {
     fetchUtilityData();
   }, []);
 
+  const fetchUserMeters = async (userId) => {
+    try {
+      // Get the auth token from localStorage
+      const authToken = localStorage.getItem('authToken');
+      if (!authToken) {
+        throw new Error('No auth token found in localStorage');
+      }
+
+      const apiUrl = `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`;
+      
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`API request failed with status ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.status === 'success' && data.data?.meters?.meters?.length > 0) {
+        setMetersData(data.data.meters);
+        setSelectedMeter(data.data.meters.meters[0]);
+        setMetersFetched(true);
+      } else {
+        throw new Error('No meters found or invalid response format');
+      }
+
+    } catch (error) {
+      console.error("Error fetching user meters:", error);
+      setApiError(error.message);
+    }
+  };
+
   const handleSubmit = () => {
     // Validate form
     if (isSameLocation === null) {
@@ -92,7 +130,13 @@ export default function UtilityAuthorizationCard() {
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
-      router.push('/register/commercial-operator-registration/agreement');
+      
+      // If meters were fetched successfully, redirect to login
+      if (metersFetched) {
+        router.push('/login');
+      } else {
+        router.push('/register/commercial-operator-registration/agreement');
+      }
     }, 1500);
   };
 
@@ -115,6 +159,31 @@ export default function UtilityAuthorizationCard() {
             className="mt-4 px-4 py-2 bg-[#039994] text-white rounded-md"
           >
             Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Show success message if meters were fetched successfully
+  if (metersFetched) {
+    return (
+      <div className={mainContainer}>
+        <div className={headingContainer}>
+          <h1 className={pageTitle}>Utility Authorization</h1>
+        </div>
+        
+        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative my-6">
+          <strong className="font-bold">Success!</strong>
+          <span className="block sm:inline"> Meter retrieval successful. Please proceed to login to continue creating your facilities.</span>
+        </div>
+        
+        <div className="flex justify-center mt-6">
+          <button
+            onClick={() => router.push('/login')}
+            className={buttonPrimary}
+          >
+            Proceed to Login
           </button>
         </div>
       </div>

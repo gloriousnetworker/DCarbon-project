@@ -1,21 +1,105 @@
-// src/components/QuickActions.jsx
+import React, { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 
-import React, { useState } from "react";
-import AddCommercialFacilityModal from "./modals/AddCommercialFacilityModal";
-import ResolvePendingActionsModal from "./modals/ResolvePendingActionsModal";
-import CurrentStatementModal from "./modals/CurrentStatementModal";
-import InviteCollaboratorModal from "./modals/InviteCollaboratorModal";
+// Dynamically import modals to handle potential SSR issues
+const AddCommercialFacilityModal = dynamic(
+  () => import("./modals/AddCommercialFacilityModal"),
+  { ssr: false }
+);
+const ResolvePendingActionsModal = dynamic(
+  () => import("./modals/ResolvePendingActionsModal"),
+  { ssr: false }
+);
+const CurrentStatementModal = dynamic(
+  () => import("./modals/CurrentStatementModal"),
+  { ssr: false }
+);
+const InviteCollaboratorModal = dynamic(
+  () => import("./modals/InviteCollaboratorModal"),
+  { ssr: false }
+);
 
 export default function QuickActions() {
   const [modal, setModal] = useState("");
+  const [authStatus, setAuthStatus] = useState("PENDING");
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Check auth status on mount
+  useEffect(() => {
+    const checkUtilityAuthorization = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Get userId and authToken from localStorage
+        const userId = typeof window !== 'undefined' ? localStorage.getItem("userId") : null;
+        const authToken = typeof window !== 'undefined' ? localStorage.getItem("authToken") : null;
+        
+        if (!userId || !authToken) {
+          console.error("Missing userId or authToken");
+          setAuthStatus("PENDING");
+          setIsLoading(false);
+          return;
+        }
+
+        // Make API call to check utility authorization
+        const response = await fetch(
+          `https://services.dcarbon.solutions/api/user/utility-authorization/${userId}`,
+          {
+            method: "GET",
+            headers: {
+              "Authorization": `Bearer ${authToken}`,
+              "Content-Type": "application/json"
+            }
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch authorization status");
+        }
+
+        const data = await response.json();
+        
+        if (data.success) {
+          setAuthStatus("APPROVED");
+        } else {
+          // Use the status from the API response if available
+          setAuthStatus(data.status || "PENDING");
+        }
+      } catch (error) {
+        console.error("Error checking utility authorization:", error);
+        // Fallback to checking localStorage as in the original code
+        const utilityRequest = typeof window !== 'undefined' ? 
+          JSON.parse(localStorage.getItem("utilityProviderRequest") || "null") : 
+          null;
+        if (utilityRequest) {
+          setAuthStatus(utilityRequest.status || "PENDING");
+        } else {
+          const authCompleted = typeof window !== 'undefined' ? 
+            localStorage.getItem("utilityAuthCompleted") : 
+            null;
+          setAuthStatus(authCompleted ? "APPROVED" : "PENDING");
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkUtilityAuthorization();
+  }, []);
 
   const openModal = (type) => {
+    // Prevent opening add facility modal if not authorized
+    if (type === "add" && authStatus !== "APPROVED") {
+      return;
+    }
     setModal(type);
   };
 
   const closeModal = () => {
     setModal("");
   };
+
+  const isAddDisabled = authStatus !== "APPROVED";
 
   return (
     <div className="w-full py-4 px-4">
@@ -30,12 +114,15 @@ export default function QuickActions() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Card 1: Add Commercial Facility */}
         <div
-          className="p-4 min-h-[100px] rounded-2xl flex flex-col items-start justify-start cursor-pointer"
+          className={`p-4 min-h-[100px] rounded-2xl flex flex-col items-start justify-start ${
+            isLoading || isAddDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+          }`}
           style={{
             background:
               "radial-gradient(100.83% 133.3% at 130.26% -10.83%, #013331 0%, #039994 100%)",
           }}
-          onClick={() => openModal("add")}
+          onClick={() => !isLoading && !isAddDisabled && openModal("add")}
+          title={isAddDisabled ? `Utility provider authorization status: ${authStatus}` : ""}
         >
           <img
             src="/vectors/MapPinPlus.png"
@@ -47,6 +134,9 @@ export default function QuickActions() {
             Add <br />
             Commercial Facility
           </p>
+          {isLoading && (
+            <div className="mt-1 text-white text-xs">Loading...</div>
+          )}
         </div>
 
         {/* Card 2: Resolve Pending Actions */}
@@ -114,22 +204,18 @@ export default function QuickActions() {
       </div>
 
       {/* Render the modals */}
-      <AddCommercialFacilityModal
-        isOpen={modal === "add"}
-        onClose={closeModal}
-      />
-      <ResolvePendingActionsModal
-        isOpen={modal === "resolve"}
-        onClose={closeModal}
-      />
-      <CurrentStatementModal
-        isOpen={modal === "statement"}
-        onClose={closeModal}
-      />
-      <InviteCollaboratorModal
-        isOpen={modal === "invite"}
-        onClose={closeModal}
-      />
+      {modal === "add" && (
+        <AddCommercialFacilityModal isOpen onClose={closeModal} />
+      )}
+      {modal === "resolve" && (
+        <ResolvePendingActionsModal isOpen onClose={closeModal} />
+      )}
+      {modal === "statement" && (
+        <CurrentStatementModal isOpen onClose={closeModal} />
+      )}
+      {modal === "invite" && (
+        <InviteCollaboratorModal isOpen onClose={closeModal} />
+      )}
     </div>
   );
 }

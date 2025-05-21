@@ -20,6 +20,8 @@ const styles = {
   selectClass: 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#626060]',
   buttonPrimary: 'w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro',
   buttonSecondary: 'w-full rounded-md bg-gray-200 text-gray-800 font-semibold py-2 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 font-sfpro',
+  buttonTertiary: 'w-full rounded-md bg-white text-[#039994] font-semibold py-2 border border-[#039994] hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro',
+  buttonSmall: 'rounded-md bg-[#039994] text-white font-semibold px-3 py-1 text-sm hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro',
   spinnerOverlay: 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20',
   spinner: 'h-12 w-12 border-4 border-t-4 border-gray-300 border-t-[#039994] rounded-full animate-spin',
   termsTextContainer: 'mt-6 text-center font-sfpro text-[10px] leading-[100%] tracking-[-0.05em] text-[#1E1E1E]',
@@ -33,7 +35,9 @@ const styles = {
   providerWebsite: 'text-sm text-gray-500 mt-1',
   requestForm: 'mt-4 p-4 bg-white rounded-md border border-gray-300',
   requestInput: 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-[#039994]',
-  requestButton: 'w-full rounded-md bg-blue-600 text-white font-semibold py-2 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500'
+  requestButton: 'w-full rounded-md bg-blue-600 text-white font-semibold py-2 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500',
+  emailInputContainer: 'flex items-center gap-2',
+  emailInput: 'flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#626060]'
 };
 
 export default function OperatorRegistrationCard() {
@@ -45,6 +49,7 @@ export default function OperatorRegistrationCard() {
     utilityAuthEmail: ''
   });
   const [loading, setLoading] = useState(false);
+  const [emailVerifying, setEmailVerifying] = useState(false);
   const [showUtilityModal, setShowUtilityModal] = useState(false);
   const [utilityProviders, setUtilityProviders] = useState([]);
   const [selectedProvider, setSelectedProvider] = useState(null);
@@ -54,6 +59,8 @@ export default function OperatorRegistrationCard() {
     websiteUrl: ''
   });
   const [isFetchingProviders, setIsFetchingProviders] = useState(true);
+  const [emailConflictError, setEmailConflictError] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(false);
   const router = useRouter();
 
   const localURL = 'https://services.dcarbon.solutions';
@@ -91,6 +98,10 @@ export default function OperatorRegistrationCard() {
       ...prev,
       [name]: value
     }));
+    if (name === 'utilityAuthEmail' && (emailConflictError || emailVerified)) {
+      setEmailConflictError(false);
+      setEmailVerified(false);
+    }
   };
 
   const handleRequestChange = (e) => {
@@ -132,6 +143,10 @@ export default function OperatorRegistrationCard() {
       });
       return false;
     }
+    return true;
+  };
+
+  const validateEmail = () => {
     if (!formData.utilityAuthEmail.trim()) {
       toast.error('Please enter utility authorization email', {
         style: {
@@ -169,7 +184,25 @@ export default function OperatorRegistrationCard() {
     return true;
   };
 
-  const updateUtilityAuthEmail = async (userId, authToken) => {
+  const verifyEmail = async () => {
+    if (!validateEmail()) return;
+
+    const userId = localStorage.getItem('userId');
+    const authToken = localStorage.getItem('authToken');
+
+    if (!userId || !authToken) {
+      toast.error('Authentication required. Please login again.', {
+        style: {
+          fontFamily: 'SF Pro',
+          background: '#FFEBEE',
+          color: '#B71C1C'
+        }
+      });
+      return;
+    }
+
+    setEmailVerifying(true);
+
     try {
       const response = await fetch(
         `${localURL}/api/user/update-utility-auth-email/${userId}`,
@@ -186,14 +219,36 @@ export default function OperatorRegistrationCard() {
       );
 
       const data = await response.json();
+      
+      if (response.status === 409) {
+        setEmailConflictError(true);
+        throw new Error('This email is already in use for utility authorization');
+      }
+      
       if (!response.ok || data.status !== 'success') {
-        throw new Error(data.message || 'Failed to update utility auth email');
+        throw new Error(data.message || 'Failed to verify email');
       }
 
       localStorage.setItem('userAuthEmail', formData.utilityAuthEmail);
-      return data;
+      setEmailVerified(true);
+      
+      toast.success('Email verified successfully', {
+        style: {
+          fontFamily: 'SF Pro',
+          background: '#E8F5E9',
+          color: '#1B5E20'
+        }
+      });
     } catch (error) {
-      throw error;
+      toast.error(error.message || 'Error verifying email', {
+        style: {
+          fontFamily: 'SF Pro',
+          background: '#FFEBEE',
+          color: '#B71C1C'
+        }
+      });
+    } finally {
+      setEmailVerifying(false);
     }
   };
 
@@ -234,7 +289,10 @@ export default function OperatorRegistrationCard() {
         throw new Error(data.message || 'Failed to submit provider request');
       }
 
-      localStorage.setItem('utilityProviderRequest', JSON.stringify(data.data));
+      localStorage.setItem('utilityProviderRequest', JSON.stringify({
+        ...data.data,
+        status: 'PENDING'
+      }));
 
       toast.success('Provider request submitted successfully!', {
         style: {
@@ -270,6 +328,16 @@ export default function OperatorRegistrationCard() {
       });
       return;
     }
+    if (!emailVerified) {
+      toast.error('Please verify your email first', {
+        style: {
+          fontFamily: 'SF Pro',
+          background: '#FFEBEE',
+          color: '#B71C1C'
+        }
+      });
+      return;
+    }
 
     const userId = localStorage.getItem('userId');
     const authToken = localStorage.getItem('authToken');
@@ -288,10 +356,7 @@ export default function OperatorRegistrationCard() {
     setLoading(true);
 
     try {
-      // First update the utility auth email
-      await updateUtilityAuthEmail(userId, authToken);
-
-      // Then submit the operator registration data (without utilityProvider)
+      // Submit the operator registration data (without utilityProvider)
       const registrationResponse = await fetch(
         `${localURL}/api/user/commercial-registration/${userId}`,
         {
@@ -364,6 +429,35 @@ export default function OperatorRegistrationCard() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSkipAuthorization = () => {
+    const userId = localStorage.getItem('userId');
+    const authToken = localStorage.getItem('authToken');
+
+    if (!userId || !authToken) {
+      toast.error('Authentication required. Please login again.', {
+        style: {
+          fontFamily: 'SF Pro',
+          background: '#FFEBEE',
+          color: '#B71C1C'
+        }
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    // Store pending status in localStorage
+    localStorage.setItem('utilityProviderRequest', JSON.stringify({
+      status: 'PENDING',
+      provider: selectedProvider,
+      skipped: true
+    }));
+
+    // Proceed to next step
+    router.push('/register/commercial-operator-registration/agreement');
+    setLoading(false);
   };
 
   const handleUtilityAuthorized = () => {
@@ -562,24 +656,50 @@ export default function OperatorRegistrationCard() {
                   <label className={styles.labelClass}>Utility Authorization Email</label>
                   <span className={styles.mandatoryStar}>*</span>
                 </div>
-                <input
-                  type="email"
-                  name="utilityAuthEmail"
-                  value={formData.utilityAuthEmail}
-                  onChange={handleChange}
-                  className={styles.inputClass}
-                  placeholder="Enter email for utility authorization"
-                />
+                <div className={styles.emailInputContainer}>
+                  <input
+                    type="email"
+                    name="utilityAuthEmail"
+                    value={formData.utilityAuthEmail}
+                    onChange={handleChange}
+                    className={`${styles.emailInput} ${emailConflictError ? 'border-red-500' : ''} ${emailVerified ? 'border-green-500' : ''}`}
+                    placeholder="Enter email for utility authorization"
+                  />
+                  <button
+                    onClick={verifyEmail}
+                    className={styles.buttonSmall}
+                    disabled={emailVerifying || !formData.utilityAuthEmail.trim()}
+                  >
+                    {emailVerifying ? 'Verifying...' : 'Verify'}
+                  </button>
+                </div>
+                {emailConflictError && (
+                  <p className="text-red-500 text-xs mt-1">
+                    This email is already in use for utility authorization
+                  </p>
+                )}
+                {emailVerified && (
+                  <p className="text-green-500 text-xs mt-1">
+                    Email verified successfully
+                  </p>
+                )}
               </div>
             </div>
 
-            <div className="w-full max-w-md mt-6">
+            <div className="w-full max-w-md mt-6 space-y-3">
               <button
                 onClick={handleSubmit}
                 className={styles.buttonPrimary}
-                disabled={loading}
+                disabled={loading || !emailVerified}
               >
                 {loading ? 'Processing...' : 'Click to Authorize your Utility Provider'}
+              </button>
+              <button
+                onClick={handleSkipAuthorization}
+                className={styles.buttonTertiary}
+                disabled={loading}
+              >
+                Skip Authorization for Now
               </button>
             </div>
           </>
