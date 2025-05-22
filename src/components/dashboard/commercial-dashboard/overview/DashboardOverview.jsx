@@ -28,12 +28,14 @@ export default function DashboardOverview() {
         utilityProviderRequest: utilityRequest
       });
 
-      // Check auth status
-      if (utilityRequest) {
+      // Check if we have auth status in local storage
+      const storedAuthStatus = localStorage.getItem("utilityAuthStatus");
+      if (storedAuthStatus) {
+        setAuthStatus(storedAuthStatus);
+      } else if (utilityRequest) {
         setAuthStatus(utilityRequest.status || "PENDING");
       } else {
-        const authCompleted = localStorage.getItem("utilityAuthCompleted");
-        setAuthStatus(authCompleted ? "APPROVED" : "PENDING");
+        setAuthStatus("PENDING");
       }
     };
 
@@ -52,7 +54,7 @@ export default function DashboardOverview() {
   return (
     <div className="w-full min-h-screen space-y-8 p-4">
       {/* Auth Status Banner */}
-      {authStatus === "PENDING" && (
+      {authStatus !== "AUTHORIZED" && (
         <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
           <div className="flex">
             <div className="flex-shrink-0">
@@ -62,12 +64,18 @@ export default function DashboardOverview() {
             </div>
             <div className="ml-3">
               <p className="text-sm text-yellow-700">
-                Your authorization is pending. <button 
-                  onClick={() => setShowWelcomeModal(true)}
-                  className="font-medium text-yellow-700 underline hover:text-yellow-600"
-                >
-                  Click here
-                </button> to learn what this means for your account.
+                {authStatus === "PENDING" ? (
+                  <>
+                    Your authorization is pending. <button 
+                      onClick={() => setShowWelcomeModal(true)}
+                      className="font-medium text-yellow-700 underline hover:text-yellow-600"
+                    >
+                      Click here
+                    </button> to learn what this means for your account.
+                  </>
+                ) : (
+                  "Your utility provider authorization is not yet complete. Please complete the verification process."
+                )}
               </p>
             </div>
           </div>
@@ -75,7 +83,7 @@ export default function DashboardOverview() {
       )}
 
       {/* Quick Actions */}
-      <QuickActions />
+      <QuickActions authStatus={authStatus} setAuthStatus={setAuthStatus} />
 
       {/* Separator */}
       <hr className="border-gray-300" />

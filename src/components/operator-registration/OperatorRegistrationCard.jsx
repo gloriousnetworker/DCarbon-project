@@ -37,7 +37,11 @@ const styles = {
   requestInput: 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-[#039994]',
   requestButton: 'w-full rounded-md bg-blue-600 text-white font-semibold py-2 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500',
   emailInputContainer: 'flex items-center gap-2',
-  emailInput: 'flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#626060]'
+  emailInput: 'flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#626060]',
+  searchInput: 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro',
+  tooltipIcon: 'ml-1 text-gray-400 hover:text-gray-600 cursor-pointer relative',
+  tooltipText: 'absolute z-10 w-64 p-2 mt-2 text-xs text-white bg-gray-700 rounded-md shadow-lg -left-32',
+  tooltipContainer: 'relative inline-block'
 };
 
 export default function OperatorRegistrationCard() {
@@ -52,6 +56,8 @@ export default function OperatorRegistrationCard() {
   const [emailVerifying, setEmailVerifying] = useState(false);
   const [showUtilityModal, setShowUtilityModal] = useState(false);
   const [utilityProviders, setUtilityProviders] = useState([]);
+  const [filteredProviders, setFilteredProviders] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [selectedProvider, setSelectedProvider] = useState(null);
   const [showRequestForm, setShowRequestForm] = useState(false);
   const [requestData, setRequestData] = useState({
@@ -61,9 +67,15 @@ export default function OperatorRegistrationCard() {
   const [isFetchingProviders, setIsFetchingProviders] = useState(true);
   const [emailConflictError, setEmailConflictError] = useState(false);
   const [emailVerified, setEmailVerified] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [hasMounted, setHasMounted] = useState(false);
   const router = useRouter();
 
   const localURL = 'https://services.dcarbon.solutions';
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
 
   useEffect(() => {
     const fetchUtilityProviders = async () => {
@@ -73,6 +85,7 @@ export default function OperatorRegistrationCard() {
         
         if (response.ok && data.status === 'success') {
           setUtilityProviders(data.data);
+          setFilteredProviders(data.data);
         } else {
           throw new Error(data.message || 'Failed to fetch utility providers');
         }
@@ -92,6 +105,18 @@ export default function OperatorRegistrationCard() {
     fetchUtilityProviders();
   }, []);
 
+  useEffect(() => {
+    if (searchTerm.trim() === '') {
+      setFilteredProviders(utilityProviders);
+    } else {
+      const filtered = utilityProviders.filter(provider =>
+        provider.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        provider.website.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFilteredProviders(filtered);
+    }
+  }, [searchTerm, utilityProviders]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -110,6 +135,10 @@ export default function OperatorRegistrationCard() {
       ...prev,
       [name]: value
     }));
+  };
+
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
   };
 
   const validateForm = () => {
@@ -465,6 +494,10 @@ export default function OperatorRegistrationCard() {
     router.push('/register/commercial-operator-registration/verify-email');
   };
 
+  if (!hasMounted) {
+    return null; // Return null during server-side rendering
+  }
+
   return (
     <>
       {loading && (
@@ -500,14 +533,23 @@ export default function OperatorRegistrationCard() {
         <div className={styles.utilityProviderSection}>
           <h2 className={styles.utilityProviderTitle}>Select Your Utility Provider</h2>
           
+          {/* Search Bar - Only rendered client-side */}
+          <input
+            type="text"
+            placeholder="Search utility providers..."
+            className={styles.searchInput}
+            value={searchTerm}
+            onChange={handleSearchChange}
+          />
+          
           {isFetchingProviders ? (
             <div className="text-center py-4">
               <div className="inline-block h-8 w-8 border-4 border-t-4 border-gray-300 border-t-[#039994] rounded-full animate-spin"></div>
             </div>
-          ) : utilityProviders.length > 0 ? (
+          ) : filteredProviders.length > 0 ? (
             <>
               <div className="max-h-60 overflow-y-auto mb-4">
-                {utilityProviders.map(provider => (
+                {filteredProviders.map(provider => (
                   <div 
                     key={provider.id}
                     className={`${styles.providerCard} ${selectedProvider?.id === provider.id ? 'border-[#039994] bg-[#f0f9f9]' : ''}`}
@@ -538,7 +580,9 @@ export default function OperatorRegistrationCard() {
             </>
           ) : (
             <div className="text-center py-4 text-gray-600">
-              No utility providers available at this time.
+              {searchTerm.trim() ? 
+                'No matching utility providers found' : 
+                'No utility providers available at this time'}
             </div>
           )}
         </div>
@@ -594,7 +638,7 @@ export default function OperatorRegistrationCard() {
                 <input
                   type="text"
                   name="commercialRole"
-                  value={formData.commercialRole}
+                  value="OPERATOR" // Display as uppercase
                   readOnly
                   className={styles.inputClass}
                 />
@@ -653,8 +697,37 @@ export default function OperatorRegistrationCard() {
               {/* Utility Authorization Email */}
               <div>
                 <div className={styles.labelContainer}>
-                  <label className={styles.labelClass}>Utility Authorization Email</label>
-                  <span className={styles.mandatoryStar}>*</span>
+                  <label className={styles.labelClass}>
+                    Utility Authorization Email
+                    <div 
+                      className={styles.tooltipContainer}
+                      onMouseEnter={() => setShowTooltip(true)}
+                      onMouseLeave={() => setShowTooltip(false)}
+                      onClick={() => setShowTooltip(!showTooltip)}
+                    >
+                      <svg 
+                        xmlns="http://www.w3.org/2000/svg" 
+                        className={`h-4 w-4 ${styles.tooltipIcon}`} 
+                        fill="none" 
+                        viewBox="0 0 24 24" 
+                        stroke="currentColor"
+                      >
+                        <path 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round" 
+                          strokeWidth={2} 
+                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
+                        />
+                      </svg>
+                      {showTooltip && (
+                        <div className={styles.tooltipText}>
+                          This is the email you used when creating your utility provider account with UtilityAPI. 
+                          We'll use it to connect and fetch your provider data.
+                        </div>
+                      )}
+                    </div>
+                    <span className={styles.mandatoryStar}>*</span>
+                  </label>
                 </div>
                 <div className={styles.emailInputContainer}>
                   <input

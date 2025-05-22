@@ -11,6 +11,11 @@ export default function Graph() {
   const [error, setError] = useState(null);
   const [monthlyData, setMonthlyData] = useState([]);
   const [chartLoading, setChartLoading] = useState(true);
+  const [recData, setRecData] = useState({
+    totalRecs: 0,
+    loading: true,
+    error: null
+  });
 
   // Fetch facilities data
   useEffect(() => {
@@ -43,6 +48,65 @@ export default function Graph() {
 
     fetchFacilities();
   }, []);
+
+  // Fetch REC data
+  useEffect(() => {
+    const fetchRecData = async () => {
+      try {
+        setRecData(prev => ({ ...prev, loading: true, error: null }));
+        
+        const authToken = localStorage.getItem("authToken");
+        const userId = localStorage.getItem("userId"); // Assuming userId is stored in localStorage
+        
+        if (!userId) {
+          // Silently fail and show empty data
+          setRecData({
+            totalRecs: 0,
+            loading: false,
+            error: null
+          });
+          return;
+        }
+
+        const response = await fetch(
+          `https://services.dcarbon.solutions/api/facility/get-facility-rec-total/${userId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${authToken}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        if (!response.ok) {
+          // Silently fail and show empty data
+          setRecData({
+            totalRecs: 0,
+            loading: false,
+            error: null
+          });
+          return;
+        }
+
+        const data = await response.json();
+        setRecData({
+          totalRecs: data.data.totalRecs || 0,
+          loading: false,
+          error: null
+        });
+      } catch (err) {
+        // Silently fail and show empty data
+        setRecData({
+          totalRecs: 0,
+          loading: false,
+          error: null
+        });
+        console.error("Error fetching REC data:", err);
+      }
+    };
+
+    fetchRecData();
+  }, [selectedFacility]); // Refetch when facility changes
 
   // Fetch chart data whenever filters change
   useEffect(() => {
@@ -100,6 +164,20 @@ export default function Graph() {
     }));
   };
 
+  // Mock data generators for other stats (replace with actual API calls)
+  const getMockStats = () => {
+    // These should be replaced with actual API calls
+    const baseStats = {
+      recGenerated: recData.totalRecs,
+      recSold: Math.floor(recData.totalRecs * 0.8), // 80% of generated RECs sold
+      revenueEarned: Math.floor(recData.totalRecs * 0.8 * 45), // Assuming $45 per REC
+      salePricePerREC: 45,
+      energyProduced: Math.floor(recData.totalRecs * 1.2), // Assuming 1.2 MWh per REC
+    };
+
+    return baseStats;
+  };
+
   // Decide bar color based on chartType
   const getFillColor = () => {
     switch (chartType) {
@@ -122,6 +200,8 @@ export default function Graph() {
   if (error) {
     return <div className="text-red-500 p-4">Error loading facilities: {error}</div>;
   }
+
+  const stats = getMockStats();
 
   return (
     <div className="w-full">
@@ -245,11 +325,13 @@ export default function Graph() {
                 <p className="text-black text-sm font-sfpro">RECs Generated</p>
               </div>
               <hr className="w-full my-2 border-gray-200" />
-              <p className="text-[#056C69] text-xl font-bold">
-                {selectedFacility === "All facilities" 
-                  ? facilities.reduce((sum, facility) => sum + facility.recGenerated, 0)
-                  : facilities.find(f => f.id === selectedFacility)?.recGenerated || 0}
-              </p>
+              {recData.loading ? (
+                <div className="animate-pulse text-gray-400">Loading...</div>
+              ) : (
+                <p className="text-[#056C69] text-xl font-bold">
+                  {stats.recGenerated.toFixed(2)}
+                </p>
+              )}
             </div>
 
             {/* Card: Total RECs sold */}
@@ -259,11 +341,13 @@ export default function Graph() {
                 <p className="text-black text-sm font-sfpro">Total RECs sold</p>
               </div>
               <hr className="w-full my-2 border-gray-200" />
-              <p className="text-[#056C69] text-xl font-bold">
-                {selectedFacility === "All facilities" 
-                  ? facilities.reduce((sum, facility) => sum + facility.recSold, 0)
-                  : facilities.find(f => f.id === selectedFacility)?.recSold || 0}
-              </p>
+              {recData.loading ? (
+                <div className="animate-pulse text-gray-400">Loading...</div>
+              ) : (
+                <p className="text-[#056C69] text-xl font-bold">
+                  {stats.recSold}
+                </p>
+              )}
             </div>
           </div>
 
@@ -276,11 +360,13 @@ export default function Graph() {
                 <p className="text-black text-sm font-sfpro">Total Rev. Earned</p>
               </div>
               <hr className="w-full my-2 border-gray-200" />
-              <p className="text-[#056C69] text-xl font-bold">
-                ${selectedFacility === "All facilities" 
-                  ? facilities.reduce((sum, facility) => sum + facility.revenueEarned, 0)
-                  : facilities.find(f => f.id === selectedFacility)?.revenueEarned || 0}
-              </p>
+              {recData.loading ? (
+                <div className="animate-pulse text-gray-400">Loading...</div>
+              ) : (
+                <p className="text-[#056C69] text-xl font-bold">
+                  ${stats.revenueEarned.toLocaleString()}
+                </p>
+              )}
             </div>
 
             {/* Card: Avg. price/REC */}
@@ -290,12 +376,13 @@ export default function Graph() {
                 <p className="text-black text-sm font-sfpro">Avg. price/REC</p>
               </div>
               <hr className="w-full my-2 border-gray-200" />
-              <p className="text-[#056C69] text-xl font-bold">
-                ${selectedFacility === "All facilities" 
-                  ? (facilities.reduce((sum, facility) => sum + (facility.salePricePerREC || 0), 0) / 
-                    (facilities.filter(f => f.salePricePerREC).length || 1)).toFixed(2)
-                  : facilities.find(f => f.id === selectedFacility)?.salePricePerREC?.toFixed(2) || "0"}
-              </p>
+              {recData.loading ? (
+                <div className="animate-pulse text-gray-400">Loading...</div>
+              ) : (
+                <p className="text-[#056C69] text-xl font-bold">
+                  ${stats.salePricePerREC}
+                </p>
+              )}
             </div>
           </div>
 
@@ -306,11 +393,13 @@ export default function Graph() {
               <p className="text-black text-sm font-sfpro">Energy Generated</p>
             </div>
             <hr className="w-full my-2 border-gray-200" />
-            <p className="text-[#056C69] text-xl font-bold">
-              {selectedFacility === "All facilities" 
-                ? `${facilities.reduce((sum, facility) => sum + facility.energyProduced, 0)}MWh`
-                : `${facilities.find(f => f.id === selectedFacility)?.energyProduced || 0}MWh`}
-            </p>
+            {recData.loading ? (
+              <div className="animate-pulse text-gray-400">Loading...</div>
+            ) : (
+              <p className="text-[#056C69] text-xl font-bold">
+                {stats.energyProduced}MWh
+              </p>
+            )}
           </div>
         </div>
       </div>

@@ -27,48 +27,55 @@ export default function UtilityAuthorizationCard() {
   const [loading, setLoading] = useState(false);
   const [fetchingData, setFetchingData] = useState(true);
   const [utilityData, setUtilityData] = useState(null);
-  const [selectedMeter, setSelectedMeter] = useState(null);
-  const [isSameLocation, setIsSameLocation] = useState(null);
+  const [isAuthorized, setIsAuthorized] = useState(false);
   const [apiError, setApiError] = useState(null);
-  const [metersFetched, setMetersFetched] = useState(false);
-  const [metersData, setMetersData] = useState(null);
 
-  // Fetch utility data from localStorage and API
+  // Fetch utility data from localStorage
   useEffect(() => {
     const fetchUtilityData = async () => {
       try {
-        // Get the auth response from localStorage
-        const localStorageData = localStorage.getItem('utilityAuthResponse');
-        if (!localStorageData) {
-          throw new Error('No utility authorization data found');
+        // Get the verification response from localStorage
+        const verificationResponse = localStorage.getItem('verificationResponse');
+        if (!verificationResponse) {
+          throw new Error('No verification response found in localStorage');
         }
 
-        const authResponse = JSON.parse(localStorageData);
+        const parsedResponse = JSON.parse(verificationResponse);
         
-        if (!authResponse.data || !authResponse.data.authData) {
-          throw new Error('Invalid utility authorization data format');
+        // Check if the response has the expected structure
+        if (!parsedResponse.data || !parsedResponse.data.authData) {
+          throw new Error('Invalid verification response format');
         }
 
-        const authData = authResponse.data.authData;
+        const authData = parsedResponse.data.authData;
         
-        // Set the utility data from localStorage
+        // Check if status is AUTHORIZED
+        if (authData.status === "AUTHORIZED") {
+          setIsAuthorized(true);
+        }
+
+        // Set the utility data from the verification response
         const utilityData = {
-          isAuthorized: authResponse.data.isAuthorized,
+          isAuthorized: parsedResponse.data.isAuthorized,
           authorization_uid: authData.authorization_uid,
           uid: authData.uid,
-          user_email: authData.email,
+          user_email: authData.utilityAuthEmail,
           user_uid: authData.userId,
           status: authData.status,
           createdAt: authData.createdAt,
           updatedAt: authData.updatedAt,
-          // Include any other relevant fields from authData
+          delivery_method: authData.delivery_method,
+          delivery_target: authData.delivery_target,
+          is_delivered: authData.is_delivered,
+          meters: authData.meters,
+          type: authData.type,
+          verificationToken: authData.verificationToken,
+          message: parsedResponse.data.message,
+          utilityVerified: parsedResponse.utilityVerified,
           authData: authData // Keep the full authData object
         };
 
         setUtilityData(utilityData);
-        
-        // Fetch user meters from API
-        await fetchUserMeters(authData.userId);
 
       } catch (error) {
         console.error("Error fetching utility data:", error);
@@ -81,63 +88,16 @@ export default function UtilityAuthorizationCard() {
     fetchUtilityData();
   }, []);
 
-  const fetchUserMeters = async (userId) => {
-    try {
-      // Get the auth token from localStorage
-      const authToken = localStorage.getItem('authToken');
-      if (!authToken) {
-        throw new Error('No auth token found in localStorage');
-      }
-
-      const apiUrl = `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`;
-      
-      const response = await fetch(apiUrl, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`API request failed with status ${response.status}`);
-      }
-
-      const data = await response.json();
-      
-      if (data.status === 'success' && data.data?.meters?.meters?.length > 0) {
-        setMetersData(data.data.meters);
-        setSelectedMeter(data.data.meters.meters[0]);
-        setMetersFetched(true);
-      } else {
-        throw new Error('No meters found or invalid response format');
-      }
-
-    } catch (error) {
-      console.error("Error fetching user meters:", error);
-      setApiError(error.message);
-    }
+  const handleLoginRedirect = () => {
+    setLoading(true);
+    // Simulate loading for better UX
+    setTimeout(() => {
+      router.push('/login');
+    }, 1000);
   };
 
-  const handleSubmit = () => {
-    // Validate form
-    if (isSameLocation === null) {
-      alert("Please confirm the location");
-      return;
-    }
-
-    // Simulate an API call
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      
-      // If meters were fetched successfully, redirect to login
-      if (metersFetched) {
-        router.push('/login');
-      } else {
-        router.push('/register/commercial-operator-registration/agreement');
-      }
-    }, 1500);
+  const handleRetry = () => {
+    window.location.reload();
   };
 
   if (fetchingData) {
@@ -153,10 +113,13 @@ export default function UtilityAuthorizationCard() {
       <div className={mainContainer}>
         <div className={headingContainer}>
           <h1 className={pageTitle}>Utility Authorization</h1>
-          <p className="text-red-500">{apiError || 'Error loading utility data'}</p>
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative my-6">
+            <strong className="font-bold">Error!</strong>
+            <span className="block sm:inline"> {apiError || 'Error loading utility data'}</span>
+          </div>
           <button 
-            onClick={() => window.location.reload()}
-            className="mt-4 px-4 py-2 bg-[#039994] text-white rounded-md"
+            onClick={handleRetry}
+            className="mt-4 px-4 py-2 bg-[#039994] text-white rounded-md hover:bg-[#028a7f] transition-colors"
           >
             Try Again
           </button>
@@ -165,31 +128,108 @@ export default function UtilityAuthorizationCard() {
     );
   }
 
-  // Show success message if meters were fetched successfully
-  if (metersFetched) {
+  // Show success message if utility is authorized
+  if (isAuthorized && utilityData.status === "AUTHORIZED") {
     return (
-      <div className={mainContainer}>
-        <div className={headingContainer}>
-          <h1 className={pageTitle}>Utility Authorization</h1>
+      <>
+        {/* Loader Overlay */}
+        {loading && (
+          <div className={spinnerOverlay}>
+            <div className={spinner}></div>
+          </div>
+        )}
+
+        <div className={mainContainer}>
+          <div className={headingContainer}>
+            <h1 className={pageTitle}>Utility Authorization</h1>
+          </div>
+          
+          {/* Success Message */}
+          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative my-6">
+            <div className="flex items-center">
+              <svg className="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              <div>
+                <strong className="font-bold">Success!</strong>
+                <span className="block sm:inline"> Your Utility has been authorized successfully. Click to login and continue creating your facility.</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Utility Information Summary */}
+          <div className="border border-[#039994] rounded-md p-4 space-y-4 mb-6">
+            <h3 className="font-semibold text-gray-700">Authorization Summary</h3>
+            
+            <div className="space-y-2">
+              <p className="text-sm text-gray-600">
+                <span className="font-medium">Status:</span> 
+                <span className="ml-2 px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
+                  {utilityData.status}
+                </span>
+              </p>
+              <p className="text-sm text-gray-600">
+                <span className="font-medium">Authorization ID:</span> {utilityData.authorization_uid}
+              </p>
+              <p className="text-sm text-gray-600">
+                <span className="font-medium">Email:</span> {utilityData.user_email}
+              </p>
+              <p className="text-sm text-gray-600">
+                <span className="font-medium">Authorized On:</span> {new Date(utilityData.createdAt).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </p>
+              {utilityData.updatedAt && utilityData.updatedAt !== utilityData.createdAt && (
+                <p className="text-sm text-gray-600">
+                  <span className="font-medium">Last Updated:</span> {new Date(utilityData.updatedAt).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </p>
+              )}
+            </div>
+          </div>
+          
+          {/* Login Button */}
+          <div className="flex justify-center mt-6">
+            <button
+              onClick={handleLoginRedirect}
+              className={`${buttonPrimary} px-8 py-3 text-lg font-medium`}
+              disabled={loading}
+            >
+              {loading ? (
+                <div className="flex items-center">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Redirecting...
+                </div>
+              ) : (
+                'Continue to Login'
+              )}
+            </button>
+          </div>
+
+          {/* Additional Information */}
+          <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-md">
+            <h4 className="font-medium text-blue-900 mb-2">What's Next?</h4>
+            <ul className="text-sm text-blue-800 space-y-1">
+              <li>• Log in to your account</li>
+              <li>• Create and manage your commercial facilities</li>
+              <li>• Monitor your utility data and solar installations</li>
+            </ul>
+          </div>
         </div>
-        
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative my-6">
-          <strong className="font-bold">Success!</strong>
-          <span className="block sm:inline"> Meter retrieval successful. Please proceed to login to continue creating your facilities.</span>
-        </div>
-        
-        <div className="flex justify-center mt-6">
-          <button
-            onClick={() => router.push('/login')}
-            className={buttonPrimary}
-          >
-            Proceed to Login
-          </button>
-        </div>
-      </div>
+      </>
     );
   }
 
+  // Show pending or other status
   return (
     <>
       {/* Loader Overlay */}
@@ -234,20 +274,24 @@ export default function UtilityAuthorizationCard() {
         <div className={formWrapper}>
           {/* Utility Information */}
           <div className="border border-[#039994] rounded-md p-4 space-y-4">
-            <h3 className="font-semibold text-gray-700">Utility Information</h3>
+            <h3 className="font-semibold text-gray-700">Utility Authorization Status</h3>
             
             <div className="space-y-2">
               <p className="text-sm text-gray-600">
-                <span className="font-medium">Authorization Status:</span> {utilityData.status}
+                <span className="font-medium">Status:</span> 
+                <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
+                  utilityData.status === 'AUTHORIZED' 
+                    ? 'bg-green-100 text-green-800' 
+                    : 'bg-yellow-100 text-yellow-800'
+                }`}>
+                  {utilityData.status}
+                </span>
               </p>
               <p className="text-sm text-gray-600">
-                <span className="font-medium">Authorization UID:</span> {utilityData.authorization_uid}
+                <span className="font-medium">Authorization ID:</span> {utilityData.authorization_uid}
               </p>
               <p className="text-sm text-gray-600">
-                <span className="font-medium">User Email:</span> {utilityData.user_email}
-              </p>
-              <p className="text-sm text-gray-600">
-                <span className="font-medium">User UID:</span> {utilityData.user_uid}
+                <span className="font-medium">Email:</span> {utilityData.user_email}
               </p>
               <p className="text-sm text-gray-600">
                 <span className="font-medium">Created:</span> {new Date(utilityData.createdAt).toLocaleString()}
@@ -260,102 +304,23 @@ export default function UtilityAuthorizationCard() {
             </div>
           </div>
 
-          {/* Meter Information - Only show if we have meter data */}
-          {utilityData.authData?.meters ? (
-            <div className="border border-[#039994] rounded-md p-4 space-y-4 mt-4">
-              <h3 className="font-semibold text-gray-700">Meter Information</h3>
-              
-              {utilityData.authData.meters.length > 1 ? (
-                <div>
-                  <label className={labelClass}>Select Meter</label>
-                  <select
-                    value={selectedMeter?.uid || ''}
-                    onChange={(e) => {
-                      const meter = utilityData.authData.meters.find(m => m.uid === e.target.value);
-                      setSelectedMeter(meter);
-                    }}
-                    className={selectClass}
-                  >
-                    {utilityData.authData.meters.map((meter) => (
-                      <option key={meter.uid} value={meter.uid}>
-                        {meter.service_class?.toUpperCase() || 'METER'} - {meter.meter_numbers?.[0] || meter.uid}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              ) : null}
-
-              {(selectedMeter || utilityData.authData.meters[0]) && (
-                <div className="space-y-2">
-                  <p className="text-sm text-gray-600">
-                    <span className="font-medium">Meter UID:</span> {(selectedMeter || utilityData.authData.meters[0]).uid}
-                  </p>
-                  {(selectedMeter || utilityData.authData.meters[0]).meter_numbers && (
-                    <p className="text-sm text-gray-600">
-                      <span className="font-medium">Meter Numbers:</span> {(selectedMeter || utilityData.authData.meters[0]).meter_numbers.join(', ')}
-                    </p>
-                  )}
-                  {(selectedMeter || utilityData.authData.meters[0]).service_address && (
-                    <p className="text-sm text-gray-600">
-                      <span className="font-medium">Service Address:</span> {(selectedMeter || utilityData.authData.meters[0]).service_address}
-                    </p>
-                  )}
-                  {(selectedMeter || utilityData.authData.meters[0]).service_class && (
-                    <p className="text-sm text-gray-600">
-                      <span className="font-medium">Service Class:</span> {(selectedMeter || utilityData.authData.meters[0]).service_class}
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="border border-[#039994] rounded-md p-4 mt-4">
-              <p className="text-sm text-gray-600">No meter data available</p>
-            </div>
-          )}
-
-          {/* Is this the same solar installation's location? */}
-          <div className="flex items-center justify-between mt-6">
-            <span className="text-sm text-gray-700">
-              Is this the same solar installation's location?
-            </span>
-            <div className="flex space-x-4">
-              <label className="flex items-center space-x-1 cursor-pointer">
-                <input
-                  type="radio"
-                  name="sameLocation"
-                  value="yes"
-                  checked={isSameLocation === 'yes'}
-                  onChange={() => setIsSameLocation('yes')}
-                  className="form-radio custom-radio"
-                />
-                <span className="text-sm text-gray-700">Yes</span>
-              </label>
-              <label className="flex items-center space-x-1 cursor-pointer">
-                <input
-                  type="radio"
-                  name="sameLocation"
-                  value="no"
-                  checked={isSameLocation === 'no'}
-                  onChange={() => setIsSameLocation('no')}
-                  className="form-radio custom-radio"
-                />
-                <span className="text-sm text-gray-700">No</span>
-              </label>
-            </div>
+          {/* Pending Message */}
+          <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative my-6">
+            <strong className="font-bold">Pending Authorization</strong>
+            <span className="block sm:inline"> Your utility authorization is still pending. Please check back later or contact support if this persists.</span>
           </div>
 
-          {/* Next Button */}
+          {/* Retry Button */}
           <button
-            onClick={handleSubmit}
+            onClick={handleRetry}
             className={`${buttonPrimary} mt-6`}
           >
-            Next
+            Refresh Status
           </button>
 
           {/* Terms and Conditions & Privacy Policy */}
           <div className={termsTextContainer}>
-            By clicking on 'Next', you agree to our{' '}
+            By using our service, you agree to our{' '}
             <a href="/terms" className="text-[#039994] hover:underline font-medium">
               Terms and Conditions
             </a>{' '}

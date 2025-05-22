@@ -19,10 +19,10 @@ const InviteCollaboratorModal = dynamic(
   { ssr: false }
 );
 
-export default function QuickActions() {
+export default function QuickActions({ authStatus, setAuthStatus }) {
   const [modal, setModal] = useState("");
-  const [authStatus, setAuthStatus] = useState("PENDING");
   const [isLoading, setIsLoading] = useState(true);
+  const [authCheckComplete, setAuthCheckComplete] = useState(false);
 
   // Check auth status on mount
   useEffect(() => {
@@ -36,7 +36,6 @@ export default function QuickActions() {
         
         if (!userId || !authToken) {
           console.error("Missing userId or authToken");
-          setAuthStatus("PENDING");
           setIsLoading(false);
           return;
         }
@@ -59,25 +58,32 @@ export default function QuickActions() {
 
         const data = await response.json();
         
-        if (data.success) {
-          setAuthStatus("APPROVED");
+        if (data.status === "success" && data.data?.status === "AUTHORIZED") {
+          setAuthStatus("AUTHORIZED");
+          localStorage.setItem("utilityAuthStatus", "AUTHORIZED");
         } else {
           // Use the status from the API response if available
-          setAuthStatus(data.status || "PENDING");
+          const status = data.data?.status || "PENDING";
+          setAuthStatus(status);
+          localStorage.setItem("utilityAuthStatus", status);
         }
+        
+        setAuthCheckComplete(true);
       } catch (error) {
         console.error("Error checking utility authorization:", error);
-        // Fallback to checking localStorage as in the original code
-        const utilityRequest = typeof window !== 'undefined' ? 
-          JSON.parse(localStorage.getItem("utilityProviderRequest") || "null") : 
-          null;
-        if (utilityRequest) {
-          setAuthStatus(utilityRequest.status || "PENDING");
+        // Fallback to checking localStorage
+        const storedAuthStatus = localStorage.getItem("utilityAuthStatus");
+        if (storedAuthStatus) {
+          setAuthStatus(storedAuthStatus);
         } else {
-          const authCompleted = typeof window !== 'undefined' ? 
-            localStorage.getItem("utilityAuthCompleted") : 
+          const utilityRequest = typeof window !== 'undefined' ? 
+            JSON.parse(localStorage.getItem("utilityProviderRequest") || "null") : 
             null;
-          setAuthStatus(authCompleted ? "APPROVED" : "PENDING");
+          if (utilityRequest) {
+            setAuthStatus(utilityRequest.status || "PENDING");
+          } else {
+            setAuthStatus("PENDING");
+          }
         }
       } finally {
         setIsLoading(false);
@@ -85,11 +91,11 @@ export default function QuickActions() {
     };
 
     checkUtilityAuthorization();
-  }, []);
+  }, [setAuthStatus]);
 
   const openModal = (type) => {
     // Prevent opening add facility modal if not authorized
-    if (type === "add" && authStatus !== "APPROVED") {
+    if (type === "add" && authStatus !== "AUTHORIZED") {
       return;
     }
     setModal(type);
@@ -99,7 +105,7 @@ export default function QuickActions() {
     setModal("");
   };
 
-  const isAddDisabled = authStatus !== "APPROVED";
+  const isAddDisabled = authStatus !== "AUTHORIZED" || isLoading;
 
   return (
     <div className="w-full py-4 px-4">
@@ -115,13 +121,13 @@ export default function QuickActions() {
         {/* Card 1: Add Commercial Facility */}
         <div
           className={`p-4 min-h-[100px] rounded-2xl flex flex-col items-start justify-start ${
-            isLoading || isAddDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+            isAddDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
           }`}
           style={{
             background:
               "radial-gradient(100.83% 133.3% at 130.26% -10.83%, #013331 0%, #039994 100%)",
           }}
-          onClick={() => !isLoading && !isAddDisabled && openModal("add")}
+          onClick={() => !isAddDisabled && openModal("add")}
           title={isAddDisabled ? `Utility provider authorization status: ${authStatus}` : ""}
         >
           <img
@@ -134,8 +140,11 @@ export default function QuickActions() {
             Add <br />
             Commercial Facility
           </p>
-          {isLoading && (
-            <div className="mt-1 text-white text-xs">Loading...</div>
+          {isLoading && !authCheckComplete && (
+            <div className="mt-1 text-white text-xs">Checking authorization...</div>
+          )}
+          {authStatus !== "AUTHORIZED" && authCheckComplete && (
+            <div className="mt-1 text-white text-xs">Authorization required</div>
           )}
         </div>
 
