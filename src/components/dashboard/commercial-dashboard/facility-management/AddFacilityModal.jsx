@@ -11,15 +11,14 @@ import {
 } from "./styles";
 import Loader from "@/components/loader/Loader.jsx";
 
-export default function AddFacilityModal({ onClose, onFacilityAdded }) {
+export default function AddFacilityModal({ onClose }) {
   const [formData, setFormData] = useState({
     facilityName: "",
     address: "",
     utilityProvider: "",
     meterId: "",
     commercialRole: "both",
-    entityType: "company",
-    isAddressSame: ""
+    entityType: "company"
   });
   const [loading, setLoading] = useState(false);
   const [utilityProviders, setUtilityProviders] = useState([]);
@@ -27,12 +26,32 @@ export default function AddFacilityModal({ onClose, onFacilityAdded }) {
   const [userMeters, setUserMeters] = useState([]);
   const [userMetersLoading, setUserMetersLoading] = useState(false);
   const [selectedMeter, setSelectedMeter] = useState(null);
+  const [isSameLocation, setIsSameLocation] = useState(null);
 
   // Fetch utility providers on modal open
   useEffect(() => {
     fetchUtilityProviders();
     fetchUserMeters();
   }, []);
+
+  // Update address when location choice changes
+  useEffect(() => {
+    if (selectedMeter && isSameLocation !== null) {
+      if (isSameLocation === true) {
+        // Use meter's service address
+        setFormData(prev => ({
+          ...prev,
+          address: selectedMeter.base.service_address
+        }));
+      } else {
+        // Clear address for manual input
+        setFormData(prev => ({
+          ...prev,
+          address: ""
+        }));
+      }
+    }
+  }, [selectedMeter, isSameLocation]);
 
   const fetchUtilityProviders = async () => {
     const userId = localStorage.getItem("userId");
@@ -82,8 +101,8 @@ export default function AddFacilityModal({ onClose, onFacilityAdded }) {
       );
 
       if (response.data.status === "success") {
-        // Filter only electric meters
-        const electricMeters = response.data.data.meters.filter(
+        const meters = response.data.data.meters.meters || [];
+        const electricMeters = meters.filter(
           meter => meter.base.service_class === "electric"
         );
         setUserMeters(electricMeters);
@@ -103,35 +122,20 @@ export default function AddFacilityModal({ onClose, onFacilityAdded }) {
       [name]: value
     }));
 
-    // If meter ID is selected, update the selectedMeter and address
-    if (name === "meterId" && value) {
+    if (name === "meterId") {
       const meter = userMeters.find(m => m.uid === value);
-      if (meter) {
-        setSelectedMeter(meter);
-        // Reset the isAddressSame value when meter changes
-        setFormData(prev => ({
-          ...prev,
-          [name]: value,
-          isAddressSame: ""
-        }));
-      }
+      setSelectedMeter(meter || null);
+      setIsSameLocation(null); // Reset location choice when meter changes
+      // Clear address when meter changes
+      setFormData(prev => ({
+        ...prev,
+        address: ""
+      }));
     }
   };
 
-  const handleAddressConfirm = (isAddressSame) => {
-    if (isAddressSame === "yes") {
-      setFormData(prev => ({
-        ...prev,
-        address: selectedMeter?.base?.service_address || "",
-        isAddressSame: "yes"
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        address: "",
-        isAddressSame: "no"
-      }));
-    }
+  const handleLocationChoice = (choice) => {
+    setIsSameLocation(choice);
   };
 
   const storeFacilityData = (facilityData) => {
@@ -169,9 +173,18 @@ export default function AddFacilityModal({ onClose, onFacilityAdded }) {
     }
 
     try {
+      const payload = {
+        facilityName: formData.facilityName,
+        address: formData.address,
+        utilityProvider: formData.utilityProvider,
+        meterId: formData.meterId,
+        commercialRole: formData.commercialRole,
+        entityType: formData.entityType
+      };
+
       const response = await axios.post(
         `https://services.dcarbon.solutions/api/facility/create-new-facility/${userId}`,
-        formData,
+        payload,
         {
           headers: {
             "Content-Type": "application/json",
@@ -183,7 +196,6 @@ export default function AddFacilityModal({ onClose, onFacilityAdded }) {
       if (response.data.status === "success") {
         toast.success("Facility created successfully");
         storeFacilityData(response.data.data);
-        onFacilityAdded(response.data.data);
         
         // Reset form
         setFormData({
@@ -192,10 +204,10 @@ export default function AddFacilityModal({ onClose, onFacilityAdded }) {
           utilityProvider: "",
           meterId: "",
           commercialRole: "both",
-          entityType: "company",
-          isAddressSame: ""
+          entityType: "company"
         });
         setSelectedMeter(null);
+        setIsSameLocation(null);
         onClose();
       } else {
         throw new Error(response.data.message || "Failed to create facility");
@@ -215,14 +227,14 @@ export default function AddFacilityModal({ onClose, onFacilityAdded }) {
   // Check if form is complete
   const isFormComplete = 
     formData.facilityName && 
-    formData.address && 
+    formData.address &&
     formData.utilityProvider && 
-    formData.meterId && 
-    formData.isAddressSame;
+    formData.meterId &&
+    (selectedMeter ? isSameLocation !== null : true);
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
-      <div className="bg-white w-full max-w-lg rounded-md shadow-lg p-6 relative">
+    <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50 overflow-y-auto py-4">
+      <div className="bg-white w-full max-w-md rounded-md shadow-lg p-4 relative my-4">
         {/* Loader Overlay */}
         {loading && (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-white bg-opacity-70 rounded-md">
@@ -233,21 +245,21 @@ export default function AddFacilityModal({ onClose, onFacilityAdded }) {
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+          className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
           disabled={loading}
         >
-          <FiX size={24} />
+          <FiX size={20} />
         </button>
 
         {/* Heading */}
-        <h2 className={`${pageTitle} text-left mb-6`}>
+        <h2 className={`${pageTitle} text-left mb-4 text-lg`}>
           Add Commercial Facility
         </h2>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="space-y-3">
           {/* Facility Name */}
-          <div className="mb-4">
-            <label className={labelClass}>
+          <div className="mb-3">
+            <label className={`${labelClass} text-sm`}>
               Facility Name <span className="text-red-500">*</span>
             </label>
             <input
@@ -255,7 +267,7 @@ export default function AddFacilityModal({ onClose, onFacilityAdded }) {
               name="facilityName"
               value={formData.facilityName}
               onChange={handleChange}
-              className={inputClass}
+              className={`${inputClass} text-sm py-2`}
               placeholder="Enter facility name"
               required
               disabled={loading}
@@ -263,15 +275,15 @@ export default function AddFacilityModal({ onClose, onFacilityAdded }) {
           </div>
 
           {/* Utility Provider */}
-          <div className="mb-4">
-            <label className={labelClass}>
+          <div className="mb-3">
+            <label className={`${labelClass} text-sm`}>
               Utility Provider <span className="text-red-500">*</span>
             </label>
             <select
               name="utilityProvider"
               value={formData.utilityProvider}
               onChange={handleChange}
-              className={selectClass}
+              className={`${selectClass} text-sm py-2`}
               required
               disabled={loading || utilityProvidersLoading}
             >
@@ -288,20 +300,20 @@ export default function AddFacilityModal({ onClose, onFacilityAdded }) {
             </select>
           </div>
 
-          {/* Meter ID - Changed to dropdown */}
-          <div className="mb-4">
-            <label className={labelClass}>
-              Meter ID <span className="text-red-500">*</span>
+          {/* Meter Selection */}
+          <div className="mb-3">
+            <label className={`${labelClass} text-sm`}>
+              Meter <span className="text-red-500">*</span>
             </label>
             <select
               name="meterId"
               value={formData.meterId}
               onChange={handleChange}
-              className={selectClass}
+              className={`${selectClass} text-sm py-2`}
               required
               disabled={loading || userMetersLoading}
             >
-              <option value="">Select meter ID</option>
+              <option value="">Select meter</option>
               {userMetersLoading ? (
                 <option value="" disabled>Loading meters...</option>
               ) : userMeters.length === 0 ? (
@@ -315,79 +327,88 @@ export default function AddFacilityModal({ onClose, onFacilityAdded }) {
               )}
             </select>
             <p className="mt-1 text-xs text-gray-500">
-              Only electric meters are available for selection
+              Only electric meters are shown
             </p>
           </div>
 
-          {/* Billing Address Display */}
+          {/* Location Confirmation */}
           {selectedMeter && (
-            <div className="mb-4 p-3 bg-gray-50 rounded-md border border-gray-200">
-              <h3 className="font-medium text-gray-700 mb-1">Billing Information</h3>
-              <p className="text-sm text-gray-600">{selectedMeter.base.billing_address}</p>
-              
-              <div className="mt-3">
-                <p className="text-sm font-medium text-gray-700">
-                  Is this the same address for solar installation?
-                </p>
-                <div className="mt-2 flex gap-3">
-                  <button
-                    type="button"
-                    className={`px-4 py-2 rounded-md border ${
-                      formData.isAddressSame === "yes" 
-                        ? "bg-green-100 border-green-500 text-green-700" 
-                        : "border-gray-300 hover:bg-gray-50"
-                    }`}
-                    onClick={() => handleAddressConfirm("yes")}
-                    disabled={loading}
-                  >
-                    Yes
-                  </button>
-                  <button
-                    type="button"
-                    className={`px-4 py-2 rounded-md border ${
-                      formData.isAddressSame === "no" 
-                        ? "bg-blue-100 border-blue-500 text-blue-700" 
-                        : "border-gray-300 hover:bg-gray-50"
-                    }`}
-                    onClick={() => handleAddressConfirm("no")}
-                    disabled={loading}
-                  >
-                    No
-                  </button>
-                </div>
+            <div className="mb-3 p-2 bg-gray-50 rounded-md border border-gray-200 text-sm">
+              <p className="font-medium mb-2">Service Address: {selectedMeter.base.service_address}</p>
+              <p className="font-medium mb-2">
+                Is this the same location for the solar installation?
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  className={`px-3 py-1 rounded-md border text-sm ${
+                    isSameLocation === true ? 'bg-green-100 border-green-500 text-green-700' : 'border-gray-300 hover:bg-gray-50'
+                  }`}
+                  onClick={() => handleLocationChoice(true)}
+                  disabled={loading}
+                >
+                  Yes
+                </button>
+                <button
+                  type="button"
+                  className={`px-3 py-1 rounded-md border text-sm ${
+                    isSameLocation === false ? 'bg-blue-100 border-blue-500 text-blue-700' : 'border-gray-300 hover:bg-gray-50'
+                  }`}
+                  onClick={() => handleLocationChoice(false)}
+                  disabled={loading}
+                >
+                  No
+                </button>
               </div>
             </div>
           )}
 
-          {/* Address Input Field - Only show if "No" is selected */}
-          {formData.isAddressSame === "no" && (
-            <div className="mb-4">
-              <label className={labelClass}>
-                Installation Address <span className="text-red-500">*</span>
+          {/* Address Field */}
+          {selectedMeter && isSameLocation !== null && (
+            <div className="mb-3">
+              <label className={`${labelClass} text-sm`}>
+                Facility Address <span className="text-red-500">*</span>
               </label>
-              <input
-                type="text"
-                name="address"
-                value={formData.address}
-                onChange={handleChange}
-                className={inputClass}
-                placeholder="Street, City, County, State"
-                required
-                disabled={loading}
-              />
+              {isSameLocation === true ? (
+                <input
+                  type="text"
+                  name="address"
+                  value={formData.address}
+                  className={`${inputClass} text-sm py-2 bg-gray-100`}
+                  disabled={true}
+                  placeholder="Address will be auto-filled from meter service address"
+                />
+              ) : (
+                <input
+                  type="text"
+                  name="address"
+                  value={formData.address}
+                  onChange={handleChange}
+                  className={`${inputClass} text-sm py-2`}
+                  placeholder="Enter facility address"
+                  required
+                  disabled={loading}
+                />
+              )}
+              <p className="mt-1 text-xs text-gray-500">
+                {isSameLocation === true 
+                  ? "Using meter service address" 
+                  : "Enter the facility address manually"
+                }
+              </p>
             </div>
           )}
 
           {/* Commercial Role */}
-          <div className="mb-4">
-            <label className={labelClass}>
+          <div className="mb-3">
+            <label className={`${labelClass} text-sm`}>
               Commercial Role <span className="text-red-500">*</span>
             </label>
             <select
               name="commercialRole"
               value={formData.commercialRole}
               onChange={handleChange}
-              className={selectClass}
+              className={`${selectClass} text-sm py-2`}
               required
               disabled={loading}
             >
@@ -398,15 +419,15 @@ export default function AddFacilityModal({ onClose, onFacilityAdded }) {
           </div>
 
           {/* Entity Type */}
-          <div className="mb-4">
-            <label className={labelClass}>
+          <div className="mb-3">
+            <label className={`${labelClass} text-sm`}>
               Entity Type <span className="text-red-500">*</span>
             </label>
             <select
               name="entityType"
               value={formData.entityType}
               onChange={handleChange}
-              className={selectClass}
+              className={`${selectClass} text-sm py-2`}
               required
               disabled={loading}
             >
@@ -418,7 +439,7 @@ export default function AddFacilityModal({ onClose, onFacilityAdded }) {
           {/* Submit Button */}
           <button
             type="submit"
-            className={`${buttonPrimary} mt-6 w-full ${!isFormComplete ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`${buttonPrimary} mt-4 w-full py-2 text-sm ${!isFormComplete ? 'opacity-50 cursor-not-allowed' : ''}`}
             disabled={loading || !isFormComplete}
           >
             {loading ? "Processing..." : "Add Facility"}

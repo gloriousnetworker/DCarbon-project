@@ -145,7 +145,7 @@ export default function StepOneCard() {
               <span className={styles.mandatoryStar}>*</span>
             </div>
             <div className={styles.disabledSelect}>
-              Both Owner & Operator
+              BOTH OWNER & OPERATOR
             </div>
           </div>
 

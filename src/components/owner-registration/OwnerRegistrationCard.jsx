@@ -112,7 +112,7 @@ export default function StepOneCard() {
               Commercial Role <span className="text-red-500">*</span>
             </label>
             <div className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#626060]">
-              Owner
+              OWNER
             </div>
           </div>
 
