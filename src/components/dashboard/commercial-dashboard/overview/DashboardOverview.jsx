@@ -14,6 +14,7 @@ export default function DashboardOverview() {
     userFirstName: "",
     utilityProviderRequest: null
   });
+  const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
 
   useEffect(() => {
     // Load user data from localStorage
@@ -32,24 +33,42 @@ export default function DashboardOverview() {
       const storedAuthStatus = localStorage.getItem("utilityAuthStatus");
       if (storedAuthStatus) {
         setAuthStatus(storedAuthStatus);
+        setHasCheckedAuth(true);
       } else if (utilityRequest) {
         setAuthStatus(utilityRequest.status || "PENDING");
+        setHasCheckedAuth(true);
       } else {
         setAuthStatus("PENDING");
+        setHasCheckedAuth(true);
       }
     };
 
     loadUserData();
+  }, []);
 
-    // Show modal if pending
-    const timer = setTimeout(() => {
-      if (authStatus === "PENDING") {
+  useEffect(() => {
+    // Only show modal if we've checked auth status and it's not AUTHORIZED
+    if (hasCheckedAuth && authStatus !== "AUTHORIZED") {
+      const timer = setTimeout(() => {
         setShowWelcomeModal(true);
-      }
-    }, 1000);
+      }, 1000);
 
-    return () => clearTimeout(timer);
-  }, [authStatus]);
+      return () => clearTimeout(timer);
+    }
+  }, [authStatus, hasCheckedAuth]);
+
+  const handleCloseWelcomeModal = () => {
+    setShowWelcomeModal(false);
+    // If user closes the modal manually, we can set a flag to prevent it from showing again
+    localStorage.setItem("welcomeModalShown", "true");
+  };
+
+  const shouldShowWelcomeModal = () => {
+    if (authStatus === "AUTHORIZED") return false;
+    if (typeof window === 'undefined') return false;
+    // Check if user has previously closed the modal
+    return localStorage.getItem("welcomeModalShown") !== "true";
+  };
 
   return (
     <div className="w-full min-h-screen space-y-8 p-4">
@@ -97,11 +116,11 @@ export default function DashboardOverview() {
       {/* Recent REC Sales Table */}
       <RecentRecSales />
 
-      {/* Welcome Modal */}
-      {showWelcomeModal && (
+      {/* Welcome Modal - Only show if not AUTHORIZED and not previously dismissed */}
+      {showWelcomeModal && shouldShowWelcomeModal() && (
         <WelcomeModal 
           isOpen 
-          onClose={() => setShowWelcomeModal(false)}
+          onClose={handleCloseWelcomeModal}
           userData={userData}
         />
       )}
