@@ -184,7 +184,7 @@ export default function StepOneCard() {
         }
       }
 
-      router.push('/register/residence-user-registration/utility-authorization');
+      router.push('/register/residence-user-registration/step-two');
     } catch (err) {
       toast.error(err.response?.data?.message || err.message || 'Operation failed', { id: toastId });
     } finally {

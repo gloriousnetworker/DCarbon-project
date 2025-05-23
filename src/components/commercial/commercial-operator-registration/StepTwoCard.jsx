@@ -17,6 +17,7 @@ import {
   labelClass,
   selectClass,
   buttonPrimary,
+  buttonSecondary,
   spinnerOverlay,
   spinner,
   termsTextContainer
@@ -310,13 +311,32 @@ export default function UtilityAuthorizationCard() {
             <span className="block sm:inline"> Your utility authorization is still pending. Please check back later or contact support if this persists.</span>
           </div>
 
-          {/* Retry Button */}
-          <button
-            onClick={handleRetry}
-            className={`${buttonPrimary} mt-6`}
-          >
-            Refresh Status
-          </button>
+          {/* Button Group */}
+          <div className="space-y-4">
+            {/* Refresh Status Button */}
+            <button
+              onClick={handleRetry}
+              className={`${buttonPrimary} w-full`}
+            >
+              Refresh Status
+            </button>
+
+            {/* Continue to Dashboard Button */}
+            <button
+              onClick={handleLoginRedirect}
+              className={`${buttonSecondary} w-full`}
+              disabled={loading}
+            >
+              {loading ? (
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#039994] mr-2"></div>
+                  Redirecting...
+                </div>
+              ) : (
+                'Continue to Dashboard'
+              )}
+            </button>
+          </div>
 
           {/* Terms and Conditions & Privacy Policy */}
           <div className={termsTextContainer}>

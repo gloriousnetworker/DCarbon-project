@@ -1,10 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEye, faEyeSlash, faMapMarkerAlt, faGlobe, faHashtag, faBuilding } from '@fortawesome/free-solid-svg-icons';
 import toast from 'react-hot-toast';
+import UtilityAuthorizationModal from './UtilityAuthorizationModal';
 
 const styles = {
   mainContainer: 'min-h-screen w-full flex flex-col items-center justify-center py-8 px-4 bg-white',
@@ -13,81 +12,424 @@ const styles = {
   pageTitle: 'mb-4 font-[600] text-[36px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro text-center',
   progressContainer: 'w-full max-w-md flex items-center justify-between mb-6',
   progressBarWrapper: 'flex-1 h-1 bg-gray-200 rounded-full mr-4',
-  progressBarActive: 'h-1 bg-[#039994] w-full rounded-full',
+  progressBarActive: 'h-1 bg-[#039994] w-2/5 rounded-full',
   progressStepText: 'text-sm font-medium text-gray-500 font-sfpro',
-  formWrapper: 'w-full max-w-md space-y-4',
-  labelClass: 'block mb-1 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]',
-  selectClass: 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#626060]',
-  inputClass: 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]',
-  passwordInputWrapper: 'relative',
-  passwordToggle: 'absolute right-3 top-2.5 cursor-pointer text-gray-500',
-  infoCard: 'border border-[#039994] rounded-md p-4 space-y-2',
-  infoText: 'text-gray-700 font-semibold font-sfpro',
-  infoSubtext: 'text-sm text-gray-600 font-sfpro',
-  radioContainer: 'flex items-center justify-between',
-  radioLabel: 'text-sm font-medium text-gray-700 font-sfpro',
-  radioGroup: 'flex space-x-4',
-  radioOption: 'flex items-center space-x-1 cursor-pointer',
-  radioInput: 'form-radio text-[#039994]',
-  radioText: 'text-sm font-sfpro',
-  buttonPrimary: 'w-full rounded-md bg-[#039994] text-white font-semibold py-2 mt-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro',
-  termsText: 'mt-4 text-center text-xs text-gray-500 leading-tight font-sfpro',
-  termsLink: 'text-[#039994] hover:underline font-medium',
+  formWrapper: 'w-full max-w-md space-y-6',
+  labelClass: 'block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]',
+  inputClass: 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#626060]',
+  selectClass: 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#626060]',
+  buttonPrimary: 'w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro',
+  buttonSecondary: 'w-full rounded-md bg-gray-200 text-gray-800 font-semibold py-2 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 font-sfpro',
+  buttonTertiary: 'w-full rounded-md bg-white text-[#039994] font-semibold py-2 border border-[#039994] hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro',
+  buttonSmall: 'rounded-md bg-[#039994] text-white font-semibold px-3 py-1 text-sm hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro',
   spinnerOverlay: 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20',
   spinner: 'h-12 w-12 border-4 border-t-4 border-gray-300 border-t-[#039994] rounded-full animate-spin',
+  termsTextContainer: 'mt-6 text-center font-sfpro text-[10px] leading-[100%] tracking-[-0.05em] text-[#1E1E1E]',
+  termsLink: 'text-[#039994] hover:underline font-medium',
   mandatoryStar: 'text-red-500 ml-1',
   labelContainer: 'flex items-center',
-  infoItem: 'flex items-center space-x-2',
-  infoIcon: 'text-gray-400 w-4 h-4'
+  utilityProviderSection: 'w-full max-w-md mb-8 p-4 bg-gray-50 rounded-lg border border-gray-200',
+  utilityProviderTitle: 'text-lg font-semibold mb-3 text-gray-800 font-sfpro',
+  providerCard: 'mb-4 p-3 bg-white rounded-md border border-gray-300 hover:border-[#039994] transition-colors',
+  providerName: 'font-medium text-gray-800',
+  providerWebsite: 'text-sm text-gray-500 mt-1',
+  requestForm: 'mt-4 p-4 bg-white rounded-md border border-gray-300',
+  requestInput: 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-[#039994]',
+  requestButton: 'w-full rounded-md bg-blue-600 text-white font-semibold py-2 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500',
+  emailInputContainer: 'flex items-center gap-2',
+  emailInput: 'flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#626060]',
+  searchInput: 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro',
+  tooltipIcon: 'ml-1 text-gray-400 hover:text-gray-600 cursor-pointer relative',
+  tooltipText: 'absolute z-10 w-64 p-2 mt-2 text-xs text-white bg-gray-700 rounded-md shadow-lg -left-32',
+  tooltipContainer: 'relative inline-block'
 };
 
-export default function UtilityAuthorizationCard() {
-  const router = useRouter();
+export default function OperatorRegistrationCard() {
+  const [formData, setFormData] = useState({
+    utilityAuthEmail: ''
+  });
   const [loading, setLoading] = useState(false);
-  const [utilityProvider, setUtilityProvider] = useState('');
-  const [utilityEmail, setUtilityEmail] = useState('');
-  const [utilityPassword, setUtilityPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [isSameLocation, setIsSameLocation] = useState(null);
+  const [emailVerifying, setEmailVerifying] = useState(false);
+  const [showUtilityModal, setShowUtilityModal] = useState(false);
+  const [utilityProviders, setUtilityProviders] = useState([]);
+  const [filteredProviders, setFilteredProviders] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedProvider, setSelectedProvider] = useState(null);
+  const [showRequestForm, setShowRequestForm] = useState(false);
+  const [requestData, setRequestData] = useState({
+    name: '',
+    websiteUrl: ''
+  });
+  const [isFetchingProviders, setIsFetchingProviders] = useState(true);
+  const [emailConflictError, setEmailConflictError] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [hasMounted, setHasMounted] = useState(false);
+  const router = useRouter();
 
-  // Hard-coded location details
-  const companyName = 'Sopanel Energy';
-  const address = 'HSE 3, 2nd Avenue, Dummy street, Dummy state.';
-  const zipcode = '12345';
-  const meterId = '000-123-XYZ';
+  const localURL = 'https://services.dcarbon.solutions';
 
-  const handleSubmit = () => {
-    // Validate form
-    if (!utilityProvider || !utilityEmail || !utilityPassword || isSameLocation === null) {
-      toast.error('Please fill all required fields', {
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
+
+  useEffect(() => {
+    const fetchUtilityProviders = async () => {
+      try {
+        const response = await fetch(`${localURL}/api/auth/utility-providers`);
+        const data = await response.json();
+        
+        if (response.ok && data.status === 'success') {
+          setUtilityProviders(data.data);
+          setFilteredProviders(data.data);
+        } else {
+          throw new Error(data.message || 'Failed to fetch utility providers');
+        }
+      } catch (error) {
+        toast.error(error.message || 'Error fetching utility providers', {
+          style: {
+            fontFamily: 'SF Pro',
+            background: '#FFEBEE',
+            color: '#B71C1C'
+          }
+        });
+      } finally {
+        setIsFetchingProviders(false);
+      }
+    };
+
+    fetchUtilityProviders();
+  }, []);
+
+  useEffect(() => {
+    if (searchTerm.trim() === '') {
+      setFilteredProviders(utilityProviders);
+    } else {
+      const filtered = utilityProviders.filter(provider =>
+        provider.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        provider.website.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFilteredProviders(filtered);
+    }
+  }, [searchTerm, utilityProviders]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    if (name === 'utilityAuthEmail' && (emailConflictError || emailVerified)) {
+      setEmailConflictError(false);
+      setEmailVerified(false);
+    }
+  };
+
+  const handleRequestChange = (e) => {
+    const { name, value } = e.target;
+    setRequestData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+  };
+
+  const validateEmail = () => {
+    if (!formData.utilityAuthEmail.trim()) {
+      toast.error('Please enter utility authorization email', {
         style: {
           fontFamily: 'SF Pro',
           background: '#FFEBEE',
-          color: '#B71C1C',
-        },
+          color: '#B71C1C'
+        }
+      });
+      return false;
+    }
+    return true;
+  };
+
+  const validateRequestForm = () => {
+    if (!requestData.name.trim()) {
+      toast.error('Please enter provider name', {
+        style: {
+          fontFamily: 'SF Pro',
+          background: '#FFEBEE',
+          color: '#B71C1C'
+        }
+      });
+      return false;
+    }
+    if (!requestData.websiteUrl.trim()) {
+      toast.error('Please enter provider website URL', {
+        style: {
+          fontFamily: 'SF Pro',
+          background: '#FFEBEE',
+          color: '#B71C1C'
+        }
+      });
+      return false;
+    }
+    return true;
+  };
+
+  const verifyEmail = async () => {
+    if (!validateEmail()) return;
+
+    const userId = localStorage.getItem('userId');
+    const authToken = localStorage.getItem('authToken');
+
+    if (!userId || !authToken) {
+      toast.error('Authentication required. Please login again.', {
+        style: {
+          fontFamily: 'SF Pro',
+          background: '#FFEBEE',
+          color: '#B71C1C'
+        }
+      });
+      return;
+    }
+
+    setEmailVerifying(true);
+
+    try {
+      const response = await fetch(
+        `${localURL}/api/user/update-utility-auth-email/${userId}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({
+            utilityAuthEmail: formData.utilityAuthEmail
+          })
+        }
+      );
+
+      const data = await response.json();
+      
+      if (response.status === 409) {
+        setEmailConflictError(true);
+        throw new Error('This email is already in use for utility authorization');
+      }
+      
+      if (!response.ok || data.status !== 'success') {
+        throw new Error(data.message || 'Failed to verify email');
+      }
+
+      localStorage.setItem('userAuthEmail', formData.utilityAuthEmail);
+      setEmailVerified(true);
+      
+      toast.success('Email verified successfully', {
+        style: {
+          fontFamily: 'SF Pro',
+          background: '#E8F5E9',
+          color: '#1B5E20'
+        }
+      });
+    } catch (error) {
+      toast.error(error.message || 'Error verifying email', {
+        style: {
+          fontFamily: 'SF Pro',
+          background: '#FFEBEE',
+          color: '#B71C1C'
+        }
+      });
+    } finally {
+      setEmailVerifying(false);
+    }
+  };
+
+  const submitProviderRequest = async () => {
+    if (!validateRequestForm()) return;
+
+    const userId = localStorage.getItem('userId');
+    const authToken = localStorage.getItem('authToken');
+
+    if (!userId || !authToken) {
+      toast.error('Authentication required. Please login again.', {
+        style: {
+          fontFamily: 'SF Pro',
+          background: '#FFEBEE',
+          color: '#B71C1C'
+        }
       });
       return;
     }
 
     setLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      setLoading(false);
-      toast.success('Utility authorized successfully!', {
+
+    try {
+      const response = await fetch(
+        `${localURL}/api/user/request-utility-provider/${userId}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify(requestData)
+        }
+      );
+
+      const data = await response.json();
+      if (!response.ok || data.status !== 'success') {
+        throw new Error(data.message || 'Failed to submit provider request');
+      }
+
+      localStorage.setItem('utilityProviderRequest', JSON.stringify({
+        ...data.data,
+        status: 'PENDING'
+      }));
+
+      toast.success('Provider request submitted successfully!', {
         style: {
           fontFamily: 'SF Pro',
           background: '#E8F5E9',
-          color: '#1B5E20',
-        },
+          color: '#1B5E20'
+        }
       });
+
       router.push('/register/residence-user-registration/agreement');
-    }, 1500);
+    } catch (error) {
+      toast.error(error.message || 'Error submitting provider request', {
+        style: {
+          fontFamily: 'SF Pro',
+          background: '#FFEBEE',
+          color: '#B71C1C'
+        }
+      });
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const handleSubmit = async () => {
+    if (!selectedProvider) {
+      toast.error('Please select a utility provider', {
+        style: {
+          fontFamily: 'SF Pro',
+          background: '#FFEBEE',
+          color: '#B71C1C'
+        }
+      });
+      return;
+    }
+    if (!emailVerified) {
+      toast.error('Please verify your email first', {
+        style: {
+          fontFamily: 'SF Pro',
+          background: '#FFEBEE',
+          color: '#B71C1C'
+        }
+      });
+      return;
+    }
+
+    const userId = localStorage.getItem('userId');
+    const authToken = localStorage.getItem('authToken');
+
+    if (!userId || !authToken) {
+      toast.error('Authentication required. Please login again.', {
+        style: {
+          fontFamily: 'SF Pro',
+          background: '#FFEBEE',
+          color: '#B71C1C'
+        }
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Store the selected provider in local storage for later use
+      localStorage.setItem('selectedUtilityProvider', JSON.stringify(selectedProvider));
+
+      // Then initiate utility authorization
+      const initiateResponse = await fetch(
+        `${localURL}/api/auth/initiate-utility-auth/${userId}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          }
+        }
+      );
+
+      const initData = await initiateResponse.json();
+      if (!initiateResponse.ok || initData.status !== 'success') {
+        throw new Error(initData.message || 'Utility authorization initiation failed');
+      }
+
+      toast.success('Utility authorization initiated successfully', {
+        style: {
+          fontFamily: 'SF Pro',
+          background: '#E8F5E9',
+          color: '#1B5E20'
+        }
+      });
+
+      // Open utility authorization in new tab
+      window.open('https://utilityapi.com/authorize/DCarbon_Solutions', '_blank');
+      setShowUtilityModal(true);
+    } catch (error) {
+      toast.error(error.message || 'An error occurred during authorization', {
+        style: {
+          fontFamily: 'SF Pro',
+          background: '#FFEBEE',
+          color: '#B71C1C'
+        }
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSkipAuthorization = () => {
+    const userId = localStorage.getItem('userId');
+    const authToken = localStorage.getItem('authToken');
+
+    if (!userId || !authToken) {
+      toast.error('Authentication required. Please login again.', {
+        style: {
+          fontFamily: 'SF Pro',
+          background: '#FFEBEE',
+          color: '#B71C1C'
+        }
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    // Store pending status in localStorage
+    localStorage.setItem('utilityProviderRequest', JSON.stringify({
+      status: 'PENDING',
+      provider: selectedProvider,
+      skipped: true
+    }));
+
+    // Proceed to next step
+    router.push('/register/residence-user-registration/agreement');
+    setLoading(false);
+  };
+
+  const handleUtilityAuthorized = () => {
+    setShowUtilityModal(false);
+    router.push('/register/residence-user-registration/verify-email');
+  };
+
+  if (!hasMounted) {
+    return null; // Return null during server-side rendering
+  }
 
   return (
     <>
-      {/* Loader Overlay */}
       {loading && (
         <div className={styles.spinnerOverlay}>
           <div className={styles.spinner}></div>
@@ -95,13 +437,11 @@ export default function UtilityAuthorizationCard() {
       )}
 
       <div className={styles.mainContainer}>
-        {/* Heading Container */}
         <div className={styles.headingContainer}>
-          {/* Back Arrow */}
           <div className={styles.backArrow} onClick={() => router.back()}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-7 w-7"
+              className="h-6 w-6"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -110,153 +450,217 @@ export default function UtilityAuthorizationCard() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
           </div>
-
-          {/* Page Title */}
           <h1 className={styles.pageTitle}>Utility Authorization</h1>
-
-          {/* Step Bar */}
           <div className={styles.progressContainer}>
             <div className={styles.progressBarWrapper}>
               <div className={styles.progressBarActive} />
             </div>
-            <span className={styles.progressStepText}>03/03</span>
+            <span className={styles.progressStepText}>01/05</span>
           </div>
         </div>
 
-        {/* Form Fields */}
-        <div className={styles.formWrapper}>
-          {/* Utility Provider */}
-          <div>
-            <div className={styles.labelContainer}>
-              <label className={styles.labelClass}>Utility provider</label>
-              <span className={styles.mandatoryStar}>*</span>
+        {/* Utility Provider Section */}
+        <div className={styles.utilityProviderSection}>
+          <h2 className={styles.utilityProviderTitle}>Select Your Utility Provider</h2>
+          
+          {/* Search Bar - Only rendered client-side */}
+          <input
+            type="text"
+            placeholder="Search utility providers..."
+            className={styles.searchInput}
+            value={searchTerm}
+            onChange={handleSearchChange}
+          />
+          
+          {isFetchingProviders ? (
+            <div className="text-center py-4">
+              <div className="inline-block h-8 w-8 border-4 border-t-4 border-gray-300 border-t-[#039994] rounded-full animate-spin"></div>
             </div>
-            <select
-              value={utilityProvider}
-              onChange={(e) => setUtilityProvider(e.target.value)}
-              className={styles.selectClass}
-            >
-              <option value="">Choose provider</option>
-              <option value="provider1">Provider 1</option>
-              <option value="provider2">Provider 2</option>
-              <option value="provider3">Provider 3</option>
-              <option value="provider4">Provider 4</option>
-            </select>
-          </div>
+          ) : filteredProviders.length > 0 ? (
+            <>
+              <div className="max-h-60 overflow-y-auto mb-4">
+                {filteredProviders.map(provider => (
+                  <div 
+                    key={provider.id}
+                    className={`${styles.providerCard} ${selectedProvider?.id === provider.id ? 'border-[#039994] bg-[#f0f9f9]' : ''}`}
+                    onClick={() => setSelectedProvider(provider)}
+                  >
+                    <div className={styles.providerName}>{provider.name}</div>
+                    <div className={styles.providerWebsite}>
+                      <a href={provider.website} target="_blank" rel="noopener noreferrer" className="text-[#039994] hover:underline">
+                        {provider.website}
+                      </a>
+                    </div>
+                  </div>
+                ))}
+              </div>
 
-          {/* Utility account username */}
-          <div>
-            <div className={styles.labelContainer}>
-              <label className={styles.labelClass}>Utility account username</label>
-              <span className={styles.mandatoryStar}>*</span>
-            </div>
-            <input
-              type="email"
-              placeholder="Email address"
-              value={utilityEmail}
-              onChange={(e) => setUtilityEmail(e.target.value)}
-              className={styles.inputClass}
-            />
-          </div>
+              {selectedProvider && (
+                <div className="text-sm text-green-600 mb-3">
+                  Selected: <span className="font-medium">{selectedProvider.name}</span>
+                </div>
+              )}
 
-          {/* Utility account password */}
-          <div>
-            <div className={styles.labelContainer}>
-              <label className={styles.labelClass}>Utility account password</label>
-              <span className={styles.mandatoryStar}>*</span>
-            </div>
-            <div className={styles.passwordInputWrapper}>
-              <input
-                type={showPassword ? 'text' : 'password'}
-                placeholder="Password"
-                value={utilityPassword}
-                onChange={(e) => setUtilityPassword(e.target.value)}
-                className={styles.inputClass}
-              />
-              <span
-                onClick={() => setShowPassword(!showPassword)}
-                className={styles.passwordToggle}
+              <button
+                onClick={() => setShowRequestForm(true)}
+                className={styles.buttonSecondary}
               >
-                <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} />
-              </span>
+                Provider Not Listed? Or Inactive?
+              </button>
+            </>
+          ) : (
+            <div className="text-center py-4 text-gray-600">
+              {searchTerm.trim() ? 
+                'No matching utility providers found' : 
+                'No utility providers available at this time'}
+            </div>
+          )}
+        </div>
+
+        {/* Request New Provider Form */}
+        {showRequestForm && (
+          <div className={styles.requestForm}>
+            <h3 className="font-medium text-gray-800 mb-3">Request New Utility Provider</h3>
+            <input
+              type="text"
+              name="name"
+              value={requestData.name}
+              onChange={handleRequestChange}
+              className={styles.requestInput}
+              placeholder="Provider Name"
+            />
+            <input
+              type="url"
+              name="websiteUrl"
+              value={requestData.websiteUrl}
+              onChange={handleRequestChange}
+              className={styles.requestInput}
+              placeholder="Provider Website URL"
+            />
+            <div className="flex space-x-3">
+              <button
+                onClick={submitProviderRequest}
+                className={styles.requestButton}
+                disabled={loading}
+              >
+                {loading ? 'Submitting...' : 'Submit Request'}
+              </button>
+              <button
+                onClick={() => setShowRequestForm(false)}
+                className="w-full rounded-md bg-gray-200 text-gray-800 font-semibold py-2 hover:bg-gray-300"
+              >
+                Cancel
+              </button>
             </div>
           </div>
+        )}
 
-          {/* Info Card */}
-          <div>
-            <div className={styles.labelContainer}>
-              <label className={styles.labelClass}>Location information</label>
+        {/* Registration Form (only show if provider is selected or request form isn't shown) */}
+        {selectedProvider && !showRequestForm && (
+          <>
+            <div className={styles.formWrapper}>
+              {/* Utility Authorization Email */}
+              <div>
+                <div className={styles.labelContainer}>
+                  <label className={styles.labelClass}>
+                    Utility Authorization Email
+                    <div 
+                      className={styles.tooltipContainer}
+                      onMouseEnter={() => setShowTooltip(true)}
+                      onMouseLeave={() => setShowTooltip(false)}
+                      onClick={() => setShowTooltip(!showTooltip)}
+                    >
+                      <svg 
+                        xmlns="http://www.w3.org/2000/svg" 
+                        className={`h-4 w-4 ${styles.tooltipIcon}`} 
+                        fill="none" 
+                        viewBox="0 0 24 24" 
+                        stroke="currentColor"
+                      >
+                        <path 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round" 
+                          strokeWidth={2} 
+                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
+                        />
+                      </svg>
+                      {showTooltip && (
+                        <div className={styles.tooltipText}>
+                          This is the email you used when creating your utility provider account with UtilityAPI. 
+                          We'll use it to connect and fetch your provider data.
+                        </div>
+                      )}
+                    </div>
+                    <span className={styles.mandatoryStar}>*</span>
+                  </label>
+                </div>
+                <div className={styles.emailInputContainer}>
+                  <input
+                    type="email"
+                    name="utilityAuthEmail"
+                    value={formData.utilityAuthEmail}
+                    onChange={handleChange}
+                    className={`${styles.emailInput} ${emailConflictError ? 'border-red-500' : ''} ${emailVerified ? 'border-green-500' : ''}`}
+                    placeholder="Enter email for utility authorization"
+                  />
+                  <button
+                    onClick={verifyEmail}
+                    className={styles.buttonSmall}
+                    disabled={emailVerifying || !formData.utilityAuthEmail.trim()}
+                  >
+                    {emailVerifying ? 'Verifying...' : 'Verify'}
+                  </button>
+                </div>
+                {emailConflictError && (
+                  <p className="text-red-500 text-xs mt-1">
+                    This email is already in use for utility authorization
+                  </p>
+                )}
+                {emailVerified && (
+                  <p className="text-green-500 text-xs mt-1">
+                    Email verified successfully
+                  </p>
+                )}
+              </div>
             </div>
-            <div className={styles.infoCard}>
-              <div className={styles.infoItem}>
-                <FontAwesomeIcon icon={faBuilding} className={styles.infoIcon} />
-                <p className={styles.infoSubtext}>{companyName}</p>
-              </div>
-              <div className={styles.infoItem}>
-                <FontAwesomeIcon icon={faMapMarkerAlt} className={styles.infoIcon} />
-                <p className={styles.infoSubtext}>{address}</p>
-              </div>
-              <div className={styles.infoItem}>
-                <FontAwesomeIcon icon={faGlobe} className={styles.infoIcon} />
-                <p className={styles.infoSubtext}>{zipcode}</p>
-              </div>
-              <div className={styles.infoItem}>
-                <FontAwesomeIcon icon={faHashtag} className={styles.infoIcon} />
-                <p className={styles.infoSubtext}>{meterId}</p>
-              </div>
-            </div>
-          </div>
 
-          {/* Location Radio */}
-          <div className={styles.radioContainer}>
-            <div className={styles.labelContainer}>
-              <span className={styles.radioLabel}>Is this the solar installation's location?</span>
-              <span className={styles.mandatoryStar}>*</span>
+            <div className="w-full max-w-md mt-6 space-y-3">
+              <button
+                onClick={handleSubmit}
+                className={styles.buttonPrimary}
+                disabled={loading || !emailVerified}
+              >
+                {loading ? 'Processing...' : 'Click to Authorize your Utility Provider'}
+              </button>
+              <button
+                onClick={handleSkipAuthorization}
+                className={styles.buttonTertiary}
+                disabled={loading}
+              >
+                Skip Authorization for Now
+              </button>
             </div>
-            <div className={styles.radioGroup}>
-              <label className={styles.radioOption}>
-                <input
-                  type="radio"
-                  name="sameLocation"
-                  value="yes"
-                  checked={isSameLocation === 'yes'}
-                  onChange={() => setIsSameLocation('yes')}
-                  className={styles.radioInput}
-                />
-                <span className={styles.radioText}>Yes</span>
-              </label>
-              <label className={styles.radioOption}>
-                <input
-                  type="radio"
-                  name="sameLocation"
-                  value="no"
-                  checked={isSameLocation === 'no'}
-                  onChange={() => setIsSameLocation('no')}
-                  className={styles.radioInput}
-                />
-                <span className={styles.radioText}>No</span>
-              </label>
-            </div>
-          </div>
+          </>
+        )}
 
-          {/* Next Button */}
-          <button
-            onClick={handleSubmit}
-            className={styles.buttonPrimary}
-            disabled={loading}
-          >
-            {loading ? 'Processing...' : 'Next'}
-          </button>
-
-          {/* Terms and Conditions & Privacy Policy */}
-          <div className={styles.termsText}>
-            Terms and Conditions &nbsp;
-            <a href="/privacy" className={styles.termsLink}>
-              Privacy Policy
-            </a>
-          </div>
+        <div className={styles.termsTextContainer}>
+          By clicking on 'Next', you agree to our{' '}
+          <a href="/terms" className={styles.termsLink}>
+            Terms and Conditions
+          </a>{' '}
+          &{' '}
+          <a href="/privacy" className={styles.termsLink}>
+            Privacy Policy
+          </a>
         </div>
       </div>
+
+      {showUtilityModal && (
+        <UtilityAuthorizationModal
+          onAuthorized={handleUtilityAuthorized}
+          onClose={() => setShowUtilityModal(false)}
+        />
+      )}
     </>
   );
 }
