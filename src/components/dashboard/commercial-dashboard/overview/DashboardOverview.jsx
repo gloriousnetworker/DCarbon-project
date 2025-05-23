@@ -9,8 +9,8 @@ const WelcomeModal = dynamic(() => import("./modals/WelcomeModal"), { ssr: false
 
 export default function DashboardOverview() {
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
-  const [authStatus, setAuthStatus] = useState(null);
-  const [agreementStatus, setAgreementStatus] = useState(null);
+  const [authStatus, setAuthStatus] = useState("PENDING");
+  const [agreementStatus, setAgreementStatus] = useState("PENDING");
   const [userData, setUserData] = useState({
     userFirstName: "",
     utilityProviderRequest: null,
@@ -91,11 +91,6 @@ export default function DashboardOverview() {
   };
 
   const shouldShowWelcomeModal = () => {
-    if (authStatus === "AUTHORIZED" || authStatus === "UPDATED") {
-      if (agreementStatus === "ACCEPTED") {
-        return false; // Both conditions are met
-      }
-    }
     if (typeof window === 'undefined') return false;
     // Check if user has previously closed the modal
     return localStorage.getItem("welcomeModalShown") !== "true";
@@ -198,7 +193,6 @@ export default function DashboardOverview() {
       <QuickActions 
         authStatus={authStatus} 
         setAuthStatus={setAuthStatus}
-        agreementStatus={agreementStatus}
       />
 
       {/* Separator */}

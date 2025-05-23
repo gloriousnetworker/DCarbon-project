@@ -40,7 +40,7 @@ export default function WelcomeModal({
                 You need to review and accept the user agreement to create facilities and access all features.
               </p>
               <a
-                href="/register/commercial-both-registration/agreement"
+                href="/register/residence-user-registration/agreement"
                 className="inline-flex items-center mt-2 px-3 py-1 border border-transparent text-sm font-medium rounded-md text-purple-800 bg-purple-100 hover:bg-purple-200"
               >
                 Review Agreement
@@ -109,7 +109,7 @@ export default function WelcomeModal({
               </p>
             </div>
             <a
-              href="/agreement"
+              href="/register/residence-user-registration/agreement"
               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
             >
               Review and Accept Agreement

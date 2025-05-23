@@ -22,80 +22,77 @@ const InviteCollaboratorModal = dynamic(
 export default function QuickActions({ authStatus, setAuthStatus }) {
   const [modal, setModal] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const [authCheckComplete, setAuthCheckComplete] = useState(false);
 
-  // Check auth status on mount
+  // Check auth status on mount if not passed as prop
   useEffect(() => {
-    const checkUtilityAuthorization = async () => {
-      try {
-        setIsLoading(true);
-        
-        // Get userId and authToken from localStorage
-        const userId = typeof window !== 'undefined' ? localStorage.getItem("userId") : null;
-        const authToken = typeof window !== 'undefined' ? localStorage.getItem("authToken") : null;
-        
-        if (!userId || !authToken) {
-          console.error("Missing userId or authToken");
-          setIsLoading(false);
-          return;
-        }
-
-        // Make API call to check utility authorization
-        const response = await fetch(
-          `https://services.dcarbon.solutions/api/user/utility-authorization/${userId}`,
-          {
-            method: "GET",
-            headers: {
-              "Authorization": `Bearer ${authToken}`,
-              "Content-Type": "application/json"
-            }
+    if (authStatus === undefined) {
+      const checkUtilityAuthorization = async () => {
+        try {
+          setIsLoading(true);
+          
+          // Get userId and authToken from localStorage
+          const userId = typeof window !== 'undefined' ? localStorage.getItem("userId") : null;
+          const authToken = typeof window !== 'undefined' ? localStorage.getItem("authToken") : null;
+          
+          if (!userId || !authToken) {
+            console.error("Missing userId or authToken");
+            setAuthStatus("PENDING");
+            setIsLoading(false);
+            return;
           }
-        );
 
-        if (!response.ok) {
-          throw new Error("Failed to fetch authorization status");
-        }
+          // Make API call to check utility authorization
+          const response = await fetch(
+            `https://services.dcarbon.solutions/api/user/utility-authorization/${userId}`,
+            {
+              method: "GET",
+              headers: {
+                "Authorization": `Bearer ${authToken}`,
+                "Content-Type": "application/json"
+              }
+            }
+          );
 
-        const data = await response.json();
-        
-        if (data.status === "success" && data.data?.status === "AUTHORIZED") {
-          setAuthStatus("AUTHORIZED");
-          localStorage.setItem("utilityAuthStatus", "AUTHORIZED");
-        } else {
-          // Use the status from the API response if available
-          const status = data.data?.status || "PENDING";
-          setAuthStatus(status);
-          localStorage.setItem("utilityAuthStatus", status);
-        }
-        
-        setAuthCheckComplete(true);
-      } catch (error) {
-        console.error("Error checking utility authorization:", error);
-        // Fallback to checking localStorage
-        const storedAuthStatus = localStorage.getItem("utilityAuthStatus");
-        if (storedAuthStatus) {
-          setAuthStatus(storedAuthStatus);
-        } else {
+          if (!response.ok) {
+            throw new Error("Failed to fetch authorization status");
+          }
+
+          const data = await response.json();
+          
+          if (data.success) {
+            setAuthStatus("AUTHORIZED");
+          } else {
+            // Use the status from the API response if available
+            setAuthStatus(data.status || "PENDING");
+          }
+        } catch (error) {
+          console.error("Error checking utility authorization:", error);
+          // Fallback to checking localStorage
           const utilityRequest = typeof window !== 'undefined' ? 
             JSON.parse(localStorage.getItem("utilityProviderRequest") || "null") : 
             null;
           if (utilityRequest) {
             setAuthStatus(utilityRequest.status || "PENDING");
           } else {
-            setAuthStatus("PENDING");
+            const authCompleted = typeof window !== 'undefined' ? 
+              localStorage.getItem("utilityAuthCompleted") : 
+              null;
+            setAuthStatus(authCompleted ? "AUTHORIZED" : "PENDING");
           }
+        } finally {
+          setIsLoading(false);
         }
-      } finally {
-        setIsLoading(false);
-      }
-    };
+      };
 
-    checkUtilityAuthorization();
-  }, [setAuthStatus]);
+      checkUtilityAuthorization();
+    } else {
+      setIsLoading(false);
+    }
+  }, [authStatus, setAuthStatus]);
 
   const openModal = (type) => {
     // Prevent opening add facility modal if not authorized
-    if (type === "add" && authStatus !== "AUTHORIZED") {
+    if (type === "add" && !isAuthorized()) {
       return;
     }
     setModal(type);
@@ -105,7 +102,11 @@ export default function QuickActions({ authStatus, setAuthStatus }) {
     setModal("");
   };
 
-  const isAddDisabled = authStatus !== "AUTHORIZED" || isLoading;
+  const isAuthorized = () => {
+    return authStatus === "AUTHORIZED" || authStatus === "UPDATED";
+  };
+
+  const isAddDisabled = isLoading || !isAuthorized();
 
   return (
     <div className="w-full py-4 px-4">
@@ -128,7 +129,7 @@ export default function QuickActions({ authStatus, setAuthStatus }) {
               "radial-gradient(100.83% 133.3% at 130.26% -10.83%, #013331 0%, #039994 100%)",
           }}
           onClick={() => !isAddDisabled && openModal("add")}
-          title={isAddDisabled ? `Utility provider authorization status: ${authStatus}` : ""}
+          title={!isAuthorized() ? `Utility provider authorization status: ${authStatus}` : ""}
         >
           <img
             src="/vectors/MapPinPlus.png"
@@ -140,10 +141,10 @@ export default function QuickActions({ authStatus, setAuthStatus }) {
             Add <br />
             Commercial Facility
           </p>
-          {isLoading && !authCheckComplete && (
-            <div className="mt-1 text-white text-xs">Checking authorization...</div>
+          {isLoading && (
+            <div className="mt-1 text-white text-xs">Loading...</div>
           )}
-          {authStatus !== "AUTHORIZED" && authCheckComplete && (
+          {!isLoading && !isAuthorized() && (
             <div className="mt-1 text-white text-xs">Authorization required</div>
           )}
         </div>
