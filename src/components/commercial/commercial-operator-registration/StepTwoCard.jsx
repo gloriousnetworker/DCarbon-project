@@ -101,6 +101,121 @@ export default function UtilityAuthorizationCard() {
     window.location.reload();
   };
 
+  // Function to get status info based on status
+  const getStatusInfo = (status) => {
+    switch (status) {
+      case 'AUTHORIZED':
+        return {
+          color: 'green',
+          bgColor: 'bg-green-100',
+          borderColor: 'border-green-400',
+          textColor: 'text-green-700',
+          badgeColor: 'bg-green-100 text-green-800',
+          icon: (
+            <svg className="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+          ),
+          title: 'Authorization Successful!',
+          message: 'Your utility provider has approved access to fetch your meter IDs and utility data. You can now proceed to login and create your facility.',
+          nextSteps: [
+            'Log in to your account',
+            'Create and manage your commercial facilities',
+            'Monitor your utility data and solar installations'
+          ]
+        };
+
+      case 'UPDATED':
+        return {
+          color: 'blue',
+          bgColor: 'bg-blue-100',
+          borderColor: 'border-blue-400',
+          textColor: 'text-blue-700',
+          badgeColor: 'bg-blue-100 text-blue-800',
+          icon: (
+            <svg className="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
+            </svg>
+          ),
+          title: 'Authorization Updated - Processing',
+          message: 'You have re-authorized your utility provider to fetch meter data. The Utility API is currently processing your request and sending your data to DCarbon. Please wait while we complete this process.',
+          nextSteps: [
+            'Please wait while we fetch your meter data',
+            'This process may take a few minutes',
+            'You will be notified once the data is ready',
+            'You can refresh this page to check for updates'
+          ]
+        };
+
+      case 'UPDATE-ERROR':
+        return {
+          color: 'red',
+          bgColor: 'bg-red-100',
+          borderColor: 'border-red-400',
+          textColor: 'text-red-700',
+          badgeColor: 'bg-red-100 text-red-800',
+          icon: (
+            <svg className="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+          ),
+          title: 'Data Fetch Error',
+          message: 'DCarbon was unable to fetch data from your utility provider. This could be due to a temporary issue with the utility provider\'s system or connectivity problems.',
+          nextSteps: [
+            'Try refreshing the status to retry the connection',
+            'Check if your utility provider\'s system is operational',
+            'Contact support if the issue persists',
+            'You may need to re-authorize with your utility provider'
+          ]
+        };
+
+      case 'DECLINE':
+        return {
+          color: 'red',
+          bgColor: 'bg-red-100',
+          borderColor: 'border-red-400',
+          textColor: 'text-red-700',
+          badgeColor: 'bg-red-100 text-red-800',
+          icon: (
+            <svg className="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+            </svg>
+          ),
+          title: 'Authorization Declined',
+          message: 'The Utility API has rejected access to fetch data from your utility provider. This may be due to invalid credentials, restricted access, or policy limitations.',
+          nextSteps: [
+            'Verify your utility account credentials',
+            'Check with your utility provider about data sharing permissions',
+            'Contact support for assistance with authorization',
+            'You may need to try the authorization process again'
+          ]
+        };
+
+      case 'INITIATED':
+      default:
+        return {
+          color: 'yellow',
+          bgColor: 'bg-yellow-100',
+          borderColor: 'border-yellow-400',
+          textColor: 'text-yellow-700',
+          badgeColor: 'bg-yellow-100 text-yellow-800',
+          icon: (
+            <svg className="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clipRule="evenodd" />
+            </svg>
+          ),
+          title: 'Authorization in Progress',
+          message: 'Your utility authorization process has been initiated with the Utility API. Please wait while we process your request.',
+          nextSteps: [
+            'Please wait while we process your authorization',
+            'This may take a few minutes to complete',
+            'You will be notified once authorization is complete',
+            'You can refresh this page to check for updates'
+          ]
+        };
+    }
+  };
+
   if (fetchingData) {
     return (
       <div className={spinnerOverlay}>
@@ -129,6 +244,8 @@ export default function UtilityAuthorizationCard() {
     );
   }
 
+  const statusInfo = getStatusInfo(utilityData.status);
+
   // Show success message if utility is authorized
   if (isAuthorized && utilityData.status === "AUTHORIZED") {
     return (
@@ -146,14 +263,12 @@ export default function UtilityAuthorizationCard() {
           </div>
           
           {/* Success Message */}
-          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative my-6">
+          <div className={`${statusInfo.bgColor} ${statusInfo.borderColor} ${statusInfo.textColor} px-4 py-3 rounded relative my-6`}>
             <div className="flex items-center">
-              <svg className="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
+              {statusInfo.icon}
               <div>
-                <strong className="font-bold">Success!</strong>
-                <span className="block sm:inline"> Your Utility has been authorized successfully. Click to login and continue creating your facility.</span>
+                <strong className="font-bold">{statusInfo.title}</strong>
+                <span className="block sm:inline"> {statusInfo.message}</span>
               </div>
             </div>
           </div>
@@ -165,7 +280,7 @@ export default function UtilityAuthorizationCard() {
             <div className="space-y-2">
               <p className="text-sm text-gray-600">
                 <span className="font-medium">Status:</span> 
-                <span className="ml-2 px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
+                <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${statusInfo.badgeColor}`}>
                   {utilityData.status}
                 </span>
               </p>
@@ -220,9 +335,9 @@ export default function UtilityAuthorizationCard() {
           <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-md">
             <h4 className="font-medium text-blue-900 mb-2">What's Next?</h4>
             <ul className="text-sm text-blue-800 space-y-1">
-              <li>• Log in to your account</li>
-              <li>• Create and manage your commercial facilities</li>
-              <li>• Monitor your utility data and solar installations</li>
+              {statusInfo.nextSteps.map((step, index) => (
+                <li key={index}>• {step}</li>
+              ))}
             </ul>
           </div>
         </div>
@@ -230,7 +345,7 @@ export default function UtilityAuthorizationCard() {
     );
   }
 
-  // Show pending or other status
+  // Show status-specific message for other statuses
   return (
     <>
       {/* Loader Overlay */}
@@ -280,11 +395,7 @@ export default function UtilityAuthorizationCard() {
             <div className="space-y-2">
               <p className="text-sm text-gray-600">
                 <span className="font-medium">Status:</span> 
-                <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
-                  utilityData.status === 'AUTHORIZED' 
-                    ? 'bg-green-100 text-green-800' 
-                    : 'bg-yellow-100 text-yellow-800'
-                }`}>
+                <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${statusInfo.badgeColor}`}>
                   {utilityData.status}
                 </span>
               </p>
@@ -305,14 +416,29 @@ export default function UtilityAuthorizationCard() {
             </div>
           </div>
 
-          {/* Pending Message */}
-          <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative my-6">
-            <strong className="font-bold">Pending Authorization</strong>
-            <span className="block sm:inline"> Your utility authorization is still pending. Please check back later or contact support if this persists.</span>
+          {/* Status Message */}
+          <div className={`${statusInfo.bgColor} ${statusInfo.borderColor} ${statusInfo.textColor} px-4 py-3 rounded relative my-6`}>
+            <div className="flex items-start">
+              {statusInfo.icon}
+              <div>
+                <strong className="font-bold">{statusInfo.title}</strong>
+                <span className="block mt-1"> {statusInfo.message}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* What's Next Section */}
+          <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-md">
+            <h4 className="font-medium text-gray-900 mb-2">What's Next?</h4>
+            <ul className="text-sm text-gray-700 space-y-1">
+              {statusInfo.nextSteps.map((step, index) => (
+                <li key={index}>• {step}</li>
+              ))}
+            </ul>
           </div>
 
           {/* Button Group */}
-          <div className="space-y-4">
+          <div className="space-y-4 mt-6">
             {/* Refresh Status Button */}
             <button
               onClick={handleRetry}
@@ -321,21 +447,23 @@ export default function UtilityAuthorizationCard() {
               Refresh Status
             </button>
 
-            {/* Continue to Dashboard Button */}
-            <button
-              onClick={handleLoginRedirect}
-              className="w-full rounded-md border border-[#039994] text-[#039994] font-semibold py-2 hover:bg-[#039994]/10 focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro"
-              disabled={loading}
-            >
-              {loading ? (
-                <div className="flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#039994] mr-2"></div>
-                  Redirecting...
-                </div>
-              ) : (
-                'Continue to Dashboard'
-              )}
-            </button>
+            {/* Continue to Dashboard Button - Show for all statuses except DECLINE */}
+            {utilityData.status !== 'DECLINE' && (
+              <button
+                onClick={handleLoginRedirect}
+                className="w-full rounded-md border border-[#039994] text-[#039994] font-semibold py-2 hover:bg-[#039994]/10 focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro"
+                disabled={loading}
+              >
+                {loading ? (
+                  <div className="flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#039994] mr-2"></div>
+                    Redirecting...
+                  </div>
+                ) : (
+                  utilityData.status === 'AUTHORIZED' ? 'Continue to Login' : 'Continue to Dashboard'
+                )}
+              </button>
+            )}
           </div>
 
           {/* Terms and Conditions & Privacy Policy */}

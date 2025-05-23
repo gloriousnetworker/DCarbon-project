@@ -18,13 +18,15 @@ export default function LoginCard() {
   const handleLogin = async () => {
     setLoading(true);
     try {
-      // Updated base URL
+      // Normalize email to lowercase
+      const normalizedEmail = email.toLowerCase();
+      
       const baseUrl = 'https://services.dcarbon.solutions';
       const url = `${baseUrl}/api/auth/login`;
 
       const response = await axios.post(
         url,
-        { email, password },
+        { email: normalizedEmail, password },
         { headers: { 'Content-Type': 'application/json' } }
       );
 
@@ -34,7 +36,6 @@ export default function LoginCard() {
 
       // Check if login requires Two Factor Authentication
       if (requiresTwoFactor) {
-        // Store the temporary token and any other relevant info for the next step
         localStorage.setItem('tempToken', tempToken);
         localStorage.setItem('userId', user.id);
         toast.success(response.data.message || '2FA verification required');
@@ -42,13 +43,32 @@ export default function LoginCard() {
         return;
       }
 
-      // Otherwise, store user details and token for normal login flow
+      // Store user details and token
       localStorage.setItem('userFirstName', user.firstName);
       localStorage.setItem('userProfilePicture', user.profilePicture);
       localStorage.setItem('authToken', token);
       localStorage.setItem('userId', user.id);
 
       toast.success('Login successful');
+
+      // Check utility auth status for COMMERCIAL or RESIDENTIAL users
+      if (user.userType === 'COMMERCIAL' || user.userType === 'RESIDENTIAL') {
+        // Check if utilityAuth exists and has valid status
+        if (!user.utilityAuth || !['UPDATED', 'AUTHORIZED'].includes(user.utilityAuth.status)) {
+          window.location.href = user.userType === 'COMMERCIAL' 
+            ? '/register/commercial-both-registration/utility' 
+            : '/register/residence-user-registration/utility';
+          return;
+        }
+
+        // Check if agreements is empty
+        if (!user.agreements) {
+          window.location.href = user.userType === 'COMMERCIAL' 
+            ? '/register/commercial-both-registration/agreement' 
+            : '/register/residence-user-registration/agreement';
+          return;
+        }
+      }
 
       // Check if the agreement is completed: signature must not be null and termsAccepted true
       const agreementCompleted =
