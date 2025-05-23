@@ -17,7 +17,7 @@ import {
   labelClass,
   selectClass,
   buttonPrimary,
-  buttonSecondary,
+  // buttonSecondary, // Not defined in styles.js
   spinnerOverlay,
   spinner,
   termsTextContainer
@@ -324,7 +324,7 @@ export default function UtilityAuthorizationCard() {
             {/* Continue to Dashboard Button */}
             <button
               onClick={handleLoginRedirect}
-              className={`${buttonSecondary} w-full`}
+              className="w-full rounded-md border border-[#039994] text-[#039994] font-semibold py-2 hover:bg-[#039994]/10 focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro"
               disabled={loading}
             >
               {loading ? (
