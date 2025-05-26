@@ -51,53 +51,61 @@ export default function LoginCard() {
 
       toast.success('Login successful');
 
-      // Check utility auth status for COMMERCIAL or RESIDENTIAL users
+      // Handle routing based on user type and registration status
       if (user.userType === 'COMMERCIAL' || user.userType === 'RESIDENTIAL') {
-        // Check if utilityAuth exists and has valid status
-        if (!user.utilityAuth || !['UPDATED', 'AUTHORIZED'].includes(user.utilityAuth.status)) {
+        // Case 1: Both utilityAuth and agreements are null
+        if (!user.utilityAuth && !user.agreements) {
           window.location.href = user.userType === 'COMMERCIAL' 
             ? '/register/welcome-back-commercial-users' 
             : '/register/welcome-back-residence-users';
           return;
         }
 
-        // Check if agreements is empty
-        if (!user.agreements) {
+        // Case 2: utilityAuth exists with valid status but agreements is null
+        if (user.utilityAuth && ['UPDATED', 'AUTHORIZED'].includes(user.utilityAuth.status) && !user.agreements) {
           window.location.href = user.userType === 'COMMERCIAL' 
-            ? '/register/welcome-back-commercial-users' 
-            : '/register/welcome-back-residence-users';
+            ? '/register/commercial-both-registration/agreement' 
+            : '/register/residence-user-registration/agreement';
+          return;
+        }
+
+        // Case 3: agreements exists but utilityAuth is null
+        if (user.agreements && !user.utilityAuth) {
+          window.location.href = '/register/operator-registration';
+          return;
+        }
+
+        // Case 4: Check if agreement is completed (signature not null and termsAccepted true)
+        const agreementCompleted = user.agreements && 
+                                 user.agreements.signature !== null && 
+                                 user.agreements.termsAccepted;
+
+        // Route to dashboard if all conditions are met
+        if (user.utilityAuth && agreementCompleted) {
+          window.location.href = user.userType === 'COMMERCIAL' 
+            ? '/commercial-dashboard' 
+            : '/residence-dashboard';
           return;
         }
       }
 
-      // Check if the agreement is completed: signature must not be null and termsAccepted true
-      const agreementCompleted =
-        user.agreements &&
-        user.agreements.signature !== null &&
-        user.agreements.termsAccepted;
-
-      // Route based on user type and agreement status
-      if (user.userType === 'COMMERCIAL') {
-        if (!agreementCompleted) {
-          window.location.href = '/register/welcome-back-commercial-users';
-        } else {
-          window.location.href = '/commercial-dashboard';
-        }
-      } else if (user.userType === 'RESIDENTIAL') {
-        if (!agreementCompleted) {
-          window.location.href = '/register/welcome-back-residence-users';
-        } else {
-          window.location.href = '/residence-dashboard';
-        }
-      } else if (user.userType === 'PARTNER') {
+      // Handle partner users
+      if (user.userType === 'PARTNER') {
+        const agreementCompleted = user.agreements && 
+                                 user.agreements.signature !== null && 
+                                 user.agreements.termsAccepted;
+        
         if (!agreementCompleted) {
           window.location.href = '/register/welcome-back-partner-users';
         } else {
           window.location.href = '/partner-dashboard';
         }
-      } else {
-        window.location.href = '/dashboard';
+        return;
       }
+
+      // Default dashboard for other user types
+      window.location.href = '/dashboard';
+
     } catch (err) {
       toast.error(err.response?.data?.message || 'Login failed');
     } finally {
@@ -105,6 +113,7 @@ export default function LoginCard() {
     }
   };
 
+  // ... rest of the component remains the same ...
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center py-8 px-8">
       {/* Loader Overlay */}
