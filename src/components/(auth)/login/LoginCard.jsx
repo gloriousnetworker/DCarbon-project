@@ -56,16 +56,16 @@ export default function LoginCard() {
         // Check if utilityAuth exists and has valid status
         if (!user.utilityAuth || !['UPDATED', 'AUTHORIZED'].includes(user.utilityAuth.status)) {
           window.location.href = user.userType === 'COMMERCIAL' 
-            ? '/register/commercial-both-registration/utility' 
-            : '/register/residence-user-registration/utility';
+            ? '/register/welcome-back-commercial-users' 
+            : '/register/welcome-back-residence-users';
           return;
         }
 
         // Check if agreements is empty
         if (!user.agreements) {
           window.location.href = user.userType === 'COMMERCIAL' 
-            ? '/register/commercial-both-registration/agreement' 
-            : '/register/residence-user-registration/agreement';
+            ? '/register/welcome-back-commercial-users' 
+            : '/register/welcome-back-residence-users';
           return;
         }
       }
