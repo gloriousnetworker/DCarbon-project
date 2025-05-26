@@ -35,6 +35,27 @@ export default function AgreementFormPage() {
     return { authToken, userId };
   };
 
+  // Store agreement data temporarily in localStorage
+  const storeAgreementTemporarily = (agreementData) => {
+    try {
+      // Get existing loginResponse
+      const loginResponse = JSON.parse(localStorage.getItem("loginResponse") || "null");
+      
+      if (loginResponse && loginResponse.data && loginResponse.data.user) {
+        // Update the loginResponse with agreement data
+        loginResponse.data.user.agreements = agreementData;
+        localStorage.setItem("loginResponse", JSON.stringify(loginResponse));
+      }
+
+      // Also store as separate item for fallback
+      localStorage.setItem("userAgreements", JSON.stringify(agreementData));
+      
+      console.log("Agreement data stored temporarily:", agreementData);
+    } catch (error) {
+      console.error("Error storing agreement data:", error);
+    }
+  };
+
   // Effect for main loader delay
   useEffect(() => {
     let timer;
@@ -107,7 +128,21 @@ export default function AgreementFormPage() {
         throw new Error(error.message || "Failed to accept user agreement");
       }
 
-      return await response.json();
+      const result = await response.json();
+      
+      // Store agreement data temporarily for immediate use
+      const agreementData = {
+        id: result.data?.id || `temp-${Date.now()}`,
+        userId: userId,
+        signature: signatureData,
+        termsAccepted: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      
+      storeAgreementTemporarily(agreementData);
+      
+      return result;
     } catch (error) {
       console.error("Error accepting user agreement:", error);
       if (error.message.includes('Unauthorized') || error.message.includes('expired')) {
@@ -233,7 +268,9 @@ export default function AgreementFormPage() {
           onSkip={() => {
             setInviteModalOpen(false);
             setRegistrationModalOpen(true);
-          }} />)}
+          }} 
+        />
+      )}
       {sentModalOpen && (
         <EmailInvitationSentModal closeModal={handleCloseSentModal} />
       )}

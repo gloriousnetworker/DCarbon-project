@@ -10,7 +10,7 @@ export default function WelcomeModal({
   if (!isOpen) return null;
 
   const { userFirstName, utilityAuth, agreements } = userData;
-  const userEmail = localStorage.getItem("userEmail") || "your email";
+  const userEmail = (typeof window !== 'undefined' ? localStorage.getItem("userEmail") : null) || "your email";
   
   const isAuthComplete = authStatus === "COMPLETED";
   const isAgreementComplete = agreementStatus === "ACCEPTED";

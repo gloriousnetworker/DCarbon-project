@@ -28,7 +28,15 @@ export default function DashboardOverview() {
       // Extract user info from login response
       const user = loginResponse?.data?.user || null;
       const utilityAuth = user?.utilityAuth || null;
-      const agreements = user?.agreements || null;
+      let agreements = user?.agreements || null;
+      
+      // Fallback check: if agreements from login response is null, check localStorage for userAgreements
+      if (!agreements) {
+        const userAgreements = JSON.parse(localStorage.getItem("userAgreements") || "null");
+        if (userAgreements) {
+          agreements = userAgreements;
+        }
+      }
       
       setUserData({
         userFirstName: firstName,
@@ -43,7 +51,7 @@ export default function DashboardOverview() {
       }
       setAuthStatus(currentAuthStatus);
 
-      // Set agreement status
+      // Set agreement status - now with fallback support
       let currentAgreementStatus = "PENDING";
       if (agreements?.termsAccepted === true) {
         currentAgreementStatus = "ACCEPTED";

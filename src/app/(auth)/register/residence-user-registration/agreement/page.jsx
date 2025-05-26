@@ -14,20 +14,36 @@ import toast from "react-hot-toast";
 
 export default function AgreementFormPage() {
   const [loading, setLoading] = useState(false);
-  const [showLoader, setShowLoader] = useState(false); // New state for loader visibility
+  const [showLoader, setShowLoader] = useState(false);
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [sentModalOpen, setSentModalOpen] = useState(false);
   const [registrationModalOpen, setRegistrationModalOpen] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
-  const [showRedirectLoader, setShowRedirectLoader] = useState(false); // New state for redirect loader
-
-  // Condition states: checkboxes and signature
+  const [showRedirectLoader, setShowRedirectLoader] = useState(false);
   const [allChecked, setAllChecked] = useState(false);
   const [showSignatureModal, setShowSignatureModal] = useState(false);
   const [signatureData, setSignatureData] = useState(null);
-  const [accepted, setAccepted] = useState(true);
 
   const router = useRouter();
+
+  // Store agreement data temporarily in localStorage
+  const storeAgreementTemporarily = (agreementData) => {
+    try {
+      // Get existing loginResponse
+      const loginResponse = JSON.parse(localStorage.getItem("loginResponse") || "null");
+      
+      if (loginResponse && loginResponse.data && loginResponse.data.user) {
+        // Update the loginResponse with agreement data
+        loginResponse.data.user.agreements = agreementData;
+        localStorage.setItem("loginResponse", JSON.stringify(loginResponse));
+      }
+
+      // Also store as separate item for fallback
+      localStorage.setItem("userAgreements", JSON.stringify(agreementData));
+    } catch (error) {
+      console.error("Error storing agreement data:", error);
+    }
+  };
 
   // Effect for main loader delay
   useEffect(() => {
@@ -35,7 +51,6 @@ export default function AgreementFormPage() {
     if (loading) {
       setShowLoader(true);
     } else {
-      // Minimum display time of 500ms for the loader
       timer = setTimeout(() => setShowLoader(false), 500);
     }
     return () => clearTimeout(timer);
@@ -54,14 +69,14 @@ export default function AgreementFormPage() {
 
   // Function to call the accept user agreement endpoint
   const acceptUserAgreement = async () => {
+    const userId = localStorage.getItem("userId");
+    const authToken = localStorage.getItem("authToken");
+
+    if (!userId || !authToken) {
+      throw new Error("User authentication details not found");
+    }
+
     try {
-      const userId = localStorage.getItem("userId");
-      const authToken = localStorage.getItem("authToken");
-
-      if (!userId || !authToken) {
-        throw new Error("User authentication details not found");
-      }
-
       const response = await fetch(
         `https://services.dcarbon.solutions/api/user/accept-user-agreement-terms/${userId}`,
         {
@@ -72,6 +87,8 @@ export default function AgreementFormPage() {
           },
           body: JSON.stringify({
             signature: signatureData,
+            termsAccepted: true,
+            agreementCompleted: true
           }),
         }
       );
@@ -80,15 +97,27 @@ export default function AgreementFormPage() {
         throw new Error("Failed to accept user agreement");
       }
 
-      const data = await response.json();
-      return data;
+      const result = await response.json();
+      
+      // Store agreement data temporarily for immediate use
+      const agreementData = {
+        id: result.data?.id || `temp-${Date.now()}`,
+        userId: userId,
+        signature: signatureData,
+        termsAccepted: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      
+      storeAgreementTemporarily(agreementData);
+      
+      return result;
     } catch (error) {
       console.error("Error accepting user agreement:", error);
       throw error;
     }
   };
 
-  // When Accept is clicked (and conditions met), start the flow by showing the invite modal.
   const handleSubmit = async () => {
     if (!allChecked) {
       toast.error("Please accept all agreements");
@@ -102,12 +131,12 @@ export default function AgreementFormPage() {
     setLoading(true);
     try {
       await acceptUserAgreement();
-      setLoading(false);
-      setInviteModalOpen(true);
       toast.success("Agreement signed successfully!");
+      setInviteModalOpen(true);
     } catch (error) {
-      setLoading(false);
       toast.error(error.message || "Failed to accept agreement");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -181,10 +210,7 @@ export default function AgreementFormPage() {
         {/* Accept / Decline Buttons */}
         <div className="flex w-full max-w-3xl justify-between mt-6 space-x-4 px-2 fixed bottom-8">
           <button
-            onClick={() => {
-              setAccepted(true);
-              handleSubmit();
-            }}
+            onClick={handleSubmit}
             disabled={!(allChecked && signatureData)}
             className={`
               ${buttonPrimary}
@@ -216,7 +242,9 @@ export default function AgreementFormPage() {
           onSkip={() => {
             setInviteModalOpen(false);
             setRegistrationModalOpen(true);
-          }} />)}
+          }} 
+        />
+      )}
       {sentModalOpen && (
         <EmailInvitationSentModal closeModal={handleCloseSentModal} />
       )}

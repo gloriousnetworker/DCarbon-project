@@ -26,6 +26,27 @@ export default function QuickActions({ authStatus: propAuthStatus, setAuthStatus
   const [isLoading, setIsLoading] = useState(true);
   const [hasCheckedStatus, setHasCheckedStatus] = useState(false);
 
+  // Function to check agreement status from multiple sources
+  const checkAgreementStatus = () => {
+    if (typeof window === 'undefined') return "PENDING";
+
+    // First check the loginResponse
+    const loginResponse = JSON.parse(localStorage.getItem("loginResponse") || "null");
+    const loginAgreements = loginResponse?.data?.user?.agreements || null;
+    
+    if (loginAgreements?.termsAccepted === true) {
+      return "ACCEPTED";
+    }
+
+    // Fallback to temporary storage
+    const tempAgreements = JSON.parse(localStorage.getItem("userAgreements") || "null");
+    if (tempAgreements?.termsAccepted === true) {
+      return "ACCEPTED";
+    }
+
+    return "PENDING";
+  };
+
   useEffect(() => {
     const loadUserData = () => {
       if (typeof window === 'undefined') return;
@@ -35,7 +56,6 @@ export default function QuickActions({ authStatus: propAuthStatus, setAuthStatus
       // Extract user info from login response
       const user = loginResponse?.data?.user || null;
       const utilityAuth = user?.utilityAuth || null;
-      const agreements = user?.agreements || null;
 
       // Set auth status based on utilityAuth
       let currentAuthStatus = "PENDING";
@@ -52,11 +72,8 @@ export default function QuickActions({ authStatus: propAuthStatus, setAuthStatus
         setAuthStatus(finalAuthStatus);
       }
 
-      // Set agreement status
-      let currentAgreementStatus = "PENDING";
-      if (agreements?.termsAccepted === true) {
-        currentAgreementStatus = "ACCEPTED";
-      }
+      // Check agreement status from multiple sources
+      const currentAgreementStatus = checkAgreementStatus();
       setAgreementStatus(currentAgreementStatus);
       
       setHasCheckedStatus(true);
@@ -64,11 +81,25 @@ export default function QuickActions({ authStatus: propAuthStatus, setAuthStatus
     };
 
     loadUserData();
+    
+    // Listen for storage changes to update agreement status in real-time
+    const handleStorageChange = (e) => {
+      if (e.key === "loginResponse" || e.key === "userAgreements") {
+        const newAgreementStatus = checkAgreementStatus();
+        setAgreementStatus(newAgreementStatus);
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, [propAuthStatus, setAuthStatus]);
 
   const openModal = (type) => {
-    // Prevent opening add facility modal if not authorized or agreement not accepted
-    if (type === "add" && (!isAuthorized() || !isAgreementAccepted())) {
+    // Prevent opening modals that require authorization or agreement
+    if ((type === "add" || type === "invite") && (!isAuthorized() || !isAgreementAccepted())) {
       return;
     }
     setModal(type);
@@ -87,38 +118,52 @@ export default function QuickActions({ authStatus: propAuthStatus, setAuthStatus
     return agreementStatus === "ACCEPTED";
   };
 
-  const canAddFacility = () => {
-    return isAuthorized() && isAgreementAccepted();
+  const canPerformAction = (actionType) => {
+    // Both Add Facility and Invite Collaborator require auth and agreement
+    if (actionType === "add" || actionType === "invite") {
+      return isAuthorized() && isAgreementAccepted();
+    }
+    return true;
   };
 
-  const isAddDisabled = isLoading || !canAddFacility();
+  const isActionDisabled = (actionType) => {
+    return isLoading || !canPerformAction(actionType);
+  };
 
-  const getAddFacilityTooltip = () => {
+  const getActionTooltip = (actionType) => {
     if (isLoading) return "Loading...";
-    if (!isAuthorized() && !isAgreementAccepted()) {
-      return "Utility authorization and user agreement required";
+    
+    if (actionType === "add" || actionType === "invite") {
+      if (!isAuthorized() && !isAgreementAccepted()) {
+        return "Utility authorization and user agreement required";
+      }
+      if (!isAuthorized()) {
+        const currentAuthStatus = propAuthStatus || authStatus;
+        return `Utility provider authorization status: ${currentAuthStatus}`;
+      }
+      if (!isAgreementAccepted()) {
+        return "User agreement acceptance required";
+      }
     }
-    if (!isAuthorized()) {
-      const currentAuthStatus = propAuthStatus || authStatus;
-      return `Utility provider authorization status: ${currentAuthStatus}`;
-    }
-    if (!isAgreementAccepted()) {
-      return "User agreement acceptance required";
-    }
+    
     return "";
   };
 
-  const getAddFacilityStatusText = () => {
+  const getActionStatusText = (actionType) => {
     if (isLoading) return "Loading...";
-    if (!isAuthorized() && !isAgreementAccepted()) {
-      return "Auth & agreement required";
+    
+    if (actionType === "add" || actionType === "invite") {
+      if (!isAuthorized() && !isAgreementAccepted()) {
+        return "Auth & agreement required";
+      }
+      if (!isAuthorized()) {
+        return "Authorization required";
+      }
+      if (!isAgreementAccepted()) {
+        return "Agreement required";
+      }
     }
-    if (!isAuthorized()) {
-      return "Authorization required";
-    }
-    if (!isAgreementAccepted()) {
-      return "Agreement required";
-    }
+    
     return "";
   };
 
@@ -136,14 +181,14 @@ export default function QuickActions({ authStatus: propAuthStatus, setAuthStatus
         {/* Card 1: Add Commercial Facility */}
         <div
           className={`p-4 min-h-[100px] rounded-2xl flex flex-col items-start justify-start ${
-            isAddDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+            isActionDisabled("add") ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
           }`}
           style={{
             background:
               "radial-gradient(100.83% 133.3% at 130.26% -10.83%, #013331 0%, #039994 100%)",
           }}
-          onClick={() => !isAddDisabled && openModal("add")}
-          title={getAddFacilityTooltip()}
+          onClick={() => !isActionDisabled("add") && openModal("add")}
+          title={getActionTooltip("add")}
         >
           <img
             src="/vectors/MapPinPlus.png"
@@ -155,9 +200,9 @@ export default function QuickActions({ authStatus: propAuthStatus, setAuthStatus
             Add <br />
             Commercial Facility
           </p>
-          {(isLoading || !canAddFacility()) && (
+          {(isLoading || !canPerformAction("add")) && (
             <div className="mt-1 text-white text-xs">
-              {getAddFacilityStatusText()}
+              {getActionStatusText("add")}
             </div>
           )}
         </div>
@@ -206,12 +251,15 @@ export default function QuickActions({ authStatus: propAuthStatus, setAuthStatus
 
         {/* Card 4: Invite Collaborator */}
         <div
-          className="p-4 min-h-[100px] rounded-2xl flex flex-col items-start justify-start cursor-pointer"
+          className={`p-4 min-h-[100px] rounded-2xl flex flex-col items-start justify-start ${
+            isActionDisabled("invite") ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+          }`}
           style={{
             background:
               "radial-gradient(60% 119.12% at 114.01% -10%, #00B4AE 0%, #004E4B 100%)",
           }}
-          onClick={() => openModal("invite")}
+          onClick={() => !isActionDisabled("invite") && openModal("invite")}
+          title={getActionTooltip("invite")}
         >
           <img
             src="/vectors/Share.png"
@@ -223,6 +271,11 @@ export default function QuickActions({ authStatus: propAuthStatus, setAuthStatus
             Invite <br />
             <span className="font-bold">Collaborator</span>
           </p>
+          {(isLoading || !canPerformAction("invite")) && (
+            <div className="mt-1 text-white text-xs">
+              {getActionStatusText("invite")}
+            </div>
+          )}
         </div>
       </div>
 
