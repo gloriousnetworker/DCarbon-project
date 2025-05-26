@@ -98,8 +98,8 @@ export default function QuickActions({ authStatus: propAuthStatus, setAuthStatus
   }, [propAuthStatus, setAuthStatus]);
 
   const openModal = (type) => {
-    // Prevent opening modals that require authorization or agreement
-    if ((type === "add" || type === "invite") && (!isAuthorized() || !isAgreementAccepted())) {
+    // Only prevent opening modals that require authorization and agreement (just "add" now)
+    if (type === "add" && (!isAuthorized() || !isAgreementAccepted())) {
       return;
     }
     setModal(type);
@@ -119,8 +119,8 @@ export default function QuickActions({ authStatus: propAuthStatus, setAuthStatus
   };
 
   const canPerformAction = (actionType) => {
-    // Both Add Facility and Invite Collaborator require auth and agreement
-    if (actionType === "add" || actionType === "invite") {
+    // Only Add Facility requires auth and agreement, not Invite Collaborator
+    if (actionType === "add") {
       return isAuthorized() && isAgreementAccepted();
     }
     return true;
@@ -133,7 +133,8 @@ export default function QuickActions({ authStatus: propAuthStatus, setAuthStatus
   const getActionTooltip = (actionType) => {
     if (isLoading) return "Loading...";
     
-    if (actionType === "add" || actionType === "invite") {
+    // Only show tooltip for "add" action
+    if (actionType === "add") {
       if (!isAuthorized() && !isAgreementAccepted()) {
         return "Utility authorization and user agreement required";
       }
@@ -152,7 +153,8 @@ export default function QuickActions({ authStatus: propAuthStatus, setAuthStatus
   const getActionStatusText = (actionType) => {
     if (isLoading) return "Loading...";
     
-    if (actionType === "add" || actionType === "invite") {
+    // Only show status text for "add" action
+    if (actionType === "add") {
       if (!isAuthorized() && !isAgreementAccepted()) {
         return "Auth & agreement required";
       }
@@ -251,15 +253,12 @@ export default function QuickActions({ authStatus: propAuthStatus, setAuthStatus
 
         {/* Card 4: Invite Collaborator */}
         <div
-          className={`p-4 min-h-[100px] rounded-2xl flex flex-col items-start justify-start ${
-            isActionDisabled("invite") ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
-          }`}
+          className="p-4 min-h-[100px] rounded-2xl flex flex-col items-start justify-start cursor-pointer"
           style={{
             background:
               "radial-gradient(60% 119.12% at 114.01% -10%, #00B4AE 0%, #004E4B 100%)",
           }}
-          onClick={() => !isActionDisabled("invite") && openModal("invite")}
-          title={getActionTooltip("invite")}
+          onClick={() => openModal("invite")}
         >
           <img
             src="/vectors/Share.png"
@@ -271,11 +270,6 @@ export default function QuickActions({ authStatus: propAuthStatus, setAuthStatus
             Invite <br />
             <span className="font-bold">Collaborator</span>
           </p>
-          {(isLoading || !canPerformAction("invite")) && (
-            <div className="mt-1 text-white text-xs">
-              {getActionStatusText("invite")}
-            </div>
-          )}
         </div>
       </div>
 

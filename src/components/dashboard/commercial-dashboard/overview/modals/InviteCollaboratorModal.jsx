@@ -143,7 +143,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
             />
           </div>
 
-          <h2 className={`text-base font-semibold ${pageTitle} text-center`}>Invite a Customer</h2>
+          <h2 className={`text-base font-semibold ${pageTitle} text-center`}>Invite a Collaborator</h2>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-2 mt-3">
