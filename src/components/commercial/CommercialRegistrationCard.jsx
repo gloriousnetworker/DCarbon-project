@@ -10,7 +10,6 @@ export default function CommercialRegistrationCard() {
 
   const handleCategorySelect = (category) => {
     setUserCategory(category);
-    // Navigate to the correct registration step based on category
     if (category === 'Owner') {
       router.push('/register/owner-registration');
     } else if (category === 'Operator') {
@@ -31,15 +30,15 @@ export default function CommercialRegistrationCard() {
   const categoryDescriptions = {
     Owner: {
       title: "Facility Owner",
-      description: "A person who actually owns the facility. The facility is registered in their name, but as a purely owner role, they do not have credentials with utility API providers."
+      description: "I am a commercial solar system owner, but do not manage the utility account."
     },
     Operator: {
       title: "Facility Operator", 
-      description: "A person who operates the facility on behalf of the owner. The operator has access to utility API providers and manages the day-to-day operations."
+      description: "I manage the utility account on a commercial facility with solar, but don't own the system."
     },
     Both: {
       title: "Owner & Operator",
-      description: "A person who both owns the facility and operates it. They own the system and also have access to utility API providers, combining both roles."
+      description: "I own a commercial solar system and pay the utility account."
     }
   };
 
