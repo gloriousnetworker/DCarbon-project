@@ -13,48 +13,43 @@ export default function DashboardOverview() {
   const [agreementStatus, setAgreementStatus] = useState("PENDING");
   const [userData, setUserData] = useState({
     userFirstName: "",
-    utilityProviderRequest: null,
+    utilityAuth: null,
     agreements: null
   });
   const [hasCheckedStatus, setHasCheckedStatus] = useState(false);
 
   useEffect(() => {
-    // Load user data from localStorage and check statuses
     const loadUserData = () => {
       if (typeof window === 'undefined') return;
       
       const firstName = localStorage.getItem("userFirstName") || "User";
-      const utilityRequest = JSON.parse(localStorage.getItem("utilityProviderRequest") || "null");
       const loginResponse = JSON.parse(localStorage.getItem("loginResponse") || "null");
       
-      // Extract agreement info from login response
-      const agreements = loginResponse?.data?.user?.agreements || null;
+      // Extract user info from login response
+      const user = loginResponse?.data?.user || null;
+      const utilityAuth = user?.utilityAuth || null;
+      const agreements = user?.agreements || null;
       
       setUserData({
         userFirstName: firstName,
-        utilityProviderRequest: utilityRequest,
+        utilityAuth: utilityAuth,
         agreements: agreements
       });
 
-      // Check utility authorization status
-      const storedAuthStatus = localStorage.getItem("utilityAuthStatus");
+      // Set auth status based on utilityAuth
       let currentAuthStatus = "PENDING";
-      
-      if (storedAuthStatus) {
-        currentAuthStatus = storedAuthStatus;
-      } else if (utilityRequest) {
-        currentAuthStatus = utilityRequest.status || "PENDING";
+      if (utilityAuth?.status === "UPDATED" || utilityAuth?.status === "AUTHORIZED") {
+        currentAuthStatus = "COMPLETED";
       }
-      
       setAuthStatus(currentAuthStatus);
 
-      // Check agreement status
+      // Set agreement status
       let currentAgreementStatus = "PENDING";
-      if (agreements && agreements.termsAccepted === true) {
+      if (agreements?.termsAccepted === true) {
         currentAgreementStatus = "ACCEPTED";
       }
-      
       setAgreementStatus(currentAgreementStatus);
+      
       setHasCheckedStatus(true);
     };
 
@@ -65,7 +60,7 @@ export default function DashboardOverview() {
     // Show modal if either authorization is not complete or agreement is not accepted
     if (hasCheckedStatus) {
       const shouldShowModal = 
-        (authStatus !== "AUTHORIZED" && authStatus !== "UPDATED") || 
+        authStatus !== "COMPLETED" || 
         agreementStatus !== "ACCEPTED";
       
       if (shouldShowModal && shouldShowWelcomeModal()) {
@@ -80,7 +75,6 @@ export default function DashboardOverview() {
 
   const handleCloseWelcomeModal = () => {
     setShowWelcomeModal(false);
-    // If user closes the modal manually, we can set a flag to prevent it from showing again
     localStorage.setItem("welcomeModalShown", "true");
   };
 
@@ -92,12 +86,11 @@ export default function DashboardOverview() {
 
   const shouldShowWelcomeModal = () => {
     if (typeof window === 'undefined') return false;
-    // Check if user has previously closed the modal
     return localStorage.getItem("welcomeModalShown") !== "true";
   };
 
   const getStatusMessage = () => {
-    const isAuthComplete = authStatus === "AUTHORIZED" || authStatus === "UPDATED";
+    const isAuthComplete = authStatus === "COMPLETED";
     const isAgreementComplete = agreementStatus === "ACCEPTED";
 
     if (!isAuthComplete && !isAgreementComplete) {

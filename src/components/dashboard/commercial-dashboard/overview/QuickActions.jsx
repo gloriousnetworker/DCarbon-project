@@ -19,80 +19,56 @@ const InviteCollaboratorModal = dynamic(
   { ssr: false }
 );
 
-export default function QuickActions({ authStatus, setAuthStatus }) {
+export default function QuickActions({ authStatus: propAuthStatus, setAuthStatus }) {
   const [modal, setModal] = useState("");
+  const [authStatus, setLocalAuthStatus] = useState("PENDING");
+  const [agreementStatus, setAgreementStatus] = useState("PENDING");
   const [isLoading, setIsLoading] = useState(true);
+  const [hasCheckedStatus, setHasCheckedStatus] = useState(false);
 
-  // Check auth status on mount if not passed as prop
   useEffect(() => {
-    if (authStatus === undefined) {
-      const checkUtilityAuthorization = async () => {
-        try {
-          setIsLoading(true);
-          
-          // Get userId and authToken from localStorage
-          const userId = typeof window !== 'undefined' ? localStorage.getItem("userId") : null;
-          const authToken = typeof window !== 'undefined' ? localStorage.getItem("authToken") : null;
-          
-          if (!userId || !authToken) {
-            console.error("Missing userId or authToken");
-            setAuthStatus("PENDING");
-            setIsLoading(false);
-            return;
-          }
+    const loadUserData = () => {
+      if (typeof window === 'undefined') return;
+      
+      const loginResponse = JSON.parse(localStorage.getItem("loginResponse") || "null");
+      
+      // Extract user info from login response
+      const user = loginResponse?.data?.user || null;
+      const utilityAuth = user?.utilityAuth || null;
+      const agreements = user?.agreements || null;
 
-          // Make API call to check utility authorization
-          const response = await fetch(
-            `https://services.dcarbon.solutions/api/user/utility-authorization/${userId}`,
-            {
-              method: "GET",
-              headers: {
-                "Authorization": `Bearer ${authToken}`,
-                "Content-Type": "application/json"
-              }
-            }
-          );
+      // Set auth status based on utilityAuth
+      let currentAuthStatus = "PENDING";
+      if (utilityAuth?.status === "UPDATED" || utilityAuth?.status === "AUTHORIZED") {
+        currentAuthStatus = "COMPLETED";
+      }
+      
+      // Use prop authStatus if provided, otherwise use computed status
+      const finalAuthStatus = propAuthStatus || currentAuthStatus;
+      setLocalAuthStatus(finalAuthStatus);
+      
+      // Update parent component if setAuthStatus is provided
+      if (setAuthStatus && !propAuthStatus) {
+        setAuthStatus(finalAuthStatus);
+      }
 
-          if (!response.ok) {
-            throw new Error("Failed to fetch authorization status");
-          }
-
-          const data = await response.json();
-          
-          if (data.success) {
-            setAuthStatus("AUTHORIZED");
-          } else {
-            // Use the status from the API response if available
-            setAuthStatus(data.status || "PENDING");
-          }
-        } catch (error) {
-          console.error("Error checking utility authorization:", error);
-          // Fallback to checking localStorage
-          const utilityRequest = typeof window !== 'undefined' ? 
-            JSON.parse(localStorage.getItem("utilityProviderRequest") || "null") : 
-            null;
-          if (utilityRequest) {
-            setAuthStatus(utilityRequest.status || "PENDING");
-          } else {
-            const authCompleted = typeof window !== 'undefined' ? 
-              localStorage.getItem("utilityAuthCompleted") : 
-              null;
-            setAuthStatus(authCompleted ? "AUTHORIZED" : "PENDING");
-          }
-        } finally {
-          setIsLoading(false);
-        }
-      };
-
-      checkUtilityAuthorization();
-    } else {
+      // Set agreement status
+      let currentAgreementStatus = "PENDING";
+      if (agreements?.termsAccepted === true) {
+        currentAgreementStatus = "ACCEPTED";
+      }
+      setAgreementStatus(currentAgreementStatus);
+      
+      setHasCheckedStatus(true);
       setIsLoading(false);
-    }
-  }, [authStatus, setAuthStatus]);
+    };
+
+    loadUserData();
+  }, [propAuthStatus, setAuthStatus]);
 
   const openModal = (type) => {
-    // Prevent opening add facility modal if not authorized
-    if (type === "add" && !isAuthorized()) {
+    // Prevent opening add facility modal if not authorized or agreement not accepted
+    if (type === "add" && (!isAuthorized() || !isAgreementAccepted())) {
       return;
     }
     setModal(type);
@@ -103,10 +79,48 @@ export default function QuickActions({ authStatus, setAuthStatus }) {
   };
 
   const isAuthorized = () => {
-    return authStatus === "AUTHORIZED" || authStatus === "UPDATED";
+    const currentAuthStatus = propAuthStatus || authStatus;
+    return currentAuthStatus === "AUTHORIZED" || currentAuthStatus === "UPDATED" || currentAuthStatus === "COMPLETED";
   };
 
-  const isAddDisabled = isLoading || !isAuthorized();
+  const isAgreementAccepted = () => {
+    return agreementStatus === "ACCEPTED";
+  };
+
+  const canAddFacility = () => {
+    return isAuthorized() && isAgreementAccepted();
+  };
+
+  const isAddDisabled = isLoading || !canAddFacility();
+
+  const getAddFacilityTooltip = () => {
+    if (isLoading) return "Loading...";
+    if (!isAuthorized() && !isAgreementAccepted()) {
+      return "Utility authorization and user agreement required";
+    }
+    if (!isAuthorized()) {
+      const currentAuthStatus = propAuthStatus || authStatus;
+      return `Utility provider authorization status: ${currentAuthStatus}`;
+    }
+    if (!isAgreementAccepted()) {
+      return "User agreement acceptance required";
+    }
+    return "";
+  };
+
+  const getAddFacilityStatusText = () => {
+    if (isLoading) return "Loading...";
+    if (!isAuthorized() && !isAgreementAccepted()) {
+      return "Auth & agreement required";
+    }
+    if (!isAuthorized()) {
+      return "Authorization required";
+    }
+    if (!isAgreementAccepted()) {
+      return "Agreement required";
+    }
+    return "";
+  };
 
   return (
     <div className="w-full py-4 px-4">
@@ -129,7 +143,7 @@ export default function QuickActions({ authStatus, setAuthStatus }) {
               "radial-gradient(100.83% 133.3% at 130.26% -10.83%, #013331 0%, #039994 100%)",
           }}
           onClick={() => !isAddDisabled && openModal("add")}
-          title={!isAuthorized() ? `Utility provider authorization status: ${authStatus}` : ""}
+          title={getAddFacilityTooltip()}
         >
           <img
             src="/vectors/MapPinPlus.png"
@@ -141,11 +155,10 @@ export default function QuickActions({ authStatus, setAuthStatus }) {
             Add <br />
             Commercial Facility
           </p>
-          {isLoading && (
-            <div className="mt-1 text-white text-xs">Loading...</div>
-          )}
-          {!isLoading && !isAuthorized() && (
-            <div className="mt-1 text-white text-xs">Authorization required</div>
+          {(isLoading || !canAddFacility()) && (
+            <div className="mt-1 text-white text-xs">
+              {getAddFacilityStatusText()}
+            </div>
           )}
         </div>
 

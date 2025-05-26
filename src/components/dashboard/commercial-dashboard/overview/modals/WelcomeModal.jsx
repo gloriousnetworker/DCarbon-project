@@ -1,4 +1,3 @@
-// src/components/modals/WelcomeModal.jsx
 import React from "react";
 
 export default function WelcomeModal({ 
@@ -10,11 +9,10 @@ export default function WelcomeModal({
 }) {
   if (!isOpen) return null;
 
-  const { userFirstName, utilityProviderRequest, agreements } = userData;
-  const providerName = utilityProviderRequest?.provider?.name || "your utility provider";
-  const userEmail = utilityProviderRequest?.userAuthEmail || "your email";
+  const { userFirstName, utilityAuth, agreements } = userData;
+  const userEmail = localStorage.getItem("userEmail") || "your email";
   
-  const isAuthComplete = authStatus === "AUTHORIZED" || authStatus === "UPDATED";
+  const isAuthComplete = authStatus === "COMPLETED";
   const isAgreementComplete = agreementStatus === "ACCEPTED";
 
   const getModalContent = () => {
@@ -30,9 +28,15 @@ export default function WelcomeModal({
             <div className="border-l-4 border-blue-400 bg-blue-50 p-4">
               <h4 className="font-medium text-blue-800 mb-2">1. Utility Authorization</h4>
               <p className="text-sm text-blue-700">
-                Your verification with {providerName} is still pending. 
+                Your utility authorization is still pending. 
                 Check your inbox at <span className="font-medium">{userEmail}</span> for the authorization email.
               </p>
+              <a
+                href="/register/operator-registration"
+                className="inline-flex items-center mt-2 px-3 py-1 border border-transparent text-sm font-medium rounded-md text-blue-800 bg-blue-100 hover:bg-blue-200"
+              >
+                Complete Authorization
+              </a>
             </div>
             <div className="border-l-4 border-purple-400 bg-purple-50 p-4">
               <h4 className="font-medium text-purple-800 mb-2">2. User Agreement</h4>
@@ -57,29 +61,17 @@ export default function WelcomeModal({
         title: "Authorization Pending",
         alertType: "warning",
         alertTitle: "Utility Authorization Required",
-        alertMessage: `Your verification with ${providerName} is still pending. You won't be able to add commercial facilities until authorization is complete.`,
-        details: utilityProviderRequest?.skipped ? (
-          <div className="space-y-2">
-            <p className="text-sm text-gray-600">
-              You skipped the authorization process. To complete your registration:
-            </p>
-            <a
-              href="/register/operator-registration"
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#039994] hover:bg-[#02807c] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#039994]"
-            >
-              Complete Authorization Now
-            </a>
-          </div>
-        ) : (
+        alertMessage: "Your utility authorization is still pending. You won't be able to add commercial facilities until authorization is complete.",
+        details: (
           <div className="space-y-2">
             <p className="text-sm text-gray-600">
               Please check your inbox at <span className="font-medium">{userEmail}</span> for
-              the authorization email from {providerName} and complete the process, or{" "}
+              the authorization email and complete the process, or{" "}
               <a
-                href="/register/commercial-both-registration/step-two"
+                href="/register/operator-registration"
                 className="font-medium text-[#039994] hover:text-[#02807c] underline"
               >
-                click here to INITIATE
+                click here to initiate
               </a>
               .
             </p>
