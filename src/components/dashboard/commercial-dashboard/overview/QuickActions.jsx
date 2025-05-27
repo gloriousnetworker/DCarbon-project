@@ -268,7 +268,7 @@ export default function QuickActions({ authStatus: propAuthStatus, setAuthStatus
           <hr className="border-white w-full mb-2" />
           <p className="text-white text-sm leading-tight">
             Invite <br />
-            <span className="font-bold">Collaborator</span>
+            <span className="font-bold">Customer</span>
           </p>
         </div>
       </div>

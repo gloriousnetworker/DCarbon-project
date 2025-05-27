@@ -1,16 +1,12 @@
 import React, { useState } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
-import { pageTitle, labelClass, inputClass, selectClass, buttonPrimary } from "../styles";
+import { pageTitle, labelClass, inputClass, buttonPrimary } from "../styles";
 import Loader from "@/components/loader/Loader.jsx";
 
 export default function InviteCollaboratorModal({ isOpen, onClose }) {
   const [formData, setFormData] = useState({
-    name: "",
     email: "",
-    phoneNumber: "",
-    customerType: "RESIDENTIAL",
-    role: "OWNER",
     message: ""
   });
   const [loading, setLoading] = useState(false);
@@ -25,11 +21,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
 
   const resetForm = () => {
     setFormData({
-      name: "",
       email: "",
-      phoneNumber: "",
-      customerType: "RESIDENTIAL",
-      role: "OWNER",
       message: ""
     });
   };
@@ -47,7 +39,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
       return;
     }
 
-    const { name, email, phoneNumber, customerType, role, message } = formData;
+    const { email, message } = formData;
 
     if (!email) {
       toast.error("Please enter an email address");
@@ -58,12 +50,8 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
     const payload = {
       invitees: [
         {
-          name,
           email,
-          phoneNumber,
-          customerType,
-          role,
-          ...(message && { message })
+          message
         }
       ]
     };
@@ -143,24 +131,10 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
             />
           </div>
 
-          <h2 className={`text-base font-semibold ${pageTitle} text-center`}>Invite a Collaborator</h2>
+          <h2 className={`text-base font-semibold ${pageTitle} text-center`}>Invite a Customer</h2>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-2 mt-3">
-          {/* Name Input */}
-          <div>
-            <label className={`${labelClass} text-xs`}>Name <span className="text-red-500">*</span></label>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              className={`${inputClass} text-xs`}
-              placeholder="Enter customer's name"
-              required
-            />
-          </div>
-
+        <form onSubmit={handleSubmit} className="space-y-3 mt-4">
           {/* Email Input */}
           <div>
             <label className={`${labelClass} text-xs`}>Email Address <span className="text-red-500">*</span></label>
@@ -175,59 +149,6 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
             />
           </div>
 
-          {/* Phone Input */}
-          <div>
-            <label className={`${labelClass} text-xs`}>Phone Number</label>
-            <input
-              type="tel"
-              name="phoneNumber"
-              value={formData.phoneNumber}
-              onChange={handleChange}
-              className={`${inputClass} text-xs`}
-              placeholder="Enter phone number"
-            />
-          </div>
-
-          {/* Customer Type */}
-          <div>
-            <label className={`${labelClass} text-xs`}>Customer Type <span className="text-red-500">*</span></label>
-            <select
-              name="customerType"
-              value={formData.customerType}
-              onChange={handleChange}
-              className={`${selectClass} text-xs`}
-              required
-            >
-              <option value="RESIDENTIAL">Residential</option>
-              <option value="COMMERCIAL">Commercial</option>
-            </select>
-          </div>
-
-          {/* Role */}
-          <div>
-            <label className={`${labelClass} text-xs`}>Role <span className="text-red-500">*</span></label>
-            {formData.customerType === "COMMERCIAL" ? (
-              <select
-                name="role"
-                value={formData.role}
-                onChange={handleChange}
-                className={`${selectClass} text-xs`}
-                required
-              >
-                <option value="OWNER">Owner</option>
-                <option value="OPERATOR">Operator</option>
-                <option value="BOTH">Both</option>
-              </select>
-            ) : (
-              <input
-                type="text"
-                value="Owner"
-                disabled
-                className={`${inputClass} bg-gray-100 text-xs cursor-not-allowed`}  
-              />
-            )}
-          </div>
-
           {/* Message */}
           <div>
             <label className={`${labelClass} text-xs`}>Message</label>
@@ -235,27 +156,27 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
               name="message"
               value={formData.message}
               onChange={handleChange}
-              className={`${inputClass} text-xs h-16 resize-none`}
+              className={`${inputClass} text-xs h-20 resize-none`}
               placeholder="Add a custom message (optional)"
             />
           </div>
 
           {/* Form Actions */}
-          <div className="flex space-x-2 pt-2">
+          <div className="flex space-x-2 pt-3">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 rounded-md border border-gray-300 text-gray-700 font-semibold py-1 text-xs hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300"
+              className="flex-1 rounded-md border border-gray-300 text-gray-700 font-semibold py-2 text-xs hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300"
               disabled={loading}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className={`flex-1 ${buttonPrimary} flex items-center justify-center py-1 text-xs`}
+              className={`flex-1 ${buttonPrimary} flex items-center justify-center py-2 text-xs`}
               disabled={loading}
             >
-              Invite
+              Send Invitation
             </button>
           </div>
         </form>
