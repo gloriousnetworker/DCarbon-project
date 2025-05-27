@@ -303,7 +303,7 @@ export default function AddFacilityModal({ onClose }) {
           {/* Meter Selection */}
           <div className="mb-3">
             <label className={`${labelClass} text-sm`}>
-              Meter <span className="text-red-500">*</span>
+            Please Select the Solar Meter you want to Register <span className="text-red-500">*</span>
             </label>
             <select
               name="meterId"

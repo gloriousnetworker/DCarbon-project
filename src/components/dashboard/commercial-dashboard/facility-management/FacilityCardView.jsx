@@ -61,6 +61,12 @@ export default function FacilityCardView() {
     });
   };
 
+  const formatMeterIds = meterIds => {
+    if (!meterIds || meterIds.length === 0) return "N/A";
+    if (meterIds.length === 1) return meterIds[0];
+    return `${meterIds[0]} (+${meterIds.length - 1} more)`;
+  };
+
   const filteredFacilities = facilities
     .filter(f => {
       if (
@@ -82,7 +88,9 @@ export default function FacilityCardView() {
         return false;
       if (
         filters.meterId &&
-        !f.meterId.toLowerCase().includes(filters.meterId.toLowerCase())
+        !f.meterIds?.some(id => 
+          id.toLowerCase().includes(filters.meterId.toLowerCase())
+        )
       )
         return false;
       if (
@@ -156,7 +164,9 @@ export default function FacilityCardView() {
                   <span>{facility.utilityProvider}</span>
 
                   <span className="font-medium">Meter ID:</span>
-                  <span>{facility.meterId}</span>
+                  <span title={facility.meterIds ? facility.meterIds.join(", ") : "N/A"}>
+                    {formatMeterIds(facility.meterIds)}
+                  </span>
 
                   <span className="font-medium">Status:</span>
                   <span className="capitalize">{facility.status}</span>
