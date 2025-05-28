@@ -5,7 +5,7 @@ import DashboardSidebar from '../../components/dashboard/commercial-dashboard/Da
 import DashboardNavbar from '../../components/dashboard/commercial-dashboard/DashboardNavbar';
 import DashboardOverview from '../../components/dashboard/commercial-dashboard/overview/DashboardOverview';
 import GeneratorManagement from '../../components/dashboard/commercial-dashboard/facility-management/FacilityManagement';
-import Report from '../../components/dashboard/commercial-dashboard/rec-sales-and-report/RECSalesAndReport';
+import Report from '../../components/dashboard/commercial-dashboard/rec-sales-and-report/GeneratorMonthlyReport';
 import PendingActions from '../../components/dashboard/commercial-dashboard/payouts/Payouts';
 import DashboardContactSupport from '../../components/dashboard/commercial-dashboard/ContactSupport';
 import DashboardHelpCentre from '../../components/dashboard/commercial-dashboard/HelpCentre';
