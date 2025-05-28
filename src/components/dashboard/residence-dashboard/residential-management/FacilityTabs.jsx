@@ -6,6 +6,7 @@ export default function FacilityTabs({
   setViewMode,
   onAddFacility,
   onFilter,
+  isOpen
 }) {
   return (
     <div className="flex items-center justify-between">
@@ -46,7 +47,7 @@ export default function FacilityTabs({
         </button> */}
 
         <button
-          onClick={onAddFacility}
+          onClick={isOpen}
           className="bg-[#039994] text-white px-3 py-2 rounded-md text-sm hover:bg-[#028c8c]"
         >
           + Add Residential Facility

@@ -23,10 +23,11 @@ export default function AddFacilityModal({ onClose }) {
   const [loading, setLoading] = useState(false);
   const [utilityProviders, setUtilityProviders] = useState([]);
   const [utilityProvidersLoading, setUtilityProvidersLoading] = useState(false);
-  const [userMeters, setUserMeters] = useState([]);
+  const [userMeterData, setUserMeterData] = useState([]); // This will store the full response
   const [userMetersLoading, setUserMetersLoading] = useState(false);
   const [selectedMeter, setSelectedMeter] = useState(null);
   const [isSameLocation, setIsSameLocation] = useState(null);
+  const [selectedUtilityAuthEmail, setSelectedUtilityAuthEmail] = useState("");
 
   // Fetch utility providers on modal open
   useEffect(() => {
@@ -101,11 +102,12 @@ export default function AddFacilityModal({ onClose }) {
       );
 
       if (response.data.status === "success") {
-        const meters = response.data.data.meters.meters || [];
-        const electricMeters = meters.filter(
-          meter => meter.base.service_class === "electric"
-        );
-        setUserMeters(electricMeters);
+        setUserMeterData(response.data.data);
+        // Auto-select the first utility auth email with meters if available
+        const firstWithMeters = response.data.data.find(item => item.meters?.meters?.length > 0);
+        if (firstWithMeters) {
+          setSelectedUtilityAuthEmail(firstWithMeters.utilityAuthEmail);
+        }
       }
     } catch (error) {
       console.error("Error fetching user meters:", error);
@@ -113,6 +115,21 @@ export default function AddFacilityModal({ onClose }) {
     } finally {
       setUserMetersLoading(false);
     }
+  };
+
+  // Get the currently selected meters based on utility auth email
+  const getCurrentMeters = () => {
+    if (!selectedUtilityAuthEmail) return [];
+    
+    const selectedData = userMeterData.find(
+      item => item.utilityAuthEmail === selectedUtilityAuthEmail
+    );
+    
+    if (!selectedData || !selectedData.meters?.meters) return [];
+    
+    return selectedData.meters.meters.filter(
+      meter => meter.base.service_class === "electric"
+    );
   };
 
   const handleChange = (e) => {
@@ -123,7 +140,8 @@ export default function AddFacilityModal({ onClose }) {
     }));
 
     if (name === "meterId") {
-      const meter = userMeters.find(m => m.uid === value);
+      const currentMeters = getCurrentMeters();
+      const meter = currentMeters.find(m => m.uid === value);
       setSelectedMeter(meter || null);
       setIsSameLocation(null); // Reset location choice when meter changes
       // Clear address when meter changes
@@ -132,6 +150,18 @@ export default function AddFacilityModal({ onClose }) {
         address: ""
       }));
     }
+  };
+
+  const handleUtilityAuthEmailChange = (e) => {
+    const email = e.target.value;
+    setSelectedUtilityAuthEmail(email);
+    // Reset meter selection when changing utility auth email
+    setFormData(prev => ({
+      ...prev,
+      meterId: ""
+    }));
+    setSelectedMeter(null);
+    setIsSameLocation(null);
   };
 
   const handleLocationChoice = (choice) => {
@@ -232,6 +262,14 @@ export default function AddFacilityModal({ onClose }) {
     formData.meterId &&
     (selectedMeter ? isSameLocation !== null : true);
 
+  // Get utility auth emails that have meters
+  const utilityAuthEmailsWithMeters = userMeterData.filter(
+    item => item.meters?.meters?.length > 0
+  );
+
+  // Get current meters based on selected utility auth email
+  const currentMeters = getCurrentMeters();
+
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50 overflow-y-auto py-4">
       <div className="bg-white w-full max-w-md rounded-md shadow-lg p-4 relative my-4">
@@ -300,36 +338,66 @@ export default function AddFacilityModal({ onClose }) {
             </select>
           </div>
 
-          {/* Meter Selection */}
+          {/* Utility Auth Email Selection */}
           <div className="mb-3">
             <label className={`${labelClass} text-sm`}>
-            Please Select the Solar Meter you want to Register <span className="text-red-500">*</span>
+              Utility Account <span className="text-red-500">*</span>
             </label>
             <select
-              name="meterId"
-              value={formData.meterId}
-              onChange={handleChange}
+              value={selectedUtilityAuthEmail}
+              onChange={handleUtilityAuthEmailChange}
               className={`${selectClass} text-sm py-2`}
               required
               disabled={loading || userMetersLoading}
             >
-              <option value="">Select meter</option>
+              <option value="">Select utility account</option>
               {userMetersLoading ? (
-                <option value="" disabled>Loading meters...</option>
-              ) : userMeters.length === 0 ? (
-                <option value="" disabled>No electric meters found</option>
+                <option value="" disabled>Loading accounts...</option>
+              ) : utilityAuthEmailsWithMeters.length === 0 ? (
+                <option value="" disabled>No utility accounts found</option>
               ) : (
-                userMeters.map(meter => (
-                  <option key={meter.uid} value={meter.uid}>
-                    {meter.base.meter_numbers[0]} - {meter.base.service_tariff}
+                utilityAuthEmailsWithMeters.map(item => (
+                  <option key={item.id} value={item.utilityAuthEmail}>
+                    {item.utilityAuthEmail}
                   </option>
                 ))
               )}
             </select>
             <p className="mt-1 text-xs text-gray-500">
-              Only electric meters are shown
+              Select the utility account containing your meters
             </p>
           </div>
+
+          {/* Meter Selection - only shown when a utility auth email is selected */}
+          {selectedUtilityAuthEmail && (
+            <div className="mb-3">
+              <label className={`${labelClass} text-sm`}>
+                Please Select the Solar Meter you want to Register <span className="text-red-500">*</span>
+              </label>
+              <select
+                name="meterId"
+                value={formData.meterId}
+                onChange={handleChange}
+                className={`${selectClass} text-sm py-2`}
+                required
+                disabled={loading || currentMeters.length === 0}
+              >
+                <option value="">Select meter</option>
+                {currentMeters.length === 0 ? (
+                  <option value="" disabled>No electric meters found for this account</option>
+                ) : (
+                  currentMeters.map(meter => (
+                    <option key={meter.uid} value={meter.uid}>
+                      {meter.base.meter_numbers[0]} - {meter.base.service_tariff}
+                    </option>
+                  ))
+                )}
+              </select>
+              <p className="mt-1 text-xs text-gray-500">
+                Only electric meters are shown
+              </p>
+            </div>
+          )}
 
           {/* Location Confirmation */}
           {selectedMeter && (

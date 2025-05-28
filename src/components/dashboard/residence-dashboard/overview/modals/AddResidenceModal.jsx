@@ -1,10 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { FiX } from "react-icons/fi";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { 
   pageTitle, 
   labelClass, 
   inputClass, 
+  selectClass,
   buttonPrimary,
   uploadHeading,
   uploadFieldWrapper,
@@ -14,6 +16,7 @@ import {
   uploadNoteStyle,
   spinnerOverlay
 } from "../styles";
+import Loader from "@/components/loader/Loader.jsx";
 
 export default function AddResidentialFacilityModal({ isOpen, onClose }) {
   const [formData, setFormData] = useState({
@@ -21,7 +24,7 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
     installer: "",
     financeType: "",
     financeCompany: "",
-    financeAgreement: null, // Changed to null initially
+    financeAgreement: null,
     address: "",
     meterId: "",
     zipCode: ""
@@ -30,14 +33,166 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
   const [uploading, setUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [file, setFile] = useState(null);
-  const [fileUrl, setFileUrl] = useState(null); // Added to store the URL to the file
+  const [utilityProviders, setUtilityProviders] = useState([]);
+  const [utilityProvidersLoading, setUtilityProvidersLoading] = useState(false);
+  const [userMeterData, setUserMeterData] = useState([]);
+  const [userMetersLoading, setUserMetersLoading] = useState(false);
+  const [selectedMeter, setSelectedMeter] = useState(null);
+  const [isSameLocation, setIsSameLocation] = useState(null);
+  const [selectedUtilityAuthEmail, setSelectedUtilityAuthEmail] = useState("");
+
+  // Fetch utility providers and meters on modal open
+  useEffect(() => {
+    if (isOpen) {
+      fetchUtilityProviders();
+      fetchUserMeters();
+    }
+  }, [isOpen]);
+
+  // Update address when location choice changes
+  useEffect(() => {
+    if (selectedMeter && isSameLocation !== null) {
+      if (isSameLocation === true) {
+        // Use meter's service address and extract zip code
+        const serviceAddress = selectedMeter.base.service_address;
+        const zipCode = extractZipCode(serviceAddress);
+        
+        setFormData(prev => ({
+          ...prev,
+          address: serviceAddress,
+          zipCode: zipCode || ""
+        }));
+      } else {
+        // Clear address for manual input
+        setFormData(prev => ({
+          ...prev,
+          address: "",
+          zipCode: ""
+        }));
+      }
+    }
+  }, [selectedMeter, isSameLocation]);
+
+  // Helper function to extract zip code from address
+  const extractZipCode = (address) => {
+    if (!address) return "";
+    const zipMatch = address.match(/\b\d{5}(?:-\d{4})?\b/);
+    return zipMatch ? zipMatch[0] : "";
+  };
+
+  const fetchUtilityProviders = async () => {
+    const userId = localStorage.getItem("userId");
+    const authToken = localStorage.getItem("authToken");
+
+    if (!userId || !authToken) return;
+
+    setUtilityProvidersLoading(true);
+    try {
+      const response = await axios.get(
+        "https://services.dcarbon.solutions/api/auth/utility-providers",
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`
+          }
+        }
+      );
+
+      if (response.data.status === "success") {
+        setUtilityProviders(response.data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching utility providers:", error);
+      toast.error("Failed to load utility providers");
+    } finally {
+      setUtilityProvidersLoading(false);
+    }
+  };
+
+  const fetchUserMeters = async () => {
+    const userId = localStorage.getItem("userId");
+    const authToken = localStorage.getItem("authToken");
+
+    if (!userId || !authToken) return;
+
+    setUserMetersLoading(true);
+    try {
+      const response = await axios.get(
+        `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`
+          }
+        }
+      );
+
+      if (response.data.status === "success") {
+        setUserMeterData(response.data.data);
+        // Auto-select the first utility auth email with meters if available
+        const firstWithMeters = response.data.data.find(item => item.meters?.meters?.length > 0);
+        if (firstWithMeters) {
+          setSelectedUtilityAuthEmail(firstWithMeters.utilityAuthEmail);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching user meters:", error);
+      toast.error("Failed to load meter information");
+    } finally {
+      setUserMetersLoading(false);
+    }
+  };
+
+  // Get the currently selected meters based on utility auth email
+  const getCurrentMeters = () => {
+    if (!selectedUtilityAuthEmail) return [];
+    
+    const selectedData = userMeterData.find(
+      item => item.utilityAuthEmail === selectedUtilityAuthEmail
+    );
+    
+    if (!selectedData || !selectedData.meters?.meters) return [];
+    
+    return selectedData.meters.meters.filter(
+      meter => meter.base.service_class === "electric"
+    );
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
       [name]: value
     }));
+
+    if (name === "meterId") {
+      const currentMeters = getCurrentMeters();
+      const meter = currentMeters.find(m => m.uid === value);
+      setSelectedMeter(meter || null);
+      setIsSameLocation(null); // Reset location choice when meter changes
+      // Clear address when meter changes
+      setFormData(prev => ({
+        ...prev,
+        address: "",
+        zipCode: ""
+      }));
+    }
+  };
+
+  const handleUtilityAuthEmailChange = (e) => {
+    const email = e.target.value;
+    setSelectedUtilityAuthEmail(email);
+    // Reset meter selection when changing utility auth email
+    setFormData(prev => ({
+      ...prev,
+      meterId: ""
+    }));
+    setSelectedMeter(null);
+    setIsSameLocation(null);
+  };
+
+  const handleLocationChoice = (choice) => {
+    setIsSameLocation(choice);
   };
 
   const handleFileChange = (e) => {
@@ -51,20 +206,13 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
     setUploading(true);
     
     try {
-      // Instead of converting to base64, just update the form state with the file name
-      // In a real implementation, you'd upload the file to a separate endpoint here
-      // and get back a URL or file ID
-      
-      // Simulate a successful upload
+      // Simulate file upload
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       setFormData(prev => ({
         ...prev,
-        financeAgreement: file.name // Just store the file name instead of the full file
+        financeAgreement: file.name
       }));
-      
-      // In a real implementation, you'd set the file URL here after uploading
-      // setFileUrl(response.data.fileUrl);
       
       toast.success('Financial agreement uploaded successfully!');
       setUploadSuccess(true);
@@ -102,13 +250,12 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
     }
 
     try {
-      // Prepare the payload
       const payload = {
         utilityProvider: formData.utilityProvider,
         installer: formData.installer,
         financeType: formData.financeType,
         financeCompany: formData.financeCompany,
-        financeAgreement: formData.financeAgreement, // Now just the file name or reference
+        financeAgreement: formData.financeAgreement,
         address: formData.address,
         meterId: formData.meterId,
         zipCode: formData.zipCode
@@ -143,6 +290,24 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
     }
   };
 
+  // Check if form is complete
+  const isFormComplete = 
+    formData.utilityProvider && 
+    formData.installer &&
+    formData.address &&
+    formData.meterId &&
+    formData.zipCode &&
+    (formData.financeType === "cash" || (formData.financeCompany && formData.financeAgreement)) &&
+    (selectedMeter ? isSameLocation !== null : true);
+
+  // Get utility auth emails that have meters
+  const utilityAuthEmailsWithMeters = userMeterData.filter(
+    item => item.meters?.meters?.length > 0
+  );
+
+  // Get current meters based on selected utility auth email
+  const currentMeters = getCurrentMeters();
+
   if (!isOpen) return null;
 
   return (
@@ -160,20 +325,7 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
           className="absolute right-4 top-4 text-gray-500 hover:text-gray-700 focus:outline-none"
           disabled={loading}
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
+          <FiX size={20} />
         </button>
 
         <h2 className={pageTitle}>Add Residence</h2>
@@ -182,14 +334,175 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
           {/* Utility Provider */}
           <div>
             <label className={labelClass}>Utility Provider</label>
-            <input
-              type="text"
+            <select
               name="utilityProvider"
               value={formData.utilityProvider}
               onChange={handleChange}
-              className={inputClass}
-              placeholder="Enter utility provider"
-            />
+              className={selectClass}
+              disabled={loading || utilityProvidersLoading}
+            >
+              <option value="">Select utility provider</option>
+              {utilityProvidersLoading ? (
+                <option value="" disabled>Loading providers...</option>
+              ) : (
+                utilityProviders.map(provider => (
+                  <option key={provider.id} value={provider.name}>
+                    {provider.name}
+                  </option>
+                ))
+              )}
+            </select>
+          </div>
+
+          {/* Utility Auth Email Selection */}
+          <div>
+            <label className={labelClass}>
+              Utility Account <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={selectedUtilityAuthEmail}
+              onChange={handleUtilityAuthEmailChange}
+              className={selectClass}
+              required
+              disabled={loading || userMetersLoading}
+            >
+              <option value="">Select utility account</option>
+              {userMetersLoading ? (
+                <option value="" disabled>Loading accounts...</option>
+              ) : utilityAuthEmailsWithMeters.length === 0 ? (
+                <option value="" disabled>No utility accounts found</option>
+              ) : (
+                utilityAuthEmailsWithMeters.map(item => (
+                  <option key={item.id} value={item.utilityAuthEmail}>
+                    {item.utilityAuthEmail}
+                  </option>
+                ))
+              )}
+            </select>
+            <p className="mt-1 text-xs text-gray-500">
+              Select the utility account containing your meters
+            </p>
+          </div>
+
+          {/* Meter Selection - only shown when a utility auth email is selected */}
+          {selectedUtilityAuthEmail && (
+            <div>
+              <label className={labelClass}>
+                Electric Meter <span className="text-red-500">*</span>
+              </label>
+              <select
+                name="meterId"
+                value={formData.meterId}
+                onChange={handleChange}
+                className={selectClass}
+                required
+                disabled={loading || currentMeters.length === 0}
+              >
+                <option value="">Select meter</option>
+                {currentMeters.length === 0 ? (
+                  <option value="" disabled>No electric meters found for this account</option>
+                ) : (
+                  currentMeters.map(meter => (
+                    <option key={meter.uid} value={meter.uid}>
+                      {meter.base.meter_numbers[0]} - {meter.base.service_tariff}
+                    </option>
+                  ))
+                )}
+              </select>
+              <p className="mt-1 text-xs text-gray-500">
+                Only electric meters are shown
+              </p>
+            </div>
+          )}
+
+          {/* Location Confirmation */}
+          {selectedMeter && (
+            <div className="mb-3 p-2 bg-gray-50 rounded-md border border-gray-200 text-sm">
+              <p className="font-medium mb-2">Service Address: {selectedMeter.base.service_address}</p>
+              <p className="font-medium mb-2">
+                Is this the same location for the residence?
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  className={`px-3 py-1 rounded-md border text-sm ${
+                    isSameLocation === true ? 'bg-green-100 border-green-500 text-green-700' : 'border-gray-300 hover:bg-gray-50'
+                  }`}
+                  onClick={() => handleLocationChoice(true)}
+                  disabled={loading}
+                >
+                  Yes
+                </button>
+                <button
+                  type="button"
+                  className={`px-3 py-1 rounded-md border text-sm ${
+                    isSameLocation === false ? 'bg-blue-100 border-blue-500 text-blue-700' : 'border-gray-300 hover:bg-gray-50'
+                  }`}
+                  onClick={() => handleLocationChoice(false)}
+                  disabled={loading}
+                >
+                  No
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Address Field */}
+          <div>
+            <label className={labelClass}>
+              Address <span className="text-red-500">*</span>
+            </label>
+            {selectedMeter && isSameLocation === true ? (
+              <input
+                type="text"
+                name="address"
+                value={formData.address}
+                className={`${inputClass} bg-gray-100`}
+                disabled={true}
+                placeholder="Address will be auto-filled from meter service address"
+              />
+            ) : (
+              <input
+                type="text"
+                name="address"
+                value={formData.address}
+                onChange={handleChange}
+                className={inputClass}
+                placeholder="Enter address"
+                required
+                disabled={loading}
+              />
+            )}
+          </div>
+
+          {/* Zip Code Field */}
+          <div>
+            <label className={labelClass}>
+              Zip Code <span className="text-red-500">*</span>
+            </label>
+            {selectedMeter && isSameLocation === true ? (
+              <input
+                type="text"
+                name="zipCode"
+                value={formData.zipCode}
+                className={`${inputClass} bg-gray-100`}
+                disabled={true}
+                placeholder="Zip code will be auto-filled from meter service address"
+              />
+            ) : (
+              <input
+                type="text"
+                name="zipCode"
+                value={formData.zipCode}
+                onChange={handleChange}
+                className={inputClass}
+                placeholder="Enter zip code"
+                required
+                disabled={loading}
+                pattern="\d{5}(-\d{4})?"
+                title="Enter a valid US zip code (5 or 9 digits)"
+              />
+            )}
           </div>
 
           {/* Installer */}
@@ -212,7 +525,7 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
               name="financeType"
               value={formData.financeType}
               onChange={handleChange}
-              className={inputClass}
+              className={selectClass}
             >
               <option value="">Select finance type</option>
               <option value="cash">Cash</option>
@@ -322,54 +635,6 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
             </div>
           )}
 
-          {/* Address */}
-          <div>
-            <label className={labelClass}>
-              Address <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              name="address"
-              value={formData.address}
-              onChange={handleChange}
-              className={inputClass}
-              placeholder="Enter address"
-              required
-            />
-          </div>
-
-          {/* Meter ID */}
-          <div>
-            <label className={labelClass}>
-              Meter ID <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              name="meterId"
-              value={formData.meterId}
-              onChange={handleChange}
-              className={inputClass}
-              placeholder="Enter meter ID"
-              required
-            />
-          </div>
-
-          {/* Zip Code */}
-          <div>
-            <label className={labelClass}>
-              Zip Code <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              name="zipCode"
-              value={formData.zipCode}
-              onChange={handleChange}
-              className={inputClass}
-              placeholder="Enter zip code"
-              required
-            />
-          </div>
-
           {/* Form Actions */}
           <div className="flex space-x-4 pt-4">
             <button
@@ -382,8 +647,8 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
             </button>
             <button
               type="submit"
-              className={`flex-1 ${buttonPrimary}`}
-              disabled={loading}
+              className={`flex-1 ${buttonPrimary} ${!isFormComplete ? 'opacity-50 cursor-not-allowed' : ''}`}
+              disabled={loading || !isFormComplete}
             >
               {loading ? "Processing..." : "Add Residence"}
             </button>

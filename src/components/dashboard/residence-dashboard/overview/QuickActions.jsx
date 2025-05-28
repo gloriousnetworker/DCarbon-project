@@ -1,5 +1,4 @@
-// src/components/QuickActions.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import AddResidenceModal from "./modals/AddResidenceModal";
 import UploadDocumentsModal from "./modals/UploadDocumentModal";
 import RequestRedemptionModal from "./modals/RequestRedemptionModal";
@@ -10,11 +9,12 @@ import {
   noteText,
 } from "./styles";
 
-export default function QuickActions() {
+export default function QuickActions({ authStatus: propAuthStatus, setAuthStatus }) {
   const [modal, setModal] = useState("");
-
-  const openModal = (type) => setModal(type);
-  const closeModal = () => setModal("");
+  const [authStatus, setLocalAuthStatus] = useState("PENDING");
+  const [agreementStatus, setAgreementStatus] = useState("PENDING");
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasCheckedStatus, setHasCheckedStatus] = useState(false);
 
   // hard‑coded values; swap out for props or context as needed
   const currentPoints = 20;
@@ -23,6 +23,152 @@ export default function QuickActions() {
 
   const redemptionPct = Math.round((redemption.done / redemption.total) * 100);
   const referralPct = Math.round((referral.done / referral.total) * 100);
+
+  // Function to check agreement status from multiple sources
+  const checkAgreementStatus = () => {
+    if (typeof window === 'undefined') return "PENDING";
+
+    // First check the loginResponse
+    const loginResponse = JSON.parse(localStorage.getItem("loginResponse") || "null");
+    const loginAgreements = loginResponse?.data?.user?.agreements || null;
+    
+    if (loginAgreements?.termsAccepted === true) {
+      return "ACCEPTED";
+    }
+
+    // Fallback to temporary storage
+    const tempAgreements = JSON.parse(localStorage.getItem("userAgreements") || "null");
+    if (tempAgreements?.termsAccepted === true) {
+      return "ACCEPTED";
+    }
+
+    return "PENDING";
+  };
+
+  useEffect(() => {
+    const loadUserData = () => {
+      if (typeof window === 'undefined') return;
+      
+      const loginResponse = JSON.parse(localStorage.getItem("loginResponse") || "null");
+      
+      // Extract user info from login response
+      const user = loginResponse?.data?.user || null;
+      const utilityAuth = user?.utilityAuth || [];
+
+      // Updated logic: COMPLETED if at least one auth is AUTHORIZED or UPDATED
+      let currentAuthStatus = "PENDING";
+      if (utilityAuth.length > 0) {
+        const hasValidAuth = utilityAuth.some(auth => 
+          auth.status === "AUTHORIZED" || auth.status === "UPDATED"
+        );
+        currentAuthStatus = hasValidAuth ? "COMPLETED" : "PENDING";
+      }
+      
+      // Use prop authStatus if provided, otherwise use computed status
+      const finalAuthStatus = propAuthStatus || currentAuthStatus;
+      setLocalAuthStatus(finalAuthStatus);
+      
+      // Update parent component if setAuthStatus is provided
+      if (setAuthStatus && !propAuthStatus) {
+        setAuthStatus(finalAuthStatus);
+      }
+
+      // Check agreement status from multiple sources
+      const currentAgreementStatus = checkAgreementStatus();
+      setAgreementStatus(currentAgreementStatus);
+      
+      setHasCheckedStatus(true);
+      setIsLoading(false);
+    };
+
+    loadUserData();
+    
+    // Listen for storage changes to update agreement status in real-time
+    const handleStorageChange = (e) => {
+      if (e.key === "loginResponse" || e.key === "userAgreements") {
+        const newAgreementStatus = checkAgreementStatus();
+        setAgreementStatus(newAgreementStatus);
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [propAuthStatus, setAuthStatus]);
+
+  const openModal = (type) => {
+    // Only prevent opening the Add Residence modal if not authorized or agreement not accepted
+    if (type === "addResidence" && (!isAuthorized() || !isAgreementAccepted())) {
+      return;
+    }
+    setModal(type);
+  };
+
+  const closeModal = () => {
+    setModal("");
+  };
+
+  const isAuthorized = () => {
+    const currentAuthStatus = propAuthStatus || authStatus;
+    return currentAuthStatus === "COMPLETED";
+  };
+
+  const isAgreementAccepted = () => {
+    return agreementStatus === "ACCEPTED";
+  };
+
+  const canPerformAction = (actionType) => {
+    // Only Add Residence requires auth and agreement
+    if (actionType === "addResidence") {
+      return isAuthorized() && isAgreementAccepted();
+    }
+    return true;
+  };
+
+  const isActionDisabled = (actionType) => {
+    return isLoading || !canPerformAction(actionType);
+  };
+
+  const getActionTooltip = (actionType) => {
+    if (isLoading) return "Loading...";
+    
+    // Only show tooltip for "addResidence" action
+    if (actionType === "addResidence") {
+      if (!isAuthorized() && !isAgreementAccepted()) {
+        return "Utility authorization and user agreement required";
+      }
+      if (!isAuthorized()) {
+        const currentAuthStatus = propAuthStatus || authStatus;
+        return `Utility provider authorization status: ${currentAuthStatus}`;
+      }
+      if (!isAgreementAccepted()) {
+        return "User agreement acceptance required";
+      }
+    }
+    
+    return "";
+  };
+
+  const getActionStatusText = (actionType) => {
+    if (isLoading) return "Loading...";
+    
+    // Only show status text for "addResidence" action
+    if (actionType === "addResidence") {
+      if (!isAuthorized() && !isAgreementAccepted()) {
+        return "Auth & agreement required";
+      }
+      if (!isAuthorized()) {
+        return "Authorization required";
+      }
+      if (!isAgreementAccepted()) {
+        return "Agreement required";
+      }
+    }
+    
+    return "";
+  };
 
   return (
     <div className="w-full py-4 px-4">
@@ -33,12 +179,15 @@ export default function QuickActions() {
           <div className="grid grid-cols-2 gap-4">
             {/* Add a Residence */}
             <div
-              onClick={() => openModal("addResidence")}
-              className="cursor-pointer p-4 rounded-2xl flex flex-col h-full min-h-[120px]"
+              onClick={() => !isActionDisabled("addResidence") && openModal("addResidence")}
+              className={`p-4 rounded-2xl flex flex-col h-full min-h-[120px] ${
+                isActionDisabled("addResidence") ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+              }`}
               style={{
                 background:
                   "radial-gradient(100.83% 133.3% at 130.26% -10.83%, #013331 0%, #039994 100%)",
               }}
+              title={getActionTooltip("addResidence")}
             >
               <img
                 src="/vectors/MapPinPlus.png"
@@ -47,6 +196,11 @@ export default function QuickActions() {
               />
               <hr className="border-white mb-2" />
               <p className="text-white text-sm font-bold line-clamp-2">Add a Residence</p>
+              {(isLoading || !canPerformAction("addResidence")) && (
+                <div className="mt-1 text-white text-xs">
+                  {getActionStatusText("addResidence")}
+                </div>
+              )}
             </div>
 
             {/* Upload/Manage Documents */}
