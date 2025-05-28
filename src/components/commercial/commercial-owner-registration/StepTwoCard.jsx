@@ -193,7 +193,7 @@ export default function OwnersDetailsCard() {
             </label>
             <input
               type="text"
-              placeholder="E.g. Street, City, County, State."
+              placeholder="123 Main St, Apt 4B, Springfield, IL 62704"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
               className={inputClass}

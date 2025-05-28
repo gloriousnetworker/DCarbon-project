@@ -51,60 +51,88 @@ export default function LoginCard() {
 
       toast.success('Login successful');
 
-      // Handle routing based on user type and registration status
-      if (user.userType === 'COMMERCIAL' || user.userType === 'RESIDENTIAL') {
-        // Case 1: Both utilityAuth and agreements are null
-        if (!user.utilityAuth && !user.agreements) {
-          window.location.href = user.userType === 'COMMERCIAL' 
-            ? '/register/welcome-back-commercial-users' 
-            : '/register/welcome-back-residence-users';
+      // Helper functions to check conditions
+      const hasUtilityAuth = user.utilityAuth && Array.isArray(user.utilityAuth) && user.utilityAuth.length > 0;
+      const hasValidUtilityAuth = hasUtilityAuth && user.utilityAuth.some(auth => ['UPDATED', 'AUTHORIZED'].includes(auth.status));
+      const hasAgreements = user.agreements !== null;
+      const agreementCompleted = user.agreements && 
+                               user.agreements.signature !== null && 
+                               user.agreements.termsAccepted;
+
+      // Handle routing based on user type
+      if (user.userType === 'COMMERCIAL') {
+        // Case 1: Both utilityAuth and agreements are null/empty
+        if (!hasUtilityAuth && !hasAgreements) {
+          window.location.href = '/register/welcome-back-commercial-users';
           return;
         }
 
         // Case 2: utilityAuth exists with valid status but agreements is null
-        if (user.utilityAuth && ['UPDATED', 'AUTHORIZED'].includes(user.utilityAuth.status) && !user.agreements) {
-          window.location.href = user.userType === 'COMMERCIAL' 
-            ? '/register/commercial-both-registration/agreement' 
-            : '/register/residence-user-registration/agreement';
+        if (hasValidUtilityAuth && !hasAgreements) {
+          window.location.href = '/register/commercial-both-registration/agreement';
           return;
         }
 
-        // Case 3: agreements exists but utilityAuth is null
-        if (user.agreements && !user.utilityAuth) {
+        // Case 3: agreements exists but utilityAuth is null/empty
+        if (hasAgreements && !hasUtilityAuth) {
           window.location.href = '/register/operator-registration';
           return;
         }
 
-        // Case 4: Check if agreement is completed (signature not null and termsAccepted true)
-        const agreementCompleted = user.agreements && 
-                                 user.agreements.signature !== null && 
-                                 user.agreements.termsAccepted;
+        // Case 4: Both conditions met - route to dashboard
+        if (hasValidUtilityAuth && agreementCompleted) {
+          window.location.href = '/commercial-dashboard';
+          return;
+        }
 
-        // Route to dashboard if all conditions are met
-        if (user.utilityAuth && agreementCompleted) {
-          window.location.href = user.userType === 'COMMERCIAL' 
-            ? '/commercial-dashboard' 
-            : '/residence-dashboard';
+        // Default case for commercial users who don't meet dashboard criteria
+        window.location.href = '/register/welcome-back-commercial-users';
+        return;
+      }
+
+      if (user.userType === 'RESIDENTIAL') {
+        // Case 1: Both utilityAuth and agreements are null/empty
+        if (!hasUtilityAuth && !hasAgreements) {
+          window.location.href = '/register/welcome-back-residence-users';
+          return;
+        }
+
+        // Case 2: utilityAuth exists with valid status but agreements is null
+        if (hasValidUtilityAuth && !hasAgreements) {
+          window.location.href = '/register/residence-user-registration/agreement';
+          return;
+        }
+
+        // Case 3: agreements exists but utilityAuth is null/empty
+        if (hasAgreements && !hasUtilityAuth) {
+          window.location.href = '/register/residence-user-registration/step-two';
+          return;
+        }
+
+        // Case 4: Both conditions met - route to dashboard
+        if (hasValidUtilityAuth && agreementCompleted) {
+          window.location.href = '/residence-dashboard';
+          return;
+        }
+
+        // Default case for residential users who don't meet dashboard criteria
+        window.location.href = '/register/welcome-back-residence-users';
+        return;
+      }
+
+      if (user.userType === 'PARTNER') {
+        // Check if agreement is completed
+        if (!agreementCompleted) {
+          window.location.href = '/register/welcome-back-partner-users';
+          return;
+        } else {
+          window.location.href = '/partner-dashboard';
           return;
         }
       }
 
-      // Handle partner users
-      if (user.userType === 'PARTNER') {
-        const agreementCompleted = user.agreements && 
-                                 user.agreements.signature !== null && 
-                                 user.agreements.termsAccepted;
-        
-        if (!agreementCompleted) {
-          window.location.href = '/register/welcome-back-partner-users';
-        } else {
-          window.location.href = '/partner-dashboard';
-        }
-        return;
-      }
-
-      // Default dashboard for other user types
-      window.location.href = '/dashboard';
+      // Fallback for any other user types or edge cases
+      window.location.href = '/';
 
     } catch (err) {
       toast.error(err.response?.data?.message || 'Login failed');
@@ -113,7 +141,6 @@ export default function LoginCard() {
     }
   };
 
-  // ... rest of the component remains the same ...
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center py-8 px-8">
       {/* Loader Overlay */}

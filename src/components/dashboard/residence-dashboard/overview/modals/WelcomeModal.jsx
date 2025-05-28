@@ -64,7 +64,7 @@ export default function WelcomeModal({
               You skipped the authorization process. To complete your registration:
             </p>
             <a
-              href="/register/operator-registration"
+              href="/register/residence-user-registration/step-two"
               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#039994] hover:bg-[#02807c] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#039994]"
             >
               Complete Authorization Now

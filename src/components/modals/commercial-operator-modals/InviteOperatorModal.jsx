@@ -97,10 +97,10 @@ export default function EmailVerificationModal({ closeModal, onSkip }) {
   };
 
   const handleSkip = () => {
-    toast('You can invite operators later from your dashboard', {
+    toast('You can invite customers later from your dashboard', {
       icon: 'ℹ️',
     });
-    onSkip(); // Call the onSkip prop to trigger the registration modal
+    onSkip(); 
   };
 
   return (
@@ -109,7 +109,7 @@ export default function EmailVerificationModal({ closeModal, onSkip }) {
         {/* Invite Owner Icon */}
         <div className="flex justify-center">
           <Image 
-            src="/vectors/CloudArrowDown.png" // Replace with your actual image path
+            src="/vectors/CloudArrowDown.png" 
             alt="Invite operator"
             width={80}
             height={80}
@@ -118,7 +118,7 @@ export default function EmailVerificationModal({ closeModal, onSkip }) {
         </div>
         
         <h2 className={modalHeading}>
-          Invite a Solar Operator
+          Invite a Customer
         </h2>
 
         <form className="space-y-4">
@@ -133,7 +133,7 @@ export default function EmailVerificationModal({ closeModal, onSkip }) {
               name="name"
               value={formData.name}
               onChange={handleChange}
-              placeholder="Enter operator's name"
+              placeholder="Enter customer's name"
               className={inputClass}
               required
             />
