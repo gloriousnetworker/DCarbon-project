@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 
-// Dynamically import components to handle potential SSR issues
 const QuickActions = dynamic(() => import("./QuickActions"), { ssr: false });
 const Graph = dynamic(() => import("./Graph"), { ssr: false });
 const RecentRecSales = dynamic(() => import("./RecentRecSales"), { ssr: false });
 const WelcomeModal = dynamic(() => import("./modals/WelcomeModal"), { ssr: false });
+const AddUtilityProvider = dynamic(() => import("./modals/AddUtilityProvider"), { ssr: false });
 
 export default function DashboardOverview() {
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  const [showAddUtilityModal, setShowAddUtilityModal] = useState(false);
   const [authStatus, setAuthStatus] = useState("PENDING");
   const [agreementStatus, setAgreementStatus] = useState("PENDING");
+  const [utilityAuthDetails, setUtilityAuthDetails] = useState([]);
+  const [utilityAuthEmails, setUtilityAuthEmails] = useState([]);
   const [userData, setUserData] = useState({
     userFirstName: "",
     utilityAuth: null,
@@ -25,12 +28,11 @@ export default function DashboardOverview() {
       const firstName = localStorage.getItem("userFirstName") || "User";
       const loginResponse = JSON.parse(localStorage.getItem("loginResponse") || "null");
       
-      // Extract user info from login response
       const user = loginResponse?.data?.user || null;
-      const utilityAuth = user?.utilityAuth || null;
+      const utilityAuth = user?.utilityAuth || [];
+      const utilityAuthEmail = user?.utilityAuthEmail || [];
       let agreements = user?.agreements || null;
       
-      // Fallback check: if agreements from login response is null, check localStorage for userAgreements
       if (!agreements) {
         const userAgreements = JSON.parse(localStorage.getItem("userAgreements") || "null");
         if (userAgreements) {
@@ -44,14 +46,19 @@ export default function DashboardOverview() {
         agreements: agreements
       });
 
-      // Set auth status based on utilityAuth
+      setUtilityAuthDetails(utilityAuth);
+      setUtilityAuthEmails(utilityAuthEmail);
+
+      // Updated logic: COMPLETED if at least one auth is AUTHORIZED or UPDATED
       let currentAuthStatus = "PENDING";
-      if (utilityAuth?.status === "UPDATED" || utilityAuth?.status === "AUTHORIZED") {
-        currentAuthStatus = "COMPLETED";
+      if (utilityAuth.length > 0) {
+        const hasValidAuth = utilityAuth.some(auth => 
+          auth.status === "AUTHORIZED" || auth.status === "UPDATED"
+        );
+        currentAuthStatus = hasValidAuth ? "COMPLETED" : "PENDING";
       }
       setAuthStatus(currentAuthStatus);
 
-      // Set agreement status - now with fallback support
       let currentAgreementStatus = "PENDING";
       if (agreements?.termsAccepted === true) {
         currentAgreementStatus = "ACCEPTED";
@@ -65,7 +72,6 @@ export default function DashboardOverview() {
   }, []);
 
   useEffect(() => {
-    // Show modal if either authorization is not complete or agreement is not accepted
     if (hasCheckedStatus) {
       const shouldShowModal = 
         authStatus !== "COMPLETED" || 
@@ -87,9 +93,16 @@ export default function DashboardOverview() {
   };
 
   const handleShowWelcomeModal = () => {
-    // Clear the dismissed flag and show the modal
     localStorage.removeItem("welcomeModalShown");
     setShowWelcomeModal(true);
+  };
+
+  const handleOpenAddUtilityModal = () => {
+    setShowAddUtilityModal(true);
+  };
+
+  const handleCloseAddUtilityModal = () => {
+    setShowAddUtilityModal(false);
   };
 
   const shouldShowWelcomeModal = () => {
@@ -97,31 +110,70 @@ export default function DashboardOverview() {
     return localStorage.getItem("welcomeModalShown") !== "true";
   };
 
-  const getStatusMessage = () => {
-    const isAuthComplete = authStatus === "COMPLETED";
-    const isAgreementComplete = agreementStatus === "ACCEPTED";
+  // New function to get error utility authorizations for small notifications
+  const getErrorUtilityAuths = () => {
+    if (utilityAuthDetails.length === 0 || utilityAuthEmails.length === 0) return [];
 
-    if (!isAuthComplete && !isAgreementComplete) {
+    const errorAuths = [];
+    utilityAuthDetails.forEach((auth, index) => {
+      if (auth.status === "UPDATE_ERROR" || auth.status === "ERROR" || auth.status === "FAILED") {
+        errorAuths.push({
+          email: utilityAuthEmails[index] || 'Unknown email',
+          status: auth.status
+        });
+      }
+    });
+
+    return errorAuths;
+  };
+
+  // Updated function - only show major warnings if no valid auth exists
+  const getUtilityAuthStatusMessage = () => {
+    if (utilityAuthDetails.length === 0) return null;
+
+    // Check if we have at least one valid authorization
+    const hasValidStatus = utilityAuthDetails.some(auth => 
+      auth.status === "AUTHORIZED" || auth.status === "UPDATED"
+    );
+
+    // If we have valid auth, don't show major warnings
+    if (hasValidStatus) return null;
+
+    // Only show major warnings if NO valid auth exists
+    const hasErrorStatus = utilityAuthDetails.some(auth => 
+      auth.status === "UPDATE_ERROR" || 
+      auth.status === "ERROR" ||
+      auth.status === "FAILED"
+    );
+
+    const hasPendingStatus = utilityAuthDetails.some(auth => 
+      auth.status === "PENDING" || 
+      auth.status === "PROCESSING"
+    );
+
+    if (hasErrorStatus) {
       return {
-        type: "warning",
+        type: "error",
         message: (
           <>
-            Your authorization is pending and you need to accept the user agreement. 
+            There was an issue with your utility provider authorization. Our team has been notified and will resolve this shortly. 
             <button 
               onClick={handleShowWelcomeModal}
-              className="font-medium text-yellow-700 underline hover:text-yellow-600 ml-1"
+              className="font-medium text-red-700 underline hover:text-red-600 ml-1"
             >
               Click here
-            </button> to complete these requirements.
+            </button> for more details.
           </>
         )
       };
-    } else if (!isAuthComplete) {
+    }
+
+    if (hasPendingStatus) {
       return {
         type: "warning",
         message: (
           <>
-            Your utility provider authorization is pending. 
+            Your utility provider authorization is being processed. 
             <button 
               onClick={handleShowWelcomeModal}
               className="font-medium text-yellow-700 underline hover:text-yellow-600 ml-1"
@@ -131,7 +183,13 @@ export default function DashboardOverview() {
           </>
         )
       };
-    } else if (!isAgreementComplete) {
+    }
+
+    return null;
+  };
+
+  const getAgreementStatusMessage = () => {
+    if (agreementStatus !== "ACCEPTED") {
       return {
         type: "error",
         message: (
@@ -147,18 +205,19 @@ export default function DashboardOverview() {
         )
       };
     }
-
     return null;
   };
 
-  const statusMessage = getStatusMessage();
+  const utilityAuthMessage = getUtilityAuthStatusMessage();
+  const agreementMessage = getAgreementStatusMessage();
+  const errorAuths = getErrorUtilityAuths();
 
   return (
     <div className="w-full min-h-screen space-y-8 p-4">
-      {/* Status Banner */}
-      {statusMessage && (
+      {/* Major Warning Messages - only show if no valid auth */}
+      {utilityAuthMessage && (
         <div className={`${
-          statusMessage.type === 'warning' 
+          utilityAuthMessage.type === 'warning' 
             ? 'bg-yellow-50 border-l-4 border-yellow-400' 
             : 'bg-red-50 border-l-4 border-red-400'
         } p-4`}>
@@ -166,7 +225,7 @@ export default function DashboardOverview() {
             <div className="flex-shrink-0">
               <svg 
                 className={`h-5 w-5 ${
-                  statusMessage.type === 'warning' ? 'text-yellow-400' : 'text-red-400'
+                  utilityAuthMessage.type === 'warning' ? 'text-yellow-400' : 'text-red-400'
                 }`} 
                 xmlns="http://www.w3.org/2000/svg" 
                 viewBox="0 0 20 20" 
@@ -181,34 +240,115 @@ export default function DashboardOverview() {
             </div>
             <div className="ml-3">
               <p className={`text-sm ${
-                statusMessage.type === 'warning' ? 'text-yellow-700' : 'text-red-700'
+                utilityAuthMessage.type === 'warning' ? 'text-yellow-700' : 'text-red-700'
               }`}>
-                {statusMessage.message}
+                {utilityAuthMessage.message}
               </p>
             </div>
           </div>
         </div>
       )}
 
-      {/* Quick Actions */}
+      {agreementMessage && (
+        <div className="bg-red-50 border-l-4 border-red-400 p-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg 
+                className="h-5 w-5 text-red-400" 
+                xmlns="http://www.w3.org/2000/svg" 
+                viewBox="0 0 20 20" 
+                fill="currentColor"
+              >
+                <path 
+                  fillRule="evenodd" 
+                  d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" 
+                  clipRule="evenodd" 
+                />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-red-700">
+                {agreementMessage.message}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Small Error Notifications for Specific Failed Authorizations */}
+      {errorAuths.length > 0 && (
+        <div className="space-y-2">
+          {errorAuths.map((errorAuth, index) => (
+            <div key={index} className="bg-orange-50 border-l-4 border-orange-400 p-3">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg 
+                    className="h-4 w-4 text-orange-400" 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    viewBox="0 0 20 20" 
+                    fill="currentColor"
+                  >
+                    <path 
+                      fillRule="evenodd" 
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" 
+                      clipRule="evenodd" 
+                    />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-xs text-orange-700">
+                    <strong>Authorization Issue:</strong> There was an error with the authorization for{' '}
+                    <span className="font-medium">{errorAuth.email}</span>. 
+                    Please try contacting your Utility Provider or the DCarbon Team for assistance.
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Header Section with Add Utility Provider Button */}
+      <div className="flex justify-between items-start mb-4">
+        <div>
+          <h1 className="font-[600] text-[24px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro">
+            Dashboard Overview
+          </h1>
+        </div>
+        <button
+          onClick={handleOpenAddUtilityModal}
+          className="inline-flex items-center px-4 py-2 bg-[#039994] text-white text-sm font-medium rounded-md hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] focus:ring-offset-2 transition-colors duration-200 font-sfpro"
+        >
+          <svg 
+            className="w-4 h-4 mr-2" 
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+              strokeWidth={2} 
+              d="M12 4v16m8-8H4" 
+            />
+          </svg>
+          Add Utility Provider
+        </button>
+      </div>
+
       <QuickActions 
         authStatus={authStatus} 
         setAuthStatus={setAuthStatus}
       />
 
-      {/* Separator */}
       <hr className="border-gray-300" />
 
-      {/* Graphs & Side Cards */}
       <Graph />
 
-      {/* Separator */}
       <hr className="border-gray-300" />
 
-      {/* Recent REC Sales Table */}
       <RecentRecSales />
 
-      {/* Welcome Modal - Show if requirements are not met and not previously dismissed */}
       {showWelcomeModal && shouldShowWelcomeModal() && (
         <WelcomeModal 
           isOpen 
@@ -216,6 +356,15 @@ export default function DashboardOverview() {
           userData={userData}
           authStatus={authStatus}
           agreementStatus={agreementStatus}
+          utilityAuthDetails={utilityAuthDetails}
+          utilityAuthEmails={utilityAuthEmails}
+        />
+      )}
+
+      {showAddUtilityModal && (
+        <AddUtilityProvider 
+          isOpen={showAddUtilityModal}
+          onClose={handleCloseAddUtilityModal}
         />
       )}
     </div>

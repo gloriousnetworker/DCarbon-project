@@ -5,15 +5,57 @@ export default function WelcomeModal({
   onClose, 
   userData, 
   authStatus, 
-  agreementStatus 
+  agreementStatus,
+  utilityAuthDetails = [],
+  utilityAuthEmails = []
 }) {
   if (!isOpen) return null;
 
-  const { userFirstName, utilityAuth, agreements } = userData;
+  const { userFirstName, utilityAuth = [], agreements } = userData;
   const userEmail = (typeof window !== 'undefined' ? localStorage.getItem("userEmail") : null) || "your email";
   
   const isAuthComplete = authStatus === "COMPLETED";
   const isAgreementComplete = agreementStatus === "ACCEPTED";
+
+  // Get authorized emails (from AUTHORIZED or UPDATED status)
+  const getAuthorizedEmails = () => {
+    const authorizedEmails = [];
+    utilityAuthDetails.forEach((auth, index) => {
+      if (auth.status === "AUTHORIZED" || auth.status === "UPDATED") {
+        authorizedEmails.push(utilityAuthEmails[index] || 'Unknown email');
+      }
+    });
+    return authorizedEmails;
+  };
+
+  // Get error emails and their status
+  const getErrorEmails = () => {
+    const errorEmails = [];
+    utilityAuthDetails.forEach((auth, index) => {
+      if (auth.status === "UPDATE_ERROR" || auth.status === "ERROR" || auth.status === "FAILED") {
+        errorEmails.push({
+          email: utilityAuthEmails[index] || 'Unknown email',
+          status: auth.status
+        });
+      }
+    });
+    return errorEmails;
+  };
+
+  // Get pending emails
+  const getPendingEmails = () => {
+    const pendingEmails = [];
+    utilityAuthDetails.forEach((auth, index) => {
+      if (auth.status === "PENDING" || auth.status === "PROCESSING") {
+        pendingEmails.push(utilityAuthEmails[index] || 'Unknown email');
+      }
+    });
+    return pendingEmails;
+  };
+
+  const authorizedEmails = getAuthorizedEmails();
+  const errorEmails = getErrorEmails();
+  const pendingEmails = getPendingEmails();
 
   const getModalContent = () => {
     // Both requirements missing
@@ -28,178 +70,290 @@ export default function WelcomeModal({
             <div className="border-l-4 border-blue-400 bg-blue-50 p-4">
               <h4 className="font-medium text-blue-800 mb-2">1. Utility Authorization</h4>
               <p className="text-sm text-blue-700">
-                Your utility authorization is still pending. 
-                Check your inbox at <span className="font-medium">{userEmail}</span> for the authorization email.
+                {pendingEmails.length > 0 ? (
+                  <>
+                    Authorization for{' '}
+                    {pendingEmails.map((email, index) => (
+                      <span key={index}>
+                        <span className="font-medium">{email}</span>
+                        {index < pendingEmails.length - 1 && ', '}
+                      </span>
+                    ))} is pending. Check your inbox for the authorization email.
+                  </>
+                ) : (
+                  "Your utility authorization is still pending."
+                )}
               </p>
               <a
-                href="/register/operator-registration"
-                className="inline-flex items-center mt-2 px-3 py-1 border border-transparent text-sm font-medium rounded-md text-blue-800 bg-blue-100 hover:bg-blue-200"
+                href="#"
+                className="inline-block mt-2 text-sm font-medium text-blue-600 hover:text-blue-500"
               >
-                Complete Authorization
+                Resend Authorization Email
               </a>
             </div>
-            <div className="border-l-4 border-purple-400 bg-purple-50 p-4">
-              <h4 className="font-medium text-purple-800 mb-2">2. User Agreement</h4>
-              <p className="text-sm text-purple-700">
-                You need to review and accept the user agreement to create facilities and access all features.
+            
+            <div className="border-l-4 border-yellow-400 bg-yellow-50 p-4">
+              <h4 className="font-medium text-yellow-800 mb-2">2. User Agreement</h4>
+              <p className="text-sm text-yellow-700">
+                You need to accept our user agreement to continue using the platform.
               </p>
-              <a
-                href="/register/commercial-both-registration/agreement"
-                className="inline-flex items-center mt-2 px-3 py-1 border border-transparent text-sm font-medium rounded-md text-purple-800 bg-purple-100 hover:bg-purple-200"
+              <button
+                className="inline-block mt-2 text-sm font-medium text-yellow-600 hover:text-yellow-500"
+                onClick={() => {
+                  // This would typically open the agreement modal
+                  console.log("Open agreement modal");
+                }}
               >
-                Review Agreement
-              </a>
+                Review and Accept Agreement
+              </button>
             </div>
           </div>
-        )
-      };
-    }
-    
-    // Only authorization missing
-    if (!isAuthComplete && isAgreementComplete) {
-      return {
-        title: "Authorization Pending",
-        alertType: "warning",
-        alertTitle: "Utility Authorization Required",
-        alertMessage: "Your utility authorization is still pending. You won't be able to add commercial facilities until authorization is complete.",
-        details: (
-          <div className="space-y-2">
-            <p className="text-sm text-gray-600">
-              Please check your inbox at <span className="font-medium">{userEmail}</span> for
-              the authorization email and complete the process, or{" "}
-              <a
-                href="/register/operator-registration"
-                className="font-medium text-[#039994] hover:text-[#02807c] underline"
-              >
-                click here to initiate
-              </a>
-              .
-            </p>
-            <p className="text-sm text-gray-600">
-              If you didn't receive the email, check your spam folder or request a new one.
-            </p>
-          </div>
-        )
-      };
-    }
-    
-    // Only agreement missing
-    if (isAuthComplete && !isAgreementComplete) {
-      return {
-        title: "Agreement Required",
-        alertType: "error",
-        alertTitle: "User Agreement Pending",
-        alertMessage: "You must accept the user agreement to create facilities and access all platform features.",
-        details: (
-          <div className="space-y-3">
-            <p className="text-sm text-gray-600">
-              Your utility authorization is complete, but you still need to review and accept our user agreement.
-            </p>
-            <div className="bg-red-50 border border-red-200 rounded-md p-3">
-              <p className="text-sm text-red-800 font-medium">
-                ⚠️ You cannot create facilities until this requirement is completed.
-              </p>
-            </div>
-            <a
-              href="/register/commercial-both-registration/agreement"
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-            >
-              Review and Accept Agreement
-            </a>
-          </div>
-        )
+        ),
+        canProceed: false
       };
     }
 
-    // Fallback (shouldn't reach here if logic is correct)
+    // Only authorization missing
+    if (!isAuthComplete) {
+      return {
+        title: "Complete Utility Authorization",
+        alertType: "warning",
+        alertTitle: "Authorization Required",
+        alertMessage: "You need to complete utility authorization to access all features.",
+        details: (
+          <div className="space-y-4">
+            <div className="border-l-4 border-blue-400 bg-blue-50 p-4">
+              <h4 className="font-medium text-blue-800 mb-2">Utility Authorization Status</h4>
+              
+              {pendingEmails.length > 0 && (
+                <div className="mb-3">
+                  <p className="text-sm text-blue-700">
+                    Authorization pending for:
+                  </p>
+                  <ul className="list-disc list-inside mt-1 text-sm text-blue-700">
+                    {pendingEmails.map((email, index) => (
+                      <li key={index} className="font-medium">{email}</li>
+                    ))}
+                  </ul>
+                  <p className="text-sm text-blue-700 mt-2">
+                    Check your inbox for the authorization email.
+                  </p>
+                </div>
+              )}
+              
+              {errorEmails.length > 0 && (
+                <div className="border-l-4 border-red-400 bg-red-50 p-3 mt-3">
+                  <h5 className="font-medium text-red-800 mb-1">Authorization Issues</h5>
+                  <ul className="list-disc list-inside text-sm text-red-700">
+                    {errorEmails.map((error, index) => (
+                      <li key={index}>
+                        <span className="font-medium">{error.email}</span>: {error.status}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="text-sm text-red-700 mt-2">
+                    Please contact your Utility Provider or the DCarbon Team for assistance.
+                  </p>
+                </div>
+              )}
+              
+              <a
+                href="#"
+                className="inline-block mt-2 text-sm font-medium text-blue-600 hover:text-blue-500"
+              >
+                Resend Authorization Email
+              </a>
+            </div>
+          </div>
+        ),
+        canProceed: false
+      };
+    }
+
+    // Only agreement missing
+    if (!isAgreementComplete) {
+      return {
+        title: "Accept User Agreement",
+        alertType: "warning",
+        alertTitle: "Agreement Required",
+        alertMessage: "You need to accept our user agreement to continue using the platform.",
+        details: (
+          <div className="border-l-4 border-yellow-400 bg-yellow-50 p-4">
+            <h4 className="font-medium text-yellow-800 mb-2">User Agreement</h4>
+            <p className="text-sm text-yellow-700">
+              Please review and accept our user agreement to access all features.
+            </p>
+            <button
+              className="inline-block mt-2 text-sm font-medium text-yellow-600 hover:text-yellow-500"
+              onClick={() => {
+                // This would typically open the agreement modal
+                console.log("Open agreement modal");
+              }}
+            >
+              Review and Accept Agreement
+            </button>
+          </div>
+        ),
+        canProceed: false
+      };
+    }
+
+    // Everything complete - success state
     return {
-      title: "Welcome",
-      alertType: "info",
-      alertTitle: "Welcome to Your Dashboard",
-      alertMessage: "Your account setup is complete!",
-      details: null
+      title: "Setup Complete!",
+      alertType: "success",
+      alertTitle: "You're all set!",
+      alertMessage: "You've completed all required setup steps and can now access all features.",
+      details: (
+        <div className="space-y-4">
+          <div className="border-l-4 border-green-400 bg-green-50 p-4">
+            <h4 className="font-medium text-green-800 mb-2">Utility Authorization</h4>
+            <p className="text-sm text-green-700">
+              Your utility authorizations are complete for:
+            </p>
+            <ul className="list-disc list-inside mt-1 text-sm text-green-700">
+              {authorizedEmails.map((email, index) => (
+                <li key={index} className="font-medium">{email}</li>
+              ))}
+            </ul>
+          </div>
+          
+          {errorEmails.length > 0 && (
+            <div className="border-l-4 border-orange-400 bg-orange-50 p-3">
+              <h5 className="font-medium text-orange-800 mb-1">Note: Some Authorizations Have Issues</h5>
+              <ul className="list-disc list-inside text-sm text-orange-700">
+                {errorEmails.map((error, index) => (
+                  <li key={index}>
+                    <span className="font-medium">{error.email}</span>: {error.status}
+                  </li>
+                ))}
+              </ul>
+              <p className="text-sm text-orange-700 mt-2">
+                You can still proceed with authorized accounts, but please contact support about these issues.
+              </p>
+            </div>
+          )}
+          
+          <div className="border-l-4 border-green-400 bg-green-50 p-4">
+            <h4 className="font-medium text-green-800 mb-2">User Agreement</h4>
+            <p className="text-sm text-green-700">
+              You've accepted our user agreement on {new Date(agreements.updatedAt).toLocaleDateString()}.
+            </p>
+          </div>
+        </div>
+      ),
+      canProceed: true
     };
   };
 
-  const content = getModalContent();
-  const alertColors = {
-    warning: {
-      bg: "bg-yellow-50",
-      border: "border-yellow-400",
-      icon: "text-yellow-400",
-      title: "text-yellow-800",
-      text: "text-yellow-700"
-    },
-    error: {
-      bg: "bg-red-50",
-      border: "border-red-400", 
-      icon: "text-red-400",
-      title: "text-red-800",
-      text: "text-red-700"
-    },
-    info: {
-      bg: "bg-blue-50",
-      border: "border-blue-400",
-      icon: "text-blue-400", 
-      title: "text-blue-800",
-      text: "text-blue-700"
-    }
-  };
-
-  const colors = alertColors[content.alertType];
+  const modalContent = getModalContent();
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-start mb-4">
-          <h2 className="text-xl font-bold text-[#039994]">
-            {content.title}, {userFirstName}!
-          </h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
-            ✕
-          </button>
+    <div className="fixed inset-0 z-50 overflow-y-auto">
+      <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        {/* Background overlay */}
+        <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+          <div className="absolute inset-0 bg-gray-500 opacity-75" onClick={onClose}></div>
         </div>
-       
-        <div className="space-y-4">
-          <div className={`p-4 ${colors.bg} border-l-4 ${colors.border}`}>
-            <div className="flex items-start">
-              <div className="flex-shrink-0">
-                <svg 
-                  className={`h-5 w-5 ${colors.icon}`} 
-                  xmlns="http://www.w3.org/2000/svg" 
-                  viewBox="0 0 20 20" 
-                  fill="currentColor"
-                >
-                  <path 
-                    fillRule="evenodd" 
-                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" 
-                    clipRule="evenodd" 
-                  />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <h3 className={`text-sm font-medium ${colors.title}`}>
-                  {content.alertTitle}
+
+        {/* Modal container */}
+        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+          <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+            {/* Header */}
+            <div className="sm:flex sm:items-start">
+              <div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
+                <h3 className="text-lg leading-6 font-medium text-gray-900">
+                  {modalContent.title}
                 </h3>
-                <div className={`mt-2 text-sm ${colors.text}`}>
-                  <p>{content.alertMessage}</p>
+                
+                {/* Alert */}
+                <div className={`mt-4 rounded-md ${
+                  modalContent.alertType === 'warning' 
+                    ? 'bg-yellow-50 border-l-4 border-yellow-400' 
+                    : modalContent.alertType === 'error'
+                      ? 'bg-red-50 border-l-4 border-red-400'
+                      : 'bg-green-50 border-l-4 border-green-400'
+                } p-4`}>
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <svg 
+                        className={`h-5 w-5 ${
+                          modalContent.alertType === 'warning' 
+                            ? 'text-yellow-400' 
+                            : modalContent.alertType === 'error'
+                              ? 'text-red-400'
+                              : 'text-green-400'
+                        }`} 
+                        xmlns="http://www.w3.org/2000/svg" 
+                        viewBox="0 0 20 20" 
+                        fill="currentColor"
+                      >
+                        <path 
+                          fillRule="evenodd" 
+                          d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" 
+                          clipRule="evenodd" 
+                        />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <h3 className={`text-sm font-medium ${
+                        modalContent.alertType === 'warning' 
+                          ? 'text-yellow-800' 
+                          : modalContent.alertType === 'error'
+                            ? 'text-red-800'
+                            : 'text-green-800'
+                      }`}>
+                        {modalContent.alertTitle}
+                      </h3>
+                      <div className={`mt-2 text-sm ${
+                        modalContent.alertType === 'warning' 
+                          ? 'text-yellow-700' 
+                          : modalContent.alertType === 'error'
+                            ? 'text-red-700'
+                            : 'text-green-700'
+                      }`}>
+                        <p>{modalContent.alertMessage}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Details content */}
+                <div className="mt-4">
+                  {modalContent.details}
                 </div>
               </div>
             </div>
           </div>
-
-          {content.details && (
-            <div className="space-y-3">
-              {content.details}
-            </div>
-          )}
-
-          <div className="pt-4 border-t border-gray-200">
+          
+          {/* Footer with buttons */}
+          <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+            {modalContent.canProceed ? (
+              <button
+                type="button"
+                className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:ml-3 sm:w-auto sm:text-sm"
+                onClick={onClose}
+              >
+                Continue to Dashboard
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
+                onClick={() => {
+                  // This would typically open the appropriate form
+                  console.log("Open required form");
+                }}
+              >
+                Complete Setup
+              </button>
+            )}
             <button
+              type="button"
+              className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
               onClick={onClose}
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-[#039994] bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#039994] border-[#039994]"
             >
-              I Understand
+              Close
             </button>
           </div>
         </div>

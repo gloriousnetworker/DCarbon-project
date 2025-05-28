@@ -18,7 +18,6 @@ export default function LoginCard() {
   const handleLogin = async () => {
     setLoading(true);
     try {
-      // Normalize email to lowercase
       const normalizedEmail = email.toLowerCase();
       
       const baseUrl = 'https://services.dcarbon.solutions';
@@ -34,7 +33,6 @@ export default function LoginCard() {
 
       const { user, token, requiresTwoFactor, tempToken } = response.data.data;
 
-      // Check if login requires Two Factor Authentication
       if (requiresTwoFactor) {
         localStorage.setItem('tempToken', tempToken);
         localStorage.setItem('userId', user.id);
@@ -43,7 +41,6 @@ export default function LoginCard() {
         return;
       }
 
-      // Store user details and token
       localStorage.setItem('userFirstName', user.firstName);
       localStorage.setItem('userProfilePicture', user.profilePicture);
       localStorage.setItem('authToken', token);
@@ -51,77 +48,75 @@ export default function LoginCard() {
 
       toast.success('Login successful');
 
-      // Helper functions to check conditions
       const hasUtilityAuth = user.utilityAuth && Array.isArray(user.utilityAuth) && user.utilityAuth.length > 0;
       const hasValidUtilityAuth = hasUtilityAuth && user.utilityAuth.some(auth => ['UPDATED', 'AUTHORIZED'].includes(auth.status));
+      const hasAnyUtilityAuth = hasUtilityAuth;
       const hasAgreements = user.agreements !== null;
       const agreementCompleted = user.agreements && 
                                user.agreements.signature !== null && 
                                user.agreements.termsAccepted;
 
-      // Handle routing based on user type
       if (user.userType === 'COMMERCIAL') {
-        // Case 1: Both utilityAuth and agreements are null/empty
         if (!hasUtilityAuth && !hasAgreements) {
           window.location.href = '/register/welcome-back-commercial-users';
           return;
         }
 
-        // Case 2: utilityAuth exists with valid status but agreements is null
         if (hasValidUtilityAuth && !hasAgreements) {
           window.location.href = '/register/commercial-both-registration/agreement';
           return;
         }
 
-        // Case 3: agreements exists but utilityAuth is null/empty
         if (hasAgreements && !hasUtilityAuth) {
           window.location.href = '/register/operator-registration';
           return;
         }
 
-        // Case 4: Both conditions met - route to dashboard
-        if (hasValidUtilityAuth && agreementCompleted) {
+        if (hasAnyUtilityAuth && agreementCompleted) {
           window.location.href = '/commercial-dashboard';
           return;
         }
 
-        // Default case for commercial users who don't meet dashboard criteria
+        if (hasAnyUtilityAuth && hasAgreements) {
+          window.location.href = '/commercial-dashboard';
+          return;
+        }
+
         window.location.href = '/register/welcome-back-commercial-users';
         return;
       }
 
       if (user.userType === 'RESIDENTIAL') {
-        // Case 1: Both utilityAuth and agreements are null/empty
         if (!hasUtilityAuth && !hasAgreements) {
           window.location.href = '/register/welcome-back-residence-users';
           return;
         }
 
-        // Case 2: utilityAuth exists with valid status but agreements is null
         if (hasValidUtilityAuth && !hasAgreements) {
           window.location.href = '/register/residence-user-registration/agreement';
           return;
         }
 
-        // Case 3: agreements exists but utilityAuth is null/empty
         if (hasAgreements && !hasUtilityAuth) {
           window.location.href = '/register/residence-user-registration/step-two';
           return;
         }
 
-        // Case 4: Both conditions met - route to dashboard
-        if (hasValidUtilityAuth && agreementCompleted) {
+        if (hasAnyUtilityAuth && agreementCompleted) {
           window.location.href = '/residence-dashboard';
           return;
         }
 
-        // Default case for residential users who don't meet dashboard criteria
+        if (hasAnyUtilityAuth && hasAgreements) {
+          window.location.href = '/residence-dashboard';
+          return;
+        }
+
         window.location.href = '/register/welcome-back-residence-users';
         return;
       }
 
       if (user.userType === 'PARTNER') {
-        // Check if agreement is completed
         if (!agreementCompleted) {
           window.location.href = '/register/welcome-back-partner-users';
           return;
@@ -131,7 +126,6 @@ export default function LoginCard() {
         }
       }
 
-      // Fallback for any other user types or edge cases
       window.location.href = '/';
 
     } catch (err) {
@@ -143,14 +137,12 @@ export default function LoginCard() {
 
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center py-8 px-8">
-      {/* Loader Overlay */}
       {loading && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20">
           <Loader />
         </div>
       )}
 
-      {/* Glass-Effect Card Container */}
       <div
         className="w-full max-w-md space-y-6 p-8 rounded-xl shadow-lg"
         style={{
@@ -160,7 +152,6 @@ export default function LoginCard() {
           border: '1px solid rgba(255, 255, 255, 0.2)'
         }}
       >
-        {/* Logo */}
         <div className="relative w-full flex flex-col items-center mb-2">
           <img
             src="/auth_images/Login_logo.png"
@@ -169,15 +160,12 @@ export default function LoginCard() {
           />
         </div>
 
-        {/* Heading */}
         <h2 className="mb-4 font-[600] text-[36px] leading-[100%] tracking-[-0.05em] text-[#FFFFFF] font-sfpro text-center">
           Welcome back to DCarbon
         </h2>
 
-        {/* Horizontal Line */}
         <hr className="border-t-2 border-gray-200 mb-4 opacity-70" />
 
-        {/* Email Field */}
         <div className="space-y-6">
           <div>
             <label
@@ -196,7 +184,6 @@ export default function LoginCard() {
             />
           </div>
 
-          {/* Password Field with Forgot Password Link */}
           <div className="relative">
             <label
               htmlFor="password"
@@ -263,7 +250,6 @@ export default function LoginCard() {
           </div>
         </div>
 
-        {/* Sign In Button */}
         <button
           type="button"
           onClick={handleLogin}
@@ -272,7 +258,6 @@ export default function LoginCard() {
           Sign in
         </button>
 
-        {/* Create Account Link */}
         <p className="mt-6 text-center font-sfpro font-[400] text-[14px] leading-[100%] tracking-[-0.05em] text-[#FFFFFF]">
           Don't have an account?{' '}
           <a
@@ -283,10 +268,8 @@ export default function LoginCard() {
           </a>
         </p>
 
-        {/* Horizontal Line */}
         <hr className="border-t-2 border-gray-200 my-4 opacity-70" />
 
-        {/* Disclaimer */}
         <p className="font-sfpro font-[400] text-[10px] leading-[100%] tracking-[-0.05em] text-center text-[#FFFFFF] mb-0">
           By clicking on <strong>Sign in</strong>, you agree to our{' '}
           <a

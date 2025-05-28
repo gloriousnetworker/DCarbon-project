@@ -55,12 +55,15 @@ export default function QuickActions({ authStatus: propAuthStatus, setAuthStatus
       
       // Extract user info from login response
       const user = loginResponse?.data?.user || null;
-      const utilityAuth = user?.utilityAuth || null;
+      const utilityAuth = user?.utilityAuth || [];
 
-      // Set auth status based on utilityAuth
+      // Updated logic: COMPLETED if at least one auth is AUTHORIZED or UPDATED
       let currentAuthStatus = "PENDING";
-      if (utilityAuth?.status === "UPDATED" || utilityAuth?.status === "AUTHORIZED") {
-        currentAuthStatus = "COMPLETED";
+      if (utilityAuth.length > 0) {
+        const hasValidAuth = utilityAuth.some(auth => 
+          auth.status === "AUTHORIZED" || auth.status === "UPDATED"
+        );
+        currentAuthStatus = hasValidAuth ? "COMPLETED" : "PENDING";
       }
       
       // Use prop authStatus if provided, otherwise use computed status
@@ -111,7 +114,7 @@ export default function QuickActions({ authStatus: propAuthStatus, setAuthStatus
 
   const isAuthorized = () => {
     const currentAuthStatus = propAuthStatus || authStatus;
-    return currentAuthStatus === "AUTHORIZED" || currentAuthStatus === "UPDATED" || currentAuthStatus === "COMPLETED";
+    return currentAuthStatus === "COMPLETED";
   };
 
   const isAgreementAccepted = () => {
