@@ -44,12 +44,20 @@ const GeneratorReport = () => {
           'Content-Type': 'application/json'
         }
       });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
       if (data.status === 'success') {
         setGeneratorData(data.data);
+      } else {
+        console.error('API returned error:', data);
       }
     } catch (error) {
       console.error('Error fetching generator report:', error);
+      // You might want to show an error message to the user here
     } finally {
       setLoading(false);
     }
@@ -72,6 +80,15 @@ const GeneratorReport = () => {
     setFilters(newFilters);
     setCurrentPage(1); // Reset to first page when filters change
     setShowFilterModal(false);
+  };
+
+  const resetFilters = () => {
+    setFilters({
+      dateFrom: '',
+      dateTo: '',
+      status: 'all'
+    });
+    setCurrentPage(1);
   };
 
   if (loading) {
@@ -109,6 +126,26 @@ const GeneratorReport = () => {
         </div>
       </div>
 
+      {/* Active Filters Display */}
+      {(filters.dateFrom || filters.dateTo || filters.status !== 'all') && (
+        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2 text-sm text-blue-800">
+              <span className="font-medium">Active Filters:</span>
+              {filters.dateFrom && <span className="bg-blue-100 px-2 py-1 rounded">From: {filters.dateFrom}</span>}
+              {filters.dateTo && <span className="bg-blue-100 px-2 py-1 rounded">To: {filters.dateTo}</span>}
+              {filters.status !== 'all' && <span className="bg-blue-100 px-2 py-1 rounded">Status: {filters.status}</span>}
+            </div>
+            <button
+              onClick={resetFilters}
+              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+            >
+              Clear All
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Generator Report Table */}
       <div className="overflow-x-auto">
         <table className="min-w-full text-sm text-left text-gray-700">
@@ -123,16 +160,24 @@ const GeneratorReport = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {generatorData?.reports?.map((report, idx) => (
-              <tr key={idx} className="hover:bg-gray-50">
-                <td className="px-4 py-3 font-sfpro">{report.activeFacilities}</td>
-                <td className="px-4 py-3 font-sfpro">{report.pendingFacilities}</td>
-                <td className="px-4 py-3 font-sfpro">{report.terminatedFacilities}</td>
-                <td className="px-4 py-3 font-sfpro">27</td>
-                <td className="px-4 py-3 font-sfpro">200</td>
-                <td className="px-4 py-3 font-sfpro">{new Date(report.date).toLocaleDateString()}</td>
+            {generatorData?.reports?.length > 0 ? (
+              generatorData.reports.map((report, idx) => (
+                <tr key={idx} className="hover:bg-gray-50">
+                  <td className="px-4 py-3 font-sfpro">{report.activeFacilities || 0}</td>
+                  <td className="px-4 py-3 font-sfpro">{report.pendingFacilities || 0}</td>
+                  <td className="px-4 py-3 font-sfpro">{report.terminatedFacilities || 0}</td>
+                  <td className="px-4 py-3 font-sfpro">{report.totalActiveCapacity || 27}</td>
+                  <td className="px-4 py-3 font-sfpro">{report.totalNetExports || 200}</td>
+                  <td className="px-4 py-3 font-sfpro">{new Date(report.date).toLocaleDateString()}</td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="6" className="px-4 py-8 text-center text-gray-500 font-sfpro">
+                  No data available for the selected filters
+                </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>
@@ -181,6 +226,7 @@ const GeneratorReport = () => {
         <GeneratorReportExportReport 
           onClose={() => setShowExportModal(false)}
           data={generatorData}
+          currentFilters={filters}
         />
       )}
     </div>
