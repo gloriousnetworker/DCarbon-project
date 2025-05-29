@@ -14,20 +14,46 @@ import toast from "react-hot-toast";
 
 export default function AgreementFormPage() {
   const [loading, setLoading] = useState(false);
-  const [showLoader, setShowLoader] = useState(false); // New state for loader visibility
+  const [showLoader, setShowLoader] = useState(false);
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [sentModalOpen, setSentModalOpen] = useState(false);
   const [registrationModalOpen, setRegistrationModalOpen] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
-  const [showRedirectLoader, setShowRedirectLoader] = useState(false); // New state for redirect loader
-
-  // Condition states: checkboxes and signature
+  const [showRedirectLoader, setShowRedirectLoader] = useState(false);
   const [allChecked, setAllChecked] = useState(false);
   const [showSignatureModal, setShowSignatureModal] = useState(false);
   const [signatureData, setSignatureData] = useState(null);
   const [accepted, setAccepted] = useState(true);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [pendingAction, setPendingAction] = useState(null);
 
   const router = useRouter();
+
+  // Store agreement data temporarily in localStorage
+  const storeAgreementTemporarily = (agreementData) => {
+    try {
+      // Get existing loginResponse
+      const loginResponse = JSON.parse(localStorage.getItem("loginResponse") || "null");
+      
+      if (loginResponse && loginResponse.data && loginResponse.data.user) {
+        // Update the loginResponse with agreement data
+        loginResponse.data.user.agreements = agreementData;
+        localStorage.setItem("loginResponse", JSON.stringify(loginResponse));
+      }
+
+      // Also store as separate item for fallback
+      localStorage.setItem("userAgreements", JSON.stringify(agreementData));
+    } catch (error) {
+      console.error("Error storing agreement data:", error);
+    }
+  };
+
+  // Get auth data from localStorage
+  const getAuthData = () => {
+    const authToken = localStorage.getItem("authToken");
+    const userId = localStorage.getItem("userId");
+    return { authToken, userId };
+  };
 
   // Effect for main loader delay
   useEffect(() => {
@@ -35,7 +61,6 @@ export default function AgreementFormPage() {
     if (loading) {
       setShowLoader(true);
     } else {
-      // Minimum display time of 500ms for the loader
       timer = setTimeout(() => setShowLoader(false), 500);
     }
     return () => clearTimeout(timer);
@@ -52,16 +77,35 @@ export default function AgreementFormPage() {
     return () => clearTimeout(timer);
   }, [isRedirecting]);
 
+  // Check authentication on initial load
+  useEffect(() => {
+    const { authToken, userId } = getAuthData();
+    if (!authToken || !userId) {
+      toast.error("Authentication required");
+      router.push("/register/owner-registration-verification/utility-verification");
+    }
+  }, [router]);
+
+  const handleLoginSuccess = () => {
+    setShowLoginModal(false);
+    if (pendingAction) {
+      pendingAction();
+      setPendingAction(null);
+    }
+  };
+
   // Function to call the accept user agreement endpoint
   const acceptUserAgreement = async () => {
+    const { authToken, userId } = getAuthData();
+    
+    if (!authToken || !userId) {
+      toast.error("Please log in to continue");
+      setPendingAction(() => acceptUserAgreement);
+      setShowLoginModal(true);
+      throw new Error("Authentication required");
+    }
+
     try {
-      const userId = localStorage.getItem("userId");
-      const authToken = localStorage.getItem("authToken");
-
-      if (!userId || !authToken) {
-        throw new Error("User authentication details not found");
-      }
-
       const response = await fetch(
         `https://services.dcarbon.solutions/api/user/accept-user-agreement-terms/${userId}`,
         {
@@ -72,18 +116,40 @@ export default function AgreementFormPage() {
           },
           body: JSON.stringify({
             signature: signatureData,
+            termsAccepted: true,
+            agreementCompleted: true
           }),
         }
       );
 
       if (!response.ok) {
-        throw new Error("Failed to accept user agreement");
+        const error = await response.json();
+        throw new Error(error.message || "Failed to accept user agreement");
       }
 
-      const data = await response.json();
-      return data;
+      const result = await response.json();
+      
+      // Store agreement data temporarily for immediate use
+      const agreementData = {
+        id: result.data?.id || `temp-${Date.now()}`,
+        userId: userId,
+        signature: signatureData,
+        termsAccepted: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      
+      storeAgreementTemporarily(agreementData);
+      
+      return result;
     } catch (error) {
       console.error("Error accepting user agreement:", error);
+      if (error.message.includes('Unauthorized') || error.message.includes('expired')) {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userId');
+        setPendingAction(() => acceptUserAgreement);
+        setShowLoginModal(true);
+      }
       throw error;
     }
   };
@@ -102,12 +168,12 @@ export default function AgreementFormPage() {
     setLoading(true);
     try {
       await acceptUserAgreement();
-      setLoading(false);
-      setInviteModalOpen(true);
       toast.success("Agreement signed successfully!");
+      setInviteModalOpen(true);
     } catch (error) {
-      setLoading(false);
       toast.error(error.message || "Failed to accept agreement");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -216,7 +282,9 @@ export default function AgreementFormPage() {
           onSkip={() => {
             setInviteModalOpen(false);
             setRegistrationModalOpen(true);
-          }} />)}
+          }} 
+        />
+      )}
       {sentModalOpen && (
         <EmailInvitationSentModal closeModal={handleCloseSentModal} />
       )}
@@ -240,6 +308,13 @@ export default function AgreementFormPage() {
         onClose={() => setShowSignatureModal(false)}
         onSaveSignature={handleSaveSignature}
       />
+
+      {/* Login Modal - You'll need to create or import this */}
+      {/* <LoginModal 
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        onLoginSuccess={handleLoginSuccess}
+      /> */}
     </>
   );
 }

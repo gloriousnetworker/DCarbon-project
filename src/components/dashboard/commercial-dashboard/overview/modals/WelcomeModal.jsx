@@ -17,6 +17,13 @@ export default function WelcomeModal({
   const isAuthComplete = authStatus === "COMPLETED";
   const isAgreementComplete = agreementStatus === "ACCEPTED";
 
+  // Navigation helper function
+  const navigateTo = (path) => {
+    if (typeof window !== 'undefined') {
+      window.location.href = path;
+    }
+  };
+
   // Get authorized emails (from AUTHORIZED or UPDATED status)
   const getAuthorizedEmails = () => {
     const authorizedEmails = [];
@@ -84,12 +91,12 @@ export default function WelcomeModal({
                   "Your utility authorization is still pending."
                 )}
               </p>
-              <a
-                href="#"
-                className="inline-block mt-2 text-sm font-medium text-blue-600 hover:text-blue-500"
+              <button
+                onClick={() => navigateTo('/register/operator-registration')}
+                className="inline-block mt-2 text-sm font-medium text-blue-600 hover:text-blue-500 cursor-pointer bg-transparent border-none underline"
               >
                 Resend Authorization Email
-              </a>
+              </button>
             </div>
             
             <div className="border-l-4 border-yellow-400 bg-yellow-50 p-4">
@@ -98,11 +105,8 @@ export default function WelcomeModal({
                 You need to accept our user agreement to continue using the platform.
               </p>
               <button
-                className="inline-block mt-2 text-sm font-medium text-yellow-600 hover:text-yellow-500"
-                onClick={() => {
-                  // This would typically open the agreement modal
-                  console.log("Open agreement modal");
-                }}
+                className="inline-block mt-2 text-sm font-medium text-yellow-600 hover:text-yellow-500 cursor-pointer bg-transparent border-none underline"
+                onClick={() => navigateTo('/register/commercial-both-registration/agreement')}
               >
                 Review and Accept Agreement
               </button>
@@ -157,12 +161,12 @@ export default function WelcomeModal({
                 </div>
               )}
               
-              <a
-                href="#"
-                className="inline-block mt-2 text-sm font-medium text-blue-600 hover:text-blue-500"
+              <button
+                onClick={() => navigateTo('/register/operator-registration')}
+                className="inline-block mt-2 text-sm font-medium text-blue-600 hover:text-blue-500 cursor-pointer bg-transparent border-none underline"
               >
                 Resend Authorization Email
-              </a>
+              </button>
             </div>
           </div>
         ),
@@ -184,11 +188,8 @@ export default function WelcomeModal({
               Please review and accept our user agreement to access all features.
             </p>
             <button
-              className="inline-block mt-2 text-sm font-medium text-yellow-600 hover:text-yellow-500"
-              onClick={() => {
-                // This would typically open the agreement modal
-                console.log("Open agreement modal");
-              }}
+              className="inline-block mt-2 text-sm font-medium text-yellow-600 hover:text-yellow-500 cursor-pointer bg-transparent border-none underline"
+              onClick={() => navigateTo('/register/commercial-both-registration/agreement')}
             >
               Review and Accept Agreement
             </button>
@@ -341,8 +342,12 @@ export default function WelcomeModal({
                 type="button"
                 className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
                 onClick={() => {
-                  // This would typically open the appropriate form
-                  console.log("Open required form");
+                  // Navigate to the appropriate form based on what's missing
+                  if (!isAuthComplete) {
+                    navigateTo('/register/operator-registration');
+                  } else if (!isAgreementComplete) {
+                    navigateTo('/register/commercial-both-registration/agreement');
+                  }
                 }}
               >
                 Complete Setup

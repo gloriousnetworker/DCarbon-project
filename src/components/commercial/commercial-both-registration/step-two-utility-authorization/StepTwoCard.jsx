@@ -331,7 +331,7 @@ export default function OperatorRegistrationCard() {
         }
       });
 
-      router.push('/register/commercial-both-registration/agreement');
+      router.push('/register/commercial-operator-registration/agreement');
     } catch (error) {
       toast.error(error.message || 'Error submitting provider request', {
         style: {
@@ -385,7 +385,7 @@ export default function OperatorRegistrationCard() {
     setLoading(true);
 
     try {
-      // Submit the operator registration data (without utilityProvider)
+      // First, submit the operator registration data
       const registrationResponse = await fetch(
         `${localURL}/api/user/commercial-registration/${userId}`,
         {
@@ -408,18 +408,10 @@ export default function OperatorRegistrationCard() {
         throw new Error(registrationData.message || 'Operator registration failed');
       }
 
-      toast.success('Owner and Operator registration successful', {
-        style: {
-          fontFamily: 'SF Pro',
-          background: '#E8F5E9',
-          color: '#1B5E20'
-        }
-      });
-
       // Store the selected provider in local storage for later use
       localStorage.setItem('selectedUtilityProvider', JSON.stringify(selectedProvider));
 
-      // Then initiate utility authorization
+      // Then initiate utility authorization with the verified email
       const initiateResponse = await fetch(
         `${localURL}/api/auth/initiate-utility-auth/${userId}`,
         {
@@ -427,7 +419,10 @@ export default function OperatorRegistrationCard() {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${authToken}`
-          }
+          },
+          body: JSON.stringify({
+            utilityAuthEmail: formData.utilityAuthEmail
+          })
         }
       );
 
@@ -435,6 +430,9 @@ export default function OperatorRegistrationCard() {
       if (!initiateResponse.ok || initData.status !== 'success') {
         throw new Error(initData.message || 'Utility authorization initiation failed');
       }
+
+      // Store the authorization data in localStorage
+      localStorage.setItem('utilityAuthorizationData', JSON.stringify(initData.data));
 
       toast.success('Utility authorization initiated successfully', {
         style: {
@@ -485,7 +483,7 @@ export default function OperatorRegistrationCard() {
     }));
 
     // Proceed to next step
-    router.push('/register/commercial-both-registration/agreement');
+    router.push('/register/commercial-operator-registration/agreement');
     setLoading(false);
   };
 

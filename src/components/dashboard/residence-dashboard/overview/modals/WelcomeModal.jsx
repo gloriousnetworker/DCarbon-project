@@ -17,6 +17,13 @@ export default function WelcomeModal({
   const isAuthComplete = authStatus === "COMPLETED";
   const isAgreementComplete = agreementStatus === "ACCEPTED";
 
+  // Navigation helper function
+  const navigateTo = (path) => {
+    if (typeof window !== 'undefined') {
+      window.location.href = path;
+    }
+  };
+
   // Get authorized emails (from AUTHORIZED or UPDATED status)
   const getAuthorizedEmails = () => {
     const authorizedEmails = [];
@@ -84,12 +91,12 @@ export default function WelcomeModal({
                   "Your utility authorization is still pending."
                 )}
               </p>
-              <a
-                href="/register/residence-user-registration/step-two"
-                className="inline-block mt-2 text-sm font-medium text-blue-600 hover:text-blue-500"
+              <button
+                onClick={() => navigateTo('/register/residence-user-registration/step-two')}
+                className="inline-block mt-2 text-sm font-medium text-blue-600 hover:text-blue-500 cursor-pointer bg-transparent border-none underline"
               >
                 Complete Authorization Process
-              </a>
+              </button>
             </div>
             
             <div className="border-l-4 border-purple-400 bg-purple-50 p-4">
@@ -97,12 +104,12 @@ export default function WelcomeModal({
               <p className="text-sm text-purple-700">
                 You need to review and accept the user agreement to create facilities and access all features.
               </p>
-              <a
-                href="/register/residence-user-registration/agreement"
-                className="inline-flex items-center mt-2 px-3 py-1 border border-transparent text-sm font-medium rounded-md text-purple-800 bg-purple-100 hover:bg-purple-200"
+              <button
+                onClick={() => navigateTo('/register/residence-user-registration/agreement')}
+                className="inline-flex items-center mt-2 px-3 py-1 border border-transparent text-sm font-medium rounded-md text-purple-800 bg-purple-100 hover:bg-purple-200 cursor-pointer"
               >
                 Review Agreement
-              </a>
+              </button>
             </div>
           </div>
         ),
@@ -159,21 +166,21 @@ export default function WelcomeModal({
                   <p className="text-sm text-blue-700">
                     You may have skipped the authorization process. To complete your registration:
                   </p>
-                  <a
-                    href="/register/residence-user-registration/step-two"
-                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#039994] hover:bg-[#02807c] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#039994]"
+                  <button
+                    onClick={() => navigateTo('/register/residence-user-registration/step-two')}
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#039994] hover:bg-[#02807c] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#039994] cursor-pointer"
                   >
                     Complete Authorization Now
-                  </a>
+                  </button>
                 </div>
               )}
               
-              <a
-                href="/register/residence-user-registration/step-two"
-                className="inline-block mt-2 text-sm font-medium text-blue-600 hover:text-blue-500"
+              <button
+                onClick={() => navigateTo('/register/residence-user-registration/step-two')}
+                className="inline-block mt-2 text-sm font-medium text-blue-600 hover:text-blue-500 cursor-pointer bg-transparent border-none underline"
               >
                 Initiate/Resend Authorization Email
-              </a>
+              </button>
             </div>
           </div>
         ),
@@ -198,12 +205,12 @@ export default function WelcomeModal({
                 ⚠️ You cannot create facilities until this requirement is completed.
               </p>
             </div>
-            <a
-              href="/register/residence-user-registration/agreement"
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+            <button
+              onClick={() => navigateTo('/register/residence-user-registration/agreement')}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 cursor-pointer"
             >
               Review and Accept Agreement
-            </a>
+            </button>
           </div>
         ),
         canProceed: false
@@ -359,10 +366,19 @@ export default function WelcomeModal({
               </div>
             ) : (
               <button
-                onClick={onClose}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-[#039994] bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#039994] border-[#039994]"
+                onClick={() => {
+                  // Navigate to the appropriate form based on what's missing
+                  if (!isAuthComplete) {
+                    navigateTo('/register/residence-user-registration/step-two');
+                  } else if (!isAgreementComplete) {
+                    navigateTo('/register/residence-user-registration/agreement');
+                  } else {
+                    onClose();
+                  }
+                }}
+                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#039994] hover:bg-[#02807c] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#039994]"
               >
-                I Understand
+                {!isAuthComplete ? 'Complete Authorization' : !isAgreementComplete ? 'Accept Agreement' : 'I Understand'}
               </button>
             )}
           </div>
