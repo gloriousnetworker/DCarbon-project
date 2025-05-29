@@ -118,7 +118,7 @@ export default function EmailVerificationModal({ closeModal, onSkip }) {
         </div>
         
         <h2 className={modalHeading}>
-          Invite a Solar Operator
+          Invite a Customer
         </h2>
 
         <form className="space-y-4">
