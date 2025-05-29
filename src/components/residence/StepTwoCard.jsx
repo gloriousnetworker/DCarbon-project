@@ -41,7 +41,9 @@ const styles = {
   searchInput: 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro',
   tooltipIcon: 'ml-1 text-gray-400 hover:text-gray-600 cursor-pointer relative',
   tooltipText: 'absolute z-10 w-64 p-2 mt-2 text-xs text-white bg-gray-700 rounded-md shadow-lg -left-32',
-  tooltipContainer: 'relative inline-block'
+  tooltipContainer: 'relative inline-block',
+  selectedProviderDisplay: 'mb-6 p-4 bg-[#f0f9f9] rounded-md border border-[#039994]',
+  providerInfoText: 'text-sm text-gray-700'
 };
 
 export default function OperatorRegistrationCard() {
@@ -176,7 +178,16 @@ export default function OperatorRegistrationCard() {
   };
 
   const verifyEmail = async () => {
-    if (!validateEmail()) return;
+    if (!formData.utilityAuthEmail.trim()) {
+      toast.error('Please enter utility authorization email', {
+        style: {
+          fontFamily: 'SF Pro',
+          background: '#FFEBEE',
+          color: '#B71C1C'
+        }
+      });
+      return;
+    }
 
     const userId = localStorage.getItem('userId');
     const authToken = localStorage.getItem('authToken');
@@ -230,6 +241,9 @@ export default function OperatorRegistrationCard() {
           color: '#1B5E20'
         }
       });
+
+      // Automatically initiate utility authorization after email verification
+      await initiateUtilityAuthorization();
     } catch (error) {
       toast.error(error.message || 'Error verifying email', {
         style: {
@@ -240,6 +254,74 @@ export default function OperatorRegistrationCard() {
       });
     } finally {
       setEmailVerifying(false);
+    }
+  };
+
+  const initiateUtilityAuthorization = async () => {
+    const userId = localStorage.getItem('userId');
+    const authToken = localStorage.getItem('authToken');
+
+    if (!userId || !authToken) {
+      toast.error('Authentication required. Please login again.', {
+        style: {
+          fontFamily: 'SF Pro',
+          background: '#FFEBEE',
+          color: '#B71C1C'
+        }
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Store the selected provider in local storage for later use
+      localStorage.setItem('selectedUtilityProvider', JSON.stringify(selectedProvider));
+
+      // Then initiate utility authorization with the verified email
+      const initiateResponse = await fetch(
+        `${localURL}/api/auth/initiate-utility-auth/${userId}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({
+            utilityAuthEmail: formData.utilityAuthEmail
+          })
+        }
+      );
+
+      const initData = await initiateResponse.json();
+      if (!initiateResponse.ok || initData.status !== 'success') {
+        throw new Error(initData.message || 'Utility authorization initiation failed');
+      }
+
+      // Store the authorization data in localStorage
+      localStorage.setItem('utilityAuthorizationData', JSON.stringify(initData.data));
+
+      toast.success('Utility authorization initiated successfully', {
+        style: {
+          fontFamily: 'SF Pro',
+          background: '#E8F5E9',
+          color: '#1B5E20'
+        }
+      });
+
+      // Open utility authorization in new tab
+      window.open('https://utilityapi.com/authorize/DCarbon_Solutions', '_blank');
+      setShowUtilityModal(true);
+    } catch (error) {
+      toast.error(error.message || 'An error occurred during authorization', {
+        style: {
+          fontFamily: 'SF Pro',
+          background: '#FFEBEE',
+          color: '#B71C1C'
+        }
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -293,92 +375,9 @@ export default function OperatorRegistrationCard() {
         }
       });
 
-      router.push('/register/residence-user-registration/agreement');
+      router.push('/register/commercial-operator-registration/agreement');
     } catch (error) {
       toast.error(error.message || 'Error submitting provider request', {
-        style: {
-          fontFamily: 'SF Pro',
-          background: '#FFEBEE',
-          color: '#B71C1C'
-        }
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSubmit = async () => {
-    if (!selectedProvider) {
-      toast.error('Please select a utility provider', {
-        style: {
-          fontFamily: 'SF Pro',
-          background: '#FFEBEE',
-          color: '#B71C1C'
-        }
-      });
-      return;
-    }
-    if (!emailVerified) {
-      toast.error('Please verify your email first', {
-        style: {
-          fontFamily: 'SF Pro',
-          background: '#FFEBEE',
-          color: '#B71C1C'
-        }
-      });
-      return;
-    }
-
-    const userId = localStorage.getItem('userId');
-    const authToken = localStorage.getItem('authToken');
-
-    if (!userId || !authToken) {
-      toast.error('Authentication required. Please login again.', {
-        style: {
-          fontFamily: 'SF Pro',
-          background: '#FFEBEE',
-          color: '#B71C1C'
-        }
-      });
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      // Store the selected provider in local storage for later use
-      localStorage.setItem('selectedUtilityProvider', JSON.stringify(selectedProvider));
-
-      // Then initiate utility authorization
-      const initiateResponse = await fetch(
-        `${localURL}/api/auth/initiate-utility-auth/${userId}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`
-          }
-        }
-      );
-
-      const initData = await initiateResponse.json();
-      if (!initiateResponse.ok || initData.status !== 'success') {
-        throw new Error(initData.message || 'Utility authorization initiation failed');
-      }
-
-      toast.success('Utility authorization initiated successfully', {
-        style: {
-          fontFamily: 'SF Pro',
-          background: '#E8F5E9',
-          color: '#1B5E20'
-        }
-      });
-
-      // Open utility authorization in new tab
-      window.open('https://utilityapi.com/authorize/DCarbon_Solutions', '_blank');
-      setShowUtilityModal(true);
-    } catch (error) {
-      toast.error(error.message || 'An error occurred during authorization', {
         style: {
           fontFamily: 'SF Pro',
           background: '#FFEBEE',
@@ -415,13 +414,13 @@ export default function OperatorRegistrationCard() {
     }));
 
     // Proceed to next step
-    router.push('/register/residence-user-registration/agreement');
+    router.push('/register/commercial-operator-registration/agreement');
     setLoading(false);
   };
 
   const handleUtilityAuthorized = () => {
     setShowUtilityModal(false);
-    router.push('/register/residence-user-registration/verify-email');
+    router.push('/register/commercial-operator-registration/verify-email');
   };
 
   if (!hasMounted) {
@@ -450,7 +449,7 @@ export default function OperatorRegistrationCard() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
           </div>
-          <h1 className={styles.pageTitle}>Utility Authorization</h1>
+          <h1 className={styles.pageTitle}>Utility Provider Authorization</h1>
           <div className={styles.progressContainer}>
             <div className={styles.progressBarWrapper}>
               <div className={styles.progressBarActive} />
@@ -494,12 +493,6 @@ export default function OperatorRegistrationCard() {
                   </div>
                 ))}
               </div>
-
-              {selectedProvider && (
-                <div className="text-sm text-green-600 mb-3">
-                  Selected: <span className="font-medium">{selectedProvider.name}</span>
-                </div>
-              )}
 
               <button
                 onClick={() => setShowRequestForm(true)}
@@ -555,82 +548,94 @@ export default function OperatorRegistrationCard() {
           </div>
         )}
 
-        {/* Registration Form (only show if provider is selected or request form isn't shown) */}
+        {/* Selected Provider and Email Verification */}
         {selectedProvider && !showRequestForm && (
-          <>
-            <div className={styles.formWrapper}>
-              {/* Utility Authorization Email */}
-              <div>
-                <div className={styles.labelContainer}>
-                  <label className={styles.labelClass}>
-                    Utility Authorization Email
-                    <div 
-                      className={styles.tooltipContainer}
-                      onMouseEnter={() => setShowTooltip(true)}
-                      onMouseLeave={() => setShowTooltip(false)}
-                      onClick={() => setShowTooltip(!showTooltip)}
-                    >
-                      <svg 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        className={`h-4 w-4 ${styles.tooltipIcon}`} 
-                        fill="none" 
-                        viewBox="0 0 24 24" 
-                        stroke="currentColor"
-                      >
-                        <path 
-                          strokeLinecap="round" 
-                          strokeLinejoin="round" 
-                          strokeWidth={2} 
-                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
-                        />
-                      </svg>
-                      {showTooltip && (
-                        <div className={styles.tooltipText}>
-                          This is the email you used when creating your utility provider account with UtilityAPI. 
-                          We'll use it to connect and fetch your provider data.
-                        </div>
-                      )}
-                    </div>
-                    <span className={styles.mandatoryStar}>*</span>
-                  </label>
-                </div>
-                <div className={styles.emailInputContainer}>
-                  <input
-                    type="email"
-                    name="utilityAuthEmail"
-                    value={formData.utilityAuthEmail}
-                    onChange={handleChange}
-                    className={`${styles.emailInput} ${emailConflictError ? 'border-red-500' : ''} ${emailVerified ? 'border-green-500' : ''}`}
-                    placeholder="Enter email for utility authorization"
-                  />
-                  <button
-                    onClick={verifyEmail}
-                    className={styles.buttonSmall}
-                    disabled={emailVerifying || !formData.utilityAuthEmail.trim()}
+          <div className="w-full max-w-md space-y-6">
+            {/* Selected Provider Display */}
+            <div className={styles.selectedProviderDisplay}>
+              <h3 className="font-medium text-[#039994] mb-2">Selected Utility Provider</h3>
+              <p className={styles.providerInfoText}>
+                <span className="font-semibold">Name:</span> {selectedProvider.name}
+              </p>
+              <p className={styles.providerInfoText}>
+                <span className="font-semibold">Website:</span>{' '}
+                <a href={selectedProvider.website} target="_blank" rel="noopener noreferrer" className="text-[#039994] hover:underline">
+                  {selectedProvider.website}
+                </a>
+              </p>
+            </div>
+
+            {/* Utility Authorization Email */}
+            <div>
+              <div className={styles.labelContainer}>
+                <label className={styles.labelClass}>
+                  Utility Authorization Email
+                  <div 
+                    className={styles.tooltipContainer}
+                    onMouseEnter={() => setShowTooltip(true)}
+                    onMouseLeave={() => setShowTooltip(false)}
+                    onClick={() => setShowTooltip(!showTooltip)}
                   >
-                    {emailVerifying ? 'Verifying...' : 'Verify'}
-                  </button>
-                </div>
-                {emailConflictError && (
-                  <p className="text-red-500 text-xs mt-1">
-                    This email is already in use for utility authorization
-                  </p>
-                )}
-                {emailVerified && (
-                  <p className="text-green-500 text-xs mt-1">
-                    Email verified successfully
-                  </p>
-                )}
+                    <svg 
+                      xmlns="http://www.w3.org/2000/svg" 
+                      className={`h-4 w-4 ${styles.tooltipIcon}`} 
+                      fill="none" 
+                      viewBox="0 0 24 24" 
+                      stroke="currentColor"
+                    >
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        strokeWidth={2} 
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
+                      />
+                    </svg>
+                    {showTooltip && (
+                      <div className={styles.tooltipText}>
+                        This is the email you used when creating your utility provider account with UtilityAPI. 
+                        We'll use it to connect and fetch your provider data.
+                      </div>
+                    )}
+                  </div>
+                  <span className={styles.mandatoryStar}>*</span>
+                </label>
               </div>
+              <div className={styles.emailInputContainer}>
+                <input
+                  type="email"
+                  name="utilityAuthEmail"
+                  value={formData.utilityAuthEmail}
+                  onChange={handleChange}
+                  className={`${styles.emailInput} ${emailConflictError ? 'border-red-500' : ''} ${emailVerified ? 'border-green-500' : ''}`}
+                  placeholder="Enter email for utility authorization"
+                />
+                <button
+                  onClick={verifyEmail}
+                  className={styles.buttonSmall}
+                  disabled={emailVerifying || !formData.utilityAuthEmail.trim()}
+                >
+                  {emailVerifying ? 'Verifying...' : 'Verify'}
+                </button>
+              </div>
+              {emailConflictError && (
+                <p className="text-red-500 text-xs mt-1">
+                  This email is already in use for utility authorization
+                </p>
+              )}
+              {emailVerified && (
+                <p className="text-green-500 text-xs mt-1">
+                  Email verified successfully. Authorization window should open automatically.
+                </p>
+              )}
             </div>
 
             <div className="w-full max-w-md mt-6 space-y-3">
               <button
-                onClick={handleSubmit}
+                onClick={initiateUtilityAuthorization}
                 className={styles.buttonPrimary}
                 disabled={loading || !emailVerified}
               >
-                {loading ? 'Processing...' : 'Click to Authorize your Utility Provider'}
+                {loading ? 'Processing...' : 'Authorize Utility Provider'}
               </button>
               <button
                 onClick={handleSkipAuthorization}
@@ -640,11 +645,11 @@ export default function OperatorRegistrationCard() {
                 Skip Authorization for Now
               </button>
             </div>
-          </>
+          </div>
         )}
 
         <div className={styles.termsTextContainer}>
-          By clicking on 'Next', you agree to our{' '}
+          By proceeding, you agree to our{' '}
           <a href="/terms" className={styles.termsLink}>
             Terms and Conditions
           </a>{' '}
