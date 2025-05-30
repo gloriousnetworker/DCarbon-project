@@ -1,4 +1,3 @@
-// src/components/modals/UploadDocumentsModal.jsx
 import React, { useState } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 import {
@@ -61,6 +60,16 @@ export default function UploadDocumentsModal({ isOpen, onClose }) {
     }
   };
 
+  const buildEndpoint = (documentType, userId) => {
+    // REC Agreement uses a different API path
+    if (documentType === 'rec-agreement') {
+      return `${API_BASE_URL}/api/user/residential-docs/${documentType}/${userId}`;
+    }
+    
+    // All other document types use the residential-facility path
+    return `${API_BASE_URL}/api/residential-facility/residential-docs/${documentType}/${userId}`;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -78,23 +87,28 @@ export default function UploadDocumentsModal({ isOpen, onClose }) {
     const uploadToast = toast.loading('Uploading document...');
 
     try {
+      // Get authToken and userId directly from localStorage
       const authToken = localStorage.getItem('authToken');
+      const userId = localStorage.getItem('userId');
+
       if (!authToken) {
-        throw new Error('Authentication token not found');
+        throw new Error('Authentication token not found. Please log in again.');
       }
 
-      // Extract userId from token
-      const tokenPayload = JSON.parse(atob(authToken.split('.')[1]));
-      const userId = tokenPayload?.userId || tokenPayload?.sub;
-      
       if (!userId) {
-        throw new Error('User ID not found in authentication token');
+        throw new Error('User ID not found. Please log in again.');
       }
 
+      // Create FormData and append the file with key 'File'
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('File', file);
 
-      const endpoint = `${API_BASE_URL}/api/residential-facility/residential-docs/${selectedDocumentType}/${userId}`;
+      // Build the appropriate endpoint based on document type
+      const endpoint = buildEndpoint(selectedDocumentType, userId);
+
+      console.log('Uploading to endpoint:', endpoint);
+      console.log('File name:', file.name);
+      console.log('Document type:', selectedDocumentType);
 
       const response = await fetch(endpoint, {
         method: 'PUT',
@@ -105,14 +119,34 @@ export default function UploadDocumentsModal({ isOpen, onClose }) {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Failed to upload document');
+        let errorMessage = 'Failed to upload document';
+        
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (jsonError) {
+          // If response is not JSON, use status text
+          errorMessage = response.statusText || errorMessage;
+        }
+        
+        throw new Error(`${errorMessage} (Status: ${response.status})`);
+      }
+
+      // Try to parse response, but don't fail if it's not JSON
+      let responseData = {};
+      try {
+        responseData = await response.json();
+      } catch (jsonError) {
+        // Response might not be JSON, which is fine for successful uploads
+        console.log('Response is not JSON, but upload was successful');
       }
 
       toast.success('Document uploaded successfully!', { id: uploadToast });
       resetForm();
       onClose(); // Close the modal after successful upload
+      
     } catch (err) {
+      console.error('Upload error:', err);
       toast.error(err.message || 'An error occurred during upload', { id: uploadToast });
     } finally {
       setIsLoading(false);
