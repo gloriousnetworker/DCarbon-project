@@ -110,7 +110,6 @@ export default function DashboardOverview() {
     return localStorage.getItem("welcomeModalShown") !== "true";
   };
 
-  // New function to get error utility authorizations for small notifications
   const getErrorUtilityAuths = () => {
     if (utilityAuthDetails.length === 0 || utilityAuthEmails.length === 0) return [];
 
@@ -127,19 +126,15 @@ export default function DashboardOverview() {
     return errorAuths;
   };
 
-  // Updated function - only show major warnings if no valid auth exists
   const getUtilityAuthStatusMessage = () => {
     if (utilityAuthDetails.length === 0) return null;
 
-    // Check if we have at least one valid authorization
     const hasValidStatus = utilityAuthDetails.some(auth => 
       auth.status === "AUTHORIZED" || auth.status === "UPDATED"
     );
 
-    // If we have valid auth, don't show major warnings
     if (hasValidStatus) return null;
 
-    // Only show major warnings if NO valid auth exists
     const hasErrorStatus = utilityAuthDetails.some(auth => 
       auth.status === "UPDATE_ERROR" || 
       auth.status === "ERROR" ||
@@ -308,32 +303,13 @@ export default function DashboardOverview() {
         </div>
       )}
 
-      {/* Header Section with Add Utility Provider Button */}
+      {/* Header Section */}
       <div className="flex justify-between items-start mb-4">
         <div>
           <h1 className="font-[600] text-[24px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro">
             Dashboard Overview
           </h1>
         </div>
-        <button
-          onClick={handleOpenAddUtilityModal}
-          className="inline-flex items-center px-4 py-2 bg-[#039994] text-white text-sm font-medium rounded-md hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] focus:ring-offset-2 transition-colors duration-200 font-sfpro"
-        >
-          <svg 
-            className="w-4 h-4 mr-2" 
-            fill="none" 
-            stroke="currentColor" 
-            viewBox="0 0 24 24"
-          >
-            <path 
-              strokeLinecap="round" 
-              strokeLinejoin="round" 
-              strokeWidth={2} 
-              d="M12 4v16m8-8H4" 
-            />
-          </svg>
-          Add Utility Provider
-        </button>
       </div>
 
       <QuickActions 

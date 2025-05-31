@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { FiX } from "react-icons/fi";
 import axios from "axios";
 import toast from "react-hot-toast";
+import AddUtilityProvider from "./AddUtilityProvider";
 import { 
   pageTitle, 
   labelClass, 
@@ -41,6 +42,9 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
   const [isSameLocation, setIsSameLocation] = useState(null);
   const [selectedUtilityAuthEmail, setSelectedUtilityAuthEmail] = useState("");
   const [installers] = useState(["Installer 1", "Installer 2", "Installer 3"]);
+  
+  // Add Utility Provider Modal State
+  const [showAddUtilityModal, setShowAddUtilityModal] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -299,6 +303,17 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
     }
   };
 
+  // Handle Add Utility Provider Modal
+  const handleOpenAddUtilityModal = () => {
+    setShowAddUtilityModal(true);
+  };
+
+  const handleCloseAddUtilityModal = () => {
+    setShowAddUtilityModal(false);
+    // Refresh user meters after adding utility provider
+    fetchUserMeters();
+  };
+
   const isFormComplete = 
     formData.utilityProvider && 
     formData.installer &&
@@ -317,347 +332,365 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20">
-      {loading && (
-        <div className={spinnerOverlay}>
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#039994]"></div>
-        </div>
-      )}
-      
-      <div className="relative bg-white p-6 rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
-        <button
-          onClick={onClose}
-          className="absolute right-4 top-4 text-gray-500 hover:text-gray-700 focus:outline-none"
-          disabled={loading}
-        >
-          <FiX size={20} />
-        </button>
-
-        <h2 className={pageTitle}>Add Residence</h2>
-
-        <form onSubmit={handleSubmit} className="space-y-4 mt-6">
-          <div>
-            <label className={labelClass}>Utility Provider <span className="text-red-500">*</span></label>
-            <select
-              name="utilityProvider"
-              value={formData.utilityProvider}
-              onChange={handleChange}
-              className={selectClass}
-              disabled={loading || utilityProvidersLoading}
-              required
-            >
-              <option value="">Select utility provider</option>
-              {utilityProvidersLoading ? (
-                <option value="" disabled>Loading providers...</option>
-              ) : (
-                utilityProviders.map(provider => (
-                  <option key={provider.id} value={provider.name}>
-                    {provider.name}
-                  </option>
-                ))
-              )}
-            </select>
-          </div>
-
-          <div>
-            <label className={labelClass}>
-              Utility Account <span className="text-red-500">*</span>
-            </label>
-            <select
-              value={selectedUtilityAuthEmail}
-              onChange={handleUtilityAuthEmailChange}
-              className={selectClass}
-              required
-              disabled={loading || userMetersLoading}
-            >
-              <option value="">Select utility account</option>
-              {userMetersLoading ? (
-                <option value="" disabled>Loading accounts...</option>
-              ) : utilityAuthEmailsWithMeters.length === 0 ? (
-                <option value="" disabled>No utility accounts found</option>
-              ) : (
-                utilityAuthEmailsWithMeters.map(item => (
-                  <option key={item.id} value={item.utilityAuthEmail}>
-                    {item.utilityAuthEmail}
-                  </option>
-                ))
-              )}
-            </select>
-            <p className="mt-1 text-xs text-gray-500">
-              Select the utility account containing your meters
-            </p>
-          </div>
-
-          {selectedUtilityAuthEmail && (
-            <div>
-              <label className={labelClass}>
-                Electric Meter <span className="text-red-500">*</span>
-              </label>
-              <select
-                name="meterId"
-                value={formData.meterId}
-                onChange={handleChange}
-                className={selectClass}
-                required
-                disabled={loading || currentMeters.length === 0}
-              >
-                <option value="">Select meter</option>
-                {currentMeters.length === 0 ? (
-                  <option value="" disabled>No electric meters found for this account</option>
-                ) : (
-                  currentMeters.map(meter => (
-                    <option key={meter.uid} value={meter.uid}>
-                      {meter.base.meter_numbers[0]} - {meter.base.service_tariff}
-                    </option>
-                  ))
-                )}
-              </select>
-              <p className="mt-1 text-xs text-gray-500">
-                Only electric meters are shown
-              </p>
+    <>
+      {/* Add Residence Modal */}
+      {!showAddUtilityModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20">
+          {loading && (
+            <div className={spinnerOverlay}>
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#039994]"></div>
             </div>
           )}
-
-          {selectedMeter && (
-            <div className="mb-3 p-2 bg-gray-50 rounded-md border border-gray-200 text-sm">
-              <p className="font-medium mb-2">Service Address: {selectedMeter.base.service_address}</p>
-              <p className="font-medium mb-2">
-                Is this the same location for the residence? <span className="text-red-500">*</span>
-              </p>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  className={`px-3 py-1 rounded-md border text-sm ${
-                    isSameLocation === true ? 'bg-green-100 border-green-500 text-green-700' : 'border-gray-300 hover:bg-gray-50'
-                  }`}
-                  onClick={() => handleLocationChoice(true)}
-                  disabled={loading}
-                >
-                  Yes
-                </button>
-                <button
-                  type="button"
-                  className={`px-3 py-1 rounded-md border text-sm ${
-                    isSameLocation === false ? 'bg-blue-100 border-blue-500 text-blue-700' : 'border-gray-300 hover:bg-gray-50'
-                  }`}
-                  onClick={() => handleLocationChoice(false)}
-                  disabled={loading}
-                >
-                  No
-                </button>
-              </div>
-            </div>
-          )}
-
-          <div>
-            <label className={labelClass}>
-              Address <span className="text-red-500">*</span>
-            </label>
-            {selectedMeter && isSameLocation === true ? (
-              <input
-                type="text"
-                name="address"
-                value={formData.address}
-                className={`${inputClass} bg-gray-100`}
-                disabled={true}
-                placeholder="Address will be auto-filled from meter service address"
-              />
-            ) : (
-              <input
-                type="text"
-                name="address"
-                value={formData.address}
-                onChange={handleChange}
-                className={inputClass}
-                placeholder="Enter address"
-                required
-                disabled={loading}
-              />
-            )}
-          </div>
-
-          <div>
-            <label className={labelClass}>
-              Zip Code <span className="text-red-500">*</span>
-            </label>
-            {selectedMeter && isSameLocation === true ? (
-              <input
-                type="text"
-                name="zipCode"
-                value={formData.zipCode}
-                className={`${inputClass} bg-gray-100`}
-                disabled={true}
-                placeholder="Zip code will be auto-filled from meter service address"
-              />
-            ) : (
-              <input
-                type="text"
-                name="zipCode"
-                value={formData.zipCode}
-                onChange={handleChange}
-                className={inputClass}
-                placeholder="Enter zip code"
-                required
-                disabled={loading}
-                pattern="\d{5}(-\d{4})?"
-                title="Enter a valid US zip code (5 or 9 digits)"
-              />
-            )}
-          </div>
-
-          <div>
-            <label className={labelClass}>Installer <span className="text-red-500">*</span></label>
-            <select
-              name="installer"
-              value={formData.installer}
-              onChange={handleChange}
-              className={selectClass}
-              required
-            >
-              <option value="">Select installer</option>
-              {installers.map((installer, index) => (
-                <option key={index} value={installer}>
-                  {installer}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className={labelClass}>Finance Type <span className="text-red-500">*</span></label>
-            <select
-              name="financeType"
-              value={formData.financeType}
-              onChange={handleChange}
-              className={selectClass}
-              required
-            >
-              <option value="">Select finance type</option>
-              <option value="cash">Cash</option>
-              <option value="loan">Loan</option>
-              <option value="ppa">PPA</option>
-              <option value="lease">Lease</option>
-            </select>
-          </div>
-
-          {formData.financeType && formData.financeType !== "cash" && (
-            <div>
-              <label className={labelClass}>Finance Company <span className="text-red-500">*</span></label>
-              <input
-                type="text"
-                name="financeCompany"
-                value={formData.financeCompany}
-                onChange={handleChange}
-                className={inputClass}
-                placeholder="Enter finance company"
-                required
-              />
-            </div>
-          )}
-
-          {formData.financeType && formData.financeType !== "cash" && (
-            <div>
-              <label className={uploadHeading}>
-                Finance Agreement <span className="text-red-500">*</span>
-              </label>
-              <div className={uploadFieldWrapper}>
-                <label className={uploadInputLabel}>
-                  {file ? file.name : 'Choose file...'}
-                  <input
-                    type="file"
-                    className="absolute inset-0 opacity-0 cursor-pointer"
-                    onChange={handleFileChange}
-                  />
-                  <span className={uploadIconContainer}>
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-4 w-4 ml-1 text-gray-400"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M8.5 12.5l7-7a2.121 2.121 0 013 3L10 17a4 4 0 01-5.657-5.657l7-7"
-                      />
-                    </svg>
-                  </span>
-                </label>
-                <button
-                  type="button"
-                  onClick={handleUpload}
-                  disabled={!file || uploading || uploadSuccess}
-                  className={`${uploadButtonStyle} ${
-                    !file || uploading || uploadSuccess ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#039994]'
-                  }`}
-                >
-                  {uploading ? (
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5 animate-spin text-white"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                      ></path>
-                    </svg>
-                  ) : uploadSuccess ? (
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5 text-white"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                  ) : (
-                    'Upload'
-                  )}
-                </button>
-              </div>
-              <p className={uploadNoteStyle}>
-                Required for loan, PPA, and lease agreements
-              </p>
-            </div>
-          )}
-
-          <div className="flex space-x-4 pt-4">
+          
+          <div className="relative bg-white p-6 rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
             <button
-              type="button"
               onClick={onClose}
-              className="flex-1 rounded-md border border-gray-300 text-gray-700 font-semibold py-2 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300 font-sfpro"
+              className="absolute right-4 top-4 text-gray-500 hover:text-gray-700 focus:outline-none"
               disabled={loading}
             >
-              Cancel
+              <FiX size={20} />
             </button>
-            <button
-              type="submit"
-              className={`flex-1 ${buttonPrimary} ${!isFormComplete ? 'opacity-50 cursor-not-allowed' : ''}`}
-              disabled={loading || !isFormComplete}
-            >
-              {loading ? "Processing..." : "Add Residence"}
-            </button>
+
+            <h2 className={pageTitle}>Add Residence</h2>
+
+            <form onSubmit={handleSubmit} className="space-y-4 mt-6">
+              <div>
+                <label className={labelClass}>Utility Provider <span className="text-red-500">*</span></label>
+                <select
+                  name="utilityProvider"
+                  value={formData.utilityProvider}
+                  onChange={handleChange}
+                  className={selectClass}
+                  disabled={loading || utilityProvidersLoading}
+                  required
+                >
+                  <option value="">Select utility provider</option>
+                  {utilityProvidersLoading ? (
+                    <option value="" disabled>Loading providers...</option>
+                  ) : (
+                    utilityProviders.map(provider => (
+                      <option key={provider.id} value={provider.name}>
+                        {provider.name}
+                      </option>
+                    ))
+                  )}
+                </select>
+              </div>
+
+              <div>
+                <label className={labelClass}>
+                  Utility Account <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={selectedUtilityAuthEmail}
+                  onChange={handleUtilityAuthEmailChange}
+                  className={selectClass}
+                  required
+                  disabled={loading || userMetersLoading}
+                >
+                  <option value="">Select utility account</option>
+                  {userMetersLoading ? (
+                    <option value="" disabled>Loading accounts...</option>
+                  ) : utilityAuthEmailsWithMeters.length === 0 ? (
+                    <option value="" disabled>No utility accounts found</option>
+                  ) : (
+                    utilityAuthEmailsWithMeters.map(item => (
+                      <option key={item.id} value={item.utilityAuthEmail}>
+                        {item.utilityAuthEmail}
+                      </option>
+                    ))
+                  )}
+                </select>
+                <p className="mt-1 text-xs text-gray-500">
+                  Select the utility account containing your meters
+                </p>
+                <button
+                  type="button"
+                  onClick={handleOpenAddUtilityModal}
+                  className="mt-2 text-xs text-[#039994] hover:text-[#02857f] underline focus:outline-none"
+                >
+                  Meters to be registered not listed? Add Utility account
+                </button>
+              </div>
+
+              {selectedUtilityAuthEmail && (
+                <div>
+                  <label className={labelClass}>
+                    Electric Meter <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="meterId"
+                    value={formData.meterId}
+                    onChange={handleChange}
+                    className={selectClass}
+                    required
+                    disabled={loading || currentMeters.length === 0}
+                  >
+                    <option value="">Select meter</option>
+                    {currentMeters.length === 0 ? (
+                      <option value="" disabled>No electric meters found for this account</option>
+                    ) : (
+                      currentMeters.map(meter => (
+                        <option key={meter.uid} value={meter.uid}>
+                          {meter.base.meter_numbers[0]} - {meter.base.service_tariff}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Only electric meters are shown
+                  </p>
+                </div>
+              )}
+
+              {selectedMeter && (
+                <div className="mb-3 p-2 bg-gray-50 rounded-md border border-gray-200 text-sm">
+                  <p className="font-medium mb-2">Service Address: {selectedMeter.base.service_address}</p>
+                  <p className="font-medium mb-2">
+                    Is this the same location for the residence? <span className="text-red-500">*</span>
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      className={`px-3 py-1 rounded-md border text-sm ${
+                        isSameLocation === true ? 'bg-green-100 border-green-500 text-green-700' : 'border-gray-300 hover:bg-gray-50'
+                      }`}
+                      onClick={() => handleLocationChoice(true)}
+                      disabled={loading}
+                    >
+                      Yes
+                    </button>
+                    <button
+                      type="button"
+                      className={`px-3 py-1 rounded-md border text-sm ${
+                        isSameLocation === false ? 'bg-blue-100 border-blue-500 text-blue-700' : 'border-gray-300 hover:bg-gray-50'
+                      }`}
+                      onClick={() => handleLocationChoice(false)}
+                      disabled={loading}
+                    >
+                      No
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label className={labelClass}>
+                  Address <span className="text-red-500">*</span>
+                </label>
+                {selectedMeter && isSameLocation === true ? (
+                  <input
+                    type="text"
+                    name="address"
+                    value={formData.address}
+                    className={`${inputClass} bg-gray-100`}
+                    disabled={true}
+                    placeholder="Address will be auto-filled from meter service address"
+                  />
+                ) : (
+                  <input
+                    type="text"
+                    name="address"
+                    value={formData.address}
+                    onChange={handleChange}
+                    className={inputClass}
+                    placeholder="Enter address"
+                    required
+                    disabled={loading}
+                  />
+                )}
+              </div>
+
+              <div>
+                <label className={labelClass}>
+                  Zip Code <span className="text-red-500">*</span>
+                </label>
+                {selectedMeter && isSameLocation === true ? (
+                  <input
+                    type="text"
+                    name="zipCode"
+                    value={formData.zipCode}
+                    className={`${inputClass} bg-gray-100`}
+                    disabled={true}
+                    placeholder="Zip code will be auto-filled from meter service address"
+                  />
+                ) : (
+                  <input
+                    type="text"
+                    name="zipCode"
+                    value={formData.zipCode}
+                    onChange={handleChange}
+                    className={inputClass}
+                    placeholder="Enter zip code"
+                    required
+                    disabled={loading}
+                    pattern="\d{5}(-\d{4})?"
+                    title="Enter a valid US zip code (5 or 9 digits)"
+                  />
+                )}
+              </div>
+
+              <div>
+                <label className={labelClass}>Installer <span className="text-red-500">*</span></label>
+                <select
+                  name="installer"
+                  value={formData.installer}
+                  onChange={handleChange}
+                  className={selectClass}
+                  required
+                >
+                  <option value="">Select installer</option>
+                  {installers.map((installer, index) => (
+                    <option key={index} value={installer}>
+                      {installer}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className={labelClass}>Finance Type <span className="text-red-500">*</span></label>
+                <select
+                  name="financeType"
+                  value={formData.financeType}
+                  onChange={handleChange}
+                  className={selectClass}
+                  required
+                >
+                  <option value="">Select finance type</option>
+                  <option value="cash">Cash</option>
+                  <option value="loan">Loan</option>
+                  <option value="ppa">PPA</option>
+                  <option value="lease">Lease</option>
+                </select>
+              </div>
+
+              {formData.financeType && formData.financeType !== "cash" && (
+                <div>
+                  <label className={labelClass}>Finance Company <span className="text-red-500">*</span></label>
+                  <input
+                    type="text"
+                    name="financeCompany"
+                    value={formData.financeCompany}
+                    onChange={handleChange}
+                    className={inputClass}
+                    placeholder="Enter finance company"
+                    required
+                  />
+                </div>
+              )}
+
+              {formData.financeType && formData.financeType !== "cash" && (
+                <div>
+                  <label className={uploadHeading}>
+                    Finance Agreement <span className="text-red-500">*</span>
+                  </label>
+                  <div className={uploadFieldWrapper}>
+                    <label className={uploadInputLabel}>
+                      {file ? file.name : 'Choose file...'}
+                      <input
+                        type="file"
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                        onChange={handleFileChange}
+                      />
+                      <span className={uploadIconContainer}>
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-4 w-4 ml-1 text-gray-400"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M8.5 12.5l7-7a2.121 2.121 0 013 3L10 17a4 4 0 01-5.657-5.657l7-7"
+                          />
+                        </svg>
+                      </span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={handleUpload}
+                      disabled={!file || uploading || uploadSuccess}
+                      className={`${uploadButtonStyle} ${
+                        !file || uploading || uploadSuccess ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#039994]'
+                      }`}
+                    >
+                      {uploading ? (
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5 animate-spin text-white"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                          ></path>
+                        </svg>
+                      ) : uploadSuccess ? (
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5 text-white"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M5 13l4 4L19 7"
+                          />
+                        </svg>
+                      ) : (
+                        'Upload'
+                      )}
+                    </button>
+                  </div>
+                  <p className={uploadNoteStyle}>
+                    Required for loan, PPA, and lease agreements
+                  </p>
+                </div>
+              )}
+
+              <div className="flex space-x-4 pt-4">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="flex-1 rounded-md border border-gray-300 text-gray-700 font-semibold py-2 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300 font-sfpro"
+                  disabled={loading}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className={`flex-1 ${buttonPrimary} ${!isFormComplete ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  disabled={loading || !isFormComplete}
+                >
+                  {loading ? "Processing..." : "Add Residence"}
+                </button>
+              </div>
+            </form>
           </div>
-        </form>
-      </div>
-    </div>
+        </div>
+      )}
+
+      {/* Add Utility Provider Modal */}
+      <AddUtilityProvider
+        isOpen={showAddUtilityModal}
+        onClose={handleCloseAddUtilityModal}
+      />
+    </>
   );
 }

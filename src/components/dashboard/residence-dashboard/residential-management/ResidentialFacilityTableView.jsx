@@ -6,7 +6,7 @@ import Filters from "./Filters";
 
 const mainContainer = "w-full p-4 bg-white rounded-lg shadow";
 const headingContainer = "relative mb-6";
-const pageTitle = "text-xl font-bold text-gray-800";
+const pageTitle = "text-xl font-bold text-[#039994]";
 
 export default function FacilityTableView({ onSelectFacility }) {
   const [facilities, setFacilities] = useState([]);
@@ -28,6 +28,13 @@ export default function FacilityTableView({ onSelectFacility }) {
     setLoading(true);
     setError("");
     const token = localStorage.getItem("authToken");
+    const userId = localStorage.getItem("userId");
+
+    if (!token || !userId) {
+      setError("Authentication required");
+      setLoading(false);
+      return;
+    }
 
     try {
       // Clean up filters before sending
@@ -40,7 +47,7 @@ export default function FacilityTableView({ onSelectFacility }) {
 
       const params = { page, limit, ...cleanFilters };
       const res = await axios.get(
-        "https://services.dcarbon.solutions/api/residential-facility/get-all-residential-facility",
+        `https://services.dcarbon.solutions/api/residential-facility/get-user-facilities/${userId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
           params,
@@ -82,7 +89,7 @@ export default function FacilityTableView({ onSelectFacility }) {
     };
     
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusClasses[status] || "bg-gray-100 text-gray-800"}`}>
+      <span className={`px-1 py-0.5 rounded-full text-[9px] font-medium ${statusClasses[status] || "bg-gray-100 text-gray-800"}`}>
         {status}
       </span>
     );
@@ -91,7 +98,7 @@ export default function FacilityTableView({ onSelectFacility }) {
   return (
     <div className={mainContainer}>
       <div className={headingContainer}>
-        <h2 className={pageTitle}>All Residential Facilities</h2>
+        <h2 className={pageTitle}>Residential Facilities</h2>
         <button
           onClick={() => setShowFilter(true)}
           className="absolute right-4 top-0 flex items-center bg-[#039994] text-white px-3 py-1 rounded hover:bg-[#02857f] text-sm"
@@ -108,21 +115,21 @@ export default function FacilityTableView({ onSelectFacility }) {
         </div>
       ) : (
         <>
-          <div className="overflow-x-auto w-full">
-            <table className="min-w-full divide-y divide-gray-200">
-              {/* Table headers and rows remain the same as before */}
+          <div className="w-full overflow-hidden">
+            <table className="w-full table-fixed divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">S/N</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Facility ID</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Address</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Utility Provider</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Meter ID</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Zip Code</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Installer</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Finance Type</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date Created</th>
+                  <th className="w-8 px-1 py-1 text-left text-[10px] font-bold text-gray-700 uppercase">S/N</th>
+                  <th className="w-20 px-1 py-1 text-left text-[10px] font-bold text-gray-700 uppercase">ID</th>
+                  <th className="w-24 px-1 py-1 text-left text-[10px] font-bold text-gray-700 uppercase">Address</th>
+                  <th className="w-20 px-1 py-1 text-left text-[10px] font-bold text-gray-700 uppercase">Provider</th>
+                  <th className="w-16 px-1 py-1 text-left text-[10px] font-bold text-gray-700 uppercase">Meter</th>
+                  <th className="w-12 px-1 py-1 text-left text-[10px] font-bold text-gray-700 uppercase">Zip</th>
+                  <th className="w-16 px-1 py-1 text-left text-[10px] font-bold text-gray-700 uppercase">Installer</th>
+                  <th className="w-16 px-1 py-1 text-left text-[10px] font-bold text-gray-700 uppercase">Finance</th>
+                  <th className="w-18 px-1 py-1 text-left text-[10px] font-bold text-gray-700 uppercase">Company</th>
+                  <th className="w-16 px-1 py-1 text-left text-[10px] font-bold text-gray-700 uppercase">Status</th>
+                  <th className="w-18 px-1 py-1 text-left text-[10px] font-bold text-gray-700 uppercase">Created</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -133,41 +140,48 @@ export default function FacilityTableView({ onSelectFacility }) {
                       className="hover:bg-gray-50 cursor-pointer"
                       onClick={() => onSelectFacility && onSelectFacility(facility)}
                     >
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[#039994]">
+                      <td className="px-1 py-1 text-[10px] font-medium text-[#039994]">
                         {index + 1 + (page - 1) * limit}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {facility.id}
+                      <td className="px-1 py-1 text-[10px] text-gray-600 truncate" title={facility.id}>
+                        {facility.id?.slice(-8) || "-"}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-1 py-1 text-[10px] text-gray-600 truncate" title={facility.address || "-"}>
                         {facility.address || "-"}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-1 py-1 text-[10px] text-gray-600 truncate" title={facility.utilityProvider || "-"}>
                         {facility.utilityProvider || "-"}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-1 py-1 text-[10px] text-gray-600 truncate">
                         {facility.meterId || "-"}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-1 py-1 text-[10px] text-gray-600">
                         {facility.zipCode || "-"}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-1 py-1 text-[10px] text-gray-600 truncate" title={facility.installer || "-"}>
                         {facility.installer || "-"}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">
+                      <td className="px-1 py-1 text-[10px] text-gray-600 capitalize truncate" title={facility.financeType || "-"}>
                         {facility.financeType || "-"}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-1 py-1 text-[10px] text-gray-600 truncate" title={facility.financeCompany || "-"}>
+                        {facility.financeCompany || "-"}
+                      </td>
+                      <td className="px-1 py-1 text-[10px] text-gray-600">
                         {statusBadge(facility.status)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(facility.createdAt).toLocaleDateString()}
+                      <td className="px-1 py-1 text-[10px] text-gray-600">
+                        {new Date(facility.createdAt).toLocaleDateString('en-US', { 
+                          month: '2-digit', 
+                          day: '2-digit', 
+                          year: '2-digit' 
+                        })}
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="10" className="px-6 py-4 text-center text-sm text-gray-500">
+                    <td colSpan="11" className="px-1 py-4 text-center text-xs text-gray-500">
                       No facilities found
                     </td>
                   </tr>

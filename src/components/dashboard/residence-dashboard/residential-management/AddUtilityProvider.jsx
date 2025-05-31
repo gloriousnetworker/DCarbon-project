@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { toast } from "react-hot-toast";
-import * as styles from "../styles";
+import * as styles from "./styles";
 
 export default function AddUtilityProvider({ isOpen, onClose }) {
   const [email, setEmail] = useState("");

@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import FacilityTabs from "./FacilityTabs";
-import FacilityCardView from "./FacilityCardView";
-import FacilityTableView from "./FacilityTableView";
-import FacilityDetails from "./FacilityDetails";
+import FacilityCardView from "./ResidentialFacilityCardView";
+import FacilityTableView from "./ResidentialFacilityTableView";
+import FacilityDetails from "./ResidentialFacilityDetails";
 
 // Modals
 import AddResidentialFacilityModal from "./AddResidentialFacilityModal";
