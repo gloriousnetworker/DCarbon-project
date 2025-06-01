@@ -11,6 +11,7 @@ import {
   FiChevronDown
 } from "react-icons/fi";
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer } from 'recharts';
+import { toast } from 'react-hot-toast';
 import InviteCollaboratorModal from "./InviteCollaboratorModal";
 import EditFacilityDetailsModal from "./EditFacilityDetailsModal";
 import { pageTitle, labelClass, inputClass } from "./styles";
@@ -80,12 +81,24 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
     }
   };
 
+  const getDocumentFileName = (url) => {
+    if (!url) return null;
+    try {
+      const urlParts = url.split('/');
+      const fileName = urlParts[urlParts.length - 1];
+      // Decode URL-encoded characters and clean up the filename
+      return decodeURIComponent(fileName).replace(/^\d+-/, '');
+    } catch (error) {
+      return 'Document';
+    }
+  };
+
   const uploadDocument = async (docType, file) => {
     setUploadingDoc(docType);
     
     const authToken = localStorage.getItem('authToken');
     if (!authToken) {
-      alert('Authentication token not found. Please login again.');
+      toast.error('Authentication token not found. Please login again.');
       setUploadingDoc("");
       return;
     }
@@ -93,20 +106,32 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
     const facilityId = facilityData.id;
     const baseUrl = 'https://services.dcarbon.solutions';
     
-    // Define endpoints for different document types
+    // Define endpoints for different document types (corrected endpoints)
     const endpoints = {
       financeAgreement: `${baseUrl}/api/facility/update-facility-financial-agreement/${facilityId}`,
       proofOfAddress: `${baseUrl}/api/facility/update-facility-proof-of-address/${facilityId}`,
-      infoReleaseAuth: `${baseUrl}/api/facility/update-facility-info-release-auth/${facilityId}`,
-      wregisAssignment: `${baseUrl}/api/facility/update-facility-wregis-assignment/${facilityId}`,
-      multipleOwnerDecl: `${baseUrl}/api/facility/update-facility-multiple-owner/${facilityId}`,
+      infoReleaseAuth: `${baseUrl}/api/facility/update-info-release-auth/${facilityId}`,
+      wregisAssignment: `${baseUrl}/api/facility/update-wregis-assignment/${facilityId}`,
+      multipleOwnerDecl: `${baseUrl}/api/facility/update-multiple-owner-decl/${facilityId}`,
       sysOpDataAccess: `${baseUrl}/api/facility/update-facility-sys-op-data-access/${facilityId}`
     };
 
+    // Define the correct field names for each document type
+    const fieldNames = {
+      financeAgreement: 'financeAgreementUrl',
+      proofOfAddress: 'proofOfAddressUrl',
+      infoReleaseAuth: 'infoReleaseAuthUrl',
+      wregisAssignment: 'wregisAssignmentUrl',
+      multipleOwnerDecl: 'multipleOwnerDeclUrl',
+      sysOpDataAccess: 'sysOpDataAccessUrl'
+    };
+
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append(fieldNames[docType], file);
 
     try {
+      toast.loading('Uploading document...', { id: 'upload-toast' });
+      
       const response = await fetch(endpoints[docType], {
         method: 'PUT',
         headers: {
@@ -129,13 +154,13 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
           onFacilityUpdated(result.data);
         }
         
-        alert('Document uploaded successfully!');
+        toast.success('Document uploaded successfully!', { id: 'upload-toast' });
       } else {
-        alert('Upload failed: ' + (result.message || 'Unknown error'));
+        toast.error(`Upload failed: ${result.message || 'Unknown error'}`, { id: 'upload-toast' });
       }
     } catch (error) {
       console.error('Upload error:', error);
-      alert('Upload failed: ' + error.message);
+      toast.error(`Upload failed: ${error.message}`, { id: 'upload-toast' });
     } finally {
       setUploadingDoc("");
     }
@@ -148,6 +173,11 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
     input.onchange = (e) => {
       const file = e.target.files[0];
       if (file) {
+        // Check file size (limit to 10MB)
+        if (file.size > 10 * 1024 * 1024) {
+          toast.error('File size must be less than 10MB');
+          return;
+        }
         uploadDocument(docType, file);
       }
     };
@@ -160,81 +190,92 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
     }
   };
 
-  const DocumentCard = ({ title, status, url, onUpload, onView, docType }) => (
-    <div className="mb-3">
-      {/* Document title and status */}
-      <div className="flex justify-between items-center mb-2">
-        <span className="text-black text-sm font-medium">{title}</span>
-        <span className={`px-2 py-1 rounded-full text-xs font-medium text-white ${getStatusBgColor(status)}`}>
-          {status || "PENDING"}
-        </span>
+  const DocumentCard = ({ title, status, url, onUpload, onView, docType }) => {
+    const fileName = getDocumentFileName(url);
+    const isUploading = uploadingDoc === docType;
+    
+    return (
+      <div className="mb-3">
+        {/* Document title and status */}
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-black text-sm font-medium">{title}</span>
+          <span className={`px-2 py-1 rounded-full text-xs font-medium text-white ${getStatusBgColor(status)}`}>
+            {status || "NOT_UPLOADED"}
+          </span>
+        </div>
+        
+        {/* Document placeholder/upload area - reduced height */}
+        <div 
+          className="bg-[#F0F0F0] rounded-lg p-3 cursor-pointer hover:bg-gray-200 transition-colors flex items-center justify-center h-12"
+          onClick={() => !isUploading && onUpload(docType)}
+        >
+          {isUploading ? (
+            <div className="flex items-center space-x-2">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#039994]"></div>
+              <span className="text-sm text-gray-700">Uploading...</span>
+            </div>
+          ) : url ? (
+            <div className="flex items-center space-x-3 w-full">
+              <FiFileText className="text-gray-600" size={18} />
+              <span className="text-sm text-gray-700 flex-1 truncate">
+                {fileName || 'Document uploaded'}
+              </span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onView(url);
+                }}
+                className="p-1 hover:bg-gray-300 rounded flex-shrink-0"
+                title="View document"
+              >
+                <FiEye className="text-[#039994]" size={16} />
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center space-x-2">
+              <FiUpload className="text-gray-600" size={18} />
+              <span className="text-sm text-gray-700">Click to upload</span>
+            </div>
+          )}
+        </div>
       </div>
-      
-      {/* Document placeholder/upload area */}
-      <div 
-        className="bg-[#F0F0F0] rounded-lg p-4 cursor-pointer hover:bg-gray-200 transition-colors flex items-center justify-center h-16"
-        onClick={() => onUpload(docType)}
-      >
-        {url ? (
-          <div className="flex items-center space-x-3">
-            <FiFileText className="text-gray-600" size={20} />
-            <span className="text-sm text-gray-700">Document uploaded</span>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onView(url);
-              }}
-              className="p-1 hover:bg-gray-300 rounded"
-            >
-              <FiEye className="text-[#039994]" size={16} />
-            </button>
-          </div>
-        ) : (
-          <div className="flex items-center space-x-2">
-            <FiEye className="text-gray-600" size={20} />
-            <span className="text-sm text-gray-700">
-              {uploadingDoc === docType ? "Uploading..." : "Click to upload"}
-            </span>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+    );
+  };
 
   const allDocuments = [
     {
       title: "Finance Agreement",
-      status: facilityData.financeAgreementStatus || "PENDING",
+      status: facilityData.financeAgreementStatus,
       url: facilityData.financeAgreementUrl,
       docType: "financeAgreement"
     },
     {
       title: "Proof of Address",
-      status: facilityData.proofOfAddressStatus || "PENDING",
+      status: facilityData.proofOfAddressStatus,
       url: facilityData.proofOfAddressUrl,
       docType: "proofOfAddress"
     },
     {
       title: "Info Release Authorization",
-      status: facilityData.infoReleaseAuthStatus || "PENDING",
+      status: facilityData.infoReleaseAuthStatus,
       url: facilityData.infoReleaseAuthUrl,
       docType: "infoReleaseAuth"
     },
     {
       title: "WREGIS Assignment",
-      status: facilityData.wregisAssignmentStatus || "PENDING",
+      status: facilityData.wregisAssignmentStatus,
       url: facilityData.wregisAssignmentUrl,
       docType: "wregisAssignment"
     },
     {
       title: "Multiple Owner Declaration",
-      status: facilityData.multipleOwnerDeclStatus || "PENDING",
+      status: facilityData.multipleOwnerDeclStatus,
       url: facilityData.multipleOwnerDeclUrl,
       docType: "multipleOwnerDecl"
     },
     {
       title: "System Operator Data Access",
-      status: facilityData.sysOpDataAccessStatus || "PENDING",
+      status: facilityData.sysOpDataAccessStatus,
       url: facilityData.sysOpDataAccessUrl,
       docType: "sysOpDataAccess"
     }
@@ -350,9 +391,10 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
 
             <button 
               onClick={() => setShowAllDocs(!showAllDocs)}
-              className="w-full mt-3 py-1.5 text-xs text-[#039994] hover:text-[#027a75] transition-colors"
+              className="w-full mt-3 py-1.5 text-xs text-[#039994] hover:text-[#027a75] transition-colors flex items-center justify-center space-x-1"
             >
-              {showAllDocs ? 'View less' : 'View more'}
+              <span>{showAllDocs ? 'View less' : 'View more'}</span>
+              <FiChevronDown className={`transform transition-transform ${showAllDocs ? 'rotate-180' : ''}`} size={12} />
             </button>
           </div>
         </div>

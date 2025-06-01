@@ -1,9 +1,10 @@
+// ===== RESIDENTIAL FACILITY TABS COMPONENT =====
 import React, { useState, useEffect } from "react";
 import { FiGrid, FiList, FiFilter } from "react-icons/fi";
 import AddResidentialFacilityModal from "../overview/modals/AddResidenceModal";
 import { buttonPrimary } from "./styles";
 
-export default function FacilityTabs({
+export default function ResidentialFacilityTabs({
   viewMode,
   setViewMode,
   onAddFacility,
@@ -64,6 +65,34 @@ export default function FacilityTabs({
         setIsButtonDisabled(true);
         setDisabledReason("Please set up utility authorization first");
         return;
+      }
+
+      // Check if any utility auth has invalid status (UPDATE_ERROR or DECLINE)
+      const hasInvalidStatus = utilityAuth.some(auth => {
+        if (!auth || !auth.status) return false;
+        return auth.status === "UPDATE_ERROR" || auth.status === "DECLINE";
+      });
+
+      if (hasInvalidStatus) {
+        // Check for specific error statuses for better error messages
+        const hasUpdateError = utilityAuth.some(auth => 
+          auth && auth.status === "UPDATE_ERROR"
+        );
+        const hasDecline = utilityAuth.some(auth => 
+          auth && auth.status === "DECLINE"
+        );
+        
+        if (hasUpdateError) {
+          setIsButtonDisabled(true);
+          setDisabledReason("Utility authorization update error - please resolve");
+          return;
+        }
+        
+        if (hasDecline) {
+          setIsButtonDisabled(true);
+          setDisabledReason("Utility authorization declined - please re-authorize");
+          return;
+        }
       }
 
       // All checks passed
@@ -131,7 +160,7 @@ export default function FacilityTabs({
           </button> */}
           
           {/* Add Residential Facility Button */}
-          <div className="relative">
+          <div className="relative group">
             <button
               onClick={handleAddFacilityClick}
               disabled={isButtonDisabled}
@@ -150,7 +179,7 @@ export default function FacilityTabs({
             
             {/* Tooltip for disabled state */}
             {isButtonDisabled && disabledReason && (
-              <div className="absolute bottom-full right-0 mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded-md whitespace-nowrap opacity-0 hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
+              <div className="absolute bottom-full right-0 mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
                 {disabledReason}
                 <div className="absolute top-full right-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
               </div>

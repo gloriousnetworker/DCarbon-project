@@ -52,13 +52,20 @@ const ContactInformation = () => {
           setOwnerFullName(commercialUser.ownerFullName || "");
           setOwnerWebsite(commercialUser.ownerWebsite || "");
           
-          // Handle phone number
+          // Handle phone number - extract prefix and number
           if (commercialUser.phoneNumber) {
-            if (commercialUser.phoneNumber.startsWith("+")) {
-              setPhonePrefix(commercialUser.phoneNumber.slice(0, 4));
-              setPhoneNumber(commercialUser.phoneNumber.slice(4));
+            const phoneStr = commercialUser.phoneNumber.toString();
+            if (phoneStr.startsWith("+")) {
+              // Find where the country code ends (typically after +234, +1, etc.)
+              const match = phoneStr.match(/^(\+\d{1,4})(.*)$/);
+              if (match) {
+                setPhonePrefix(match[1]);
+                setPhoneNumber(match[2]);
+              } else {
+                setPhoneNumber(phoneStr);
+              }
             } else {
-              setPhoneNumber(commercialUser.phoneNumber);
+              setPhoneNumber(phoneStr);
             }
           }
           
@@ -86,22 +93,36 @@ const ContactInformation = () => {
     const authToken = localStorage.getItem("authToken");
 
     if (!userId || !authToken) {
-      toast.error("User not authenticated");
+      toast.error("Authentication required");
       return;
     }
 
+    // Validation
+    if (!ownerFullName.trim()) {
+      toast.error("Full name is required");
+      return;
+    }
+
+    // Construct payload with current state values (not hardcoded)
     const payload = {
-      entityType: "individual",
-      commercialRole: "owner",
-      ownerFullName: ownerFullName,
-      phoneNumber: `${phonePrefix}${phoneNumber}`,
-      ownerAddress: ownerAddress,
-      ownerWebsite: ownerWebsite || undefined,
+      entityType: entityType || "individual",
+      commercialRole: commercialRole || "owner",
+      ownerFullName: ownerFullName.trim(),
+      phoneNumber: phoneNumber ? `${phonePrefix}${phoneNumber}` : undefined,
+      ownerAddress: ownerAddress.trim(),
+      ownerWebsite: ownerWebsite.trim() || undefined,
     };
 
+    // Remove undefined values
+    Object.keys(payload).forEach(key => {
+      if (payload[key] === undefined || payload[key] === "") {
+        delete payload[key];
+      }
+    });
+
     try {
-      await axios.put(
-        `https://dcarbon-server.onrender.com/api/user/commercial-registration/${userId}`,
+      const response = await axios.put(
+        `https://services.dcarbon.solutions/api/user/commercial-registration/${userId}`,
         payload,
         {
           headers: {
@@ -110,7 +131,37 @@ const ContactInformation = () => {
           },
         }
       );
-      toast.success("Contact information updated successfully");
+
+      if (response.data.status === "success") {
+        toast.success("Contact information updated successfully");
+        
+        // Update local state with response data if available
+        const updatedData = response.data.data;
+        if (updatedData) {
+          setOwnerFullName(updatedData.ownerFullName || "");
+          setOwnerWebsite(updatedData.ownerWebsite || "");
+          
+          // Handle updated phone number
+          if (updatedData.phoneNumber) {
+            const phoneStr = updatedData.phoneNumber.toString();
+            if (phoneStr.startsWith("+")) {
+              const match = phoneStr.match(/^(\+\d{1,4})(.*)$/);
+              if (match) {
+                setPhonePrefix(match[1]);
+                setPhoneNumber(match[2]);
+              } else {
+                setPhoneNumber(phoneStr);
+              }
+            } else {
+              setPhoneNumber(phoneStr);
+            }
+          }
+          
+          setOwnerAddress(updatedData.ownerAddress || "");
+          setCommercialRole(updatedData.commercialRole || "");
+          setEntityType(updatedData.entityType || "");
+        }
+      }
     } catch (error) {
       const errorMessage =
         error.response?.data?.message || error.message || "Update failed";
@@ -139,6 +190,8 @@ const ContactInformation = () => {
               <div className="h-8 bg-gray-200 rounded flex-1 animate-pulse"></div>
             </div>
             <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
           </div>
         )}
       </div>
@@ -161,7 +214,7 @@ const ContactInformation = () => {
         <div className="mt-4 space-y-4">
           {/* Full Name */}
           <div>
-            <label className={labelClass}>Full Name</label>
+            <label className={labelClass}>Full Name *</label>
             <input
               type="text"
               value={ownerFullName}
@@ -169,29 +222,30 @@ const ContactInformation = () => {
               className={inputClass}
               style={inputStyle}
               placeholder="Owner's Full Name"
+              required
             />
           </div>
           {/* Website */}
           <div>
             <label className={labelClass}>Website</label>
             <input
-              type="text"
+              type="url"
               value={ownerWebsite}
               onChange={(e) => setOwnerWebsite(e.target.value)}
               className={inputClass}
               style={inputStyle}
-              placeholder="e.g. www.example.com"
+              placeholder="https://www.example.com"
             />
           </div>
           {/* Phone Number */}
           <div>
             <label className={labelClass}>Phone Number</label>
-            <div className="grid grid-cols-[80px_1fr] gap-2">
+            <div className="grid grid-cols-[100px_1fr] gap-2">
               <input
                 type="text"
                 value={phonePrefix}
                 onChange={(e) => setPhonePrefix(e.target.value)}
-                className={`${inputClass} w-20`}
+                className={inputClass}
                 style={inputStyle}
                 placeholder="+234"
               />
@@ -199,9 +253,9 @@ const ContactInformation = () => {
                 type="tel"
                 value={phoneNumber}
                 onChange={(e) => setPhoneNumber(e.target.value)}
-                className={`${inputClass} flex-1`}
+                className={inputClass}
                 style={inputStyle}
-                placeholder="e.g. 1234567890"
+                placeholder="1234567890"
               />
             </div>
           </div>
@@ -243,7 +297,8 @@ const ContactInformation = () => {
           <div>
             <button
               onClick={handleUpdate}
-              className="w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro"
+              className="w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro transition-colors duration-200"
+              disabled={!ownerFullName.trim()}
             >
               Update Contact Information
             </button>

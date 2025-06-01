@@ -36,7 +36,7 @@ const CompanyInformation = () => {
 
       try {
         const response = await axios.get(
-          `https://dcarbon-server.onrender.com/api/user/get-commercial-user/${userId}`,
+          `https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`,
           {
             headers: {
               Authorization: `Bearer ${authToken}`,
@@ -77,13 +77,26 @@ const CompanyInformation = () => {
       return;
     }
 
+    // Validation
+    if (!companyName.trim()) {
+      toast.error("Company name is required");
+      return;
+    }
+
     const payload = {
-      entityType,
-      commercialRole,
-      companyName,
-      companyAddress,
-      companyWebsite,
+      entityType: entityType || "individual",
+      commercialRole: commercialRole || "owner",
+      companyName: companyName.trim(),
+      companyAddress: companyAddress.trim(),
+      companyWebsite: companyWebsite.trim(),
     };
+
+    // Remove empty values
+    Object.keys(payload).forEach(key => {
+      if (payload[key] === "" && key !== "entityType" && key !== "commercialRole") {
+        delete payload[key];
+      }
+    });
 
     try {
       const response = await axios.put(
@@ -97,7 +110,19 @@ const CompanyInformation = () => {
         }
       );
 
-      toast.success("Company details updated successfully");
+      if (response.data.status === "success") {
+        toast.success("Company details updated successfully");
+        
+        // Update local state with response data if available
+        const updatedData = response.data.data;
+        if (updatedData) {
+          setCompanyName(updatedData.companyName || "");
+          setCompanyAddress(updatedData.companyAddress || "");
+          setCompanyWebsite(updatedData.companyWebsite || "");
+          setCommercialRole(updatedData.commercialRole || "");
+          setEntityType(updatedData.entityType || "");
+        }
+      }
     } catch (error) {
       const errorMessage =
         error.response?.data?.message ||
@@ -144,7 +169,7 @@ const CompanyInformation = () => {
         <div className="mt-4 space-y-4">
           {/* Company Name */}
           <div>
-            <label className={labelClass}>Company Name</label>
+            <label className={labelClass}>Company Name *</label>
             <input
               type="text"
               value={companyName}
@@ -152,6 +177,7 @@ const CompanyInformation = () => {
               className={inputClass}
               style={inputStyle}
               placeholder="e.g. My Company"
+              required
             />
           </div>
           {/* Company Address */}
@@ -170,7 +196,7 @@ const CompanyInformation = () => {
           <div>
             <label className={labelClass}>Company Website</label>
             <input
-              type="text"
+              type="url"
               value={companyWebsite}
               onChange={(e) => setCompanyWebsite(e.target.value)}
               className={inputClass}
@@ -178,33 +204,12 @@ const CompanyInformation = () => {
               placeholder="https://company.com"
             />
           </div>
-          {/* Commercial Role */}
-          <div>
-            <label className={labelClass}>Commercial Role</label>
-            <input
-              type="text"
-              value={commercialRole}
-              readOnly
-              className={inputClass}
-              style={inputStyle}
-            />
-          </div>
-          {/* Entity Type */}
-          <div>
-            <label className={labelClass}>Entity Type</label>
-            <input
-              type="text"
-              value={entityType}
-              readOnly
-              className={inputClass}
-              style={inputStyle}
-            />
-          </div>
           {/* Update Button */}
           <div>
             <button
               onClick={handleUpdate}
-              className="w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro"
+              className="w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro transition-colors duration-200"
+              disabled={!companyName.trim()}
             >
               Update Company Details
             </button>

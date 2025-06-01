@@ -1,8 +1,9 @@
+// ===== COMMERCIAL FACILITY TABS COMPONENT =====
 import React, { useState, useEffect } from "react";
 import { FiGrid, FiList, FiFilter } from "react-icons/fi";
 import AddCommercialFacilityModal from "./AddFacilityModal";
 
-export default function FacilityTabs({
+export default function CommercialFacilityTabs({
   viewMode,
   setViewMode,
   onFilter,
@@ -58,12 +59,41 @@ export default function FacilityTabs({
         return;
       }
 
-      // Check if at least one utilityAuth has a status
-      const hasValidUtilityAuth = utilityAuth.some(auth => 
-        auth && auth.status && auth.status.trim() !== ""
-      );
+      // Check if at least one utilityAuth has a valid status (not empty, not UPDATE_ERROR, not DECLINE)
+      const hasValidUtilityAuth = utilityAuth.some(auth => {
+        if (!auth || !auth.status || auth.status.trim() === "") {
+          return false;
+        }
+        
+        // Disable if status is UPDATE_ERROR or DECLINE
+        if (auth.status === "UPDATE_ERROR" || auth.status === "DECLINE") {
+          return false;
+        }
+        
+        return true;
+      });
 
       if (!hasValidUtilityAuth) {
+        // Check for specific error statuses for better error messages
+        const hasUpdateError = utilityAuth.some(auth => 
+          auth && auth.status === "UPDATE_ERROR"
+        );
+        const hasDecline = utilityAuth.some(auth => 
+          auth && auth.status === "DECLINE"
+        );
+        
+        if (hasUpdateError) {
+          setIsButtonDisabled(true);
+          setDisableReason("Utility authorization update error - please resolve");
+          return;
+        }
+        
+        if (hasDecline) {
+          setIsButtonDisabled(true);
+          setDisableReason("Utility authorization declined - please re-authorize");
+          return;
+        }
+        
         setIsButtonDisabled(true);
         setDisableReason("Valid utility authorization required");
         return;
@@ -128,7 +158,7 @@ export default function FacilityTabs({
             <span>Filter by</span>
           </button> */}
           
-          <div className="relative">
+          <div className="relative group">
             <button
               onClick={handleAddFacility}
               disabled={isButtonDisabled}
