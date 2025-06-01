@@ -37,6 +37,7 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
   const [loading, setLoading] = useState(false);
   const [uploadingDoc, setUploadingDoc] = useState("");
   const [showAllDocs, setShowAllDocs] = useState(false);
+  const [facilityData, setFacilityData] = useState(facility);
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
@@ -69,19 +70,75 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
   const getStatusBgColor = (status) => {
     switch (status?.toUpperCase()) {
       case "APPROVED":
-        return "bg-green-100";
+        return "bg-green-500";
       case "PENDING":
-        return "bg-yellow-100";
+        return "bg-yellow-500";
       case "REJECTED":
-        return "bg-red-100";
+        return "bg-red-500";
       default:
-        return "bg-gray-100";
+        return "bg-gray-500";
     }
   };
 
-  const handleFileUpload = async (docType, file) => {
-    // Mock upload functionality
-    console.log(`Uploading ${docType}:`, file.name);
+  const uploadDocument = async (docType, file) => {
+    setUploadingDoc(docType);
+    
+    const authToken = localStorage.getItem('authToken');
+    if (!authToken) {
+      alert('Authentication token not found. Please login again.');
+      setUploadingDoc("");
+      return;
+    }
+
+    const facilityId = facilityData.id;
+    const baseUrl = 'https://services.dcarbon.solutions';
+    
+    // Define endpoints for different document types
+    const endpoints = {
+      financeAgreement: `${baseUrl}/api/facility/update-facility-financial-agreement/${facilityId}`,
+      proofOfAddress: `${baseUrl}/api/facility/update-facility-proof-of-address/${facilityId}`,
+      infoReleaseAuth: `${baseUrl}/api/facility/update-facility-info-release-auth/${facilityId}`,
+      wregisAssignment: `${baseUrl}/api/facility/update-facility-wregis-assignment/${facilityId}`,
+      multipleOwnerDecl: `${baseUrl}/api/facility/update-facility-multiple-owner/${facilityId}`,
+      sysOpDataAccess: `${baseUrl}/api/facility/update-facility-sys-op-data-access/${facilityId}`
+    };
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch(endpoints[docType], {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        },
+        body: formData
+      });
+
+      const result = await response.json();
+
+      if (result.status === 'success') {
+        // Update the facility data with the new document info
+        setFacilityData(prevData => ({
+          ...prevData,
+          ...result.data
+        }));
+        
+        // Notify parent component if callback exists
+        if (onFacilityUpdated) {
+          onFacilityUpdated(result.data);
+        }
+        
+        alert('Document uploaded successfully!');
+      } else {
+        alert('Upload failed: ' + (result.message || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      alert('Upload failed: ' + error.message);
+    } finally {
+      setUploadingDoc("");
+    }
   };
 
   const handleFileSelect = (docType) => {
@@ -91,80 +148,94 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
     input.onchange = (e) => {
       const file = e.target.files[0];
       if (file) {
-        handleFileUpload(docType, file);
+        uploadDocument(docType, file);
       }
     };
     input.click();
   };
 
-  const DocumentCard = ({ title, status, url, onUpload, docType }) => (
-    <div className="relative">
+  const handleViewDocument = (url) => {
+    if (url) {
+      window.open(url, '_blank');
+    }
+  };
+
+  const DocumentCard = ({ title, status, url, onUpload, onView, docType }) => (
+    <div className="mb-3">
+      {/* Document title and status */}
+      <div className="flex justify-between items-center mb-2">
+        <span className="text-black text-sm font-medium">{title}</span>
+        <span className={`px-2 py-1 rounded-full text-xs font-medium text-white ${getStatusBgColor(status)}`}>
+          {status || "PENDING"}
+        </span>
+      </div>
+      
+      {/* Document placeholder/upload area */}
       <div 
-        className="bg-[#F0F0F0] rounded-lg p-3 cursor-pointer hover:bg-gray-200 transition-colors relative"
+        className="bg-[#F0F0F0] rounded-lg p-4 cursor-pointer hover:bg-gray-200 transition-colors flex items-center justify-center h-16"
         onClick={() => onUpload(docType)}
       >
-        {/* Status tag positioned at top right */}
-        <div className="absolute -top-2 -right-2">
-          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBgColor(status)} ${getStatusColor(status)}`}>
-            {status || "PENDING"}
-          </span>
-        </div>
-        
-        <div className="flex items-center justify-center h-12">
-          {url ? (
-            <div className="flex items-center space-x-2">
-              <FiFileText className="text-gray-600" size={16} />
-              <span className="text-xs text-gray-700">Document uploaded</span>
-            </div>
-          ) : (
-            <div className="flex items-center space-x-2">
-              <FiUpload className="text-gray-600" size={14} />
-              <span className="text-xs text-gray-700">
-                {uploadingDoc === docType ? "Uploading..." : "Upload"}
-              </span>
-            </div>
-          )}
-        </div>
+        {url ? (
+          <div className="flex items-center space-x-3">
+            <FiFileText className="text-gray-600" size={20} />
+            <span className="text-sm text-gray-700">Document uploaded</span>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onView(url);
+              }}
+              className="p-1 hover:bg-gray-300 rounded"
+            >
+              <FiEye className="text-[#039994]" size={16} />
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center space-x-2">
+            <FiEye className="text-gray-600" size={20} />
+            <span className="text-sm text-gray-700">
+              {uploadingDoc === docType ? "Uploading..." : "Click to upload"}
+            </span>
+          </div>
+        )}
       </div>
-      <p className="text-xs text-gray-700 mt-1 text-center">{title}</p>
     </div>
   );
 
   const allDocuments = [
     {
       title: "Finance Agreement",
-      status: facility.financeAgreementStatus || "Pending",
-      url: facility.financeAgreementUrl,
+      status: facilityData.financeAgreementStatus || "PENDING",
+      url: facilityData.financeAgreementUrl,
       docType: "financeAgreement"
     },
     {
       title: "Proof of Address",
-      status: facility.proofOfAddressStatus || "Pending",
-      url: facility.proofOfAddressUrl,
+      status: facilityData.proofOfAddressStatus || "PENDING",
+      url: facilityData.proofOfAddressUrl,
       docType: "proofOfAddress"
     },
     {
       title: "Info Release Authorization",
-      status: facility.infoReleaseAuthStatus || "Pending",
-      url: facility.infoReleaseAuthUrl,
+      status: facilityData.infoReleaseAuthStatus || "PENDING",
+      url: facilityData.infoReleaseAuthUrl,
       docType: "infoReleaseAuth"
     },
     {
       title: "WREGIS Assignment",
-      status: facility.wregisAssignmentStatus || "Pending",
-      url: facility.wregisAssignmentUrl,
+      status: facilityData.wregisAssignmentStatus || "PENDING",
+      url: facilityData.wregisAssignmentUrl,
       docType: "wregisAssignment"
     },
     {
       title: "Multiple Owner Declaration",
-      status: facility.multipleOwnerDeclStatus || "Pending",
-      url: facility.multipleOwnerDeclUrl,
+      status: facilityData.multipleOwnerDeclStatus || "PENDING",
+      url: facilityData.multipleOwnerDeclUrl,
       docType: "multipleOwnerDecl"
     },
     {
       title: "System Operator Data Access",
-      status: facility.sysOpDataAccessStatus || "Pending",
-      url: facility.sysOpDataAccessUrl,
+      status: facilityData.sysOpDataAccessStatus || "PENDING",
+      url: facilityData.sysOpDataAccessUrl,
       docType: "sysOpDataAccess"
     }
   ];
@@ -185,10 +256,10 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
 
         <div className="flex justify-between items-center">
           <h1 className={pageTitle}>
-            {facility.facilityName}
+            {facilityData.facilityName}
           </h1>
           <div className="flex space-x-2">
-            {facility.commercialRole?.toLowerCase() === "owner" && (
+            {facilityData.commercialRole?.toLowerCase() === "owner" && (
               <button
                 onClick={() => setShowInviteModal(true)}
                 className="flex items-center space-x-1 bg-[#039994] text-white px-3 py-1.5 rounded text-xs hover:bg-[#027a75] transition-colors"
@@ -217,26 +288,26 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
               <div className="flex justify-between items-center">
                 <span className={`${labelClass} text-xs`}>Commercial Role</span>
                 <span className="text-gray-600 text-xs capitalize">
-                  {facility.commercialRole || "N/A"}
+                  {facilityData.commercialRole || "N/A"}
                 </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className={`${labelClass} text-xs`}>Entity Type</span>
                 <span className="text-gray-600 text-xs capitalize">
-                  {facility.entityType || "N/A"}
+                  {facilityData.entityType || "N/A"}
                 </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className={`${labelClass} text-xs`}>Facility ID</span>
-                <span className="text-gray-600 text-xs">{facility.id || "N/A"}</span>
+                <span className="text-gray-600 text-xs">{facilityData.id || "N/A"}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className={`${labelClass} text-xs`}>Utility Provider</span>
-                <span className="text-gray-600 text-xs">{facility.utilityProvider || "N/A"}</span>
+                <span className="text-gray-600 text-xs">{facilityData.utilityProvider || "N/A"}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className={`${labelClass} text-xs`}>Meter ID</span>
-                <span className="text-gray-600 text-xs">{formatMeterIds(facility.meterIds) || "N/A"}</span>
+                <span className="text-gray-600 text-xs">{facilityData.meterId || formatMeterIds(facilityData.meterIds) || "N/A"}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className={`${labelClass} text-xs`}>System Size</span>
@@ -244,16 +315,16 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
               </div>
               <div className="flex justify-between items-center">
                 <span className={`${labelClass} text-xs`}>Installation Address</span>
-                <span className="text-gray-600 text-xs">{facility.address || "N/A"}</span>
+                <span className="text-gray-600 text-xs">{facilityData.address || "N/A"}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className={`${labelClass} text-xs`}>Enrollment Date</span>
-                <span className="text-gray-600 text-xs">{formatDate(facility.createdAt) || "N/A"}</span>
+                <span className="text-gray-600 text-xs">{formatDate(facilityData.createdAt) || "N/A"}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className={`${labelClass} text-xs`}>Status</span>
                 <span className="text-[#039994] text-xs font-medium capitalize">
-                  {facility.status || "N/A"}
+                  {facilityData.status || "N/A"}
                 </span>
               </div>
             </div>
@@ -261,9 +332,9 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
 
           {/* Facility Documents */}
           <div className="bg-white border border-gray-200 rounded-lg p-4">
-            <h3 className="text-sm font-semibold text-gray-800 mb-3">Facility Documents</h3>
+            <h3 className="text-sm font-semibold text-[#039994] mb-3">Facility Documents</h3>
             
-            <div className={`grid grid-cols-2 gap-3 ${showAllDocs ? 'max-h-40 overflow-y-auto' : ''}`}>
+            <div className={`${showAllDocs ? 'max-h-80 overflow-y-auto' : ''}`}>
               {visibleDocuments.map((doc, index) => (
                 <DocumentCard
                   key={index}
@@ -271,6 +342,7 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
                   status={doc.status}
                   url={doc.url}
                   onUpload={handleFileSelect}
+                  onView={handleViewDocument}
                   docType={doc.docType}
                 />
               ))}
@@ -332,22 +404,22 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
           <div className="grid grid-cols-1 gap-3">
             <div className="bg-white border-2 border-[#039994] rounded-lg p-3 text-center">
               <p className="text-black text-xs mb-1">RECs Generated</p>
-              <p className="text-lg font-bold text-[#039994]">{facility.totalRecs || 0}</p>
+              <p className="text-lg font-bold text-[#039994]">{facilityData.recGenerated || facilityData.totalRecs || 0}</p>
             </div>
             
             <div className="bg-white border-2 border-[#039994] rounded-lg p-3 text-center">
               <p className="text-black text-xs mb-1">Total RECs sold</p>
-              <p className="text-lg font-bold text-[#039994]">0</p>
+              <p className="text-lg font-bold text-[#039994]">{facilityData.recSold || 0}</p>
             </div>
 
             <div className="bg-white border-2 border-[#039994] rounded-lg p-3 text-center">
               <p className="text-black text-xs mb-1">Earnings</p>
-              <p className="text-lg font-bold text-[#039994]">$0.00</p>
+              <p className="text-lg font-bold text-[#039994]">${facilityData.revenueEarned || '0.00'}</p>
             </div>
 
             <div className="bg-white border-2 border-[#039994] rounded-lg p-3 text-center">
               <p className="text-black text-xs mb-1">Energy Generated</p>
-              <p className="text-sm font-bold text-[#039994]">0MWh</p>
+              <p className="text-sm font-bold text-[#039994]">{facilityData.energyProduced || 0}MWh</p>
               <p className="text-xs text-gray-500">May</p>
             </div>
           </div>
@@ -359,15 +431,16 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
         <InviteCollaboratorModal
           isOpen={showInviteModal}
           onClose={() => setShowInviteModal(false)}
-          inviterRole={facility.commercialRole}
+          inviterRole={facilityData.commercialRole}
         />
       )}
 
       {showEditModal && (
         <EditFacilityDetailsModal
-          facility={facility}
+          facility={facilityData}
           onClose={() => setShowEditModal(false)}
           onSave={(updatedFacility) => {
+            setFacilityData(updatedFacility);
             onFacilityUpdated?.(updatedFacility);
             setShowEditModal(false);
           }}

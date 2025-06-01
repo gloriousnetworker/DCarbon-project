@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { FiX } from "react-icons/fi";
 import axios from "axios";
 import toast from "react-hot-toast";
+import AddUtilityProvider from "./AddUtilityProvider";
 import {
   labelClass,
   selectClass,
@@ -11,7 +12,7 @@ import {
 } from "./styles";
 import Loader from "@/components/loader/Loader.jsx";
 
-export default function AddFacilityModal({ onClose }) {
+export default function AddCommercialFacilityModal({ isOpen, onClose }) {
   const [formData, setFormData] = useState({
     facilityName: "",
     address: "",
@@ -23,29 +24,30 @@ export default function AddFacilityModal({ onClose }) {
   const [loading, setLoading] = useState(false);
   const [utilityProviders, setUtilityProviders] = useState([]);
   const [utilityProvidersLoading, setUtilityProvidersLoading] = useState(false);
-  const [userMeterData, setUserMeterData] = useState([]); // This will store the full response
+  const [userMeterData, setUserMeterData] = useState([]);
   const [userMetersLoading, setUserMetersLoading] = useState(false);
   const [selectedMeter, setSelectedMeter] = useState(null);
   const [isSameLocation, setIsSameLocation] = useState(null);
   const [selectedUtilityAuthEmail, setSelectedUtilityAuthEmail] = useState("");
+  
+  // Add Utility Provider Modal State
+  const [showAddUtilityModal, setShowAddUtilityModal] = useState(false);
 
-  // Fetch utility providers on modal open
   useEffect(() => {
-    fetchUtilityProviders();
-    fetchUserMeters();
-  }, []);
+    if (isOpen) {
+      fetchUtilityProviders();
+      fetchUserMeters();
+    }
+  }, [isOpen]);
 
-  // Update address when location choice changes
   useEffect(() => {
     if (selectedMeter && isSameLocation !== null) {
       if (isSameLocation === true) {
-        // Use meter's service address
         setFormData(prev => ({
           ...prev,
           address: selectedMeter.base.service_address
         }));
       } else {
-        // Clear address for manual input
         setFormData(prev => ({
           ...prev,
           address: ""
@@ -103,7 +105,6 @@ export default function AddFacilityModal({ onClose }) {
 
       if (response.data.status === "success") {
         setUserMeterData(response.data.data);
-        // Auto-select the first utility auth email with meters if available
         const firstWithMeters = response.data.data.find(item => item.meters?.meters?.length > 0);
         if (firstWithMeters) {
           setSelectedUtilityAuthEmail(firstWithMeters.utilityAuthEmail);
@@ -117,7 +118,6 @@ export default function AddFacilityModal({ onClose }) {
     }
   };
 
-  // Get the currently selected meters based on utility auth email
   const getCurrentMeters = () => {
     if (!selectedUtilityAuthEmail) return [];
     
@@ -143,8 +143,7 @@ export default function AddFacilityModal({ onClose }) {
       const currentMeters = getCurrentMeters();
       const meter = currentMeters.find(m => m.uid === value);
       setSelectedMeter(meter || null);
-      setIsSameLocation(null); // Reset location choice when meter changes
-      // Clear address when meter changes
+      setIsSameLocation(null);
       setFormData(prev => ({
         ...prev,
         address: ""
@@ -155,7 +154,6 @@ export default function AddFacilityModal({ onClose }) {
   const handleUtilityAuthEmailChange = (e) => {
     const email = e.target.value;
     setSelectedUtilityAuthEmail(email);
-    // Reset meter selection when changing utility auth email
     setFormData(prev => ({
       ...prev,
       meterId: ""
@@ -187,6 +185,20 @@ export default function AddFacilityModal({ onClose }) {
     } catch (error) {
       console.error("Error storing facility data:", error);
     }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      facilityName: "",
+      address: "",
+      utilityProvider: "",
+      meterId: "",
+      commercialRole: "both",
+      entityType: "company"
+    });
+    setSelectedMeter(null);
+    setIsSameLocation(null);
+    setSelectedUtilityAuthEmail("");
   };
 
   const handleSubmit = async (e) => {
@@ -226,18 +238,7 @@ export default function AddFacilityModal({ onClose }) {
       if (response.data.status === "success") {
         toast.success("Facility created successfully");
         storeFacilityData(response.data.data);
-        
-        // Reset form
-        setFormData({
-          facilityName: "",
-          address: "",
-          utilityProvider: "",
-          meterId: "",
-          commercialRole: "both",
-          entityType: "company"
-        });
-        setSelectedMeter(null);
-        setIsSameLocation(null);
+        resetForm();
         onClose();
       } else {
         throw new Error(response.data.message || "Failed to create facility");
@@ -254,7 +255,17 @@ export default function AddFacilityModal({ onClose }) {
     }
   };
 
-  // Check if form is complete
+  // Handle Add Utility Provider Modal
+  const handleOpenAddUtilityModal = () => {
+    setShowAddUtilityModal(true);
+  };
+
+  const handleCloseAddUtilityModal = () => {
+    setShowAddUtilityModal(false);
+    // Refresh user meters after adding utility provider
+    fetchUserMeters();
+  };
+
   const isFormComplete = 
     formData.facilityName && 
     formData.address &&
@@ -262,258 +273,281 @@ export default function AddFacilityModal({ onClose }) {
     formData.meterId &&
     (selectedMeter ? isSameLocation !== null : true);
 
-  // Get utility auth emails that have meters
   const utilityAuthEmailsWithMeters = userMeterData.filter(
     item => item.meters?.meters?.length > 0
   );
 
-  // Get current meters based on selected utility auth email
   const currentMeters = getCurrentMeters();
 
+  if (!isOpen) return null;
+
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50 overflow-y-auto py-4">
-      <div className="bg-white w-full max-w-md rounded-md shadow-lg p-4 relative my-4">
-        {/* Loader Overlay */}
-        {loading && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-white bg-opacity-70 rounded-md">
-            <Loader />
-          </div>
-        )}
-        
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
-          disabled={loading}
-        >
-          <FiX size={20} />
-        </button>
-
-        {/* Heading */}
-        <h2 className={`${pageTitle} text-left mb-4 text-lg`}>
-          Add Commercial Facility
-        </h2>
-
-        <form onSubmit={handleSubmit} className="space-y-3">
-          {/* Facility Name */}
-          <div className="mb-3">
-            <label className={`${labelClass} text-sm`}>
-              Facility Name <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              name="facilityName"
-              value={formData.facilityName}
-              onChange={handleChange}
-              className={`${inputClass} text-sm py-2`}
-              placeholder="Enter facility name"
-              required
+    <>
+      {/* Add Commercial Facility Modal */}
+      {!showAddUtilityModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20">
+          {loading && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-white bg-opacity-70 rounded-md">
+              <Loader />
+            </div>
+          )}
+          
+          <div className="relative bg-white p-6 rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={onClose}
+              className="absolute right-4 top-4 text-gray-500 hover:text-gray-700 focus:outline-none"
               disabled={loading}
-            />
-          </div>
-
-          {/* Utility Provider */}
-          <div className="mb-3">
-            <label className={`${labelClass} text-sm`}>
-              Utility Provider <span className="text-red-500">*</span>
-            </label>
-            <select
-              name="utilityProvider"
-              value={formData.utilityProvider}
-              onChange={handleChange}
-              className={`${selectClass} text-sm py-2`}
-              required
-              disabled={loading || utilityProvidersLoading}
             >
-              <option value="">Select utility provider</option>
-              {utilityProvidersLoading ? (
-                <option value="" disabled>Loading providers...</option>
-              ) : (
-                utilityProviders.map(provider => (
-                  <option key={provider.id} value={provider.name}>
-                    {provider.name}
-                  </option>
-                ))
-              )}
-            </select>
-          </div>
+              <FiX size={20} />
+            </button>
 
-          {/* Utility Auth Email Selection */}
-          <div className="mb-3">
-            <label className={`${labelClass} text-sm`}>
-              Utility Account <span className="text-red-500">*</span>
-            </label>
-            <select
-              value={selectedUtilityAuthEmail}
-              onChange={handleUtilityAuthEmailChange}
-              className={`${selectClass} text-sm py-2`}
-              required
-              disabled={loading || userMetersLoading}
-            >
-              <option value="">Select utility account</option>
-              {userMetersLoading ? (
-                <option value="" disabled>Loading accounts...</option>
-              ) : utilityAuthEmailsWithMeters.length === 0 ? (
-                <option value="" disabled>No utility accounts found</option>
-              ) : (
-                utilityAuthEmailsWithMeters.map(item => (
-                  <option key={item.id} value={item.utilityAuthEmail}>
-                    {item.utilityAuthEmail}
-                  </option>
-                ))
-              )}
-            </select>
-            <p className="mt-1 text-xs text-gray-500">
-              Select the utility account containing your meters
-            </p>
-          </div>
+            <h2 className={pageTitle}>Add Commercial Facility</h2>
 
-          {/* Meter Selection - only shown when a utility auth email is selected */}
-          {selectedUtilityAuthEmail && (
-            <div className="mb-3">
-              <label className={`${labelClass} text-sm`}>
-                Please Select the Solar Meter you want to Register <span className="text-red-500">*</span>
-              </label>
-              <select
-                name="meterId"
-                value={formData.meterId}
-                onChange={handleChange}
-                className={`${selectClass} text-sm py-2`}
-                required
-                disabled={loading || currentMeters.length === 0}
-              >
-                <option value="">Select meter</option>
-                {currentMeters.length === 0 ? (
-                  <option value="" disabled>No electric meters found for this account</option>
-                ) : (
-                  currentMeters.map(meter => (
-                    <option key={meter.uid} value={meter.uid}>
-                      {meter.base.meter_numbers[0]} - {meter.base.service_tariff}
-                    </option>
-                  ))
-                )}
-              </select>
-              <p className="mt-1 text-xs text-gray-500">
-                Only electric meters are shown
-              </p>
-            </div>
-          )}
-
-          {/* Location Confirmation */}
-          {selectedMeter && (
-            <div className="mb-3 p-2 bg-gray-50 rounded-md border border-gray-200 text-sm">
-              <p className="font-medium mb-2">Service Address: {selectedMeter.base.service_address}</p>
-              <p className="font-medium mb-2">
-                Is this the same location for the solar installation?
-              </p>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  className={`px-3 py-1 rounded-md border text-sm ${
-                    isSameLocation === true ? 'bg-green-100 border-green-500 text-green-700' : 'border-gray-300 hover:bg-gray-50'
-                  }`}
-                  onClick={() => handleLocationChoice(true)}
-                  disabled={loading}
-                >
-                  Yes
-                </button>
-                <button
-                  type="button"
-                  className={`px-3 py-1 rounded-md border text-sm ${
-                    isSameLocation === false ? 'bg-blue-100 border-blue-500 text-blue-700' : 'border-gray-300 hover:bg-gray-50'
-                  }`}
-                  onClick={() => handleLocationChoice(false)}
-                  disabled={loading}
-                >
-                  No
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Address Field */}
-          {selectedMeter && isSameLocation !== null && (
-            <div className="mb-3">
-              <label className={`${labelClass} text-sm`}>
-                Facility Address <span className="text-red-500">*</span>
-              </label>
-              {isSameLocation === true ? (
+            <form onSubmit={handleSubmit} className="space-y-4 mt-6">
+              {/* Facility Name */}
+              <div>
+                <label className={labelClass}>
+                  Facility Name <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
-                  name="address"
-                  value={formData.address}
-                  className={`${inputClass} text-sm py-2 bg-gray-100`}
-                  disabled={true}
-                  placeholder="Address will be auto-filled from meter service address"
-                />
-              ) : (
-                <input
-                  type="text"
-                  name="address"
-                  value={formData.address}
+                  name="facilityName"
+                  value={formData.facilityName}
                   onChange={handleChange}
-                  className={`${inputClass} text-sm py-2`}
-                  placeholder="Enter facility address"
+                  className={inputClass}
+                  placeholder="Enter facility name"
                   required
                   disabled={loading}
                 />
+              </div>
+
+              {/* Utility Provider */}
+              <div>
+                <label className={labelClass}>
+                  Utility Provider <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="utilityProvider"
+                  value={formData.utilityProvider}
+                  onChange={handleChange}
+                  className={selectClass}
+                  required
+                  disabled={loading || utilityProvidersLoading}
+                >
+                  <option value="">Select utility provider</option>
+                  {utilityProvidersLoading ? (
+                    <option value="" disabled>Loading providers...</option>
+                  ) : (
+                    utilityProviders.map(provider => (
+                      <option key={provider.id} value={provider.name}>
+                        {provider.name}
+                      </option>
+                    ))
+                  )}
+                </select>
+              </div>
+
+              {/* Utility Account */}
+              <div>
+                <label className={labelClass}>
+                  Utility Account <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={selectedUtilityAuthEmail}
+                  onChange={handleUtilityAuthEmailChange}
+                  className={selectClass}
+                  required
+                  disabled={loading || userMetersLoading}
+                >
+                  <option value="">Select utility account</option>
+                  {userMetersLoading ? (
+                    <option value="" disabled>Loading accounts...</option>
+                  ) : utilityAuthEmailsWithMeters.length === 0 ? (
+                    <option value="" disabled>No utility accounts found</option>
+                  ) : (
+                    utilityAuthEmailsWithMeters.map(item => (
+                      <option key={item.id} value={item.utilityAuthEmail}>
+                        {item.utilityAuthEmail}
+                      </option>
+                    ))
+                  )}
+                </select>
+                <p className="mt-1 text-xs text-gray-500">
+                  Select the utility account containing your meters
+                </p>
+                <button
+                  type="button"
+                  onClick={handleOpenAddUtilityModal}
+                  className="mt-2 text-xs text-[#039994] hover:text-[#02857f] underline focus:outline-none"
+                >
+                  Meters to be registered not listed? Add Utility account
+                </button>
+              </div>
+
+              {/* Meter Selection */}
+              {selectedUtilityAuthEmail && (
+                <div>
+                  <label className={labelClass}>
+                    Please Select the Solar Meter you want to Register <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="meterId"
+                    value={formData.meterId}
+                    onChange={handleChange}
+                    className={selectClass}
+                    required
+                    disabled={loading || currentMeters.length === 0}
+                  >
+                    <option value="">Select meter</option>
+                    {currentMeters.length === 0 ? (
+                      <option value="" disabled>No electric meters found for this account</option>
+                    ) : (
+                      currentMeters.map(meter => (
+                        <option key={meter.uid} value={meter.uid}>
+                          {meter.base.meter_numbers[0]} - {meter.base.service_tariff}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Only electric meters are shown
+                  </p>
+                </div>
               )}
-              <p className="mt-1 text-xs text-gray-500">
-                {isSameLocation === true 
-                  ? "Using meter service address" 
-                  : "Enter the facility address manually"
-                }
-              </p>
-            </div>
-          )}
 
-          {/* Commercial Role */}
-          <div className="mb-3">
-            <label className={`${labelClass} text-sm`}>
-              Commercial Role <span className="text-red-500">*</span>
-            </label>
-            <select
-              name="commercialRole"
-              value={formData.commercialRole}
-              onChange={handleChange}
-              className={`${selectClass} text-sm py-2`}
-              required
-              disabled={loading}
-            >
-              <option value="owner">Owner</option>
-              <option value="operator">Operator</option>
-              <option value="both">Both</option>
-            </select>
+              {/* Location Confirmation */}
+              {selectedMeter && (
+                <div className="mb-3 p-2 bg-gray-50 rounded-md border border-gray-200 text-sm">
+                  <p className="font-medium mb-2">Service Address: {selectedMeter.base.service_address}</p>
+                  <p className="font-medium mb-2">
+                    Is this the same location for the solar installation? <span className="text-red-500">*</span>
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      className={`px-3 py-1 rounded-md border text-sm ${
+                        isSameLocation === true ? 'bg-green-100 border-green-500 text-green-700' : 'border-gray-300 hover:bg-gray-50'
+                      }`}
+                      onClick={() => handleLocationChoice(true)}
+                      disabled={loading}
+                    >
+                      Yes
+                    </button>
+                    <button
+                      type="button"
+                      className={`px-3 py-1 rounded-md border text-sm ${
+                        isSameLocation === false ? 'bg-blue-100 border-blue-500 text-blue-700' : 'border-gray-300 hover:bg-gray-50'
+                      }`}
+                      onClick={() => handleLocationChoice(false)}
+                      disabled={loading}
+                    >
+                      No
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Address Field */}
+              {selectedMeter && isSameLocation !== null && (
+                <div>
+                  <label className={labelClass}>
+                    Facility Address <span className="text-red-500">*</span>
+                  </label>
+                  {isSameLocation === true ? (
+                    <input
+                      type="text"
+                      name="address"
+                      value={formData.address}
+                      className={`${inputClass} bg-gray-100`}
+                      disabled={true}
+                      placeholder="Address will be auto-filled from meter service address"
+                    />
+                  ) : (
+                    <input
+                      type="text"
+                      name="address"
+                      value={formData.address}
+                      onChange={handleChange}
+                      className={inputClass}
+                      placeholder="Enter facility address"
+                      required
+                      disabled={loading}
+                    />
+                  )}
+                  <p className="mt-1 text-xs text-gray-500">
+                    {isSameLocation === true 
+                      ? "Using meter service address" 
+                      : "Enter the facility address manually"
+                    }
+                  </p>
+                </div>
+              )}
+
+              {/* Commercial Role */}
+              <div>
+                <label className={labelClass}>
+                  Commercial Role <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="commercialRole"
+                  value={formData.commercialRole}
+                  onChange={handleChange}
+                  className={selectClass}
+                  required
+                  disabled={loading}
+                >
+                  <option value="owner">Owner</option>
+                  <option value="operator">Operator</option>
+                  <option value="both">Both</option>
+                </select>
+              </div>
+
+              {/* Entity Type */}
+              <div>
+                <label className={labelClass}>
+                  Entity Type <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="entityType"
+                  value={formData.entityType}
+                  onChange={handleChange}
+                  className={selectClass}
+                  required
+                  disabled={loading}
+                >
+                  <option value="company">Company</option>
+                  <option value="individual">Individual</option>
+                </select>
+              </div>
+
+              {/* Submit Buttons */}
+              <div className="flex space-x-4 pt-4">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="flex-1 rounded-md border border-gray-300 text-gray-700 font-semibold py-2 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300 font-sfpro"
+                  disabled={loading}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className={`flex-1 ${buttonPrimary} ${!isFormComplete ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  disabled={loading || !isFormComplete}
+                >
+                  {loading ? "Processing..." : "Add Facility"}
+                </button>
+              </div>
+            </form>
           </div>
+        </div>
+      )}
 
-          {/* Entity Type */}
-          <div className="mb-3">
-            <label className={`${labelClass} text-sm`}>
-              Entity Type <span className="text-red-500">*</span>
-            </label>
-            <select
-              name="entityType"
-              value={formData.entityType}
-              onChange={handleChange}
-              className={`${selectClass} text-sm py-2`}
-              required
-              disabled={loading}
-            >
-              <option value="company">Company</option>
-              <option value="individual">Individual</option>
-            </select>
-          </div>
-
-          {/* Submit Button */}
-          <button
-            type="submit"
-            className={`${buttonPrimary} mt-4 w-full py-2 text-sm ${!isFormComplete ? 'opacity-50 cursor-not-allowed' : ''}`}
-            disabled={loading || !isFormComplete}
-          >
-            {loading ? "Processing..." : "Add Facility"}
-          </button>
-        </form>
-      </div>
-    </div>
+      {/* Add Utility Provider Modal */}
+      <AddUtilityProvider
+        isOpen={showAddUtilityModal}
+        onClose={handleCloseAddUtilityModal}
+      />
+    </>
   );
 }
