@@ -1,10 +1,11 @@
 'use client'; // Mark as a client component
 
 import { useEffect, useState } from 'react';
-import { gsap } from 'gsap';
+import { useRouter } from 'next/navigation';
 
 export default function HomePage() {
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     setTimeout(() => {
@@ -12,45 +13,37 @@ export default function HomePage() {
     }, 5000);
   }, []);
 
-  useEffect(() => {
-    // GSAP Animation for the construction SVG
-    if (loading) {
-      const timeline = gsap.timeline({ repeat: -1, yoyo: true });
-
-      timeline.to('.construction-arm', {
-        rotation: '+=10',
-        transformOrigin: 'center center',
-        duration: 1,
-        ease: 'power1.inOut',
-      });
-
-      timeline.to('.construction-head', {
-        scale: 1.1,
-        duration: 0.6,
-        ease: 'bounce.out',
-        yoyo: true,
-        repeat: 1,
-      }, 0); // Start head animation at the same time as arm animation
-    }
-  }, [loading]);
+  const handleLoginClick = () => {
+    router.push('/login');
+  };
 
   return (
-    <div className="min-h-screen bg-[#039994] flex flex-col justify-center items-center text-white">
+    <div className="min-h-screen bg-[#039994] flex flex-col justify-center items-center text-white relative">
+      {/* Login Button - Top Right */}
+      <div className="absolute top-8 right-8">
+        <button
+          onClick={handleLoginClick}
+          className="bg-white text-[#039994] px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-all duration-300 transform hover:scale-105 shadow-lg"
+        >
+          Login
+        </button>
+      </div>
+
       <div className="text-center">
         {/* Heading */}
-        <h1 className="text-5xl font-extrabold mb-6 animate__animated animate__fadeInUp animate__delay-1s">
+        <h1 className="text-5xl font-extrabold mb-6">
           DCARBON
         </h1>
-        <p className="text-xl max-w-3xl mx-auto mb-8 animate__animated animate__fadeInUp animate__delay-1.5s">
+        <p className="text-xl max-w-3xl mx-auto mb-8">
           SUSTAINABLE INNOVATION
         </p>
 
         {/* Construction Animation */}
         {loading ? (
-          <div className="flex items-center justify-center space-x-4 animate__animated animate__fadeInUp animate__delay-2s">
+          <div className="flex items-center justify-center space-x-4">
             {/* Animated SVG (Sleek Construction Worker) */}
             <svg
-              className="w-24 h-24"
+              className="w-24 h-24 animate-bounce"
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 200 200"
             >
@@ -92,11 +85,11 @@ export default function HomePage() {
             <span className="text-lg font-semibold text-white">Under Construction</span>
           </div>
         ) : (
-          <p className="text-lg font-semibold animate__animated animate__fadeInUp animate__delay-2.5s">Coming Soon</p>
+          <p className="text-lg font-semibold">Coming Soon</p>
         )}
 
         {/* Under Construction Message */}
-        <div className="mt-8 flex flex-col items-center space-y-2 animate__animated animate__fadeInUp animate__delay-3s">
+        <div className="mt-8 flex flex-col items-center space-y-2">
           <div className="text-3xl font-semibold text-white">We're Building Something Amazing!</div>
           <p className="text-lg text-white opacity-80">
             We're working hard to bring you the best experience. Stay tuned for updates.
@@ -105,10 +98,22 @@ export default function HomePage() {
 
         {/* Loading dots animation */}
         <div className="flex justify-center mt-6 space-x-2">
-          <div className="w-2 h-2 bg-white rounded-full animate-dot-1" />
-          <div className="w-2 h-2 bg-white rounded-full animate-dot-2" />
-          <div className="w-2 h-2 bg-white rounded-full animate-dot-3" />
+          <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+          <div className="w-2 h-2 bg-white rounded-full animate-pulse delay-75" />
+          <div className="w-2 h-2 bg-white rounded-full animate-pulse delay-150" />
         </div>
+
+        {/* Additional Login Button (Alternative placement) */}
+        {!loading && (
+          <div className="mt-8">
+            <button
+              onClick={handleLoginClick}
+              className="bg-yellow-400 text-[#039994] px-8 py-4 rounded-full font-bold text-lg hover:bg-yellow-300 transition-all duration-300 transform hover:scale-105 shadow-xl"
+            >
+              Get Started - Login
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
