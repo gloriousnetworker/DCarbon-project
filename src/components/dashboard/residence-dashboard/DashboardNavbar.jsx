@@ -15,12 +15,11 @@ const DashboardNavbar = ({
           <button className="md:hidden" onClick={toggleSidebar}>
             <FaBars className="text-gray-700" size={20} />
           </button>
-
           <h1 className="font-semibold text-[16px] tracking-[-0.05em] text-[#1E1E1E] font-sfpro">
             {sectionDisplayMap[selectedSection]}
           </h1>
         </div>
-
+        
         {/* Center: Search Bar */}
         <div className="flex-1 flex justify-center mx-4">
           <div className="relative w-full max-w-md">
@@ -36,7 +35,7 @@ const DashboardNavbar = ({
             />
           </div>
         </div>
-
+        
         {/* Right: Notifications & Support */}
         <div className="flex items-center space-x-6">
           <button
@@ -53,8 +52,13 @@ const DashboardNavbar = ({
             />
             <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500" />
           </button>
-
-          <FaHeadset className="text-[#039994]" size={20} />
+          
+          <button
+            onClick={() => onSectionChange("contactSupport")}
+            className="focus:outline-none"
+          >
+            <FaHeadset className="text-[#039994]" size={20} />
+          </button>
         </div>
       </div>
     </header>

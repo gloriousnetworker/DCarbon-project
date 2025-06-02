@@ -20,27 +20,28 @@ import {
 const SendReminderModal = lazy(() => import('./CustomerDetailsReminder'));
 
 const documentationFields = [
-  { key: 'nemAgreement',       label: 'NEM Agreement (NEM)',        endpoint: 'interconnection' },
-  { key: 'meterIdPhoto',       label: 'Meter ID Photo',             endpoint: 'meter-id' },
-  { key: 'installerAgreement', label: 'Installer Agreement',        endpoint: 'installer' },
-  { key: 'singleLineDiagram',  label: 'Single Line Diagram',        endpoint: 'single-line' },
-  { key: 'utilityPtoLetter',   label: 'Utility PTO Letter',         endpoint: 'utility-pto' },
+  { key: 'nemAgreement', label: 'NEM Agreement (NEM)', endpoint: 'nem-agreement', statusKey: 'nemAgreementStatus' },
+  { key: 'meterIdPhoto', label: 'Meter ID Photo', endpoint: 'meter-id', statusKey: 'meterIdStatus' },
+  { key: 'installerAgreement', label: 'Installer Agreement', endpoint: 'installer', statusKey: 'installerAgreementStatus' },
+  { key: 'singleLineDiagram', label: 'Single Line Diagram', endpoint: 'single-line', statusKey: 'singleLineDiagramStatus' },
+  { key: 'utilityPTOLetter', label: 'Utility PTO Letter', endpoint: 'utility-pto', statusKey: 'utilityPTOLetterStatus' },
+  { key: 'interconnectionAgreement', label: 'Interconnection Agreement', endpoint: 'interconnection', statusKey: 'interconnectionStatus' },
 ];
 
 const statusStyles = {
-  Required:  { bg: 'bg-[#FFB20017]', text: 'text-[#FFB200]' },
+  Required: { bg: 'bg-[#FFB20017]', text: 'text-[#FFB200]' },
   Submitted: { bg: 'bg-[#93939321]', text: 'text-[#939393]' },
-  Approved:  { bg: 'bg-[#069B9621]', text: 'text-[#056C69]' },
-  Rejected:  { bg: 'bg-[#FF000017]', text: 'text-[#FF0000]' },
+  Approved: { bg: 'bg-[#069B9621]', text: 'text-[#056C69]' },
+  Rejected: { bg: 'bg-[#FF000017]', text: 'text-[#FF0000]' },
 };
 
 const progressSteps = [
-  { label: 'Invitation sent',       color: '#000000' },
-  { label: 'Documents Pending',     color: '#FFB200' },
-  { label: 'Documents Rejected',    color: '#7CABDE' },
+  { label: 'Invitation sent', color: '#000000' },
+  { label: 'Documents Pending', color: '#FFB200' },
+  { label: 'Documents Rejected', color: '#7CABDE' },
   { label: 'Registration Complete', color: '#056C69' },
-  { label: 'Active',                color: '#00B4AE' },
-  { label: 'Terminated',            color: '#FF0000' },
+  { label: 'Active', color: '#00B4AE' },
+  { label: 'Terminated', color: '#FF0000' },
 ];
 
 export default function CustomerDetails({ customer, onBack }) {
@@ -52,40 +53,50 @@ export default function CustomerDetails({ customer, onBack }) {
   const [userNotFound, setUserNotFound] = useState(false);
 
   useEffect(() => {
-    const fetch = async () => {
+    const fetchCustomerDetails = async () => {
       try {
         setLoading(true);
         const authToken = localStorage.getItem('authToken');
         const email = customer.inviteeEmail || customer.email;
         if (!email) throw new Error('No email for customer');
+        
         const { data } = await axios.get(
           `https://services.dcarbon.solutions/api/user/partner/details/${email}`,
           { headers: { Authorization: `Bearer ${authToken}` } }
         );
+
         if (data.status === 'success') {
           setCustomerDetails(data.data);
-          // initialize docs state
-          const initial = {};
+          const initialDocs = {};
+          
           documentationFields.forEach(f => {
-            const docObj = data.data.documentation?.[f.key] || null;
-            initial[f.key] = {
-              file: docObj?.fileName || null,
-              url: docObj?.url || null,
-              status: docObj
-                ? docObj.approved
-                  ? 'Approved'
-                  : docObj.rejected
-                    ? 'Rejected'
-                    : 'Submitted'
-                : 'Required'
+            const statusKey = f.statusKey;
+            const urlKey = f.key;
+            const rejectionKey = `${f.key}RejectionReason`;
+            
+            const status = data.data.documentation?.[statusKey]?.toUpperCase() || 'REQUIRED';
+            const url = data.data.documentation?.[urlKey] || null;
+            
+            let displayStatus;
+            switch(status) {
+              case 'APPROVED': displayStatus = 'Approved'; break;
+              case 'REJECTED': displayStatus = 'Rejected'; break;
+              case 'SUBMITTED': displayStatus = 'Submitted'; break;
+              default: displayStatus = 'Required';
+            }
+
+            initialDocs[f.key] = {
+              file: url ? url.split('/').pop() : null,
+              url,
+              status: displayStatus,
+              rejectionReason: data.data.documentation?.[rejectionKey] || null
             };
           });
-          setDocs(initial);
+
+          setDocs(initialDocs);
         }
       } catch (err) {
-        console.error(err);
-        // Check specifically for 404 status to handle user not found scenario
-        if (err.response && err.response.status === 404) {
+        if (err.response?.status === 404) {
           setUserNotFound(true);
         } else {
           setError(err.message || 'Failed to load');
@@ -94,106 +105,58 @@ export default function CustomerDetails({ customer, onBack }) {
         setLoading(false);
       }
     };
-    fetch();
+
+    fetchCustomerDetails();
   }, [customer]);
 
   const handleFileChange = async (key, e) => {
     const file = e.target.files[0];
     if (!file) return;
-  
+
     const userId = customerDetails.id;
     const authToken = localStorage.getItem('authToken');
     const formData = new FormData();
     formData.append('file', file);
-  
-    const field = documentationFields.find(f => f.key === key);
-    const url = `https://services.dcarbon.solutions/api/user/documentation/${field.endpoint}/${userId}`;
-  
-    try {
-      const res = await axios.put(url, formData, {
-        headers: {
-          Authorization: `Bearer ${authToken}`,
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-  
-      if (res.data.status === 'success') {
-        const data = res.data.data;
-        
-        // Create a mapping between our keys and the API response keys
-        const statusKeyMap = {
-          nemAgreement: 'interconnectionStatus',
-          meterIdPhoto: 'meterIdStatus',
-          installerAgreement: 'installerAgreementStatus',
-          singleLineDiagram: 'singleLineDiagramStatus',
-          utilityPtoLetter: 'utilityPTOLetterStatus',
-        };
-        
-        // Get the status from the response
-        const statusFromApi = data[statusKeyMap[key]]?.toLowerCase() || 'submitted';
-        
-        // Determine the display status
-        let displayStatus;
-        switch(statusFromApi) {
-          case 'approved':
-            displayStatus = 'Approved';
-            break;
-          case 'rejected':
-            displayStatus = 'Rejected';
-            break;
-          case 'required':
-            displayStatus = 'Required';
-            break;
-          default:
-            displayStatus = 'Submitted';
-        }
-        
-        // Get the URL from the response
-        const urlKeyMap = {
-          nemAgreement: 'interconnectionAgreement',
-          meterIdPhoto: 'meterIdPhoto',
-          installerAgreement: 'installerAgreement',
-          singleLineDiagram: 'singleLineDiagram',
-          utilityPtoLetter: 'utilityPTOLetter',
-        };
-        
-        const newUrl = data[urlKeyMap[key]] || null;
 
-        // Update the state with the new document info
+    const field = documentationFields.find(f => f.key === key);
+    if (!field) return;
+
+    try {
+      const res = await axios.put(
+        `https://services.dcarbon.solutions/api/user/documentation/${field.endpoint}/${userId}`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+
+      if (res.data.status === 'success') {
+        const updatedDoc = res.data.data;
+        const statusKey = field.statusKey;
+        const urlKey = key;
+        const rejectionKey = `${key}RejectionReason`;
+        
         setDocs(prev => ({
           ...prev,
           [key]: {
             file: file.name,
-            url: newUrl,
-            status: displayStatus,
+            url: updatedDoc[urlKey],
+            status: 'Submitted',
+            rejectionReason: updatedDoc[rejectionKey] || null
           }
         }));
-        
-        // Also update the customerDetails state to ensure persistence
-        if (customerDetails && customerDetails.documentation) {
-          setCustomerDetails(prev => ({
-            ...prev,
-            documentation: {
-              ...prev.documentation,
-              [key]: {
-                fileName: file.name,
-                url: newUrl,
-                approved: displayStatus === 'Approved',
-                rejected: displayStatus === 'Rejected',
-              }
-            }
-          }));
-        }
-        
+
         toast.success(res.data.message || 'Document uploaded successfully');
       }
     } catch (err) {
-      console.error('Upload error:', err.response?.data || err);
       toast.error(err.response?.data?.message || 'Upload failed');
     }
   };
 
-  const handleView = key => {
+  const handleView = (key) => {
     const url = docs[key]?.url;
     if (url) window.open(url, '_blank');
   };
@@ -202,7 +165,6 @@ export default function CustomerDetails({ customer, onBack }) {
     setShowModal(true);
   };
 
-  // static 40% for mock alignment
   const progressPercent = 40;
 
   if (loading) {
@@ -212,7 +174,7 @@ export default function CustomerDetails({ customer, onBack }) {
       </div>
     );
   }
-  
+
   if (userNotFound) {
     return (
       <div className={`${mainContainer} flex flex-col items-center justify-center`}>
@@ -242,7 +204,6 @@ export default function CustomerDetails({ customer, onBack }) {
           </div>
         </div>
         
-        {/* Send Reminder Modal */}
         {showModal && (
           <Suspense fallback={<div>Loading…</div>}>
             <SendReminderModal
@@ -254,7 +215,7 @@ export default function CustomerDetails({ customer, onBack }) {
       </div>
     );
   }
-  
+
   if (error || !customerDetails) {
     return (
       <div className={`${mainContainer} flex flex-col items-center justify-center`}>
@@ -275,7 +236,6 @@ export default function CustomerDetails({ customer, onBack }) {
 
   return (
     <div className={mainContainer}>
-      {/* Header */}
       <div className={headingContainer}>
         <div className={backArrow} onClick={onBack}>
           <HiOutlineArrowLeft size={24} />
@@ -289,7 +249,6 @@ export default function CustomerDetails({ customer, onBack }) {
         </button>
       </div>
 
-      {/* Send Reminder Modal */}
       {showModal && (
         <Suspense fallback={<div>Loading…</div>}>
           <SendReminderModal
@@ -299,7 +258,6 @@ export default function CustomerDetails({ customer, onBack }) {
         </Suspense>
       )}
 
-      {/* Progress Bar */}
       <div className={progressContainer}>
         <div className={progressBarWrapper}>
           <div
@@ -317,13 +275,12 @@ export default function CustomerDetails({ customer, onBack }) {
         ))}
       </div>
 
-      {/* Customer Card */}
       <div className="w-full max-w-3xl border border-[#039994] bg-[#069B960D] rounded-lg p-6 mb-8">
         <div className="grid grid-cols-2 gap-y-4 gap-x-12">
+          <div className="font-medium text-[#626060]">User ID</div>
+          <div className="text-[#1E1E1E]">{customerDetails.id}</div>
           <div className="font-medium text-[#626060]">Name</div>
-          <div className="text-[#1E1E1E]">
-            {customerDetails.firstName} {customerDetails.lastName}
-          </div>
+          <div className="text-[#1E1E1E]">{customerDetails.firstName} {customerDetails.lastName}</div>
           <div className="font-medium text-[#626060]">Email Address</div>
           <div className="text-[#1E1E1E]">{customerDetails.email}</div>
           <div className="font-medium text-[#626060]">Phone Number</div>
@@ -332,10 +289,18 @@ export default function CustomerDetails({ customer, onBack }) {
           <div className="text-[#1E1E1E]">{customerDetails.userType}</div>
           <div className="font-medium text-[#626060]">Utility Provider</div>
           <div className="text-[#1E1E1E]">{customerDetails.utilityProvider || 'N/A'}</div>
+          <div className="font-medium text-[#626060]">Utility Auth Email</div>
+          <div className="text-[#1E1E1E]">
+            {customerDetails.utilityAuthEmail?.join(', ') || 'N/A'}
+          </div>
           <div className="font-medium text-[#626060]">Meter ID</div>
           <div className="text-[#1E1E1E]">{customerDetails.meterId || 'N/A'}</div>
           <div className="font-medium text-[#626060]">Address</div>
           <div className="text-[#1E1E1E]">{customerDetails.address || 'N/A'}</div>
+          <div className="font-medium text-[#626060]">Financial Info</div>
+          <div className="text-[#1E1E1E]">
+            {customerDetails.financialInfo ? JSON.stringify(customerDetails.financialInfo) : 'N/A'}
+          </div>
           <div className="font-medium text-[#626060]">Date Registered</div>
           <div className="text-[#1E1E1E]">
             {new Date(customerDetails.createdAt).toLocaleDateString()}
@@ -343,23 +308,20 @@ export default function CustomerDetails({ customer, onBack }) {
         </div>
       </div>
 
-      {/* Documentation */}
       <h2 className="mb-2 font-[600] text-[20px] text-[#039994]">Documentation</h2>
       <hr className="w-full max-w-3xl mb-6" />
 
       <div className="w-full max-w-3xl grid grid-cols-3 gap-x-4 gap-y-4">
         {documentationFields.map(f => {
-          const { file, status } = docs[f.key] || {};
+          const { file, status, rejectionReason } = docs[f.key] || {};
           const st = statusStyles[status] || statusStyles.Required;
 
           return (
             <React.Fragment key={f.key}>
-              {/* 1) Label */}
               <div className="font-medium text-[#1E1E1E]">
                 {f.label}
               </div>
 
-              {/* 2) Upload box */}
               <div className={uploadFieldWrapper}>
                 <label className={`${uploadInputLabel} flex items-center justify-between border border-gray-300`}>
                   <span className="truncate max-w-[180px]">
@@ -390,20 +352,21 @@ export default function CustomerDetails({ customer, onBack }) {
                 </label>
               </div>
 
-              {/* 3) Status pill */}
-              <div>
-                <span
-                  className={`px-3 py-1 rounded-full text-xs font-semibold ${st.bg} ${st.text}`}
-                >
+              <div className="flex flex-col">
+                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${st.bg} ${st.text}`}>
                   {status}
                 </span>
+                {rejectionReason && (
+                  <span className="text-xs text-red-500 mt-1">
+                    {rejectionReason}
+                  </span>
+                )}
               </div>
             </React.Fragment>
           );
         })}
       </div>
 
-      {/* Back button */}
       <div className="w-full max-w-3xl flex justify-end mt-8">
         <button onClick={onBack} className={`${buttonPrimary} w-auto px-6`}>
           Back to List

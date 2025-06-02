@@ -205,16 +205,6 @@ export default function FacilityCardView() {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        setSelectedFacility(facility);
-                      }}
-                      className="text-[#039994] hover:text-[#027a76]"
-                      title="Edit"
-                    >
-                      <FiEdit2 size={16} />
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
                         setFacilityToDelete(facility);
                       }}
                       className="text-red-500 hover:text-red-700"

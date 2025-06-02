@@ -143,7 +143,7 @@ export default function FacilityManagement() {
       if (exportParams.format !== "csv" || exportParams.email) {
         const token = localStorage.getItem("authToken");
         const userId = localStorage.getItem("userId") || "8b14b23d-3082-4846-9216-2c2e9f1e96bf";
-        
+
         // Prepare the request body
         const requestBody = {
           format: exportParams.format,
@@ -158,19 +158,19 @@ export default function FacilityManagement() {
         };
 
         console.log("Exporting with params:", requestBody);
-        
+
         // If we have an endpoint to call
         if (exportParams.format !== "csv") {
           try {
             const response = await axios.post(
               `${baseUrl}/api/reports/export-customer-report`,
               requestBody,
-              { 
+              {
                 headers: { Authorization: `Bearer ${token}` },
                 responseType: 'blob' // Important for file downloads
               }
             );
-            
+
             // Handle the file download
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
@@ -193,9 +193,9 @@ export default function FacilityManagement() {
           alert(`CSV report will also be sent to ${exportParams.email} when ready`);
         }
       }
-      
+
       // CSV is already handled in the ExportReportModal component through direct download
-      
+
       return true;
     } catch (error) {
       console.error("Export error:", error);
@@ -279,12 +279,13 @@ export default function FacilityManagement() {
           >
             Filter
           </button>
-          <button 
+          <button
             onClick={() => setShowExportModal(true)}
-            className={`${buttonPrimary} text-sm`}
+            className="border border-green px-4 py-1 rounded bg-[#039994] text-sm text-white"
           >
             Export Report
           </button>
+
         </div>
       </div>
 
@@ -390,7 +391,7 @@ export default function FacilityManagement() {
           initialFilters={filters}
           yearFilter={yearFilter}
           monthFilter={monthFilter}
-          tableData={tableData} // Pass the table data to the export modal
+          tableData={tableData}
         />
       )}
     </div>

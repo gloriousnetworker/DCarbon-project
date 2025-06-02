@@ -104,6 +104,7 @@ const DashboardNavbar = ({
             </button>
           ) : null}
         </div>
+        
         {/* Center: Search Bar */}
         <div className="flex-1 flex justify-center mx-4">
           <div className="relative w-full max-w-md">
@@ -119,6 +120,7 @@ const DashboardNavbar = ({
             />
           </div>
         </div>
+        
         {/* Right: Notifications & Support */}
         <div className="flex items-center space-x-6">
           {/* Bell → routes to notifications section */}
@@ -136,8 +138,14 @@ const DashboardNavbar = ({
             />
             <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500" />
           </button>
-          {/* Support icon stays unchanged */}
-          <FaHeadset className="text-[#039994]" size={20} />
+          
+          {/* Support icon → routes to contactSupport section */}
+          <button
+            onClick={() => onSectionChange("contactSupport")}
+            className="focus:outline-none"
+          >
+            <FaHeadset className="text-[#039994]" size={20} />
+          </button>
         </div>
       </div>
     </header>

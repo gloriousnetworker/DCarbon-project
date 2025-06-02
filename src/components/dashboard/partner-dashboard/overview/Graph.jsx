@@ -250,8 +250,28 @@ export default function ReferredAndCommissionDashboard() {
       // Simulate download delay
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // In a real app, you would create and download a CSV here
-      console.log("Downloading commission report for", commissionYear);
+      // Create CSV content
+      const csvHeader = "Month,Commission (k)\n";
+      const csvContent = commissionData
+        .map(item => `${item.month},${item.value}`)
+        .join('\n');
+      
+      const fullCsvContent = csvHeader + csvContent;
+      
+      // Create and download CSV file
+      const blob = new Blob([fullCsvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', `commission_report_${commissionYear}.csv`);
+      link.style.visibility = 'hidden';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      console.log("Downloaded commission report for", commissionYear);
       
     } catch (error) {
       console.error("Error downloading report:", error);

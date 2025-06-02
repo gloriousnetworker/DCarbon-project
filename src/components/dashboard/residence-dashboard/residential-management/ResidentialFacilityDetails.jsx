@@ -205,24 +205,21 @@ export default function FacilityDetails({
     }
   };
 
-  // Prepare document list for display
+  // Prepare document list for display - Updated to show all documents by default
   const getDocumentList = () => {
-    if (!documents) return [];
-
     const docList = [];
     
+    // Show all document types, regardless of whether they have been uploaded or not
     Object.keys(DOCUMENT_TYPES).forEach(key => {
       const urlKey = `${key}Url`;
       const statusKey = `${key}Status`;
       
-      if (documents[urlKey] || documents[statusKey]) {
-        docList.push({
-          type: key,
-          name: DOCUMENT_TYPES[key].name,
-          url: documents[urlKey],
-          status: documents[statusKey] || "REQUIRED"
-        });
-      }
+      docList.push({
+        type: key,
+        name: DOCUMENT_TYPES[key].name,
+        url: documents?.[urlKey] || null,
+        status: documents?.[statusKey] || "REQUIRED"
+      });
     });
 
     return docList;
@@ -323,48 +320,44 @@ export default function FacilityDetails({
           </h3>
           <hr className="border-black mb-4" />
           
-          {documentList.length === 0 ? (
-            <p className="font-sfpro text-[12px] font-[400] text-gray-500">No documents available</p>
-          ) : (
-            <div className="space-y-3">
-              {visibleDocs.map((doc) => (
-                <div key={doc.type} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-sfpro text-[13px] font-[500] text-black">{doc.name}</span>
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-sfpro font-[600] ${getStatusColor(doc.status)}`}>
-                      {doc.status}
-                    </span>
-                  </div>
-                  
-                  <div 
-                    className="bg-[#F0F0F0] rounded-md p-2.5 flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors"
-                    onClick={() => doc.url ? window.open(doc.url, '_blank') : handleUploadClick(doc.type)}
-                  >
-                    {doc.url ? (
-                      <div className="flex items-center space-x-2">
-                        <FiEye className="text-gray-600" size={16} />
-                        <span className="font-sfpro text-[12px] font-[400] text-gray-600">View Document</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center space-x-2">
-                        <FiUpload className="text-gray-600" size={16} />
-                        <span className="font-sfpro text-[12px] font-[400] text-gray-600">Upload Document</span>
-                      </div>
-                    )}
-                  </div>
+          <div className="space-y-3">
+            {visibleDocs.map((doc) => (
+              <div key={doc.type} className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-sfpro text-[13px] font-[500] text-black">{doc.name}</span>
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-sfpro font-[600] ${getStatusColor(doc.status)}`}>
+                    {doc.status}
+                  </span>
                 </div>
-              ))}
-              
-              {documentList.length > 3 && (
-                <button
-                  onClick={() => setShowAllDocs(!showAllDocs)}
-                  className="w-full mt-3 px-3 py-2 bg-[#039994] text-white rounded hover:bg-[#028580] transition-colors font-sfpro text-[12px] font-[500]"
+                
+                <div 
+                  className="bg-[#F0F0F0] rounded-md p-2.5 flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors"
+                  onClick={() => doc.url ? window.open(doc.url, '_blank') : handleUploadClick(doc.type)}
                 >
-                  {showAllDocs ? "View Less" : "View More"}
-                </button>
-              )}
-            </div>
-          )}
+                  {doc.url ? (
+                    <div className="flex items-center space-x-2">
+                      <FiEye className="text-gray-600" size={16} />
+                      <span className="font-sfpro text-[12px] font-[400] text-gray-600">View Document</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center space-x-2">
+                      <FiUpload className="text-gray-600" size={16} />
+                      <span className="font-sfpro text-[12px] font-[400] text-gray-600">Upload Document</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+            
+            {documentList.length > 3 && (
+              <button
+                onClick={() => setShowAllDocs(!showAllDocs)}
+                className="w-full mt-3 px-3 py-2 bg-[#039994] text-white rounded hover:bg-[#028580] transition-colors font-sfpro text-[12px] font-[500]"
+              >
+                {showAllDocs ? "View Less" : "View More"}
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
