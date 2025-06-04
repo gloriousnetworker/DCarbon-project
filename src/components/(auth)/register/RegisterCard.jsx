@@ -27,6 +27,7 @@ function RegisterCardContent() {
   const [showModal, setShowModal] = useState(false);
   const [error, setError] = useState('');
   const [referralCode, setReferralCode] = useState('');
+  const [showReferralField, setShowReferralField] = useState(false);
 
   // Form field states
   const [firstName, setFirstName] = useState('');
@@ -112,8 +113,10 @@ function RegisterCardContent() {
       const baseUrl = 'https://services.dcarbon.solutions';
       let url = `${baseUrl}/api/user/register`;
   
-      if (referralCode) {
-        url += `?referralCode=${referralCode}`;
+      // Use the referral code from either URL or manual input
+      const finalReferralCode = referralCode.trim();
+      if (finalReferralCode) {
+        url += `?referralCode=${finalReferralCode}`;
       }
   
       const response = await axios.post(
@@ -137,6 +140,13 @@ function RegisterCardContent() {
     setPasswordVisible((prev) => !prev);
   const handleUserCategory = (category) =>
     setUserCategory(category);
+
+  const toggleReferralField = () => {
+    setShowReferralField(!showReferralField);
+    if (!showReferralField) {
+      setReferralCode('');
+    }
+  };
 
   return (
     <>
@@ -279,6 +289,40 @@ function RegisterCardContent() {
               </div>
             </div>
 
+            {/* Referral Code Field */}
+            <div>
+              <button
+                type="button"
+                onClick={toggleReferralField}
+                className="text-[#039994] text-sm font-sfpro underline mb-2"
+              >
+                {showReferralField ? 'Hide referral code' : 'Have a referral code?'}
+              </button>
+              
+              {showReferralField && (
+                <div>
+                  <label htmlFor="referralCode" className={labelClass}>
+                    Referral Code
+                  </label>
+                  <div className="relative">
+                    <img
+                      src="/vectors/referral_icon.png" // You should add an appropriate icon
+                      alt="Referral icon"
+                      className="absolute w-[16px] h-[16px] top-1/2 left-2 -translate-y-1/2"
+                    />
+                    <input
+                      type="text"
+                      id="referralCode"
+                      placeholder="Enter referral code"
+                      className={`${inputClass} ${grayPlaceholder} pl-10`}
+                      value={referralCode}
+                      onChange={(e) => setReferralCode(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* User Category */}
             <div>
               <label className={labelClass}>
@@ -334,7 +378,7 @@ function RegisterCardContent() {
                         fillRule="evenodd"
                         d="M4.03 3.97a.75.75 0 011.06 0l10 10a.75.75 0 11-1.06 1.06l-1.042-1.042A8.74 8.74 0 0110 15c-3.272 0-6.06-1.906-7.76-4.701a.945.945 0 010-1.006 10.45 10.45 0 013.12-3.263L4.03 5.03a.75.75 0 010-1.06zm12.24 7.79c.291-.424.546-.874.76-1.339a.945.945 0 000-1.006C16.06 6.905 13.272 5 10 5c-.638 0-1.26.07-1.856.202l7.127 7.127z"
                         clipRule="evenodd"
-                      />
+                    />
                     </svg>
                   ) : (
                     <svg

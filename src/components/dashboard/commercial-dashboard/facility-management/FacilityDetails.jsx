@@ -113,7 +113,7 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
       infoReleaseAuth: `${baseUrl}/api/facility/update-info-release-auth/${facilityId}`,
       wregisAssignment: `${baseUrl}/api/facility/update-wregis-assignment/${facilityId}`,
       multipleOwnerDecl: `${baseUrl}/api/facility/update-multiple-owner-decl/${facilityId}`,
-      sysOpDataAccess: `${baseUrl}/api/facility/update-facility-sys-op-data-access/${facilityId}`
+      sysOpDataAccess: `${baseUrl}/api/facility/update-sys-op-data-access/${facilityId}`
     };
 
     // Define the correct field names for each document type
@@ -148,8 +148,7 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
           ...prevData,
           ...result.data
         }));
-        
-        // Notify parent component if callback exists
+      
         if (onFacilityUpdated) {
           onFacilityUpdated(result.data);
         }
