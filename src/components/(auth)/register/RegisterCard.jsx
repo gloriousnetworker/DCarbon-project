@@ -26,7 +26,8 @@ function RegisterCardContent() {
   const [userCategory, setUserCategory] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [error, setError] = useState('');
-  const [referralCode, setReferralCode] = useState('');
+  const [urlReferralCode, setUrlReferralCode] = useState(''); // From URL params
+  const [manualReferralCode, setManualReferralCode] = useState(''); // Manually entered
   const [showReferralField, setShowReferralField] = useState(false);
 
   // Form field states
@@ -42,7 +43,8 @@ function RegisterCardContent() {
   useEffect(() => {
     const code = searchParams.get('referral');
     if (code) {
-      setReferralCode(code);
+      setUrlReferralCode(code);
+      setShowReferralField(true); // Auto-show the field when URL has referral
       toast.success(`You've been invited with referral code: ${code}`);
     }
   }, [searchParams]);
@@ -55,7 +57,7 @@ function RegisterCardContent() {
   };
 
   // Get available user categories based on referral status
-  const availableUserCategories = referralCode
+  const availableUserCategories = urlReferralCode
     ? ['Residential', 'Commercial']
     : ['Residential', 'Commercial', 'Partner'];
 
@@ -107,16 +109,20 @@ function RegisterCardContent() {
       userType: userTypeMapping[userCategory],
       password,
     };
+
+    // Add manual referral code to payload body if present
+    if (manualReferralCode.trim()) {
+      payload.bodyReferralCode = manualReferralCode.trim();
+    }
   
     try {
       // Clean URL construction
       const baseUrl = 'https://services.dcarbon.solutions';
       let url = `${baseUrl}/api/user/register`;
   
-      // Use the referral code from either URL or manual input
-      const finalReferralCode = referralCode.trim();
-      if (finalReferralCode) {
-        url += `?referralCode=${finalReferralCode}`;
+      // Use URL referral code as query parameter if present
+      if (urlReferralCode.trim()) {
+        url += `?referralCode=${urlReferralCode.trim()}`;
       }
   
       const response = await axios.post(
@@ -144,8 +150,18 @@ function RegisterCardContent() {
   const toggleReferralField = () => {
     setShowReferralField(!showReferralField);
     if (!showReferralField) {
-      setReferralCode('');
+      setManualReferralCode('');
     }
+  };
+
+  // Get the display value for referral code input
+  const getReferralDisplayValue = () => {
+    return urlReferralCode || manualReferralCode;
+  };
+
+  // Check if referral field should be read-only
+  const isReferralReadOnly = () => {
+    return !!urlReferralCode;
   };
 
   return (
@@ -184,9 +200,9 @@ function RegisterCardContent() {
 
         {/* Form Container */}
         <div className="w-full max-w-md">
-          {referralCode && (
+          {urlReferralCode && (
             <div className="mb-4 p-3 bg-green-100 text-green-800 rounded-md text-sm">
-              You're registering with referral code: <strong>{referralCode}</strong>
+              You're registering with referral code: <strong>{urlReferralCode}</strong>
             </div>
           )}
 
@@ -291,34 +307,68 @@ function RegisterCardContent() {
 
             {/* Referral Code Field */}
             <div>
-              <button
-                type="button"
-                onClick={toggleReferralField}
-                className="text-[#039994] text-sm font-sfpro underline mb-2"
-              >
-                {showReferralField ? 'Hide referral code' : 'Have a referral code?'}
-              </button>
+              {!urlReferralCode && (
+                <button
+                  type="button"
+                  onClick={toggleReferralField}
+                  className="text-[#039994] text-sm font-sfpro underline mb-2"
+                >
+                  {showReferralField ? 'Hide referral code' : 'Have a referral code?'}
+                </button>
+              )}
               
               {showReferralField && (
                 <div>
                   <label htmlFor="referralCode" className={labelClass}>
                     Referral Code
+                    {urlReferralCode && <span className="text-sm text-gray-500 ml-2">(From invitation link)</span>}
                   </label>
                   <div className="relative">
                     <img
-                      src="/vectors/referral_icon.png" // You should add an appropriate icon
+                      src="/vectors/referral_icon.png"
                       alt="Referral icon"
                       className="absolute w-[16px] h-[16px] top-1/2 left-2 -translate-y-1/2"
                     />
                     <input
                       type="text"
                       id="referralCode"
-                      placeholder="Enter referral code"
-                      className={`${inputClass} ${grayPlaceholder} pl-10`}
-                      value={referralCode}
-                      onChange={(e) => setReferralCode(e.target.value)}
+                      placeholder={isReferralReadOnly() ? "" : "Enter referral code"}
+                      className={`${inputClass} ${grayPlaceholder} pl-10 ${
+                        isReferralReadOnly() ? 'bg-gray-100 cursor-not-allowed' : ''
+                      }`}
+                      value={getReferralDisplayValue()}
+                      onChange={(e) => {
+                        if (!isReferralReadOnly()) {
+                          setManualReferralCode(e.target.value);
+                        }
+                      }}
+                      readOnly={isReferralReadOnly()}
+                      disabled={isReferralReadOnly()}
                     />
+                    {isReferralReadOnly() && (
+                      <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-4 w-4 text-gray-400"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                          />
+                        </svg>
+                      </div>
+                    )}
                   </div>
+                  {isReferralReadOnly() && (
+                    <p className="mt-1 text-xs text-gray-500">
+                      This referral code was provided through your invitation link and cannot be changed.
+                    </p>
+                  )}
                 </div>
               )}
             </div>
