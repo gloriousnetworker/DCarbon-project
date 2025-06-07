@@ -232,20 +232,22 @@ export default function EditFacilityDetailsModal({ facility, onClose, onSave }) 
         {/* Body */}
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Facility Name */}
+            {/* Facility Name - Non-editable */}
             <div>
               <label className={`${labelClass} mb-2`}>
-                Facility Name <span className="text-red-500">*</span>
+                Facility Name
               </label>
               <input
                 type="text"
                 name="facilityName"
                 value={formData.facilityName}
-                onChange={handleChange}
-                className={`${inputClass}`}
-                disabled={loading}
-                required
+                className={`${inputClass} bg-gray-100 cursor-not-allowed`}
+                disabled={true}
+                readOnly
               />
+              <p className="mt-1 text-xs text-gray-500">
+                Facility name cannot be edited
+              </p>
             </div>
 
             {/* Owner/Operator Name */}

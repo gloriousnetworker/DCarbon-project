@@ -16,7 +16,7 @@ import {
   uploadButtonStyle,
   uploadNoteStyle,
   spinnerOverlay
-} from "./styles";
+} from "../styles";
 import Loader from "@/components/loader/Loader.jsx";
 
 export default function AddResidentialFacilityModal({ isOpen, onClose }) {
@@ -28,7 +28,12 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
     financeAgreement: null,
     address: "",
     meterId: "",
-    zipCode: ""
+    zipCode: "",
+    systemCapacity: "",
+    facilityTypeNamingCode: 2,
+    utilityProviderNamingCode: "",
+    installerNamingCode: "",
+    financeNamingCode: ""
   });
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -41,15 +46,20 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
   const [selectedMeter, setSelectedMeter] = useState(null);
   const [isSameLocation, setIsSameLocation] = useState(null);
   const [selectedUtilityAuthEmail, setSelectedUtilityAuthEmail] = useState("");
-  const [installers] = useState(["Installer 1", "Installer 2", "Installer 3"]);
-  
-  // Add Utility Provider Modal State
+  const [installers, setInstallers] = useState([]);
+  const [installersLoading, setInstallersLoading] = useState(false);
+  const [financeTypes, setFinanceTypes] = useState([]);
+  const [financeTypesLoading, setFinanceTypesLoading] = useState(false);
   const [showAddUtilityModal, setShowAddUtilityModal] = useState(false);
+  const [showAddFinanceTypeModal, setShowAddFinanceTypeModal] = useState(false);
+  const [newFinanceType, setNewFinanceType] = useState("");
 
   useEffect(() => {
     if (isOpen) {
       fetchUtilityProviders();
       fetchUserMeters();
+      fetchInstallers();
+      fetchFinanceTypes();
     }
   }, [isOpen]);
 
@@ -142,6 +152,62 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
     }
   };
 
+  const fetchInstallers = async () => {
+    const authToken = localStorage.getItem("authToken");
+
+    if (!authToken) return;
+
+    setInstallersLoading(true);
+    try {
+      const response = await axios.get(
+        "https://services.dcarbon.solutions/api/user/partner/get-all-installer",
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`
+          }
+        }
+      );
+
+      if (response.data.status === "success") {
+        setInstallers(response.data.data.installers);
+      }
+    } catch (error) {
+      console.error("Error fetching installers:", error);
+      toast.error("Failed to load installers");
+    } finally {
+      setInstallersLoading(false);
+    }
+  };
+
+  const fetchFinanceTypes = async () => {
+    const authToken = localStorage.getItem("authToken");
+
+    if (!authToken) return;
+
+    setFinanceTypesLoading(true);
+    try {
+      const response = await axios.get(
+        "https://services.dcarbon.solutions/api/user/financial-types",
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`
+          }
+        }
+      );
+
+      if (response.data.status === "success") {
+        setFinanceTypes(response.data.data.types);
+      }
+    } catch (error) {
+      console.error("Error fetching finance types:", error);
+      toast.error("Failed to load finance types");
+    } finally {
+      setFinanceTypesLoading(false);
+    }
+  };
+
   const getCurrentMeters = () => {
     if (!selectedUtilityAuthEmail) return [];
     
@@ -172,6 +238,30 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
         ...prev,
         address: "",
         zipCode: ""
+      }));
+    }
+
+    if (name === "utilityProvider") {
+      const selectedProvider = utilityProviders.find(provider => provider.name === value);
+      setFormData(prev => ({
+        ...prev,
+        utilityProviderNamingCode: selectedProvider?.namingCode || ""
+      }));
+    }
+
+    if (name === "installer") {
+      const selectedInstaller = installers.find(installer => installer.name === value);
+      setFormData(prev => ({
+        ...prev,
+        installerNamingCode: selectedInstaller?.namingCode || ""
+      }));
+    }
+
+    if (name === "financeType") {
+      const selectedFinanceType = financeTypes.find(type => type.name === value);
+      setFormData(prev => ({
+        ...prev,
+        financeNamingCode: selectedFinanceType?.namingCode || ""
       }));
     }
   };
@@ -227,7 +317,12 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
       financeAgreement: null,
       address: "",
       meterId: "",
-      zipCode: ""
+      zipCode: "",
+      systemCapacity: "",
+      facilityTypeNamingCode: 2,
+      utilityProviderNamingCode: "",
+      installerNamingCode: "",
+      financeNamingCode: ""
     });
     setFile(null);
     setUploadSuccess(false);
@@ -270,7 +365,12 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
         financeAgreement: formData.financeAgreement,
         address: formData.address,
         meterId: formData.meterId,
-        zipCode: formData.zipCode
+        zipCode: formData.zipCode,
+        systemCapacity: Number(formData.systemCapacity),
+        facilityTypeNamingCode: formData.facilityTypeNamingCode,
+        utilityProviderNamingCode: Number(formData.utilityProviderNamingCode),
+        installerNamingCode: Number(formData.installerNamingCode),
+        financeNamingCode: Number(formData.financeNamingCode)
       };
 
       const response = await axios.post(
@@ -285,7 +385,7 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
       );
 
       if (response.data.status === "success") {
-        toast.success("Residence created successfully");
+        toast.success(`Residence created successfully: ${response.data.data.facilityName}`);
         resetForm();
         onClose();
       } else {
@@ -303,15 +403,65 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
     }
   };
 
-  // Handle Add Utility Provider Modal
   const handleOpenAddUtilityModal = () => {
     setShowAddUtilityModal(true);
   };
 
   const handleCloseAddUtilityModal = () => {
     setShowAddUtilityModal(false);
-    // Refresh user meters after adding utility provider
     fetchUserMeters();
+  };
+
+  const handleOpenAddFinanceTypeModal = () => {
+    setShowAddFinanceTypeModal(true);
+  };
+
+  const handleCloseAddFinanceTypeModal = () => {
+    setShowAddFinanceTypeModal(false);
+    setNewFinanceType("");
+  };
+
+  const handleRequestFinanceType = async () => {
+    if (!newFinanceType.trim()) {
+      toast.error("Please enter a finance type name");
+      return;
+    }
+
+    const userId = localStorage.getItem("userId");
+    const authToken = localStorage.getItem("authToken");
+
+    if (!userId || !authToken) {
+      toast.error("Authentication required");
+      return;
+    }
+
+    try {
+      const response = await axios.post(
+        `https://services.dcarbon.solutions/api/user/request-financial-type/${userId}`,
+        { name: newFinanceType },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`
+          }
+        }
+      );
+
+      if (response.data.status === "success") {
+        toast.success("Finance type request submitted successfully");
+        handleCloseAddFinanceTypeModal();
+        fetchFinanceTypes();
+      } else {
+        throw new Error(response.data.message || "Failed to request finance type");
+      }
+    } catch (error) {
+      console.error("Error requesting finance type:", error);
+      toast.error(
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to request finance type"
+      );
+    }
   };
 
   const isFormComplete = 
@@ -320,6 +470,7 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
     formData.address &&
     formData.meterId &&
     formData.zipCode &&
+    formData.systemCapacity &&
     (formData.financeType === "cash" || (formData.financeCompany && formData.financeAgreement)) &&
     (selectedMeter ? isSameLocation !== null : true);
 
@@ -333,8 +484,7 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
 
   return (
     <>
-      {/* Add Residence Modal */}
-      {!showAddUtilityModal && (
+      {!showAddUtilityModal && !showAddFinanceTypeModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20">
           {loading && (
             <div className={spinnerOverlay}>
@@ -531,6 +681,22 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
               </div>
 
               <div>
+                <label className={labelClass}>System Capacity (kW) <span className="text-red-500">*</span></label>
+                <input
+                  type="number"
+                  name="systemCapacity"
+                  value={formData.systemCapacity}
+                  onChange={handleChange}
+                  className={inputClass}
+                  placeholder="Enter system capacity"
+                  required
+                  disabled={loading}
+                  min="0"
+                  step="0.1"
+                />
+              </div>
+
+              <div>
                 <label className={labelClass}>Installer <span className="text-red-500">*</span></label>
                 <select
                   name="installer"
@@ -538,13 +704,18 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
                   onChange={handleChange}
                   className={selectClass}
                   required
+                  disabled={loading || installersLoading}
                 >
                   <option value="">Select installer</option>
-                  {installers.map((installer, index) => (
-                    <option key={index} value={installer}>
-                      {installer}
-                    </option>
-                  ))}
+                  {installersLoading ? (
+                    <option value="" disabled>Loading installers...</option>
+                  ) : (
+                    installers.map(installer => (
+                      <option key={installer.id} value={installer.name}>
+                        {installer.name}
+                      </option>
+                    ))
+                  )}
                 </select>
               </div>
 
@@ -556,13 +727,26 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
                   onChange={handleChange}
                   className={selectClass}
                   required
+                  disabled={loading || financeTypesLoading}
                 >
                   <option value="">Select finance type</option>
-                  <option value="cash">Cash</option>
-                  <option value="loan">Loan</option>
-                  <option value="ppa">PPA</option>
-                  <option value="lease">Lease</option>
+                  {financeTypesLoading ? (
+                    <option value="" disabled>Loading finance types...</option>
+                  ) : (
+                    financeTypes.map(type => (
+                      <option key={type.id} value={type.name}>
+                        {type.name}
+                      </option>
+                    ))
+                  )}
                 </select>
+                <button
+                  type="button"
+                  onClick={handleOpenAddFinanceTypeModal}
+                  className="mt-2 text-xs text-[#039994] hover:text-[#02857f] underline focus:outline-none"
+                >
+                  Finance Type not available? Request new type
+                </button>
               </div>
 
               {formData.financeType && formData.financeType !== "cash" && (
@@ -686,11 +870,55 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
         </div>
       )}
 
-      {/* Add Utility Provider Modal */}
       <AddUtilityProvider
         isOpen={showAddUtilityModal}
         onClose={handleCloseAddUtilityModal}
       />
+
+      {showAddFinanceTypeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20">
+          <div className="relative bg-white p-6 rounded-lg w-full max-w-md">
+            <button
+              onClick={handleCloseAddFinanceTypeModal}
+              className="absolute right-4 top-4 text-gray-500 hover:text-gray-700 focus:outline-none"
+            >
+              <FiX size={20} />
+            </button>
+
+            <h2 className={pageTitle}>Request New Finance Type</h2>
+
+            <div className="space-y-4 mt-6">
+              <div>
+                <label className={labelClass}>Finance Type Name</label>
+                <input
+                  type="text"
+                  value={newFinanceType}
+                  onChange={(e) => setNewFinanceType(e.target.value)}
+                  className={inputClass}
+                  placeholder="Enter finance type name (e.g. PPA)"
+                />
+              </div>
+
+              <div className="flex space-x-4 pt-4">
+                <button
+                  type="button"
+                  onClick={handleCloseAddFinanceTypeModal}
+                  className="flex-1 rounded-md border border-gray-300 text-gray-700 font-semibold py-2 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300 font-sfpro"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRequestFinanceType}
+                  className={`flex-1 ${buttonPrimary}`}
+                >
+                  Submit Request
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
