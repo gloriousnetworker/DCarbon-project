@@ -16,7 +16,7 @@ import {
   uploadButtonStyle,
   uploadNoteStyle,
   spinnerOverlay
-} from "../styles";
+} from "./styles";
 import Loader from "@/components/loader/Loader.jsx";
 
 export default function AddResidentialFacilityModal({ isOpen, onClose }) {
