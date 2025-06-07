@@ -14,12 +14,16 @@ import Loader from "@/components/loader/Loader.jsx";
 
 export default function AddCommercialFacilityModal({ isOpen, onClose }) {
   const [formData, setFormData] = useState({
-    facilityName: "",
+    nickname: "",
     address: "",
     utilityProvider: "",
-    meterId: "",
+    meterIds: [],
     commercialRole: "both",
-    entityType: "company"
+    entityType: "company",
+    facilityTypeNamingCode: 1,
+    utilityProviderNamingCode: "",
+    installerNamingCode: "",
+    financeNamingCode: ""
   });
   const [loading, setLoading] = useState(false);
   const [utilityProviders, setUtilityProviders] = useState([]);
@@ -29,14 +33,20 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
   const [selectedMeter, setSelectedMeter] = useState(null);
   const [isSameLocation, setIsSameLocation] = useState(null);
   const [selectedUtilityAuthEmail, setSelectedUtilityAuthEmail] = useState("");
-  
-  // Add Utility Provider Modal State
+  const [installers, setInstallers] = useState([]);
+  const [installersLoading, setInstallersLoading] = useState(false);
+  const [financeTypes, setFinanceTypes] = useState([]);
+  const [financeTypesLoading, setFinanceTypesLoading] = useState(false);
   const [showAddUtilityModal, setShowAddUtilityModal] = useState(false);
+  const [showFinanceTypeRequestModal, setShowFinanceTypeRequestModal] = useState(false);
+  const [newFinanceTypeName, setNewFinanceTypeName] = useState("");
 
   useEffect(() => {
     if (isOpen) {
       fetchUtilityProviders();
       fetchUserMeters();
+      fetchInstallers();
+      fetchFinanceTypes();
     }
   }, [isOpen]);
 
@@ -57,10 +67,8 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
   }, [selectedMeter, isSameLocation]);
 
   const fetchUtilityProviders = async () => {
-    const userId = localStorage.getItem("userId");
     const authToken = localStorage.getItem("authToken");
-
-    if (!userId || !authToken) return;
+    if (!authToken) return;
 
     setUtilityProvidersLoading(true);
     try {
@@ -118,6 +126,60 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
     }
   };
 
+  const fetchInstallers = async () => {
+    const authToken = localStorage.getItem("authToken");
+    if (!authToken) return;
+
+    setInstallersLoading(true);
+    try {
+      const response = await axios.get(
+        "https://services.dcarbon.solutions/api/admin/partners",
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`
+          }
+        }
+      );
+
+      if (response.data.status === "success") {
+        setInstallers(response.data.data.partners.filter(partner => partner.partnerType === "installer"));
+      }
+    } catch (error) {
+      console.error("Error fetching installers:", error);
+      toast.error("Failed to load installers");
+    } finally {
+      setInstallersLoading(false);
+    }
+  };
+
+  const fetchFinanceTypes = async () => {
+    const authToken = localStorage.getItem("authToken");
+    if (!authToken) return;
+
+    setFinanceTypesLoading(true);
+    try {
+      const response = await axios.get(
+        "https://services.dcarbon.solutions/api/user/financial-types",
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`
+          }
+        }
+      );
+
+      if (response.data.status === "success") {
+        setFinanceTypes(response.data.data.types);
+      }
+    } catch (error) {
+      console.error("Error fetching finance types:", error);
+      toast.error("Failed to load finance types");
+    } finally {
+      setFinanceTypesLoading(false);
+    }
+  };
+
   const getCurrentMeters = () => {
     if (!selectedUtilityAuthEmail) return [];
     
@@ -134,19 +196,42 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-
-    if (name === "meterId") {
+    
+    if (name === "utilityProvider") {
+      const selectedProvider = utilityProviders.find(provider => provider.name === value);
+      setFormData(prev => ({
+        ...prev,
+        utilityProvider: value,
+        utilityProviderNamingCode: selectedProvider ? selectedProvider.namingCode : ""
+      }));
+    } else if (name === "installerNamingCode") {
+      const selectedInstaller = installers.find(installer => installer.namingCode.toString() === value);
+      setFormData(prev => ({
+        ...prev,
+        installerNamingCode: value,
+        installerName: selectedInstaller ? selectedInstaller.name : ""
+      }));
+    } else if (name === "financeNamingCode") {
+      const selectedFinanceType = financeTypes.find(type => type.namingCode.toString() === value);
+      setFormData(prev => ({
+        ...prev,
+        financeNamingCode: value,
+        financeType: selectedFinanceType ? selectedFinanceType.name : ""
+      }));
+    } else if (name === "meterId") {
       const currentMeters = getCurrentMeters();
       const meter = currentMeters.find(m => m.uid === value);
       setSelectedMeter(meter || null);
       setIsSameLocation(null);
       setFormData(prev => ({
         ...prev,
+        meterIds: [value],
         address: ""
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
       }));
     }
   };
@@ -156,7 +241,7 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
     setSelectedUtilityAuthEmail(email);
     setFormData(prev => ({
       ...prev,
-      meterId: ""
+      meterIds: []
     }));
     setSelectedMeter(null);
     setIsSameLocation(null);
@@ -177,6 +262,7 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
         {
           id: facilityData.id,
           facilityName: facilityData.facilityName,
+          nickname: facilityData.nickname,
           commercialRole: facilityData.commercialRole,
           createdAt: facilityData.createdAt
         }
@@ -189,12 +275,16 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
 
   const resetForm = () => {
     setFormData({
-      facilityName: "",
+      nickname: "",
       address: "",
       utilityProvider: "",
-      meterId: "",
+      meterIds: [],
       commercialRole: "both",
-      entityType: "company"
+      entityType: "company",
+      facilityTypeNamingCode: 1,
+      utilityProviderNamingCode: "",
+      installerNamingCode: "",
+      financeNamingCode: ""
     });
     setSelectedMeter(null);
     setIsSameLocation(null);
@@ -216,12 +306,16 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
 
     try {
       const payload = {
-        facilityName: formData.facilityName,
+        nickname: formData.nickname,
         address: formData.address,
         utilityProvider: formData.utilityProvider,
-        meterId: formData.meterId,
+        meterIds: formData.meterIds,
         commercialRole: formData.commercialRole,
-        entityType: formData.entityType
+        entityType: formData.entityType,
+        facilityTypeNamingCode: formData.facilityTypeNamingCode,
+        utilityProviderNamingCode: formData.utilityProviderNamingCode,
+        installerNamingCode: formData.installerNamingCode,
+        financeNamingCode: formData.financeNamingCode
       };
 
       const response = await axios.post(
@@ -236,7 +330,7 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
       );
 
       if (response.data.status === "success") {
-        toast.success("Facility created successfully");
+        toast.success(`Facility created successfully: ${response.data.data.facilityName}`);
         storeFacilityData(response.data.data);
         resetForm();
         onClose();
@@ -255,22 +349,62 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
     }
   };
 
-  // Handle Add Utility Provider Modal
   const handleOpenAddUtilityModal = () => {
     setShowAddUtilityModal(true);
   };
 
   const handleCloseAddUtilityModal = () => {
     setShowAddUtilityModal(false);
-    // Refresh user meters after adding utility provider
     fetchUserMeters();
   };
 
+  const handleRequestFinanceType = async () => {
+    const userId = localStorage.getItem("userId");
+    const authToken = localStorage.getItem("authToken");
+
+    if (!newFinanceTypeName.trim()) {
+      toast.error("Please enter a finance type name");
+      return;
+    }
+
+    try {
+      const response = await axios.post(
+        `https://services.dcarbon.solutions/api/user/request-financial-type/${userId}`,
+        { name: newFinanceTypeName },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`
+          }
+        }
+      );
+
+      if (response.data.status === "success") {
+        toast.success("Finance type request submitted successfully");
+        setShowFinanceTypeRequestModal(false);
+        setNewFinanceTypeName("");
+        fetchFinanceTypes();
+      } else {
+        throw new Error(response.data.message || "Failed to submit request");
+      }
+    } catch (error) {
+      console.error("Error requesting finance type:", error);
+      toast.error(
+        error.response?.data?.message || 
+        error.message || 
+        "Failed to submit finance type request"
+      );
+    }
+  };
+
   const isFormComplete = 
-    formData.facilityName && 
+    formData.nickname && 
     formData.address &&
     formData.utilityProvider && 
-    formData.meterId &&
+    formData.meterIds.length > 0 &&
+    formData.utilityProviderNamingCode &&
+    formData.installerNamingCode &&
+    formData.financeNamingCode &&
     (selectedMeter ? isSameLocation !== null : true);
 
   const utilityAuthEmailsWithMeters = userMeterData.filter(
@@ -283,8 +417,7 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
 
   return (
     <>
-      {/* Add Commercial Facility Modal */}
-      {!showAddUtilityModal && (
+      {!showAddUtilityModal && !showFinanceTypeRequestModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20">
           {loading && (
             <div className="absolute inset-0 z-10 flex items-center justify-center bg-white bg-opacity-70 rounded-md">
@@ -304,24 +437,22 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
             <h2 className={pageTitle}>Add Commercial Facility</h2>
 
             <form onSubmit={handleSubmit} className="space-y-4 mt-6">
-              {/* Facility Name */}
               <div>
                 <label className={labelClass}>
-                  Facility Name <span className="text-red-500">*</span>
+                  Facility Nickname <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
-                  name="facilityName"
-                  value={formData.facilityName}
+                  name="nickname"
+                  value={formData.nickname}
                   onChange={handleChange}
                   className={inputClass}
-                  placeholder="Enter facility name"
+                  placeholder="Enter facility nickname"
                   required
                   disabled={loading}
                 />
               </div>
 
-              {/* Utility Provider */}
               <div>
                 <label className={labelClass}>
                   Utility Provider <span className="text-red-500">*</span>
@@ -347,7 +478,6 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
                 </select>
               </div>
 
-              {/* Utility Account */}
               <div>
                 <label className={labelClass}>
                   Utility Account <span className="text-red-500">*</span>
@@ -384,7 +514,6 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
                 </button>
               </div>
 
-              {/* Meter Selection */}
               {selectedUtilityAuthEmail && (
                 <div>
                   <label className={labelClass}>
@@ -392,7 +521,7 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
                   </label>
                   <select
                     name="meterId"
-                    value={formData.meterId}
+                    value={formData.meterIds[0] || ""}
                     onChange={handleChange}
                     className={selectClass}
                     required
@@ -415,7 +544,6 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
                 </div>
               )}
 
-              {/* Location Confirmation */}
               {selectedMeter && (
                 <div className="mb-3 p-2 bg-gray-50 rounded-md border border-gray-200 text-sm">
                   <p className="font-medium mb-2">Service Address: {selectedMeter.base.service_address}</p>
@@ -447,7 +575,6 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
                 </div>
               )}
 
-              {/* Address Field */}
               {selectedMeter && isSameLocation !== null && (
                 <div>
                   <label className={labelClass}>
@@ -483,7 +610,67 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
                 </div>
               )}
 
-              {/* Commercial Role */}
+              <div>
+                <label className={labelClass}>
+                  Installer <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="installerNamingCode"
+                  value={formData.installerNamingCode}
+                  onChange={handleChange}
+                  className={selectClass}
+                  required
+                  disabled={loading || installersLoading}
+                >
+                  <option value="">Select installer</option>
+                  {installersLoading ? (
+                    <option value="" disabled>Loading installers...</option>
+                  ) : installers.length === 0 ? (
+                    <option value="" disabled>No installers found</option>
+                  ) : (
+                    installers.map(installer => (
+                      <option key={installer.id} value={installer.namingCode}>
+                        {installer.name}
+                      </option>
+                    ))
+                  )}
+                </select>
+              </div>
+
+              <div>
+                <label className={labelClass}>
+                  Finance Type <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="financeNamingCode"
+                  value={formData.financeNamingCode}
+                  onChange={handleChange}
+                  className={selectClass}
+                  required
+                  disabled={loading || financeTypesLoading}
+                >
+                  <option value="">Select finance type</option>
+                  {financeTypesLoading ? (
+                    <option value="" disabled>Loading finance types...</option>
+                  ) : financeTypes.length === 0 ? (
+                    <option value="" disabled>No finance types found</option>
+                  ) : (
+                    financeTypes.map(type => (
+                      <option key={type.id} value={type.namingCode}>
+                        {type.name}
+                      </option>
+                    ))
+                  )}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => setShowFinanceTypeRequestModal(true)}
+                  className="mt-2 text-xs text-[#039994] hover:text-[#02857f] underline focus:outline-none"
+                >
+                  Finance Type not listed?
+                </button>
+              </div>
+
               <div>
                 <label className={labelClass}>
                   Commercial Role <span className="text-red-500">*</span>
@@ -502,7 +689,6 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
                 </select>
               </div>
 
-              {/* Entity Type */}
               <div>
                 <label className={labelClass}>
                   Entity Type <span className="text-red-500">*</span>
@@ -520,7 +706,6 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
                 </select>
               </div>
 
-              {/* Submit Buttons */}
               <div className="flex space-x-4 pt-4">
                 <button
                   type="button"
@@ -543,11 +728,58 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
         </div>
       )}
 
-      {/* Add Utility Provider Modal */}
       <AddUtilityProvider
         isOpen={showAddUtilityModal}
         onClose={handleCloseAddUtilityModal}
       />
+
+      {showFinanceTypeRequestModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20">
+          <div className="relative bg-white p-6 rounded-lg w-full max-w-md">
+            <button
+              onClick={() => setShowFinanceTypeRequestModal(false)}
+              className="absolute right-4 top-4 text-gray-500 hover:text-gray-700 focus:outline-none"
+            >
+              <FiX size={20} />
+            </button>
+
+            <h2 className={pageTitle}>Request New Finance Type</h2>
+
+            <div className="space-y-4 mt-6">
+              <div>
+                <label className={labelClass}>
+                  Finance Type Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={newFinanceTypeName}
+                  onChange={(e) => setNewFinanceTypeName(e.target.value)}
+                  className={inputClass}
+                  placeholder="Enter finance type name"
+                />
+              </div>
+
+              <div className="flex space-x-4 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowFinanceTypeRequestModal(false)}
+                  className="flex-1 rounded-md border border-gray-300 text-gray-700 font-semibold py-2 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300 font-sfpro"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRequestFinanceType}
+                  className={`flex-1 ${buttonPrimary} ${!newFinanceTypeName.trim() ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  disabled={!newFinanceTypeName.trim()}
+                >
+                  Submit Request
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
