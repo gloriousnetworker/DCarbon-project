@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -36,14 +36,21 @@ import {
   uploadNoteStyle
 } from './styles.js';
 
-// List of finance types that require document upload
-const documentRequiredTypes = ['loan', 'ppa', 'lease'];
-
 export default function StepOneCard() {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [loadingFinanceTypes, setLoadingFinanceTypes] = useState(false);
+  const [loadingInstallers, setLoadingInstallers] = useState(false);
+  const [showRequestModal, setShowRequestModal] = useState(false);
+  const [requestingFinanceType, setRequestingFinanceType] = useState(false);
+  const [requestedFinanceTypeName, setRequestedFinanceTypeName] = useState('');
 
+  // Data states
+  const [financeTypes, setFinanceTypes] = useState([]);
+  const [installers, setInstallers] = useState([]);
+
+  // Form states
   const [financeType, setFinanceType] = useState('');
   const [financeCompany, setFinanceCompany] = useState('');
   const [installer, setInstaller] = useState('');
@@ -54,9 +61,113 @@ export default function StepOneCard() {
 
   const router = useRouter();
 
-  const showUploadField = documentRequiredTypes.includes(financeType.toLowerCase());
-  const showFinanceCompany = financeType.toLowerCase() !== 'cash';
+  // Check if finance type requires document upload (case insensitive)
+  const isCashType = financeType.toLowerCase() === 'cash';
+  const showUploadField = !isCashType && financeType !== '';
+  const showFinanceCompany = !isCashType && financeType !== '';
   const showCustomInstaller = installer === 'others';
+
+  // Fetch finance types on component mount
+  useEffect(() => {
+    fetchFinanceTypes();
+    fetchInstallers();
+  }, []);
+
+  const fetchFinanceTypes = async () => {
+    setLoadingFinanceTypes(true);
+    try {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        throw new Error('Authentication required');
+      }
+
+      const response = await axios.get(
+        'https://services.dcarbon.solutions/api/user/financial-types',
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+
+      if (response.data.status === 'success') {
+        // Filter only approved types
+        const approvedTypes = response.data.data.types.filter(type => type.status === 'APPROVED');
+        setFinanceTypes(approvedTypes);
+      }
+    } catch (err) {
+      console.error('Error fetching finance types:', err);
+      toast.error('Failed to load finance types');
+    } finally {
+      setLoadingFinanceTypes(false);
+    }
+  };
+
+  const fetchInstallers = async () => {
+    setLoadingInstallers(true);
+    try {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        throw new Error('Authentication required');
+      }
+
+      const response = await axios.get(
+        'https://services.dcarbon.solutions/api/user/partner/get-all-installer',
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+
+      if (response.data.status === 'success') {
+        setInstallers(response.data.data.installers);
+      }
+    } catch (err) {
+      console.error('Error fetching installers:', err);
+      toast.error('Failed to load installers');
+    } finally {
+      setLoadingInstallers(false);
+    }
+  };
+
+  const handleRequestFinanceType = async () => {
+    if (!requestedFinanceTypeName.trim()) {
+      toast.error('Please enter a finance type name');
+      return;
+    }
+
+    setRequestingFinanceType(true);
+    try {
+      const userId = localStorage.getItem('userId');
+      const token = localStorage.getItem('authToken');
+      
+      if (!userId || !token) {
+        throw new Error('Authentication required');
+      }
+
+      const response = await axios.post(
+        `https://services.dcarbon.solutions/api/user/request-financial-type/${userId}`,
+        {
+          name: requestedFinanceTypeName.trim()
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+
+      toast.success(response.data.message || 'Finance type request submitted successfully!');
+      setShowRequestModal(false);
+      setRequestedFinanceTypeName('');
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to submit request');
+    } finally {
+      setRequestingFinanceType(false);
+    }
+  };
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
@@ -198,6 +309,46 @@ export default function StepOneCard() {
         </div>
       )}
 
+      {/* Request Finance Type Modal */}
+      {showRequestModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-semibold mb-4">Request Finance Type</h3>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Finance Type Name
+              </label>
+              <input
+                type="text"
+                value={requestedFinanceTypeName}
+                onChange={(e) => setRequestedFinanceTypeName(e.target.value)}
+                placeholder="Enter finance type name"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994]"
+              />
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowRequestModal(false);
+                  setRequestedFinanceTypeName('');
+                }}
+                className="flex-1 px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+                disabled={requestingFinanceType}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRequestFinanceType}
+                disabled={requestingFinanceType}
+                className="flex-1 px-4 py-2 bg-[#039994] text-white rounded-md hover:bg-[#028882] disabled:opacity-50"
+              >
+                {requestingFinanceType ? 'Submitting...' : 'Submit Request'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className={mainContainer}>
         <div className={headingContainer}>
           <div className={backArrow} onClick={() => router.back()}>
@@ -238,13 +389,28 @@ export default function StepOneCard() {
               }}
               className={selectClass}
               required
+              disabled={loadingFinanceTypes}
             >
-              <option value="">Choose type</option>
+              <option value="">
+                {loadingFinanceTypes ? 'Loading finance types...' : 'Choose type'}
+              </option>
+              {/* Always include Cash as first option */}
               <option value="cash">Cash</option>
-              <option value="loan">Loan</option>
-              <option value="ppa">PPA</option>
-              <option value="lease">Lease</option>
+              {financeTypes.map((type) => (
+                <option key={type.id} value={type.name}>
+                  {type.name}
+                </option>
+              ))}
             </select>
+            <div className="mt-2">
+              <button
+                type="button"
+                onClick={() => setShowRequestModal(true)}
+                className="text-[#039994] text-sm hover:underline"
+              >
+                Finance Type not listed?
+              </button>
+            </div>
           </div>
 
           {/* Finance Company - Conditionally Required */}
@@ -348,7 +514,7 @@ export default function StepOneCard() {
                 </button>
               </div>
               <p className={uploadNoteStyle}>
-                Required for loan, PPA, and lease agreements
+                Required for all finance types except Cash
               </p>
             </div>
           )}
@@ -365,11 +531,16 @@ export default function StepOneCard() {
                 setCustomInstaller('');
               }}
               className={selectClass}
+              disabled={loadingInstallers}
             >
-              <option value="">Choose installer</option>
-              <option value="installer1">Installer 1</option>
-              <option value="installer2">Installer 2</option>
-              <option value="installer3">Installer 3</option>
+              <option value="">
+                {loadingInstallers ? 'Loading installers...' : 'Choose installer'}
+              </option>
+              {installers.map((installerItem) => (
+                <option key={installerItem.id} value={installerItem.name}>
+                  {installerItem.name}
+                </option>
+              ))}
               <option value="others">Others</option>
               <option value="unknown">Don't know</option>
             </select>
