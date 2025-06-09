@@ -54,6 +54,11 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
   const [showAddFinanceTypeModal, setShowAddFinanceTypeModal] = useState(false);
   const [newFinanceType, setNewFinanceType] = useState("");
 
+  // Check if finance type is cash (case insensitive)
+  const isCashType = formData.financeType.toLowerCase() === 'cash';
+  const showUploadField = !isCashType && formData.financeType !== '';
+  const showFinanceCompany = !isCashType && formData.financeType !== '';
+
   useEffect(() => {
     if (isOpen) {
       fetchUtilityProviders();
@@ -261,8 +266,13 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
       const selectedFinanceType = financeTypes.find(type => type.name === value);
       setFormData(prev => ({
         ...prev,
-        financeNamingCode: selectedFinanceType?.namingCode || ""
+        financeNamingCode: selectedFinanceType?.namingCode || "",
+        // Clear finance company and agreement when finance type changes
+        financeCompany: "",
+        financeAgreement: null
       }));
+      setFile(null);
+      setUploadSuccess(false);
     }
   };
 
@@ -350,8 +360,16 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
       return;
     }
 
-    if (formData.financeType && formData.financeType !== "cash" && !formData.financeAgreement) {
+    // Only validate finance agreement if finance type is not cash
+    if (showUploadField && !formData.financeAgreement) {
       toast.error("Please upload the financial agreement");
+      setLoading(false);
+      return;
+    }
+
+    // Only validate finance company if finance type is not cash
+    if (showFinanceCompany && !formData.financeCompany) {
+      toast.error("Please select a finance company");
       setLoading(false);
       return;
     }
@@ -471,7 +489,7 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
     formData.meterId &&
     formData.zipCode &&
     formData.systemCapacity &&
-    (formData.financeType === "cash" || (formData.financeCompany && formData.financeAgreement)) &&
+    (isCashType || (formData.financeCompany && (!showUploadField || formData.financeAgreement))) &&
     (selectedMeter ? isSameLocation !== null : true);
 
   const utilityAuthEmailsWithMeters = userMeterData.filter(
@@ -749,7 +767,7 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
                 </button>
               </div>
 
-              {formData.financeType && formData.financeType !== "cash" && (
+              {showFinanceCompany && (
                 <div>
                   <label className={labelClass}>Finance Company <span className="text-red-500">*</span></label>
                   <input
@@ -764,7 +782,7 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
                 </div>
               )}
 
-              {formData.financeType && formData.financeType !== "cash" && (
+              {showUploadField && (
                 <div>
                   <label className={uploadHeading}>
                     Finance Agreement <span className="text-red-500">*</span>
