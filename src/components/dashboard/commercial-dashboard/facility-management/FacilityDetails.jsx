@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   FiArrowLeft,
   FiEdit,
@@ -9,12 +9,11 @@ import {
   FiUpload,
   FiUsers,
   FiChevronDown,
-  FiX,
-  FiAlertTriangle
+  FiAlertCircle,
+  FiRefreshCw
 } from "react-icons/fi";
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer } from 'recharts';
 import { toast } from 'react-hot-toast';
-import axios from 'axios';
 import InviteCollaboratorModal from "./InviteCollaboratorModal";
 import EditFacilityDetailsModal from "./EditFacilityDetailsModal";
 import { pageTitle, labelClass, inputClass } from "./styles";
@@ -35,133 +34,6 @@ const energyData = [
   { month: 'Dec', kwh: 95 }
 ];
 
-// Document type mappings with consistent status field names
-const DOCUMENT_TYPES = {
-  financeAgreement: { 
-    name: "Finance Agreement", 
-    endpoint: "update-facility-financial-agreement",
-    urlField: "financeAgreementUrl",
-    statusField: "financeAgreementStatus",
-    rejectionField: "financeAgreementRejectionReason"
-  },
-  proofOfAddress: { 
-    name: "Proof of Address", 
-    endpoint: "update-facility-proof-of-address",
-    urlField: "proofOfAddressUrl",
-    statusField: "proofOfAddressStatus",
-    rejectionField: "proofOfAddressRejectionReason"
-  },
-  infoReleaseAuth: { 
-    name: "Info Release Authorization", 
-    endpoint: "update-info-release-auth",
-    urlField: "infoReleaseAuthUrl",
-    statusField: "infoReleaseAuthStatus",
-    rejectionField: "infoReleaseAuthRejectionReason"
-  },
-  wregisAssignment: { 
-    name: "WREGIS Assignment", 
-    endpoint: "update-wregis-assignment",
-    urlField: "wregisAssignmentUrl",
-    statusField: "wregisAssignmentStatus",
-    rejectionField: "wregisAssignmentRejectionReason"
-  },
-  multipleOwnerDecl: { 
-    name: "Multiple Owner Declaration", 
-    endpoint: "update-multiple-owner-decl",
-    urlField: "multipleOwnerDeclUrl",
-    statusField: "multipleOwnerDeclStatus",
-    rejectionField: "multipleOwnerDeclRejectionReason"
-  },
-  sysOpDataAccess: { 
-    name: "System Operator Data Access", 
-    endpoint: "update-sys-op-data-access",
-    urlField: "sysOpDataAccessUrl",
-    statusField: "sysOpDataAccessStatus",
-    rejectionField: "sysOpDataAccessRejectionReason"
-  }
-};
-
-// PDF Viewer Modal Component
-const PDFViewerModal = ({ isOpen, onClose, url, title }) => {
-  if (!isOpen) return null;
-
-  // Function to handle different file types
-  const renderFileContent = () => {
-    if (!url) return <div>No document available</div>;
-    
-    const extension = url.split('.').pop().toLowerCase();
-    
-    if (['jpg', 'jpeg', 'png', 'gif'].includes(extension)) {
-      return (
-        <div className="flex items-center justify-center h-full">
-          <img 
-            src={url} 
-            alt={title} 
-            className="max-w-full max-h-full object-contain"
-          />
-        </div>
-      );
-    } else if (extension === 'pdf') {
-      return (
-        <div className="w-full h-full">
-          <iframe
-            src={`${url}#view=fitH`}
-            className="w-full h-full border-0"
-            title={title}
-          />
-        </div>
-      );
-    } else {
-      return (
-        <div className="flex items-center justify-center h-full">
-          <div className="text-center">
-            <FiFileText size={48} className="mx-auto mb-4 text-gray-400" />
-            <p className="text-gray-600">Preview not available for this file type</p>
-            <a 
-              href={url} 
-              download 
-              className="text-[#039994] hover:underline mt-2 inline-block"
-            >
-              Download file
-            </a>
-          </div>
-        </div>
-      );
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg w-full max-w-4xl h-full max-h-[90vh] flex flex-col">
-        <div className="flex items-center justify-between p-4 border-b">
-          <h3 className="font-sfpro text-[18px] font-[600] text-[#1E1E1E]">
-            {title}
-          </h3>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-          >
-            <FiX size={20} />
-          </button>
-        </div>
-        <div className="flex-1 p-4 overflow-auto">
-          {renderFileContent()}
-        </div>
-        <div className="p-4 border-t flex justify-end">
-          <a
-            href={url}
-            download
-            className="flex items-center gap-2 bg-[#039994] text-white px-4 py-2 rounded-md hover:bg-[#028580] transition-colors"
-          >
-            <FiDownload size={16} />
-            Download
-          </a>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 export default function FacilityDetails({ facility, onBack, onFacilityUpdated }) {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -169,8 +41,7 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
   const [uploadingDoc, setUploadingDoc] = useState("");
   const [showAllDocs, setShowAllDocs] = useState(false);
   const [facilityData, setFacilityData] = useState(facility);
-  const [showPDFModal, setShowPDFModal] = useState(false);
-  const [currentPDF, setCurrentPDF] = useState({ url: "", title: "" });
+  const [expandedRejections, setExpandedRejections] = useState({});
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
@@ -178,9 +49,7 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
     return date.toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
-      day: "numeric",
-      hour: '2-digit',
-      minute: '2-digit'
+      day: "numeric"
     });
   };
 
@@ -189,17 +58,14 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
     return meterIds.join(", ");
   };
 
-  // Get status color and background with consistent status names
   const getStatusColor = (status) => {
     switch (status?.toUpperCase()) {
       case "APPROVED":
         return "text-green-600";
       case "PENDING":
-      case "SUBMITTED": // Treat SUBMITTED same as PENDING
+      case "SUBMITTED":
         return "text-yellow-600";
       case "REJECTED":
-        return "text-red-600";
-      case "REQUIRED":
         return "text-red-600";
       default:
         return "text-gray-600";
@@ -211,23 +77,12 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
       case "APPROVED":
         return "bg-green-500";
       case "PENDING":
-      case "SUBMITTED": // Treat SUBMITTED same as PENDING
+      case "SUBMITTED":
         return "bg-yellow-500";
       case "REJECTED":
         return "bg-red-500";
-      case "REQUIRED":
-        return "bg-red-500";
       default:
         return "bg-gray-500";
-    }
-  };
-
-  const getStatusDisplayText = (status) => {
-    switch (status?.toUpperCase()) {
-      case "SUBMITTED":
-        return "PENDING"; // Convert SUBMITTED to PENDING for display
-      default:
-        return status || "NOT_UPLOADED";
     }
   };
 
@@ -243,6 +98,13 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
     }
   };
 
+  const toggleRejectionReason = (docType) => {
+    setExpandedRejections(prev => ({
+      ...prev,
+      [docType]: !prev[docType]
+    }));
+  };
+
   const uploadDocument = async (docType, file) => {
     setUploadingDoc(docType);
     
@@ -254,32 +116,43 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
     }
 
     const facilityId = facilityData.id;
-    const docConfig = DOCUMENT_TYPES[docType];
+    const baseUrl = 'https://services.dcarbon.solutions';
     
-    if (!docConfig) {
-      toast.error('Invalid document type');
-      setUploadingDoc("");
-      return;
-    }
+    // Define endpoints for different document types (corrected endpoints)
+    const endpoints = {
+      financeAgreement: `${baseUrl}/api/facility/update-facility-financial-agreement/${facilityId}`,
+      proofOfAddress: `${baseUrl}/api/facility/update-facility-proof-of-address/${facilityId}`,
+      infoReleaseAuth: `${baseUrl}/api/facility/update-info-release-auth/${facilityId}`,
+      wregisAssignment: `${baseUrl}/api/facility/update-wregis-assignment/${facilityId}`,
+      multipleOwnerDecl: `${baseUrl}/api/facility/update-multiple-owner-decl/${facilityId}`,
+      sysOpDataAccess: `${baseUrl}/api/facility/update-sys-op-data-access/${facilityId}`
+    };
+
+    // Define the correct field names for each document type
+    const fieldNames = {
+      financeAgreement: 'financeAgreementUrl',
+      proofOfAddress: 'proofOfAddressUrl',
+      infoReleaseAuth: 'infoReleaseAuthUrl',
+      wregisAssignment: 'wregisAssignmentUrl',
+      multipleOwnerDecl: 'multipleOwnerDeclUrl',
+      sysOpDataAccess: 'sysOpDataAccessUrl'
+    };
+
+    const formData = new FormData();
+    formData.append(fieldNames[docType], file);
 
     try {
       toast.loading('Uploading document...', { id: 'upload-toast' });
       
-      const formData = new FormData();
-      formData.append("file", file);
+      const response = await fetch(endpoints[docType], {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        },
+        body: formData
+      });
 
-      const response = await axios.put(
-        `https://services.dcarbon.solutions/api/facility/${docConfig.endpoint}/${facilityId}`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-            "Content-Type": "multipart/form-data"
-          }
-        }
-      );
-
-      const result = response.data;
+      const result = await response.json();
 
       if (result.status === 'success') {
         // Update the facility data with the new document info
@@ -298,7 +171,7 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
       }
     } catch (error) {
       console.error('Upload error:', error);
-      toast.error(`Upload failed: ${error.response?.data?.message || error.message}`, { id: 'upload-toast' });
+      toast.error(`Upload failed: ${error.message}`, { id: 'upload-toast' });
     } finally {
       setUploadingDoc("");
     }
@@ -322,43 +195,58 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
     input.click();
   };
 
-  const handleViewDocument = (url, title) => {
+  const handleViewDocument = (url) => {
     if (url) {
-      setCurrentPDF({ url, title });
-      setShowPDFModal(true);
+      window.open(url, '_blank');
     }
   };
 
-  const DocumentCard = ({ title, status, url, onUpload, onView, docType }) => {
+  const DocumentCard = ({ title, status, url, onUpload, onView, docType, rejectionReason }) => {
     const fileName = getDocumentFileName(url);
     const isUploading = uploadingDoc === docType;
-    const displayStatus = getStatusDisplayText(status);
+    const isRejected = status?.toUpperCase() === "REJECTED";
+    const isExpanded = expandedRejections[docType];
     
     return (
       <div className="mb-3">
         {/* Document title and status */}
         <div className="flex justify-between items-center mb-2">
           <span className="text-black text-sm font-medium">{title}</span>
-          <span className={`px-2 py-1 rounded-full text-xs font-medium text-white ${getStatusBgColor(status)}`}>
-            {displayStatus}
-          </span>
+          <div className="flex items-center space-x-2">
+            {isRejected && (
+              <button
+                onClick={() => toggleRejectionReason(docType)}
+                className="p-1 hover:bg-gray-100 rounded"
+                title="View rejection reason"
+              >
+                <FiAlertCircle className="text-red-500" size={14} />
+              </button>
+            )}
+            <span className={`px-2 py-1 rounded-full text-xs font-medium text-white ${getStatusBgColor(status)}`}>
+              {status || "NOT_UPLOADED"}
+            </span>
+          </div>
         </div>
-        
-        {/* Show rejection reason if document is rejected */}
-        {status === "REJECTED" && facilityData[`${docType}RejectionReason`] && (
-          <div className="bg-red-50 border border-red-200 rounded-md p-2 flex items-start gap-2 mb-2">
-            <FiAlertTriangle className="text-red-500 mt-0.5 flex-shrink-0" size={14} />
-            <div>
-              <p className="text-[11px] font-[600] text-red-700 mb-1">Rejection Reason:</p>
-              <p className="text-[11px] font-[400] text-red-600">{facilityData[`${docType}RejectionReason`]}</p>
+
+        {/* Rejection reason (expandable) */}
+        {isRejected && rejectionReason && isExpanded && (
+          <div className="mb-2 p-2 bg-red-50 border border-red-200 rounded-md">
+            <div className="flex items-start space-x-2">
+              <FiAlertCircle className="text-red-500 mt-0.5 flex-shrink-0" size={14} />
+              <div>
+                <p className="text-xs font-medium text-red-800 mb-1">Rejection Reason:</p>
+                <p className="text-xs text-red-700">{rejectionReason}</p>
+              </div>
             </div>
           </div>
         )}
         
         {/* Document placeholder/upload area - reduced height */}
         <div 
-          className="bg-[#F0F0F0] rounded-lg p-3 cursor-pointer hover:bg-gray-200 transition-colors flex items-center justify-center h-12"
-          onClick={() => !isUploading && (url ? onView(url, title) : onUpload(docType))}
+          className={`bg-[#F0F0F0] rounded-lg p-3 cursor-pointer hover:bg-gray-200 transition-colors flex items-center justify-center h-12 ${
+            isRejected ? 'border-2 border-red-200' : ''
+          }`}
+          onClick={() => !isUploading && onUpload(docType)}
         >
           {isUploading ? (
             <div className="flex items-center space-x-2">
@@ -371,16 +259,30 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
               <span className="text-sm text-gray-700 flex-1 truncate">
                 {fileName || 'Document uploaded'}
               </span>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onView(url, title);
-                }}
-                className="p-1 hover:bg-gray-300 rounded flex-shrink-0"
-                title="View document"
-              >
-                <FiEye className="text-[#039994]" size={16} />
-              </button>
+              <div className="flex items-center space-x-1">
+                {isRejected && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onUpload(docType);
+                    }}
+                    className="p-1 hover:bg-gray-300 rounded flex-shrink-0"
+                    title="Re-upload document"
+                  >
+                    <FiRefreshCw className="text-orange-600" size={16} />
+                  </button>
+                )}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onView(url);
+                  }}
+                  className="p-1 hover:bg-gray-300 rounded flex-shrink-0"
+                  title="View document"
+                >
+                  <FiEye className="text-[#039994]" size={16} />
+                </button>
+              </div>
             </div>
           ) : (
             <div className="flex items-center space-x-2">
@@ -389,16 +291,62 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
             </div>
           )}
         </div>
+
+        {/* Re-upload prompt for rejected documents */}
+        {isRejected && url && (
+          <div className="mt-1 text-xs text-red-600 flex items-center space-x-1">
+            <FiAlertCircle size={10} />
+            <span>Document rejected. Click to re-upload or use the refresh icon above.</span>
+          </div>
+        )}
       </div>
     );
   };
 
-  const allDocuments = Object.keys(DOCUMENT_TYPES).map(docType => ({
-    title: DOCUMENT_TYPES[docType].name,
-    status: facilityData[DOCUMENT_TYPES[docType].statusField],
-    url: facilityData[DOCUMENT_TYPES[docType].urlField],
-    docType
-  }));
+  const allDocuments = [
+    {
+      title: "Finance Agreement",
+      status: facilityData.financeAgreementStatus,
+      url: facilityData.financeAgreementUrl,
+      docType: "financeAgreement",
+      rejectionReason: facilityData.financeAgreementRejectionReason
+    },
+    {
+      title: "Proof of Address",
+      status: facilityData.proofOfAddressStatus,
+      url: facilityData.proofOfAddressUrl,
+      docType: "proofOfAddress",
+      rejectionReason: facilityData.proofOfAddressRejectionReason
+    },
+    {
+      title: "Info Release Authorization",
+      status: facilityData.infoReleaseAuthStatus,
+      url: facilityData.infoReleaseAuthUrl,
+      docType: "infoReleaseAuth",
+      rejectionReason: facilityData.infoReleaseAuthRejectionReason
+    },
+    {
+      title: "WREGIS Assignment",
+      status: facilityData.wregisAssignmentStatus,
+      url: facilityData.wregisAssignmentUrl,
+      docType: "wregisAssignment",
+      rejectionReason: facilityData.wregisAssignmentRejectionReason
+    },
+    {
+      title: "Multiple Owner Declaration",
+      status: facilityData.multipleOwnerDeclStatus,
+      url: facilityData.multipleOwnerDeclUrl,
+      docType: "multipleOwnerDecl",
+      rejectionReason: facilityData.multipleOwnerDeclRejectionReason
+    },
+    {
+      title: "System Operator Data Access",
+      status: facilityData.sysOpDataAccessStatus,
+      url: facilityData.sysOpDataAccessUrl,
+      docType: "sysOpDataAccess",
+      rejectionReason: facilityData.sysOpDataAccessRejectionReason
+    }
+  ];
 
   const visibleDocuments = showAllDocs ? allDocuments : allDocuments.slice(0, 3);
 
@@ -504,19 +452,18 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
                   onUpload={handleFileSelect}
                   onView={handleViewDocument}
                   docType={doc.docType}
+                  rejectionReason={doc.rejectionReason}
                 />
               ))}
             </div>
 
-            {allDocuments.length > 3 && (
-              <button 
-                onClick={() => setShowAllDocs(!showAllDocs)}
-                className="w-full mt-3 py-1.5 text-xs text-[#039994] hover:text-[#027a75] transition-colors flex items-center justify-center space-x-1"
-              >
-                <span>{showAllDocs ? 'View less' : 'View more'}</span>
-                <FiChevronDown className={`transform transition-transform ${showAllDocs ? 'rotate-180' : ''}`} size={12} />
-              </button>
-            )}
+            <button 
+              onClick={() => setShowAllDocs(!showAllDocs)}
+              className="w-full mt-3 py-1.5 text-xs text-[#039994] hover:text-[#027a75] transition-colors flex items-center justify-center space-x-1"
+            >
+              <span>{showAllDocs ? 'View less' : 'View more'}</span>
+              <FiChevronDown className={`transform transition-transform ${showAllDocs ? 'rotate-180' : ''}`} size={12} />
+            </button>
           </div>
         </div>
 
@@ -609,13 +556,6 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
           }}
         />
       )}
-
-      <PDFViewerModal
-        isOpen={showPDFModal}
-        onClose={() => setShowPDFModal(false)}
-        url={currentPDF.url}
-        title={currentPDF.title}
-      />
     </div>
   );
 }
