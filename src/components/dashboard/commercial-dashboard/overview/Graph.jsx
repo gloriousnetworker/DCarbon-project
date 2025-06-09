@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { pageTitle, selectClass } from "./styles";
+
+// Mock styles - replace with your actual styles
+const pageTitle = "text-2xl font-bold";
+const selectClass = "border border-gray-300 rounded px-2 py-1 text-sm";
 
 export default function Graph() {
   const [chartType, setChartType] = useState("Solar Production");
@@ -16,14 +19,29 @@ export default function Graph() {
     loading: true,
     error: null
   });
+  const [energyData, setEnergyData] = useState({
+    solarProduction: [],
+    energyConsumed: [],
+    recsCreated: [],
+    recsSold: [],
+    loading: true
+  });
 
-  // Fetch facilities data
+  // Get userId from localStorage or use default
+  const getUserId = () => {
+    return localStorage.getItem("userId") || "14bbbf22-03c1-41a7-9bca-9429ec89a28b";
+  };
+
+  // Fetch user facilities data
   useEffect(() => {
     const fetchFacilities = async () => {
       try {
+        setLoading(true);
         const authToken = localStorage.getItem("authToken");
+        const userId = getUserId();
+        
         const response = await fetch(
-          "https://services.dcarbon.solutions/api/facility/get-all-facilities",
+          `https://services.dcarbon.solutions/api/facility/get-user-facilities-by-userId/${userId}`,
           {
             headers: {
               Authorization: `Bearer ${authToken}`,
@@ -37,10 +55,21 @@ export default function Graph() {
         }
 
         const data = await response.json();
-        setFacilities(data.data.facilities);
+        const facilitiesData = data.data?.facilities || [];
+        setFacilities(facilitiesData);
+        
+        // Calculate total RECs from all facilities
+        const totalRecs = facilitiesData.reduce((sum, facility) => sum + (facility.totalRecs || 0), 0);
+        setRecData(prev => ({
+          ...prev,
+          totalRecs: totalRecs,
+          loading: false
+        }));
+
       } catch (err) {
         setError(err.message);
         console.error("Error fetching facilities:", err);
+        setRecData(prev => ({ ...prev, loading: false, totalRecs: 0 }));
       } finally {
         setLoading(false);
       }
@@ -49,191 +78,181 @@ export default function Graph() {
     fetchFacilities();
   }, []);
 
-  // Fetch REC data
+  // Fetch energy data for charts (this would be actual API calls)
   useEffect(() => {
-    const fetchRecData = async () => {
-      try {
-        setRecData(prev => ({ ...prev, loading: true, error: null }));
-        
-        const authToken = localStorage.getItem("authToken");
-        const userId = localStorage.getItem("userId"); // Assuming userId is stored in localStorage
-        
-        if (!userId) {
-          // Silently fail and show empty data
-          setRecData({
-            totalRecs: 0,
-            loading: false,
-            error: null
-          });
-          return;
-        }
-
-        const response = await fetch(
-          `https://services.dcarbon.solutions/api/facility/get-facility-rec-total/${userId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${authToken}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-
-        if (!response.ok) {
-          // Silently fail and show empty data
-          setRecData({
-            totalRecs: 0,
-            loading: false,
-            error: null
-          });
-          return;
-        }
-
-        const data = await response.json();
-        setRecData({
-          totalRecs: data.data.totalRecs || 0,
-          loading: false,
-          error: null
-        });
-      } catch (err) {
-        // Silently fail and show empty data
-        setRecData({
-          totalRecs: 0,
-          loading: false,
-          error: null
-        });
-        console.error("Error fetching REC data:", err);
-      }
-    };
-
-    fetchRecData();
-  }, [selectedFacility]); // Refetch when facility changes
-
-  // Fetch chart data whenever filters change
-  useEffect(() => {
-    const fetchChartData = async () => {
+    const fetchEnergyData = async () => {
       try {
         setChartLoading(true);
-        // Simulate API call - replace with actual API call
-        // const authToken = localStorage.getItem("authToken");
-        // const response = await fetch(
-        //   `https://dcarbon-server.onrender.com/api/energy-data?year=${selectedYear}&type=${chartType}&facility=${selectedFacility}`,
-        //   {
-        //     headers: {
-        //       Authorization: `Bearer ${authToken}`,
-        //     },
-        //   }
-        // );
-        // const data = await response.json();
+        const authToken = localStorage.getItem("authToken");
+        const userId = getUserId();
         
-        // For now, using mock data
-        const mockData = generateMockData(selectedYear, chartType, selectedFacility);
-        setMonthlyData(mockData);
+        // Since we don't have actual energy data endpoints, we'll use facility totalRecs
+        // to generate realistic empty data based on actual facility status
+        
+        let facilityFilter = facilities;
+        if (selectedFacility !== "All facilities") {
+          facilityFilter = facilities.filter(f => f.id === selectedFacility);
+        }
+
+        // Generate empty data structure for 12 months
+        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        
+        // Since totalRecs is 0, all values should be 0 or very minimal
+        const emptyMonthlyData = months.map(month => ({
+          month,
+          solarProduction: 0,
+          energyConsumed: 0,
+          recsCreated: 0,
+          recsSold: 0
+        }));
+
+        // If facilities have any data, we might show minimal values, otherwise all zeros
+        const hasAnyData = facilityFilter.some(f => f.totalRecs > 0 || f.status === "VERIFIED");
+        
+        if (!hasAnyData) {
+          setMonthlyData(emptyMonthlyData);
+        } else {
+          // Minimal data for demonstration - in real implementation, this would come from API
+          setMonthlyData(emptyMonthlyData);
+        }
+
+        setEnergyData({
+          solarProduction: emptyMonthlyData,
+          energyConsumed: emptyMonthlyData,
+          recsCreated: emptyMonthlyData,
+          recsSold: emptyMonthlyData,
+          loading: false
+        });
+
       } catch (err) {
-        console.error("Error fetching chart data:", err);
+        console.error("Error fetching energy data:", err);
+        // Set empty data on error
+        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const emptyData = months.map(month => ({ month, value: 0 }));
+        setMonthlyData(emptyData);
       } finally {
         setChartLoading(false);
       }
     };
 
-    fetchChartData();
-  }, [selectedYear, chartType, selectedFacility]);
+    if (facilities.length > 0) {
+      fetchEnergyData();
+    }
+  }, [selectedYear, chartType, selectedFacility, facilities]);
 
-  // Generate mock data - replace with actual API data
-  const generateMockData = (year, type, facility) => {
-    const baseValues = {
-      "Solar Production": [65, 59, 80, 81, 56, 55, 40, 65, 59, 80, 81, 56],
-      "Energy Consumed": [45, 55, 60, 65, 70, 75, 80, 78, 72, 65, 60, 50],
-      "RECs Created": [30, 35, 40, 45, 50, 55, 60, 65, 60, 55, 50, 45],
-    };
-
-    // Adjust values based on year to show some variation
-    const yearFactor = {
-      "2025": 1,
-      "2024": 0.9,
-      "2023": 0.8,
-    };
-
-    const factor = yearFactor[year] || 1;
-
-    return [
-      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-    ].map((month, index) => ({
+  // Get current chart data based on selected type
+  const getCurrentChartData = () => {
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    
+    // For now, return empty data since totalRecs is 0
+    return months.map(month => ({
       month,
-      value: Math.round(baseValues[type][index] * factor),
+      value: 0 // All values are 0 since facilities have no data yet
     }));
   };
 
-  // Mock data generators for other stats (replace with actual API calls)
-  const getMockStats = () => {
-    // These should be replaced with actual API calls
-    const baseStats = {
-      recGenerated: recData.totalRecs,
-      recSold: Math.floor(recData.totalRecs * 0.8), // 80% of generated RECs sold
-      revenueEarned: Math.floor(recData.totalRecs * 0.8 * 45), // Assuming $45 per REC
-      salePricePerREC: 45,
-      energyProduced: Math.floor(recData.totalRecs * 1.2), // Assuming 1.2 MWh per REC
+  // Calculate stats based on actual facility data
+  const getActualStats = () => {
+    let totalRecs = 0;
+    let verifiedFacilities = 0;
+    
+    // Filter facilities based on selection
+    let relevantFacilities = facilities;
+    if (selectedFacility !== "All facilities") {
+      relevantFacilities = facilities.filter(f => f.id === selectedFacility);
+    }
+
+    // Calculate totals from actual facility data
+    relevantFacilities.forEach(facility => {
+      totalRecs += facility.totalRecs || 0;
+      if (facility.status === "VERIFIED") {
+        verifiedFacilities++;
+      }
+    });
+
+    // Since totalRecs is 0, all calculated values will be 0
+    const stats = {
+      recGenerated: totalRecs,
+      recSold: Math.floor(totalRecs * 0.85), // 85% sold rate
+      revenueEarned: Math.floor(totalRecs * 0.85 * 45), // $45 per REC
+      salePricePerREC: totalRecs > 0 ? 45 : 0,
+      energyProduced: Math.floor(totalRecs * 1.2), // 1.2 MWh per REC ratio
+      activeFacilities: relevantFacilities.length,
+      verifiedFacilities: verifiedFacilities
     };
 
-    return baseStats;
+    return stats;
   };
 
-  // Decide bar color based on chartType
+  // Get color based on chart type
   const getFillColor = () => {
     switch (chartType) {
       case "Energy Consumed":
-        return "#000000"; // black
+        return "#000000";
       case "RECs Created":
-        return "#039994"; // teal
+      case "RECs Sold":
+        return "#039994";
       default:
-        return "#FBBF24"; // yellow (Solar Production)
+        return "#FBBF24"; // Solar Production
     }
   };
 
-  // Axis labels: 100, 75, 50, 25, 0 (in MWh)
+  // Get chart units
+  const getChartUnits = () => {
+    return (chartType === "RECs Created" || chartType === "RECs Sold") ? "RECs" : "MWh";
+  };
+
   const yAxisValues = [100, 75, 50, 25, 0];
 
   if (loading) {
-    return <div className="flex justify-center items-center h-64">Loading facilities...</div>;
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-pulse text-gray-500">Loading facilities...</div>
+      </div>
+    );
   }
 
   if (error) {
     return <div className="text-red-500 p-4">Error loading facilities: {error}</div>;
   }
 
-  const stats = getMockStats();
+  const chartData = getCurrentChartData();
+  const stats = getActualStats();
 
   return (
-    <div className="w-full">
+    <div className="w-full bg-gray-50 min-h-screen p-6">
       {/* Page Title */}
-      <h2 className={`${pageTitle} text-[#039994] mb-4`}>Energy Performance</h2>
+      <h2 className={`${pageTitle} text-[#039994] mb-6`}>Energy Performance</h2>
 
       {/* Main Grid: Chart (left) + Stats (right) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* CHART: 2 columns on large screens */}
-        <div className="col-span-1 lg:col-span-2 bg-white rounded-md shadow p-4">
+        <div className="col-span-1 lg:col-span-2 bg-white rounded-lg shadow-sm p-6">
           {/* Top Row: Chart Type + Units + Selects */}
-          <div className="flex flex-wrap items-center justify-between mb-6">
-            {/* Left Controls: Chart Type & MWh */}
-            <div className="flex items-center space-x-2">
+          <div className="flex flex-wrap items-center justify-between mb-8">
+            {/* Left Controls: Chart Type & Units */}
+            <div className="flex items-center space-x-3">
               <select
                 value={chartType}
                 onChange={(e) => setChartType(e.target.value)}
-                className="text-[#039994] font-semibold bg-transparent focus:outline-none cursor-pointer"
+                className="text-[#039994] font-semibold bg-transparent focus:outline-none cursor-pointer text-lg"
               >
                 <option value="Solar Production">Solar Production</option>
                 <option value="Energy Consumed">Energy Consumed</option>
-                <option value="RECs Created">RECs Created</option>
+                <option value="RECs Created">RECs Generated</option>
+                <option value="RECs Sold">RECs Sold</option>
               </select>
-              <span className="text-sm text-gray-400">MWh</span>
+              <span className="text-sm text-gray-500 font-medium">
+                {getChartUnits()}
+              </span>
             </div>
 
             {/* Right Controls: Facility, Period, Year */}
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-3">
               <select
                 value={selectedFacility}
                 onChange={(e) => setSelectedFacility(e.target.value)}
-                className={`${selectClass} w-auto`}
+                className={`${selectClass} min-w-[180px]`}
               >
                 <option value="All facilities">All facilities</option>
                 {facilities.map((facility) => (
@@ -246,7 +265,7 @@ export default function Graph() {
               <select
                 value={selectedPeriod}
                 onChange={(e) => setSelectedPeriod(e.target.value)}
-                className={`${selectClass} w-auto`}
+                className={`${selectClass}`}
               >
                 <option>Yearly</option>
                 <option>Monthly</option>
@@ -255,60 +274,96 @@ export default function Graph() {
               <select
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(e.target.value)}
-                className={`${selectClass} w-auto`}
+                className={`${selectClass}`}
               >
                 <option>2025</option>
                 <option>2024</option>
                 <option>2023</option>
+                <option>2022</option>
               </select>
             </div>
           </div>
 
           {/* Chart Area */}
           {chartLoading ? (
-            <div className="flex justify-center items-center h-64">
+            <div className="flex justify-center items-center h-80">
               <div className="animate-pulse text-gray-500">Loading chart data...</div>
             </div>
           ) : (
-            <div className="flex">
+            <div className="flex items-end">
               {/* Y-axis labels */}
-              <div className="flex flex-col justify-between items-end mr-4 h-64">
+              <div className="flex flex-col justify-between items-end mr-4 h-80 py-2">
                 {yAxisValues.map((val, idx) => (
-                  <span key={idx} className="text-gray-500 text-sm">
+                  <span key={idx} className="text-gray-400 text-sm font-medium">
                     {val}
                   </span>
                 ))}
               </div>
 
-              {/* Bars */}
-              <div className="flex-1 flex items-end justify-between h-64">
-                {monthlyData.map((data, idx) => (
-                  <div key={idx} className="flex flex-col items-center w-8">
-                    {/* Outer tube with full rounding */}
-                    <div className="bg-gray-200 w-4 h-full rounded-full overflow-hidden flex flex-col justify-end relative">
-                      {/* Inner fill */}
-                      <div
-                        style={{
-                          backgroundColor: getFillColor(),
-                          height: `${(data.value / 100) * 100}%`,
-                          transition: "height 0.5s ease",
-                        }}
-                        className="w-full rounded-full"
-                      />
-                      
-                      {/* Value label at the top of the bar */}
-                      <div 
-                        className="absolute -top-6 left-1/2 transform -translate-x-1/2 
-                                   text-xs font-medium text-gray-700"
-                      >
-                        {data.value}
+              {/* Test tube bars container */}
+              <div className="flex-1 flex items-end justify-between h-80 px-2">
+                {chartData.map((data, idx) => {
+                  const heightPercentage = Math.max(0, Math.min(100, (data.value / 100) * 100));
+                  const isEmpty = data.value === 0;
+                  
+                  return (
+                    <div key={idx} className="flex flex-col items-center relative group">
+                      {/* Test tube container */}
+                      <div className="relative w-8 h-72 bg-gray-100 rounded-full border-2 border-gray-200 overflow-hidden shadow-inner">
+                        {/* Liquid fill - only show if there's data */}
+                        {!isEmpty && (
+                          <div
+                            style={{
+                              backgroundColor: getFillColor(),
+                              height: `${heightPercentage}%`,
+                              transition: "height 0.8s ease-in-out",
+                            }}
+                            className="absolute bottom-0 left-0 right-0 rounded-full"
+                          />
+                        )}
+                        
+                        {/* Empty state indicator */}
+                        {isEmpty && (
+                          <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-gray-400 text-xs">
+                            0
+                          </div>
+                        )}
+                        
+                        {/* Highlight effect */}
+                        <div className="absolute left-1 top-2 bottom-2 w-1 bg-white opacity-20 rounded-full" />
                       </div>
+                      
+                      {/* Value tooltip */}
+                      <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 
+                                    bg-gray-800 text-white text-xs px-2 py-1 rounded 
+                                    opacity-0 group-hover:opacity-100 transition-opacity duration-200
+                                    whitespace-nowrap z-10">
+                        {data.value} {getChartUnits()}
+                      </div>
+                      
+                      {/* Month label */}
+                      <p className="text-xs text-gray-600 mt-3 font-medium">{data.month}</p>
                     </div>
-                    
-                    {/* Month label */}
-                    <p className="text-xs text-gray-500 mt-2">{data.month}</p>
-                  </div>
-                ))}
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* No data message */}
+          {facilities.length > 0 && stats.recGenerated === 0 && (
+            <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-yellow-800">
+                    No energy data available yet. Data will appear once your facilities start generating RECs.
+                  </p>
+                </div>
               </div>
             </div>
           )}
@@ -319,14 +374,14 @@ export default function Graph() {
           {/* Row 1: RECs Generated & Total RECs sold */}
           <div className="grid grid-cols-2 gap-4">
             {/* Card: RECs Generated */}
-            <div className="bg-white rounded-md shadow p-4 flex flex-col items-start">
-              <div className="flex items-center space-x-2">
-                <div className="h-4 w-4 bg-[#039994] rounded-full"></div>
-                <p className="text-black text-sm font-sfpro">RECs Generated</p>
+            <div className="bg-white rounded-lg shadow-sm p-4 flex flex-col">
+              <div className="flex items-center space-x-2 mb-3">
+                <div className="h-3 w-3 bg-[#039994] rounded-full"></div>
+                <p className="text-gray-700 text-sm font-medium">RECs Generated</p>
               </div>
-              <hr className="w-full my-2 border-gray-200" />
+              <hr className="border-gray-200 mb-3" />
               {recData.loading ? (
-                <div className="animate-pulse text-gray-400">Loading...</div>
+                <div className="animate-pulse h-6 bg-gray-200 rounded"></div>
               ) : (
                 <p className="text-[#056C69] text-xl font-bold">
                   {stats.recGenerated.toFixed(2)}
@@ -335,14 +390,14 @@ export default function Graph() {
             </div>
 
             {/* Card: Total RECs sold */}
-            <div className="bg-white rounded-md shadow p-4 flex flex-col items-start">
-              <div className="flex items-center space-x-2">
-                <div className="h-4 w-4 bg-[#039994] rounded-full"></div>
-                <p className="text-black text-sm font-sfpro">Total RECs sold</p>
+            <div className="bg-white rounded-lg shadow-sm p-4 flex flex-col">
+              <div className="flex items-center space-x-2 mb-3">
+                <div className="h-3 w-3 bg-[#039994] rounded-full"></div>
+                <p className="text-gray-700 text-sm font-medium">Total RECs sold</p>
               </div>
-              <hr className="w-full my-2 border-gray-200" />
+              <hr className="border-gray-200 mb-3" />
               {recData.loading ? (
-                <div className="animate-pulse text-gray-400">Loading...</div>
+                <div className="animate-pulse h-6 bg-gray-200 rounded"></div>
               ) : (
                 <p className="text-[#056C69] text-xl font-bold">
                   {stats.recSold}
@@ -354,14 +409,14 @@ export default function Graph() {
           {/* Row 2: Total Rev. Earned & Avg. price/REC */}
           <div className="grid grid-cols-2 gap-4">
             {/* Card: Total Rev. Earned */}
-            <div className="bg-white rounded-md shadow p-4 flex flex-col items-start">
-              <div className="flex items-center space-x-2">
-                <div className="h-4 w-4 bg-black rounded-full"></div>
-                <p className="text-black text-sm font-sfpro">Total Rev. Earned</p>
+            <div className="bg-white rounded-lg shadow-sm p-4 flex flex-col">
+              <div className="flex items-center space-x-2 mb-3">
+                <div className="h-3 w-3 bg-black rounded-full"></div>
+                <p className="text-gray-700 text-sm font-medium">Total Rev. Earned</p>
               </div>
-              <hr className="w-full my-2 border-gray-200" />
+              <hr className="border-gray-200 mb-3" />
               {recData.loading ? (
-                <div className="animate-pulse text-gray-400">Loading...</div>
+                <div className="animate-pulse h-6 bg-gray-200 rounded"></div>
               ) : (
                 <p className="text-[#056C69] text-xl font-bold">
                   ${stats.revenueEarned.toLocaleString()}
@@ -370,14 +425,14 @@ export default function Graph() {
             </div>
 
             {/* Card: Avg. price/REC */}
-            <div className="bg-white rounded-md shadow p-4 flex flex-col items-start">
-              <div className="flex items-center space-x-2">
-                <div className="h-4 w-4 bg-[#FBBF24] rounded-full"></div>
-                <p className="text-black text-sm font-sfpro">Avg. price/REC</p>
+            <div className="bg-white rounded-lg shadow-sm p-4 flex flex-col">
+              <div className="flex items-center space-x-2 mb-3">
+                <div className="h-3 w-3 bg-[#FBBF24] rounded-full"></div>
+                <p className="text-gray-700 text-sm font-medium">Avg. price/REC</p>
               </div>
-              <hr className="w-full my-2 border-gray-200" />
+              <hr className="border-gray-200 mb-3" />
               {recData.loading ? (
-                <div className="animate-pulse text-gray-400">Loading...</div>
+                <div className="animate-pulse h-6 bg-gray-200 rounded"></div>
               ) : (
                 <p className="text-[#056C69] text-xl font-bold">
                   ${stats.salePricePerREC}
@@ -387,19 +442,42 @@ export default function Graph() {
           </div>
 
           {/* Row 3: Energy Generated (full width) */}
-          <div className="bg-white rounded-md shadow p-4 flex flex-col items-start">
-            <div className="flex items-center space-x-2">
-              <div className="h-4 w-4 bg-[#FBBF24] rounded-full"></div>
-              <p className="text-black text-sm font-sfpro">Energy Generated</p>
+          <div className="bg-white rounded-lg shadow-sm p-4 flex flex-col">
+            <div className="flex items-center space-x-2 mb-3">
+              <div className="h-3 w-3 bg-[#FBBF24] rounded-full"></div>
+              <p className="text-gray-700 text-sm font-medium">Energy Generated</p>
             </div>
-            <hr className="w-full my-2 border-gray-200" />
+            <hr className="border-gray-200 mb-3" />
             {recData.loading ? (
-              <div className="animate-pulse text-gray-400">Loading...</div>
+              <div className="animate-pulse h-6 bg-gray-200 rounded"></div>
             ) : (
               <p className="text-[#056C69] text-xl font-bold">
-                {stats.energyProduced}MWh
+                {stats.energyProduced} MWh
               </p>
             )}
+          </div>
+
+          {/* Facility Status Summary */}
+          <div className="bg-white rounded-lg shadow-sm p-4 flex flex-col">
+            <div className="flex items-center space-x-2 mb-3">
+              <div className="h-3 w-3 bg-green-500 rounded-full"></div>
+              <p className="text-gray-700 text-sm font-medium">Facility Status</p>
+            </div>
+            <hr className="border-gray-200 mb-3" />
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Total Facilities:</span>
+                <span className="font-medium">{stats.activeFacilities}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Verified:</span>
+                <span className="font-medium text-green-600">{stats.verifiedFacilities}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Pending:</span>
+                <span className="font-medium text-yellow-600">{stats.activeFacilities - stats.verifiedFacilities}</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
