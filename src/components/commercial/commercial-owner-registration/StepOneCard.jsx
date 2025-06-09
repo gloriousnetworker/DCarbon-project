@@ -61,16 +61,19 @@ export default function StepOneCard() {
 
   const router = useRouter();
 
-  // Check if finance type requires document upload (case insensitive)
+  // Check if finance type requires document upload
   const isCashType = financeType.toLowerCase() === 'cash';
   const showUploadField = !isCashType && financeType !== '';
   const showFinanceCompany = !isCashType && financeType !== '';
   const showCustomInstaller = installer === 'others';
 
-  // Fetch finance types on component mount
+  // Fetch finance types and installers on component mount
   useEffect(() => {
-    fetchFinanceTypes();
-    fetchInstallers();
+    const fetchData = async () => {
+      await fetchFinanceTypes();
+      await fetchInstallers();
+    };
+    fetchData();
   }, []);
 
   const fetchFinanceTypes = async () => {
@@ -91,9 +94,22 @@ export default function StepOneCard() {
       );
 
       if (response.data.status === 'success') {
-        // Filter only approved types
-        const approvedTypes = response.data.data.types.filter(type => type.status === 'APPROVED');
-        setFinanceTypes(approvedTypes);
+        // Filter only approved types and ensure 'cash' is included
+        const approvedTypes = response.data.data.types.filter(type => 
+          type.status === 'APPROVED' || type.name.toLowerCase() === 'cash'
+        );
+        
+        // Remove duplicates by name (case insensitive)
+        const uniqueTypes = approvedTypes.reduce((acc, current) => {
+          const x = acc.find(item => item.name.toLowerCase() === current.name.toLowerCase());
+          if (!x) {
+            return acc.concat([current]);
+          } else {
+            return acc;
+          }
+        }, []);
+        
+        setFinanceTypes(uniqueTypes);
       }
     } catch (err) {
       console.error('Error fetching finance types:', err);
@@ -121,7 +137,7 @@ export default function StepOneCard() {
       );
 
       if (response.data.status === 'success') {
-        setInstallers(response.data.data.installers);
+        setInstallers(response.data.data.installers || []);
       }
     } catch (err) {
       console.error('Error fetching installers:', err);
@@ -162,6 +178,8 @@ export default function StepOneCard() {
       toast.success(response.data.message || 'Finance type request submitted successfully!');
       setShowRequestModal(false);
       setRequestedFinanceTypeName('');
+      // Refresh finance types after successful request
+      await fetchFinanceTypes();
     } catch (err) {
       toast.error(err.response?.data?.message || err.message || 'Failed to submit request');
     } finally {
@@ -171,6 +189,15 @@ export default function StepOneCard() {
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
+    if (!selectedFile) return;
+
+    // Validate file type
+    const validTypes = ['application/pdf', 'image/jpeg', 'image/png', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    if (!validTypes.includes(selectedFile.type)) {
+      toast.error('Invalid file type. Please upload PDF, JPEG, PNG, or Word documents.');
+      return;
+    }
+
     setFile(selectedFile);
     setUploadSuccess(false);
     localStorage.removeItem('tempFinancialAgreement');
@@ -394,8 +421,6 @@ export default function StepOneCard() {
               <option value="">
                 {loadingFinanceTypes ? 'Loading finance types...' : 'Choose type'}
               </option>
-              {/* Always include Cash as first option */}
-              <option value="cash">Cash</option>
               {financeTypes.map((type) => (
                 <option key={type.id} value={type.name}>
                   {type.name}
@@ -449,6 +474,7 @@ export default function StepOneCard() {
                     className="absolute inset-0 opacity-0 cursor-pointer"
                     onChange={handleFileChange}
                     required={showUploadField}
+                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                   />
                   <span className={uploadIconContainer}>
                     <svg
@@ -514,7 +540,7 @@ export default function StepOneCard() {
                 </button>
               </div>
               <p className={uploadNoteStyle}>
-                Required for all finance types except Cash
+                Required for all finance types except Cash (PDF, JPEG, PNG, Word)
               </p>
             </div>
           )}

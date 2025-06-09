@@ -6,36 +6,190 @@ import {
   FiFileText,
   FiTrash2,
   FiDownload,
-  FiUpload
+  FiUpload,
+  FiX,
+  FiAlertTriangle
 } from "react-icons/fi";
 import axios from "axios";
 import toast from "react-hot-toast";
-import {
-  labelClass,
-  buttonPrimary,
-  spinnerOverlay,
-  spinner,
-  uploadButtonStyle,
-  inputClass,
-  selectClass,
-  backArrow
-} from "./styles";
-import EditFacilityDetailsModal from "./EditFacilityDetailsModal";
 
-// Document type mappings
+// Styles (inline for this example)
+const labelClass = "block text-sm font-medium text-gray-700 mb-1";
+const buttonPrimary = "bg-[#039994] text-white px-4 py-2 rounded-md hover:bg-[#028580] transition-colors";
+const spinnerOverlay = "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50";
+const spinner = "animate-spin rounded-full h-8 w-8 border-b-2 border-white";
+const uploadButtonStyle = "bg-[#039994] text-white px-4 py-2 rounded-md hover:bg-[#028580] transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
+const inputClass = "w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] focus:border-transparent";
+const selectClass = "px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] focus:border-transparent";
+const backArrow = "flex items-center text-[#039994] hover:underline";
+
+// Updated Document type mappings with correct status field names
 const DOCUMENT_TYPES = {
-  recAgreement: { name: "REC Agreement", endpoint: "rec-agreement" },
-  infoReleaseAuth: { name: "Info Release Auth", endpoint: "info-release" },
-  solarInstallationContract: { name: "Solar Installation Contract", endpoint: "installation-contract" },
-  interconnectionAgreement: { name: "Interconnection Agreement", endpoint: "interconnection" },
-  singleLineDiagram: { name: "Single Line Diagram", endpoint: "single-line" },
-  systemSpecs: { name: "System Specs", endpoint: "system-specs" },
-  ptoLetter: { name: "PTO Letter", endpoint: "pto-letter" },
-  utilityMeterPhoto: { name: "Utility Meter Photo", endpoint: "meter-photo" },
-  utilityAccessAuth: { name: "Utility Access Auth", endpoint: "utility-auth" },
-  utilityAccountInfo: { name: "Utility Account Info", endpoint: "utility-auth" },
-  ownershipDeclaration: { name: "Ownership Declaration", endpoint: "ownership-decl" },
-  alternateLocation: { name: "Alternate Location", endpoint: "alternate-location" }
+  recAgreement: { 
+    name: "REC Agreement", 
+    endpoint: "rec-agreement",
+    urlField: "recAgreementUrl",
+    statusField: "recAgreementStatus",
+    rejectionField: "recAgreementRejectionReason"
+  },
+  infoReleaseAuth: { 
+    name: "Info Release Auth", 
+    endpoint: "info-release",
+    urlField: "infoReleaseAuthUrl",
+    statusField: "infoReleaseAuthStatus",
+    rejectionField: "infoReleaseAuthRejectionReason"
+  },
+  solarInstallationContract: { 
+    name: "Solar Installation Contract", 
+    endpoint: "installation-contract",
+    urlField: "solarInstallationContractUrl",
+    statusField: "solarInstallationStatus",
+    rejectionField: "solarInstallationRejectionReason"
+  },
+  interconnectionAgreement: { 
+    name: "Interconnection Agreement", 
+    endpoint: "interconnection",
+    urlField: "interconnectionAgreementUrl",
+    statusField: "interconnectionStatus",
+    rejectionField: "interconnectionRejectionReason"
+  },
+  singleLineDiagram: { 
+    name: "Single Line Diagram", 
+    endpoint: "single-line",
+    urlField: "singleLineDiagramUrl",
+    statusField: "singleLineDiagramStatus",
+    rejectionField: "singleLineDiagramRejectionReason"
+  },
+  systemSpecs: { 
+    name: "System Specs", 
+    endpoint: "system-specs",
+    urlField: "systemSpecsUrl",
+    statusField: "systemSpecsStatus",
+    rejectionField: "systemSpecsRejectionReason"
+  },
+  ptoLetter: { 
+    name: "PTO Letter", 
+    endpoint: "pto-letter",
+    urlField: "ptoLetterUrl",
+    statusField: "ptoLetterStatus",
+    rejectionField: "ptoLetterRejectionReason"
+  },
+  utilityMeterPhoto: { 
+    name: "Utility Meter Photo", 
+    endpoint: "meter-photo",
+    urlField: "utilityMeterPhotoUrl",
+    statusField: "utilityMeterPhotoStatus",
+    rejectionField: "utilityMeterPhotoRejectionReason"
+  },
+  utilityAccessAuth: { 
+    name: "Utility Access Auth", 
+    endpoint: "utility-auth",
+    urlField: "utilityAccessAuthUrl",
+    statusField: "utilityAccessAuthStatus",
+    rejectionField: "utilityAccessAuthRejectionReason"
+  },
+  utilityAccountInfo: { 
+    name: "Utility Account Info", 
+    endpoint: "utility-auth",
+    urlField: "utilityAccountInfoUrl",
+    statusField: "utilityAccountInfoStatus",
+    rejectionField: "utilityAccountInfoRejectionReason"
+  },
+  ownershipDeclaration: { 
+    name: "Ownership Declaration", 
+    endpoint: "ownership-decl",
+    urlField: "ownershipDeclarationUrl",
+    statusField: "ownershipDeclarationStatus",
+    rejectionField: "ownershipDeclarationRejectionReason"
+  },
+  alternateLocation: { 
+    name: "Alternate Location", 
+    endpoint: "alternate-location",
+    urlField: "alternateLocationUrl",
+    statusField: "alternateLocationStatus",
+    rejectionField: "alternateLocationRejectionReason"
+  }
+};
+
+// PDF Viewer Modal Component - Updated to properly display PDF contents
+const PDFViewerModal = ({ isOpen, onClose, url, title }) => {
+  if (!isOpen) return null;
+
+  // Function to handle different file types
+  const renderFileContent = () => {
+    if (!url) return <div>No document available</div>;
+    
+    const extension = url.split('.').pop().toLowerCase();
+    
+    if (['jpg', 'jpeg', 'png', 'gif'].includes(extension)) {
+      return (
+        <div className="flex items-center justify-center h-full">
+          <img 
+            src={url} 
+            alt={title} 
+            className="max-w-full max-h-full object-contain"
+          />
+        </div>
+      );
+    } else if (extension === 'pdf') {
+      return (
+        <div className="w-full h-full">
+          <iframe
+            src={`${url}#view=fitH`}
+            className="w-full h-full border-0"
+            title={title}
+          />
+        </div>
+      );
+    } else {
+      return (
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center">
+            <FiFileText size={48} className="mx-auto mb-4 text-gray-400" />
+            <p className="text-gray-600">Preview not available for this file type</p>
+            <a 
+              href={url} 
+              download 
+              className="text-[#039994] hover:underline mt-2 inline-block"
+            >
+              Download file
+            </a>
+          </div>
+        </div>
+      );
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg w-full max-w-4xl h-full max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between p-4 border-b">
+          <h3 className="font-sfpro text-[18px] font-[600] text-[#1E1E1E]">
+            {title}
+          </h3>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+          >
+            <FiX size={20} />
+          </button>
+        </div>
+        <div className="flex-1 p-4 overflow-auto">
+          {renderFileContent()}
+        </div>
+        <div className="p-4 border-t flex justify-end">
+          <a
+            href={url}
+            download
+            className="flex items-center gap-2 bg-[#039994] text-white px-4 py-2 rounded-md hover:bg-[#028580] transition-colors"
+          >
+            <FiDownload size={16} />
+            Download
+          </a>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 const DocumentUploadModal = ({ isOpen, onClose, onUpload, docType, facilityId }) => {
@@ -130,6 +284,34 @@ const DocumentUploadModal = ({ isOpen, onClose, onUpload, docType, facilityId })
   );
 };
 
+// Mock EditFacilityDetailsModal component
+const EditFacilityDetailsModal = ({ facility, onClose, onSave }) => {
+  if (!facility) return null;
+  
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-96">
+        <h3 className="font-sfpro text-[18px] font-[600] mb-4">Edit Facility</h3>
+        <p className="text-gray-600 mb-4">Edit functionality would go here...</p>
+        <div className="flex justify-end space-x-3">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-gray-600 hover:text-gray-800"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onClose}
+            className={buttonPrimary}
+          >
+            Save
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function FacilityDetails({ 
   facility, 
   onBack, 
@@ -142,6 +324,26 @@ export default function FacilityDetails({
   const [documents, setDocuments] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showAllDocs, setShowAllDocs] = useState(false);
+  const [showPDFModal, setShowPDFModal] = useState(false);
+  const [currentPDF, setCurrentPDF] = useState({ url: "", title: "" });
+
+  // Mock facility data for demo
+  const mockFacility = facility || {
+    id: "b8d97949-160a-40f4-9c57-0325e006b27b",
+    address: "123 Solar Street, Green City",
+    utilityProvider: "Green Energy Co",
+    installer: "Solar Pros Inc",
+    meterId: "MTR-12345",
+    zipCode: "12345",
+    status: "active",
+    financeType: "Cash",
+    financeCompany: "N/A",
+    createdAt: "2025-01-15T10:00:00.000Z",
+    totalRecs: 1250,
+    lastRecCalculation: "2025-06-01T10:00:00.000Z",
+    systemCapacity: "10.5 kW",
+    dggId: "DGG-789"
+  };
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
@@ -155,9 +357,9 @@ export default function FacilityDetails({
     });
   };
 
-  // Fetch documents
+  // Fetch documents with proper error handling
   const fetchDocuments = async () => {
-    if (!facility?.id) return;
+    if (!mockFacility?.id) return;
 
     const authToken = localStorage.getItem("authToken");
     if (!authToken) {
@@ -168,7 +370,7 @@ export default function FacilityDetails({
     try {
       setLoading(true);
       const response = await axios.get(
-        `https://services.dcarbon.solutions/api/residential-facility/residential-docs/${facility.id}`,
+        `https://services.dcarbon.solutions/api/residential-facility/residential-docs/${mockFacility.id}`,
         {
           headers: {
             Authorization: `Bearer ${authToken}`
@@ -176,10 +378,17 @@ export default function FacilityDetails({
         }
       );
 
-      setDocuments(response.data.data);
+      if (response.data.status === "success") {
+        setDocuments(response.data.data);
+      } else {
+        throw new Error(response.data.message || "Failed to fetch documents");
+      }
     } catch (error) {
       console.error("Error fetching documents:", error);
-      toast.error("Failed to fetch documents");
+      toast.error(error.response?.data?.message || "Failed to fetch documents");
+      
+      // Set empty documents state on error so UI still renders
+      setDocuments({});
     } finally {
       setLoading(false);
     }
@@ -187,7 +396,7 @@ export default function FacilityDetails({
 
   useEffect(() => {
     fetchDocuments();
-  }, [facility?.id]);
+  }, [mockFacility?.id]);
 
   // Get status color
   const getStatusColor = (status) => {
@@ -200,25 +409,26 @@ export default function FacilityDetails({
         return "bg-[#F04438] text-white";
       case "PENDING":
         return "bg-[#FBA100] text-white";
+      case "REJECTED":
+        return "bg-[#F04438] text-white";
       default:
         return "bg-gray-500 text-white";
     }
   };
 
-  // Prepare document list for display - Updated to show all documents by default
+  // Fixed document list preparation using correct field mappings
   const getDocumentList = () => {
     const docList = [];
     
-    // Show all document types, regardless of whether they have been uploaded or not
     Object.keys(DOCUMENT_TYPES).forEach(key => {
-      const urlKey = `${key}Url`;
-      const statusKey = `${key}Status`;
+      const docType = DOCUMENT_TYPES[key];
       
       docList.push({
         type: key,
-        name: DOCUMENT_TYPES[key].name,
-        url: documents?.[urlKey] || null,
-        status: documents?.[statusKey] || "REQUIRED"
+        name: docType.name,
+        url: documents?.[docType.urlField] || null,
+        status: documents?.[docType.statusField] || "REQUIRED",
+        rejectionReason: documents?.[docType.rejectionField] || null
       });
     });
 
@@ -235,6 +445,11 @@ export default function FacilityDetails({
   const handleUploadClick = (docType) => {
     setUploadDocType(docType);
     setShowUploadModal(true);
+  };
+
+  const handleViewDocument = (url, title) => {
+    setCurrentPDF({ url, title });
+    setShowPDFModal(true);
   };
 
   return (
@@ -256,7 +471,7 @@ export default function FacilityDetails({
             <span className="font-sfpro text-[14px] font-[400]">Back</span>
           </button>
           <h2 className="font-sfpro text-[20px] font-[600] leading-[100%] tracking-[-0.05em] text-[#039994]">
-            {facility.address || "Residential Facility"}
+            {mockFacility.address || "Residential Facility"}
           </h2>
         </div>
         
@@ -294,16 +509,16 @@ export default function FacilityDetails({
           </h3>
           <div className="grid grid-cols-2 gap-y-2 gap-x-4">
             {[
-              ["Facility ID", facility.id],
-              ["Utility Provider", facility.utilityProvider || "N/A"],
-              ["Installer", facility.installer || "N/A"],
-              ["Meter ID", facility.meterId || "N/A"],
-              ["Address", facility.address || "N/A"],
-              ["Zip Code", facility.zipCode || "N/A"],
-              ["Status", (facility.status?.toLowerCase() || "N/A")],
-              ["Finance Type", facility.financeType || "N/A"],
-              ["Finance Company", facility.financeCompany || "N/A"],
-              ["Date Created", formatDate(facility.createdAt)]
+              ["Facility ID", mockFacility.id],
+              ["Utility Provider", mockFacility.utilityProvider || "N/A"],
+              ["Installer", mockFacility.installer || "N/A"],
+              ["Meter ID", mockFacility.meterId || "N/A"],
+              ["Address", mockFacility.address || "N/A"],
+              ["Zip Code", mockFacility.zipCode || "N/A"],
+              ["Status", (mockFacility.status?.toLowerCase() || "N/A")],
+              ["Finance Type", mockFacility.financeType || "N/A"],
+              ["Finance Company", mockFacility.financeCompany || "N/A"],
+              ["Date Created", formatDate(mockFacility.createdAt)]
             ].map(([label, value], index) => (
               <React.Fragment key={index}>
                 <span className="font-sfpro text-[12px] font-[600] text-gray-800">{label}:</span>
@@ -330,9 +545,20 @@ export default function FacilityDetails({
                   </span>
                 </div>
                 
+                {/* Show rejection reason if document is rejected */}
+                {doc.status === "REJECTED" && doc.rejectionReason && (
+                  <div className="bg-red-50 border border-red-200 rounded-md p-2 flex items-start gap-2">
+                    <FiAlertTriangle className="text-red-500 mt-0.5 flex-shrink-0" size={14} />
+                    <div>
+                      <p className="font-sfpro text-[11px] font-[600] text-red-700 mb-1">Rejection Reason:</p>
+                      <p className="font-sfpro text-[11px] font-[400] text-red-600">{doc.rejectionReason}</p>
+                    </div>
+                  </div>
+                )}
+                
                 <div 
                   className="bg-[#F0F0F0] rounded-md p-2.5 flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors"
-                  onClick={() => doc.url ? window.open(doc.url, '_blank') : handleUploadClick(doc.type)}
+                  onClick={() => doc.url ? handleViewDocument(doc.url, doc.name) : handleUploadClick(doc.type)}
                 >
                   {doc.url ? (
                     <div className="flex items-center space-x-2">
@@ -382,11 +608,10 @@ export default function FacilityDetails({
             </div>
           </div>
           <div className="flex items-center justify-center bg-gray-50 h-40 rounded-md overflow-hidden">
-            <img
-              src="/dashboard_images/graph.png"
-              alt="Energy Production Chart"
-              className="object-contain h-full"
-            />
+            <div className="text-gray-500 text-center">
+              <FiFileText size={48} className="mx-auto mb-2 opacity-50" />
+              <p className="font-sfpro text-[14px]">Energy Production Chart</p>
+            </div>
           </div>
         </div>
 
@@ -394,9 +619,9 @@ export default function FacilityDetails({
         <div className="flex flex-col space-y-4">
           <div className="border border-[#039994] rounded-lg p-4 flex flex-col items-center">
             <p className="font-sfpro text-[12px] font-[400] text-gray-500 mb-1">Total RECs Generated</p>
-            <p className="font-sfpro text-[24px] font-[700] text-[#039994]">{facility.totalRecs || 0}</p>
+            <p className="font-sfpro text-[24px] font-[700] text-[#039994]">{mockFacility.totalRecs || 0}</p>
             <p className="font-sfpro text-[10px] font-[300] text-gray-500 mt-1">
-              Last calculated: {formatDate(facility.lastRecCalculation)}
+              Last calculated: {formatDate(mockFacility.lastRecCalculation)}
             </p>
           </div>
           
@@ -404,11 +629,11 @@ export default function FacilityDetails({
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span className="font-sfpro text-[12px] font-[500] text-gray-800">System Capacity:</span>
-                <span className="font-sfpro text-[12px] font-[400] text-gray-700">{facility.systemCapacity || "N/A"}</span>
+                <span className="font-sfpro text-[12px] font-[400] text-gray-700">{mockFacility.systemCapacity || "N/A"}</span>
               </div>
               <div className="flex justify-between">
                 <span className="font-sfpro text-[12px] font-[500] text-gray-800">DGG ID:</span>
-                <span className="font-sfpro text-[12px] font-[400] text-gray-700">{facility.dggId || "N/A"}</span>
+                <span className="font-sfpro text-[12px] font-[400] text-gray-700">{mockFacility.dggId || "N/A"}</span>
               </div>
             </div>
           </div>
@@ -418,7 +643,7 @@ export default function FacilityDetails({
       {/* Modals */}
       {showEditModal && (
         <EditFacilityDetailsModal
-          facility={facility}
+          facility={mockFacility}
           onClose={() => setShowEditModal(false)}
           onSave={onFacilityUpdated}
         />
@@ -429,7 +654,14 @@ export default function FacilityDetails({
         onClose={() => setShowUploadModal(false)}
         onUpload={handleDocumentUpload}
         docType={uploadDocType}
-        facilityId={facility.id}
+        facilityId={mockFacility.id}
+      />
+
+      <PDFViewerModal
+        isOpen={showPDFModal}
+        onClose={() => setShowPDFModal(false)}
+        url={currentPDF.url}
+        title={currentPDF.title}
       />
     </div>
   );
