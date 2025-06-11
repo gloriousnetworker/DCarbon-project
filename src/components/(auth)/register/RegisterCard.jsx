@@ -325,9 +325,9 @@ function RegisterCardContent() {
                   </label>
                   <div className="relative">
                     <img
-                      src="/vectors/referral_icon.png"
+                      src="/vectors/referralIcon.png"
                       alt="Referral icon"
-                      className="absolute w-[16px] h-[16px] top-1/2 left-2 -translate-y-1/2"
+                      className="absolute w-[24px] h-[24px] top-1/2 left-2 -translate-y-1/2"
                     />
                     <input
                       type="text"

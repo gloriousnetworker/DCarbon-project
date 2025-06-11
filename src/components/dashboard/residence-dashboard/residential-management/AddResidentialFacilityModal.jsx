@@ -3,10 +3,10 @@ import { FiX } from "react-icons/fi";
 import axios from "axios";
 import toast from "react-hot-toast";
 import AddUtilityProvider from "./AddUtilityProvider";
-import { 
-  pageTitle, 
-  labelClass, 
-  inputClass, 
+import {
+  pageTitle,
+  labelClass,
+  inputClass,
   selectClass,
   buttonPrimary,
   uploadHeading,
@@ -73,7 +73,7 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
       if (isSameLocation === true) {
         const serviceAddress = selectedMeter.base.service_address;
         const zipCode = extractZipCode(serviceAddress);
-        
+
         setFormData(prev => ({
           ...prev,
           address: serviceAddress,
@@ -215,13 +215,13 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
 
   const getCurrentMeters = () => {
     if (!selectedUtilityAuthEmail) return [];
-    
+
     const selectedData = userMeterData.find(
       item => item.utilityAuthEmail === selectedUtilityAuthEmail
     );
-    
+
     if (!selectedData || !selectedData.meters?.meters) return [];
-    
+
     return selectedData.meters.meters.filter(
       meter => meter.base.service_class === "electric"
     );
@@ -300,15 +300,15 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
   const handleUpload = async () => {
     if (!file) return;
     setUploading(true);
-    
+
     try {
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       setFormData(prev => ({
         ...prev,
         financeAgreement: file.name
       }));
-      
+
       toast.success('Financial agreement uploaded successfully!');
       setUploadSuccess(true);
     } catch (err) {
@@ -482,8 +482,8 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
     }
   };
 
-  const isFormComplete = 
-    formData.utilityProvider && 
+  const isFormComplete =
+    formData.utilityProvider &&
     formData.installer &&
     formData.address &&
     formData.meterId &&
@@ -509,7 +509,7 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#039994]"></div>
             </div>
           )}
-          
+
           <div className="relative bg-white p-6 rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
             <button
               onClick={onClose}
@@ -572,13 +572,7 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
                 <p className="mt-1 text-xs text-gray-500">
                   Select the utility account containing your meters
                 </p>
-                <button
-                  type="button"
-                  onClick={handleOpenAddUtilityModal}
-                  className="mt-2 text-xs text-[#039994] hover:text-[#02857f] underline focus:outline-none"
-                >
-                  Meters to be registered not listed? Add Utility account
-                </button>
+
               </div>
 
               {selectedUtilityAuthEmail && (
@@ -610,6 +604,13 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
                   </p>
                 </div>
               )}
+              <button
+                type="button"
+                onClick={handleOpenAddUtilityModal}
+                className="mt-2 text-xs text-[#039994] hover:text-[#02857f] underline focus:outline-none"
+              >
+                Meters to be registered not listed? Add Utility account
+              </button>
 
               {selectedMeter && (
                 <div className="mb-3 p-2 bg-gray-50 rounded-md border border-gray-200 text-sm">
@@ -620,9 +621,8 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
                   <div className="flex gap-2">
                     <button
                       type="button"
-                      className={`px-3 py-1 rounded-md border text-sm ${
-                        isSameLocation === true ? 'bg-green-100 border-green-500 text-green-700' : 'border-gray-300 hover:bg-gray-50'
-                      }`}
+                      className={`px-3 py-1 rounded-md border text-sm ${isSameLocation === true ? 'bg-green-100 border-green-500 text-green-700' : 'border-gray-300 hover:bg-gray-50'
+                        }`}
                       onClick={() => handleLocationChoice(true)}
                       disabled={loading}
                     >
@@ -630,9 +630,8 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
                     </button>
                     <button
                       type="button"
-                      className={`px-3 py-1 rounded-md border text-sm ${
-                        isSameLocation === false ? 'bg-blue-100 border-blue-500 text-blue-700' : 'border-gray-300 hover:bg-gray-50'
-                      }`}
+                      className={`px-3 py-1 rounded-md border text-sm ${isSameLocation === false ? 'bg-blue-100 border-blue-500 text-blue-700' : 'border-gray-300 hover:bg-gray-50'
+                        }`}
                       onClick={() => handleLocationChoice(false)}
                       disabled={loading}
                     >
@@ -816,9 +815,8 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
                       type="button"
                       onClick={handleUpload}
                       disabled={!file || uploading || uploadSuccess}
-                      className={`${uploadButtonStyle} ${
-                        !file || uploading || uploadSuccess ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#039994]'
-                      }`}
+                      className={`${uploadButtonStyle} ${!file || uploading || uploadSuccess ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#039994]'
+                        }`}
                     >
                       {uploading ? (
                         <svg

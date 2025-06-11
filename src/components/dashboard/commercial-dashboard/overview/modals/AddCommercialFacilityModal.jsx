@@ -182,13 +182,13 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
 
   const getCurrentMeters = () => {
     if (!selectedUtilityAuthEmail) return [];
-    
+
     const selectedData = userMeterData.find(
       item => item.utilityAuthEmail === selectedUtilityAuthEmail
     );
-    
+
     if (!selectedData || !selectedData.meters?.meters) return [];
-    
+
     return selectedData.meters.meters.filter(
       meter => meter.base.service_class === "electric"
     );
@@ -196,7 +196,7 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    
+
     if (name === "utilityProvider") {
       const selectedProvider = utilityProviders.find(provider => provider.name === value);
       setFormData(prev => ({
@@ -254,7 +254,7 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
   const storeFacilityData = (facilityData) => {
     const userId = localStorage.getItem("userId");
     const userFacilitiesKey = `user_${userId}_facilities`;
-    
+
     try {
       const existingFacilities = JSON.parse(localStorage.getItem(userFacilitiesKey)) || [];
       const updatedFacilities = [
@@ -340,8 +340,8 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
     } catch (error) {
       console.error("Error creating facility:", error);
       toast.error(
-        error.response?.data?.message || 
-        error.message || 
+        error.response?.data?.message ||
+        error.message ||
         "Failed to create facility"
       );
     } finally {
@@ -390,17 +390,17 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
     } catch (error) {
       console.error("Error requesting finance type:", error);
       toast.error(
-        error.response?.data?.message || 
-        error.message || 
+        error.response?.data?.message ||
+        error.message ||
         "Failed to submit finance type request"
       );
     }
   };
 
-  const isFormComplete = 
-    formData.nickname && 
+  const isFormComplete =
+    formData.nickname &&
     formData.address &&
-    formData.utilityProvider && 
+    formData.utilityProvider &&
     formData.meterIds.length > 0 &&
     formData.utilityProviderNamingCode &&
     formData.installerNamingCode &&
@@ -424,7 +424,7 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
               <Loader />
             </div>
           )}
-          
+
           <div className="relative bg-white p-6 rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
             <button
               onClick={onClose}
@@ -505,13 +505,7 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
                 <p className="mt-1 text-xs text-gray-500">
                   Select the utility account containing your meters
                 </p>
-                <button
-                  type="button"
-                  onClick={handleOpenAddUtilityModal}
-                  className="mt-2 text-xs text-[#039994] hover:text-[#02857f] underline focus:outline-none"
-                >
-                  Meters to be registered not listed? Add Utility account
-                </button>
+
               </div>
 
               {selectedUtilityAuthEmail && (
@@ -543,6 +537,13 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
                   </p>
                 </div>
               )}
+              <button
+                type="button"
+                onClick={handleOpenAddUtilityModal}
+                className="mt-2 text-xs text-[#039994] hover:text-[#02857f] underline focus:outline-none"
+              >
+                Meters to be registered not listed? Add Utility account
+              </button>
 
               {selectedMeter && (
                 <div className="mb-3 p-2 bg-gray-50 rounded-md border border-gray-200 text-sm">
@@ -553,9 +554,8 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
                   <div className="flex gap-2">
                     <button
                       type="button"
-                      className={`px-3 py-1 rounded-md border text-sm ${
-                        isSameLocation === true ? 'bg-green-100 border-green-500 text-green-700' : 'border-gray-300 hover:bg-gray-50'
-                      }`}
+                      className={`px-3 py-1 rounded-md border text-sm ${isSameLocation === true ? 'bg-green-100 border-green-500 text-green-700' : 'border-gray-300 hover:bg-gray-50'
+                        }`}
                       onClick={() => handleLocationChoice(true)}
                       disabled={loading}
                     >
@@ -563,9 +563,8 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
                     </button>
                     <button
                       type="button"
-                      className={`px-3 py-1 rounded-md border text-sm ${
-                        isSameLocation === false ? 'bg-blue-100 border-blue-500 text-blue-700' : 'border-gray-300 hover:bg-gray-50'
-                      }`}
+                      className={`px-3 py-1 rounded-md border text-sm ${isSameLocation === false ? 'bg-blue-100 border-blue-500 text-blue-700' : 'border-gray-300 hover:bg-gray-50'
+                        }`}
                       onClick={() => handleLocationChoice(false)}
                       disabled={loading}
                     >
@@ -602,8 +601,8 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
                     />
                   )}
                   <p className="mt-1 text-xs text-gray-500">
-                    {isSameLocation === true 
-                      ? "Using meter service address" 
+                    {isSameLocation === true
+                      ? "Using meter service address"
                       : "Enter the facility address manually"
                     }
                   </p>
