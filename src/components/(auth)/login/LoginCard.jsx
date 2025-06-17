@@ -48,85 +48,20 @@ export default function LoginCard() {
 
       toast.success('Login successful');
 
-      const hasUtilityAuth = user.utilityAuth && Array.isArray(user.utilityAuth) && user.utilityAuth.length > 0;
-      const hasValidUtilityAuth = hasUtilityAuth && user.utilityAuth.some(auth => ['UPDATED', 'AUTHORIZED'].includes(auth.status));
-      const hasAnyUtilityAuth = hasUtilityAuth;
-      const hasAgreements = user.agreements !== null;
-      const agreementCompleted = user.agreements && 
-                               user.agreements.signature !== null && 
-                               user.agreements.termsAccepted;
-
-      if (user.userType === 'COMMERCIAL') {
-        if (!hasUtilityAuth && !hasAgreements) {
-          window.location.href = '/register/welcome-back-commercial-users';
-          return;
-        }
-
-        if (hasValidUtilityAuth && !hasAgreements) {
-          window.location.href = '/register/commercial-both-registration/agreement';
-          return;
-        }
-
-        if (hasAgreements && !hasUtilityAuth) {
-          window.location.href = '/register/operator-registration';
-          return;
-        }
-
-        if (hasAnyUtilityAuth && agreementCompleted) {
+      // Simplified flow - direct users to their dashboards based on userType
+      switch (user.userType) {
+        case 'COMMERCIAL':
           window.location.href = '/commercial-dashboard';
           return;
-        }
-
-        if (hasAnyUtilityAuth && hasAgreements) {
-          window.location.href = '/commercial-dashboard';
-          return;
-        }
-
-        window.location.href = '/register/welcome-back-commercial-users';
-        return;
-      }
-
-      if (user.userType === 'RESIDENTIAL') {
-        if (!hasUtilityAuth && !hasAgreements) {
-          window.location.href = '/register/welcome-back-residence-users';
-          return;
-        }
-
-        if (hasValidUtilityAuth && !hasAgreements) {
-          window.location.href = '/register/residence-user-registration/agreement';
-          return;
-        }
-
-        if (hasAgreements && !hasUtilityAuth) {
-          window.location.href = '/register/residence-user-registration/step-two';
-          return;
-        }
-
-        if (hasAnyUtilityAuth && agreementCompleted) {
+        case 'RESIDENTIAL':
           window.location.href = '/residence-dashboard';
           return;
-        }
-
-        if (hasAnyUtilityAuth && hasAgreements) {
-          window.location.href = '/residence-dashboard';
-          return;
-        }
-
-        window.location.href = '/register/welcome-back-residence-users';
-        return;
-      }
-
-      if (user.userType === 'PARTNER') {
-        if (!agreementCompleted) {
-          window.location.href = '/register/welcome-back-partner-users';
-          return;
-        } else {
+        case 'PARTNER':
           window.location.href = '/partner-dashboard';
           return;
-        }
+        default:
+          window.location.href = '/';
       }
-
-      window.location.href = '/';
 
     } catch (err) {
       toast.error(err.response?.data?.message || 'Login failed');

@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import dynamic from "next/dynamic";
 
 // Dynamically import modals to handle potential SSR issues
 const AddCommercialFacilityModal = dynamic(
-  () => import("./modals/AddCommercialFacilityModal"),
+  () => import("./modals/createfacility/AddCommercialFacilityModal"),
   { ssr: false }
 );
 const ResolvePendingActionsModal = dynamic(
@@ -19,92 +19,10 @@ const InviteCollaboratorModal = dynamic(
   { ssr: false }
 );
 
-export default function QuickActions({ authStatus: propAuthStatus, setAuthStatus }) {
+export default function QuickActions() {
   const [modal, setModal] = useState("");
-  const [authStatus, setLocalAuthStatus] = useState("PENDING");
-  const [agreementStatus, setAgreementStatus] = useState("PENDING");
-  const [isLoading, setIsLoading] = useState(true);
-  const [hasCheckedStatus, setHasCheckedStatus] = useState(false);
-
-  // Function to check agreement status from multiple sources
-  const checkAgreementStatus = () => {
-    if (typeof window === 'undefined') return "PENDING";
-
-    // First check the loginResponse
-    const loginResponse = JSON.parse(localStorage.getItem("loginResponse") || "null");
-    const loginAgreements = loginResponse?.data?.user?.agreements || null;
-    
-    if (loginAgreements?.termsAccepted === true) {
-      return "ACCEPTED";
-    }
-
-    // Fallback to temporary storage
-    const tempAgreements = JSON.parse(localStorage.getItem("userAgreements") || "null");
-    if (tempAgreements?.termsAccepted === true) {
-      return "ACCEPTED";
-    }
-
-    return "PENDING";
-  };
-
-  useEffect(() => {
-    const loadUserData = () => {
-      if (typeof window === 'undefined') return;
-      
-      const loginResponse = JSON.parse(localStorage.getItem("loginResponse") || "null");
-      
-      // Extract user info from login response
-      const user = loginResponse?.data?.user || null;
-      const utilityAuth = user?.utilityAuth || [];
-
-      // Updated logic: COMPLETED if at least one auth is AUTHORIZED or UPDATED
-      let currentAuthStatus = "PENDING";
-      if (utilityAuth.length > 0) {
-        const hasValidAuth = utilityAuth.some(auth => 
-          auth.status === "AUTHORIZED" || auth.status === "UPDATED"
-        );
-        currentAuthStatus = hasValidAuth ? "COMPLETED" : "PENDING";
-      }
-      
-      // Use prop authStatus if provided, otherwise use computed status
-      const finalAuthStatus = propAuthStatus || currentAuthStatus;
-      setLocalAuthStatus(finalAuthStatus);
-      
-      // Update parent component if setAuthStatus is provided
-      if (setAuthStatus && !propAuthStatus) {
-        setAuthStatus(finalAuthStatus);
-      }
-
-      // Check agreement status from multiple sources
-      const currentAgreementStatus = checkAgreementStatus();
-      setAgreementStatus(currentAgreementStatus);
-      
-      setHasCheckedStatus(true);
-      setIsLoading(false);
-    };
-
-    loadUserData();
-    
-    // Listen for storage changes to update agreement status in real-time
-    const handleStorageChange = (e) => {
-      if (e.key === "loginResponse" || e.key === "userAgreements") {
-        const newAgreementStatus = checkAgreementStatus();
-        setAgreementStatus(newAgreementStatus);
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, [propAuthStatus, setAuthStatus]);
 
   const openModal = (type) => {
-    // Only prevent opening modals that require authorization and agreement (just "add" now)
-    if (type === "add" && (!isAuthorized() || !isAgreementAccepted())) {
-      return;
-    }
     setModal(type);
   };
 
@@ -112,88 +30,18 @@ export default function QuickActions({ authStatus: propAuthStatus, setAuthStatus
     setModal("");
   };
 
-  const isAuthorized = () => {
-    const currentAuthStatus = propAuthStatus || authStatus;
-    return currentAuthStatus === "COMPLETED";
-  };
-
-  const isAgreementAccepted = () => {
-    return agreementStatus === "ACCEPTED";
-  };
-
-  const canPerformAction = (actionType) => {
-    // Only Add Facility requires auth and agreement, not Invite Collaborator
-    if (actionType === "add") {
-      return isAuthorized() && isAgreementAccepted();
-    }
-    return true;
-  };
-
-  const isActionDisabled = (actionType) => {
-    return isLoading || !canPerformAction(actionType);
-  };
-
-  const getActionTooltip = (actionType) => {
-    if (isLoading) return "Loading...";
-    
-    // Only show tooltip for "add" action
-    if (actionType === "add") {
-      if (!isAuthorized() && !isAgreementAccepted()) {
-        return "Utility authorization and user agreement required";
-      }
-      if (!isAuthorized()) {
-        const currentAuthStatus = propAuthStatus || authStatus;
-        return `Utility provider authorization status: ${currentAuthStatus}`;
-      }
-      if (!isAgreementAccepted()) {
-        return "User agreement acceptance required";
-      }
-    }
-    
-    return "";
-  };
-
-  const getActionStatusText = (actionType) => {
-    if (isLoading) return "Loading...";
-    
-    // Only show status text for "add" action
-    if (actionType === "add") {
-      if (!isAuthorized() && !isAgreementAccepted()) {
-        return "Auth & agreement required";
-      }
-      if (!isAuthorized()) {
-        return "Authorization required";
-      }
-      if (!isAgreementAccepted()) {
-        return "Agreement required";
-      }
-    }
-    
-    return "";
-  };
-
   return (
     <div className="w-full py-4 px-4">
-      {/* Heading Section */}
-      <div className="flex flex-col items-start mb-2">
-        <h2 className="font-[600] text-[16px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro text-left">
-          Quick Action
-        </h2>
-      </div>
-
-      {/* Cards Container */}
+     {/* Cards Container */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Card 1: Add Commercial Facility */}
+        {/* Card 1: Add Commercial Facility - Now always enabled */}
         <div
-          className={`p-4 min-h-[100px] rounded-2xl flex flex-col items-start justify-start ${
-            isActionDisabled("add") ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
-          }`}
+          className="p-4 min-h-[100px] rounded-2xl flex flex-col items-start justify-start cursor-pointer hover:opacity-90 transition-opacity"
           style={{
             background:
               "radial-gradient(100.83% 133.3% at 130.26% -10.83%, #013331 0%, #039994 100%)",
           }}
-          onClick={() => !isActionDisabled("add") && openModal("add")}
-          title={getActionTooltip("add")}
+          onClick={() => openModal("add")}
         >
           <img
             src="/vectors/MapPinPlus.png"
@@ -205,16 +53,11 @@ export default function QuickActions({ authStatus: propAuthStatus, setAuthStatus
             Add <br />
             Commercial Facility
           </p>
-          {(isLoading || !canPerformAction("add")) && (
-            <div className="mt-1 text-white text-xs">
-              {getActionStatusText("add")}
-            </div>
-          )}
         </div>
 
         {/* Card 2: Resolve Pending Actions */}
         <div
-          className="p-4 min-h-[100px] rounded-2xl flex flex-col items-start justify-start cursor-pointer"
+          className="p-4 min-h-[100px] rounded-2xl flex flex-col items-start justify-start cursor-pointer hover:opacity-90 transition-opacity"
           style={{
             background:
               "radial-gradient(433.01% 729.42% at 429.68% -283.45%, rgba(6, 155, 150, 0.3) 0%, #FFFFFF 100%)",
@@ -235,7 +78,7 @@ export default function QuickActions({ authStatus: propAuthStatus, setAuthStatus
 
         {/* Card 3: Current Statement */}
         <div
-          className="p-4 min-h-[100px] rounded-2xl flex flex-col items-start justify-start cursor-pointer"
+          className="p-4 min-h-[100px] rounded-2xl flex flex-col items-start justify-start cursor-pointer hover:opacity-90 transition-opacity"
           style={{
             background:
               "radial-gradient(185.83% 225.47% at 148.19% -135.83%, #D3D3D3 0%, #1E1E1E 100%)",
@@ -256,7 +99,7 @@ export default function QuickActions({ authStatus: propAuthStatus, setAuthStatus
 
         {/* Card 4: Invite Collaborator */}
         <div
-          className="p-4 min-h-[100px] rounded-2xl flex flex-col items-start justify-start cursor-pointer"
+          className="p-4 min-h-[100px] rounded-2xl flex flex-col items-start justify-start cursor-pointer hover:opacity-90 transition-opacity"
           style={{
             background:
               "radial-gradient(60% 119.12% at 114.01% -10%, #00B4AE 0%, #004E4B 100%)",

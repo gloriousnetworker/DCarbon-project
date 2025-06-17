@@ -2,14 +2,14 @@ import React, { useState, useEffect } from "react";
 import { FiX } from "react-icons/fi";
 import axios from "axios";
 import toast from "react-hot-toast";
-import AddUtilityProvider from "./AddUtilityProvider";
+import AddUtilityProvider from "../AddUtilityProvider";
 import {
   labelClass,
   selectClass,
   inputClass,
   buttonPrimary,
   pageTitle,
-} from "./styles";
+} from "../styles";
 import Loader from "@/components/loader/Loader.jsx";
 
 export default function AddCommercialFacilityModal({ isOpen, onClose }) {
