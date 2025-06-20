@@ -1,4 +1,5 @@
-import React from "react";
+"use client";
+import React, { useEffect, useState } from "react";
 import { FaBars, FaSearch, FaBell, FaHeadset } from "react-icons/fa";
 
 const DashboardNavbar = ({
@@ -7,10 +8,20 @@ const DashboardNavbar = ({
   sectionDisplayMap,
   onSectionChange,
 }) => {
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    const storedNotifications = localStorage.getItem('notifications');
+    if (storedNotifications) {
+      const notifications = JSON.parse(storedNotifications);
+      const unread = notifications.filter(n => !n.isRead).length;
+      setUnreadCount(unread);
+    }
+  }, []);
+
   return (
     <header className="bg-white border-b border-gray-200">
       <div className="max-w-full px-4 py-3 flex items-center justify-between">
-        {/* Left: Hamburger + Title */}
         <div className="flex items-center space-x-4">
           <button className="md:hidden" onClick={toggleSidebar}>
             <FaBars className="text-gray-700" size={20} />
@@ -20,7 +31,6 @@ const DashboardNavbar = ({
           </h1>
         </div>
         
-        {/* Center: Search Bar */}
         <div className="flex-1 flex justify-center mx-4">
           <div className="relative w-full max-w-md">
             <div className="absolute inset-y-0 left-0 flex items-center">
@@ -36,21 +46,18 @@ const DashboardNavbar = ({
           </div>
         </div>
         
-        {/* Right: Notifications & Support */}
         <div className="flex items-center space-x-6">
           <button
             onClick={() => onSectionChange("notifications")}
             className="relative focus:outline-none"
           >
             <FaBell
-              className={
-                selectedSection === "notifications"
-                  ? "text-[#039994]"
-                  : "text-[#039994] hover:text-gray-600"
-              }
+              className={selectedSection === "notifications" ? "text-[#039994]" : "text-[#039994] hover:text-gray-600"}
               size={20}
             />
-            <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 block h-2 w-2 rounded-full bg-red-500" />
+            )}
           </button>
           
           <button

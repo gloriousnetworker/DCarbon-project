@@ -1,17 +1,58 @@
-// src/components/dashboard/commercial-dashboard/DashboardNavbar.jsx
-import React from "react";
+"use client";
+
+import React, { useEffect, useState } from "react";
 import { FaBars, FaSearch, FaBell, FaHeadset } from "react-icons/fa";
 
-const DashboardNavbar = ({ 
-  toggleSidebar, 
-  selectedSection, 
+const DashboardNavbar = ({
+  toggleSidebar,
+  selectedSection,
   sectionDisplayMap,
-  onSectionChange
+  onSectionChange,
 }) => {
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [showNotificationDot, setShowNotificationDot] = useState(false);
+
+  useEffect(() => {
+    const storedNotifications = localStorage.getItem('notifications');
+    if (storedNotifications) {
+      const notifications = JSON.parse(storedNotifications);
+      const unread = notifications.filter(n => !n.isRead).length;
+      setUnreadCount(unread);
+      setShowNotificationDot(unread > 0);
+    }
+
+    const handleStorageChange = (e) => {
+      if (e.key === 'notifications') {
+        const notifications = JSON.parse(e.newValue);
+        const unread = notifications.filter(n => !n.isRead).length;
+        setUnreadCount(unread);
+        setShowNotificationDot(unread > 0);
+        if (unread > unreadCount) {
+          flashNotificationDot();
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [unreadCount]);
+
+  const flashNotificationDot = () => {
+    let flashCount = 0;
+    const maxFlashes = 3;
+    const interval = setInterval(() => {
+      setShowNotificationDot(prev => !prev);
+      flashCount++;
+      if (flashCount >= maxFlashes * 2) {
+        clearInterval(interval);
+        setShowNotificationDot(true);
+      }
+    }, 300);
+  };
+
   return (
     <header className="bg-white border-b border-gray-200">
       <div className="max-w-full px-4 py-3 flex items-center justify-between">
-        {/* Left side: Hamburger (mobile) + current section title */}
         <div className="flex items-center space-x-4">
           <button className="md:hidden" onClick={toggleSidebar}>
             <FaBars className="text-gray-700" size={20} />
@@ -20,8 +61,7 @@ const DashboardNavbar = ({
             {sectionDisplayMap[selectedSection]}
           </h1>
         </div>
-        
-        {/* Middle: Search bar */}
+
         <div className="flex-1 flex justify-center mx-4">
           <div className="relative w-full max-w-md">
             <span className="absolute inset-y-0 left-0 flex items-center">
@@ -36,20 +76,29 @@ const DashboardNavbar = ({
             />
           </div>
         </div>
-        
-        {/* Right side: Notification & Support icons */}
+
         <div className="flex items-center space-x-6">
           <div className="relative">
-            <button 
+            <button
               onClick={() => onSectionChange("notifications")}
-              className="focus:outline-none"
+              className="focus:outline-none relative"
             >
               <FaBell className="text-[#039994]" size={20} />
-              <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500" />
+              {showNotificationDot && unreadCount > 0 && (
+                <>
+                  <span className="absolute -top-1 -right-1 block h-2 w-2 rounded-full bg-red-500 animate-ping" />
+                  <span className="absolute -top-1 -right-1 block h-2 w-2 rounded-full bg-red-500" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                      {unreadCount}
+                    </span>
+                  )}
+                </>
+              )}
             </button>
           </div>
-          
-          <button 
+
+          <button
             onClick={() => onSectionChange("contactSupport")}
             className="focus:outline-none"
           >

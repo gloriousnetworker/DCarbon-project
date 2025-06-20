@@ -1,4 +1,4 @@
-'use client';
+"use client";
 import React, { useEffect, useState } from "react";
 import { FaBars, FaSearch, FaBell, FaHeadset } from "react-icons/fa";
 
@@ -10,18 +10,17 @@ const DashboardNavbar = ({
 }) => {
   const [partnerType, setPartnerType] = useState('');
   const [isLoading, setIsLoading] = useState(true);
- 
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [showNotificationDot, setShowNotificationDot] = useState(false);
+
   useEffect(() => {
     const fetchUserData = async () => {
       try {
         setIsLoading(true);
-        
-        // Get userId and authToken from localStorage
         const userId = localStorage.getItem('userId');
         const authToken = localStorage.getItem('authToken');
         
         if (!userId || !authToken) {
-          // Fallback to partnerType in localStorage if userId or authToken is missing
           const storedPartnerType = localStorage.getItem('partnerType');
           if (storedPartnerType) {
             setPartnerType(storedPartnerType);
@@ -30,50 +29,42 @@ const DashboardNavbar = ({
           return;
         }
         
-        // Fetch user data from API
         const response = await fetch(
           `https://services.dcarbon.solutions/api/user/partner/user/${userId}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${authToken}`
-            }
-          }
+          { headers: { 'Authorization': `Bearer ${authToken}` } }
         );
         
-        if (!response.ok) {
-          throw new Error('Failed to fetch user data');
-        }
+        if (!response.ok) throw new Error('Failed to fetch user data');
         
         const responseData = await response.json();
         
         if (responseData.status === 'success' && responseData.data) {
           setPartnerType(responseData.data.partnerType);
-          
-          // Update localStorage with the latest partnerType
           localStorage.setItem('partnerType', responseData.data.partnerType);
         } else {
-          // Fallback to localStorage if API doesn't return valid data
           const storedPartnerType = localStorage.getItem('partnerType');
-          if (storedPartnerType) {
-            setPartnerType(storedPartnerType);
-          }
+          if (storedPartnerType) setPartnerType(storedPartnerType);
         }
       } catch (error) {
         console.error('Error fetching user data:', error);
-        
-        // Fallback to localStorage on error
         const storedPartnerType = localStorage.getItem('partnerType');
-        if (storedPartnerType) {
-          setPartnerType(storedPartnerType);
-        }
+        if (storedPartnerType) setPartnerType(storedPartnerType);
       } finally {
         setIsLoading(false);
       }
     };
     
     fetchUserData();
+
+    const storedNotifications = localStorage.getItem('notifications');
+    if (storedNotifications) {
+      const notifications = JSON.parse(storedNotifications);
+      const unread = notifications.filter(n => !n.isRead).length;
+      setUnreadCount(unread);
+      setShowNotificationDot(unread > 0);
+    }
   }, []);
- 
+
   const getDisplayPartnerType = (type) => {
     switch(type) {
       case 'sales_agent': return 'Sales Agent';
@@ -82,11 +73,10 @@ const DashboardNavbar = ({
       default: return 'Partner';
     }
   };
- 
+
   return (
     <header className="bg-white border-b border-gray-200">
       <div className="max-w-full px-4 py-3 flex items-center justify-between">
-        {/* Left: Hamburger + Title + Partner Type */}
         <div className="flex items-center space-x-4">
           <button className="md:hidden" onClick={toggleSidebar}>
             <FaBars className="text-gray-700" size={20} />
@@ -105,7 +95,6 @@ const DashboardNavbar = ({
           ) : null}
         </div>
         
-        {/* Center: Search Bar */}
         <div className="flex-1 flex justify-center mx-4">
           <div className="relative w-full max-w-md">
             <span className="absolute inset-y-0 left-0 flex items-center">
@@ -121,25 +110,28 @@ const DashboardNavbar = ({
           </div>
         </div>
         
-        {/* Right: Notifications & Support */}
         <div className="flex items-center space-x-6">
-          {/* Bell → routes to notifications section */}
           <button
             onClick={() => onSectionChange("notifications")}
             className="relative focus:outline-none"
           >
             <FaBell
-              className={
-                selectedSection === "notifications"
-                  ? "text-[#039994]"
-                  : "text-[#039994] hover:text-gray-600"
-              }
+              className={selectedSection === "notifications" ? "text-[#039994]" : "text-[#039994] hover:text-gray-600"}
               size={20}
             />
-            <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500" />
+            {showNotificationDot && unreadCount > 0 && (
+              <>
+                <span className="absolute -top-1 -right-1 block h-2 w-2 rounded-full bg-red-500 animate-ping" />
+                <span className="absolute -top-1 -right-1 block h-2 w-2 rounded-full bg-red-500" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                    {unreadCount}
+                  </span>
+                )}
+              </>
+            )}
           </button>
           
-          {/* Support icon → routes to contactSupport section */}
           <button
             onClick={() => onSectionChange("contactSupport")}
             className="focus:outline-none"
