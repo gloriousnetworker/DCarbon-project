@@ -48,7 +48,7 @@ export default function LoginCard() {
 
       toast.success('Login successful');
 
-      // Simplified flow - direct users to their dashboards based on userType
+      // Handle routing based on user type
       switch (user.userType) {
         case 'COMMERCIAL':
           window.location.href = '/commercial-dashboard';
@@ -57,7 +57,16 @@ export default function LoginCard() {
           window.location.href = '/residence-dashboard';
           return;
         case 'PARTNER':
-          window.location.href = '/partner-dashboard';
+          // Check if partner is a new user (financialInfo and agreements are null)
+          const isNewPartner = !user.financialInfo && !user.agreements;
+          
+          if (isNewPartner) {
+            // New partner user - redirect to welcome back flow
+            window.location.href = '/register/welcome-back-partner-users';
+          } else {
+            // Existing partner user - go to dashboard
+            window.location.href = '/partner-dashboard';
+          }
           return;
         default:
           window.location.href = '/';
