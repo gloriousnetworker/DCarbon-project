@@ -1,9 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 
-// Dynamically import modals to handle potential SSR issues
-const AddCommercialFacilityModal = dynamic(
-  () => import("./modals/createfacility/AddCommercialFacilityModal"),
+const CommercialRegistrationModal = dynamic(
+  () => import("./modals/createfacility/CommercialRegistrationModal"),
   { ssr: false }
 );
 const ResolvePendingActionsModal = dynamic(
@@ -21,8 +20,17 @@ const InviteCollaboratorModal = dynamic(
 
 export default function QuickActions() {
   const [modal, setModal] = useState("");
+  const [isDisabled, setIsDisabled] = useState(false);
+
+  useEffect(() => {
+    const loginResponse = JSON.parse(localStorage.getItem("loginResponse"));
+    if (loginResponse?.data?.user?.agreements === null && loginResponse?.data?.user?.utilityAuth?.length === 0) {
+      setIsDisabled(true);
+    }
+  }, []);
 
   const openModal = (type) => {
+    if (isDisabled && type !== "add") return;
     setModal(type);
   };
 
@@ -32,14 +40,11 @@ export default function QuickActions() {
 
   return (
     <div className="w-full py-4 px-4">
-     {/* Cards Container */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Card 1: Add Commercial Facility - Now always enabled */}
         <div
           className="p-4 min-h-[100px] rounded-2xl flex flex-col items-start justify-start cursor-pointer hover:opacity-90 transition-opacity"
           style={{
-            background:
-              "radial-gradient(100.83% 133.3% at 130.26% -10.83%, #013331 0%, #039994 100%)",
+            background: "radial-gradient(100.83% 133.3% at 130.26% -10.83%, #013331 0%, #039994 100%)",
           }}
           onClick={() => openModal("add")}
         >
@@ -55,12 +60,10 @@ export default function QuickActions() {
           </p>
         </div>
 
-        {/* Card 2: Resolve Pending Actions */}
         <div
-          className="p-4 min-h-[100px] rounded-2xl flex flex-col items-start justify-start cursor-pointer hover:opacity-90 transition-opacity"
+          className={`p-4 min-h-[100px] rounded-2xl flex flex-col items-start justify-start cursor-pointer hover:opacity-90 transition-opacity ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
           style={{
-            background:
-              "radial-gradient(433.01% 729.42% at 429.68% -283.45%, rgba(6, 155, 150, 0.3) 0%, #FFFFFF 100%)",
+            background: "radial-gradient(433.01% 729.42% at 429.68% -283.45%, rgba(6, 155, 150, 0.3) 0%, #FFFFFF 100%)",
           }}
           onClick={() => openModal("resolve")}
         >
@@ -76,12 +79,10 @@ export default function QuickActions() {
           </p>
         </div>
 
-        {/* Card 3: Current Statement */}
         <div
-          className="p-4 min-h-[100px] rounded-2xl flex flex-col items-start justify-start cursor-pointer hover:opacity-90 transition-opacity"
+          className={`p-4 min-h-[100px] rounded-2xl flex flex-col items-start justify-start cursor-pointer hover:opacity-90 transition-opacity ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
           style={{
-            background:
-              "radial-gradient(185.83% 225.47% at 148.19% -135.83%, #D3D3D3 0%, #1E1E1E 100%)",
+            background: "radial-gradient(185.83% 225.47% at 148.19% -135.83%, #D3D3D3 0%, #1E1E1E 100%)",
           }}
           onClick={() => openModal("statement")}
         >
@@ -97,12 +98,10 @@ export default function QuickActions() {
           </p>
         </div>
 
-        {/* Card 4: Invite Collaborator */}
         <div
-          className="p-4 min-h-[100px] rounded-2xl flex flex-col items-start justify-start cursor-pointer hover:opacity-90 transition-opacity"
+          className={`p-4 min-h-[100px] rounded-2xl flex flex-col items-start justify-start cursor-pointer hover:opacity-90 transition-opacity ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
           style={{
-            background:
-              "radial-gradient(60% 119.12% at 114.01% -10%, #00B4AE 0%, #004E4B 100%)",
+            background: "radial-gradient(60% 119.12% at 114.01% -10%, #00B4AE 0%, #004E4B 100%)",
           }}
           onClick={() => openModal("invite")}
         >
@@ -119,19 +118,10 @@ export default function QuickActions() {
         </div>
       </div>
 
-      {/* Render the modals */}
-      {modal === "add" && (
-        <AddCommercialFacilityModal isOpen onClose={closeModal} />
-      )}
-      {modal === "resolve" && (
-        <ResolvePendingActionsModal isOpen onClose={closeModal} />
-      )}
-      {modal === "statement" && (
-        <CurrentStatementModal isOpen onClose={closeModal} />
-      )}
-      {modal === "invite" && (
-        <InviteCollaboratorModal isOpen onClose={closeModal} />
-      )}
+      {modal === "add" && <CommercialRegistrationModal isOpen onClose={closeModal} />}
+      {modal === "resolve" && <ResolvePendingActionsModal isOpen onClose={closeModal} />}
+      {modal === "statement" && <CurrentStatementModal isOpen onClose={closeModal} />}
+      {modal === "invite" && <InviteCollaboratorModal isOpen onClose={closeModal} />}
     </div>
   );
 }
