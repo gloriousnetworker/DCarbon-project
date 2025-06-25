@@ -100,7 +100,7 @@ function RegisterCardContent() {
   const handleRegister = async () => {
     if (!validateForm()) return;
     setLoading(true);
-  
+
     const payload = {
       email,
       firstName,
@@ -114,23 +114,23 @@ function RegisterCardContent() {
     if (manualReferralCode.trim()) {
       payload.bodyReferralCode = manualReferralCode.trim();
     }
-  
+
     try {
       // Clean URL construction
       const baseUrl = 'https://services.dcarbon.solutions';
       let url = `${baseUrl}/api/user/register`;
-  
+
       // Use URL referral code as query parameter if present
       if (urlReferralCode.trim()) {
         url += `?referralCode=${urlReferralCode.trim()}`;
       }
-  
+
       const response = await axios.post(
         url,
         payload,
         { headers: { 'Content-Type': 'application/json' } }
       );
-  
+
       localStorage.setItem('userEmail', response.data.data.email);
       toast.success('Registration successful');
       setShowModal(true);
@@ -316,7 +316,7 @@ function RegisterCardContent() {
                   {showReferralField ? 'Hide referral code' : 'Have a referral code?'}
                 </button>
               )}
-              
+
               {showReferralField && (
                 <div>
                   <label htmlFor="referralCode" className={labelClass}>
@@ -333,9 +333,8 @@ function RegisterCardContent() {
                       type="text"
                       id="referralCode"
                       placeholder={isReferralReadOnly() ? "" : "Enter referral code"}
-                      className={`${inputClass} ${grayPlaceholder} pl-10 ${
-                        isReferralReadOnly() ? 'bg-gray-100 cursor-not-allowed' : ''
-                      }`}
+                      className={`${inputClass} ${grayPlaceholder} pl-10 ${isReferralReadOnly() ? 'bg-gray-100 cursor-not-allowed' : ''
+                        }`}
                       value={getReferralDisplayValue()}
                       onChange={(e) => {
                         if (!isReferralReadOnly()) {
@@ -384,11 +383,10 @@ function RegisterCardContent() {
                     key={category}
                     type="button"
                     onClick={() => handleUserCategory(category)}
-                    className={`flex-1 text-center px-4 py-2 rounded-md text-sm font-sfpro transition duration-300 ease-in-out ${
-                      userCategory === category
+                    className={`flex-1 text-center px-4 py-2 rounded-md text-sm font-sfpro transition duration-300 ease-in-out ${userCategory === category
                         ? 'bg-[#039994] text-white'
                         : 'bg-transparent text-[#039994] border border-[#039994]'
-                    } hover:bg-[#02857f] hover:text-white`}
+                      } hover:bg-[#02857f] hover:text-white`}
                   >
                     {category}
                   </button>
@@ -402,13 +400,11 @@ function RegisterCardContent() {
                 Password <span className="text-red-500">*</span>
               </label>
               <div className="relative">
-                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[#1E1E1E] text-[14px]">
-                  |**
-                </span>
                 <input
                   type={passwordVisible ? 'text' : 'password'}
                   id="password"
-                  className={`${inputClass} ${grayPlaceholder} pl-12`}
+                  className={`${inputClass} ${grayPlaceholder} pr-10`} // right padding for icon
+                  placeholder="|**"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
@@ -428,7 +424,7 @@ function RegisterCardContent() {
                         fillRule="evenodd"
                         d="M4.03 3.97a.75.75 0 011.06 0l10 10a.75.75 0 11-1.06 1.06l-1.042-1.042A8.74 8.74 0 0110 15c-3.272 0-6.06-1.906-7.76-4.701a.945.945 0 010-1.006 10.45 10.45 0 013.12-3.263L4.03 5.03a.75.75 0 010-1.06zm12.24 7.79c.291-.424.546-.874.76-1.339a.945.945 0 000-1.006C16.06 6.905 13.272 5 10 5c-.638 0-1.26.07-1.856.202l7.127 7.127z"
                         clipRule="evenodd"
-                    />
+                      />
                     </svg>
                   ) : (
                     <svg
