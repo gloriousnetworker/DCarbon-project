@@ -29,15 +29,13 @@ export default function QuickActions() {
 
   useEffect(() => {
     const loginResponse = JSON.parse(localStorage.getItem("loginResponse"));
-    
-    // Check if user has completed registration (has agreements and utilityAuth)
-    if (loginResponse?.data?.user?.agreements !== null && 
+
+    if (loginResponse?.data?.user?.agreements !== null &&
         loginResponse?.data?.user?.utilityAuth?.length > 0) {
       setHasCompletedRegistration(true);
     }
-    
-    // Check if user should be disabled (no agreements and no utilityAuth)
-    if (loginResponse?.data?.user?.agreements === null && 
+
+    if (loginResponse?.data?.user?.agreements === null &&
         loginResponse?.data?.user?.utilityAuth?.length === 0) {
       setIsDisabled(true);
     }
@@ -45,6 +43,7 @@ export default function QuickActions() {
 
   const openModal = (type) => {
     if (isDisabled && type !== "add") return;
+    if (type === "resolve" || type === "statement") return;
     setModal(type);
   };
 
@@ -75,11 +74,10 @@ export default function QuickActions() {
         </div>
 
         <div
-          className={`p-4 min-h-[100px] rounded-2xl flex flex-col items-start justify-start cursor-pointer hover:opacity-90 transition-opacity ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
+          className={`p-4 min-h-[100px] rounded-2xl flex flex-col items-start justify-start transition-opacity ${isDisabled ? "opacity-50 cursor-not-allowed" : "cursor-not-allowed"}`}
           style={{
             background: "radial-gradient(433.01% 729.42% at 429.68% -283.45%, rgba(6, 155, 150, 0.3) 0%, #FFFFFF 100%)",
           }}
-          onClick={() => openModal("resolve")}
         >
           <img
             src="/vectors/Files.png"
@@ -94,11 +92,10 @@ export default function QuickActions() {
         </div>
 
         <div
-          className={`p-4 min-h-[100px] rounded-2xl flex flex-col items-start justify-start cursor-pointer hover:opacity-90 transition-opacity ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
+          className={`p-4 min-h-[100px] rounded-2xl flex flex-col items-start justify-start transition-opacity ${isDisabled ? "opacity-50 cursor-not-allowed" : "cursor-not-allowed"}`}
           style={{
             background: "radial-gradient(185.83% 225.47% at 148.19% -135.83%, #D3D3D3 0%, #1E1E1E 100%)",
           }}
-          onClick={() => openModal("statement")}
         >
           <img
             src="/vectors/HandCoins.png"
@@ -138,8 +135,6 @@ export default function QuickActions() {
       {modal === "add" && !hasCompletedRegistration && (
         <CommercialRegistrationModal isOpen onClose={closeModal} />
       )}
-      {modal === "resolve" && <ResolvePendingActionsModal isOpen onClose={closeModal} />}
-      {modal === "statement" && <CurrentStatementModal isOpen onClose={closeModal} />}
       {modal === "invite" && <InviteCollaboratorModal isOpen onClose={closeModal} />}
     </div>
   );
