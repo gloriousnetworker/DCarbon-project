@@ -1,389 +1,400 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import CommercialRegistrationModal from "./createfacility/ResidentialRegistrationModal";
+import * as styles from '../styles';
+import { toast } from 'react-hot-toast';
 
-export default function WelcomeModal({ 
-  isOpen, 
-  onClose, 
-  userData, 
-  authStatus, 
-  agreementStatus,
-  utilityAuthDetails = [],
-  utilityAuthEmails = []
-}) {
+export default function WelcomeModal({ isOpen, onClose, userData }) {
+  const [isCreatingFacility, setIsCreatingFacility] = useState(false);
+  const [showCommercialRegistration, setShowCommercialRegistration] = useState(false);
+  const [showCommercialForm, setShowCommercialForm] = useState(false);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  const [formData, setFormData] = useState({
+    entityType: 'individual',
+    commercialRole: 'owner',
+    ownerFullName: '',
+    companyName: ''
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingCommercialStatus, setIsCheckingCommercialStatus] = useState(false);
+  
+  useEffect(() => {
+    if (isOpen) {
+      checkCommercialUserStatus();
+    }
+  }, [isOpen]);
+
+  const checkCommercialUserStatus = async () => {
+    setIsCheckingCommercialStatus(true);
+    
+    try {
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const userId = loginResponse?.data?.user?.id;
+      const authToken = loginResponse?.data?.token;
+
+      if (!userId || !authToken) {
+        throw new Error('Authentication data not found');
+      }
+
+      const response = await fetch(`https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      });
+
+      const result = await response.json();
+
+      if (result.statusCode === 200 && result.status === 'success') {
+        onClose();
+      } else if (result.statusCode === 422 && result.status === 'fail') {
+        const { firstName, lastName } = loginResponse.data.user;
+        setFormData(prev => ({
+          ...prev,
+          ownerFullName: `${firstName || ''} ${lastName || ''}`.trim()
+        }));
+        setShowCommercialForm(true);
+      } else {
+        throw new Error('Unexpected response');
+      }
+    } catch (error) {
+      console.error('Error checking commercial status:', error);
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      if (loginResponse?.data?.user) {
+        const { firstName, lastName } = loginResponse.data.user;
+        setFormData(prev => ({
+          ...prev,
+          ownerFullName: `${firstName || ''} ${lastName || ''}`.trim()
+        }));
+        setShowCommercialForm(true);
+      }
+    } finally {
+      setIsCheckingCommercialStatus(false);
+    }
+  };
+
   if (!isOpen) return null;
 
-  const { userFirstName, utilityAuth = [], agreements } = userData;
-  const userEmail = (typeof window !== 'undefined' ? localStorage.getItem("userEmail") : null) || "your email";
-  
-  const isAuthComplete = authStatus === "COMPLETED";
-  const isAgreementComplete = agreementStatus === "ACCEPTED";
-
-  // Navigation helper function
-  const navigateTo = (path) => {
-    if (typeof window !== 'undefined') {
-      window.location.href = path;
-    }
+  const handleFormChange = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
 
-  // Get authorized emails (from AUTHORIZED or UPDATED status)
-  const getAuthorizedEmails = () => {
-    const authorizedEmails = [];
-    utilityAuthDetails.forEach((auth, index) => {
-      if (auth.status === "AUTHORIZED" || auth.status === "UPDATED") {
-        authorizedEmails.push(utilityAuthEmails[index] || 'Unknown email');
+  const handleCommercialSubmit = async () => {
+    if (!formData.ownerFullName.trim()) {
+      toast.error('Owner full name is required');
+      return;
+    }
+
+    if (formData.entityType === 'company' && !formData.companyName.trim()) {
+      toast.error('Company name is required');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const userId = loginResponse?.data?.user?.id;
+      const authToken = loginResponse?.data?.token;
+
+      if (!userId || !authToken) {
+        throw new Error('Authentication data not found');
       }
-    });
-    return authorizedEmails;
-  };
 
-  // Get error emails and their status
-  const getErrorEmails = () => {
-    const errorEmails = [];
-    utilityAuthDetails.forEach((auth, index) => {
-      if (auth.status === "UPDATE_ERROR" || auth.status === "ERROR" || auth.status === "FAILED") {
-        errorEmails.push({
-          email: utilityAuthEmails[index] || 'Unknown email',
-          status: auth.status
-        });
+      const body = {
+        entityType: formData.entityType,
+        commercialRole: formData.commercialRole,
+        ownerFullName: formData.ownerFullName
+      };
+
+      if (formData.entityType === 'company') {
+        body.companyName = formData.companyName;
       }
-    });
-    return errorEmails;
-  };
 
-  // Get pending emails
-  const getPendingEmails = () => {
-    const pendingEmails = [];
-    utilityAuthDetails.forEach((auth, index) => {
-      if (auth.status === "PENDING" || auth.status === "PROCESSING") {
-        pendingEmails.push(utilityAuthEmails[index] || 'Unknown email');
+      const response = await fetch(`https://services.dcarbon.solutions/api/user/commercial-registration/${userId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        },
+        body: JSON.stringify(body)
+      });
+
+      const result = await response.json();
+
+      if (result.status === 'success') {
+        toast.success(result.message);
+        setShowCommercialForm(false);
+        setShowWelcomeModal(true);
+      } else {
+        throw new Error(result.message || 'Failed to update commercial registration');
       }
-    });
-    return pendingEmails;
-  };
-
-  const authorizedEmails = getAuthorizedEmails();
-  const errorEmails = getErrorEmails();
-  const pendingEmails = getPendingEmails();
-
-  const getModalContent = () => {
-    // Both requirements missing
-    if (!isAuthComplete && !isAgreementComplete) {
-      return {
-        title: "Complete Your Setup",
-        alertType: "warning",
-        alertTitle: "Multiple Requirements Pending",
-        alertMessage: "You need to complete both utility authorization and accept the user agreement to fully access your residential account.",
-        details: (
-          <div className="space-y-4">
-            <div className="border-l-4 border-blue-400 bg-blue-50 p-4">
-              <h4 className="font-medium text-blue-800 mb-2">1. Utility Authorization</h4>
-              <p className="text-sm text-blue-700">
-                {pendingEmails.length > 0 ? (
-                  <>
-                    Authorization for{' '}
-                    {pendingEmails.map((email, index) => (
-                      <span key={index}>
-                        <span className="font-medium">{email}</span>
-                        {index < pendingEmails.length - 1 && ', '}
-                      </span>
-                    ))} is pending. Check your inbox for the authorization email.
-                  </>
-                ) : (
-                  "Your utility authorization is still pending."
-                )}
-              </p>
-              <button
-                onClick={() => navigateTo('/register/residence-user-registration/step-two')}
-                className="inline-block mt-2 text-sm font-medium text-blue-600 hover:text-blue-500 cursor-pointer bg-transparent border-none underline"
-              >
-                Complete Authorization Process
-              </button>
-            </div>
-            
-            <div className="border-l-4 border-purple-400 bg-purple-50 p-4">
-              <h4 className="font-medium text-purple-800 mb-2">2. User Agreement</h4>
-              <p className="text-sm text-purple-700">
-                You need to review and accept the user agreement to create facilities and access all features.
-              </p>
-              <button
-                onClick={() => navigateTo('/register/residence-user-registration/agreement')}
-                className="inline-flex items-center mt-2 px-3 py-1 border border-transparent text-sm font-medium rounded-md text-purple-800 bg-purple-100 hover:bg-purple-200 cursor-pointer"
-              >
-                Review Agreement
-              </button>
-            </div>
-          </div>
-        ),
-        canProceed: false
-      };
-    }
-
-    // Only authorization missing
-    if (!isAuthComplete) {
-      return {
-        title: "Complete Utility Authorization",
-        alertType: "warning",
-        alertTitle: "Authorization Required",
-        alertMessage: "You need to complete utility authorization to access all residential features.",
-        details: (
-          <div className="space-y-4">
-            <div className="border-l-4 border-blue-400 bg-blue-50 p-4">
-              <h4 className="font-medium text-blue-800 mb-2">Utility Authorization Status</h4>
-              
-              {pendingEmails.length > 0 && (
-                <div className="mb-3">
-                  <p className="text-sm text-blue-700">
-                    Authorization pending for:
-                  </p>
-                  <ul className="list-disc list-inside mt-1 text-sm text-blue-700">
-                    {pendingEmails.map((email, index) => (
-                      <li key={index} className="font-medium">{email}</li>
-                    ))}
-                  </ul>
-                  <p className="text-sm text-blue-700 mt-2">
-                    Check your inbox for the authorization email from your utility provider.
-                  </p>
-                </div>
-              )}
-              
-              {errorEmails.length > 0 && (
-                <div className="border-l-4 border-red-400 bg-red-50 p-3 mt-3">
-                  <h5 className="font-medium text-red-800 mb-1">Authorization Issues</h5>
-                  <ul className="list-disc list-inside text-sm text-red-700">
-                    {errorEmails.map((error, index) => (
-                      <li key={index}>
-                        <span className="font-medium">{error.email}</span>: {error.status}
-                      </li>
-                    ))}
-                  </ul>
-                  <p className="text-sm text-red-700 mt-2">
-                    Please contact your Utility Provider or the DCarbon Team for assistance.
-                  </p>
-                </div>
-              )}
-              
-              {pendingEmails.length === 0 && errorEmails.length === 0 && (
-                <div className="space-y-2">
-                  <p className="text-sm text-blue-700">
-                    You may have skipped the authorization process. To complete your registration:
-                  </p>
-                  <button
-                    onClick={() => navigateTo('/register/residence-user-registration/step-two')}
-                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#039994] hover:bg-[#02807c] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#039994] cursor-pointer"
-                  >
-                    Complete Authorization Now
-                  </button>
-                </div>
-              )}
-              
-              <button
-                onClick={() => navigateTo('/register/residence-user-registration/step-two')}
-                className="inline-block mt-2 text-sm font-medium text-blue-600 hover:text-blue-500 cursor-pointer bg-transparent border-none underline"
-              >
-                Initiate/Resend Authorization Email
-              </button>
-            </div>
-          </div>
-        ),
-        canProceed: false
-      };
-    }
-
-    // Only agreement missing
-    if (!isAgreementComplete) {
-      return {
-        title: "Accept User Agreement",
-        alertType: "error",
-        alertTitle: "User Agreement Pending",
-        alertMessage: "You must accept the user agreement to create facilities and access all platform features.",
-        details: (
-          <div className="space-y-3">
-            <p className="text-sm text-gray-600">
-              Your utility authorization is complete, but you still need to review and accept our user agreement.
-            </p>
-            <div className="bg-red-50 border border-red-200 rounded-md p-3">
-              <p className="text-sm text-red-800 font-medium">
-                ⚠️ You cannot create facilities until this requirement is completed.
-              </p>
-            </div>
-            <button
-              onClick={() => navigateTo('/register/residence-user-registration/agreement')}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 cursor-pointer"
-            >
-              Review and Accept Agreement
-            </button>
-          </div>
-        ),
-        canProceed: false
-      };
-    }
-
-    // Everything complete - success state
-    return {
-      title: "Setup Complete!",
-      alertType: "success",
-      alertTitle: "You're all set!",
-      alertMessage: "You've completed all required setup steps and can now access all residential features.",
-      details: (
-        <div className="space-y-4">
-          <div className="border-l-4 border-green-400 bg-green-50 p-4">
-            <h4 className="font-medium text-green-800 mb-2">Utility Authorization</h4>
-            <p className="text-sm text-green-700">
-              Your utility authorizations are complete for:
-            </p>
-            <ul className="list-disc list-inside mt-1 text-sm text-green-700">
-              {authorizedEmails.map((email, index) => (
-                <li key={index} className="font-medium">{email}</li>
-              ))}
-            </ul>
-          </div>
-          
-          {errorEmails.length > 0 && (
-            <div className="border-l-4 border-orange-400 bg-orange-50 p-3">
-              <h5 className="font-medium text-orange-800 mb-1">Note: Some Authorizations Have Issues</h5>
-              <ul className="list-disc list-inside text-sm text-orange-700">
-                {errorEmails.map((error, index) => (
-                  <li key={index}>
-                    <span className="font-medium">{error.email}</span>: {error.status}
-                  </li>
-                ))}
-              </ul>
-              <p className="text-sm text-orange-700 mt-2">
-                You can still proceed with authorized accounts, but please contact support about these issues.
-              </p>
-            </div>
-          )}
-          
-          <div className="border-l-4 border-green-400 bg-green-50 p-4">
-            <h4 className="font-medium text-green-800 mb-2">User Agreement</h4>
-            <p className="text-sm text-green-700">
-              You've accepted our user agreement on {new Date(agreements?.updatedAt).toLocaleDateString()}.
-            </p>
-          </div>
-        </div>
-      ),
-      canProceed: true
-    };
-  };
-
-  const modalContent = getModalContent();
-
-  // Alert color configuration
-  const alertColors = {
-    warning: {
-      bg: "bg-yellow-50",
-      border: "border-yellow-400",
-      icon: "text-yellow-400",
-      title: "text-yellow-800",
-      text: "text-yellow-700"
-    },
-    error: {
-      bg: "bg-red-50",
-      border: "border-red-400", 
-      icon: "text-red-400",
-      title: "text-red-800",
-      text: "text-red-700"
-    },
-    success: {
-      bg: "bg-green-50",
-      border: "border-green-400",
-      icon: "text-green-400", 
-      title: "text-green-800",
-      text: "text-green-700"
+    } catch (error) {
+      toast.error(error.message || 'An error occurred');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const colors = alertColors[modalContent.alertType];
+  const handleCreateFacility = () => {
+    setIsCreatingFacility(true);
+    setTimeout(() => {
+      setIsCreatingFacility(false);
+      setShowCommercialRegistration(true);
+    }, 1000);
+  };
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-start mb-4">
-          <h2 className="text-xl font-bold text-[#039994]">
-            {modalContent.title}, {userFirstName}!
-          </h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
-            ✕
-          </button>
-        </div>
-       
-        <div className="space-y-4">
-          <div className={`p-4 ${colors.bg} border-l-4 ${colors.border}`}>
-            <div className="flex items-start">
-              <div className="flex-shrink-0">
-                <svg 
-                  className={`h-5 w-5 ${colors.icon}`} 
-                  xmlns="http://www.w3.org/2000/svg" 
-                  viewBox="0 0 20 20" 
-                  fill="currentColor"
-                >
-                  {modalContent.alertType === 'success' ? (
-                    <path 
-                      fillRule="evenodd" 
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" 
-                      clipRule="evenodd" 
-                    />
-                  ) : (
-                    <path 
-                      fillRule="evenodd" 
-                      d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" 
-                      clipRule="evenodd" 
-                    />
-                  )}
-                </svg>
-              </div>
-              <div className="ml-3">
-                <h3 className={`text-sm font-medium ${colors.title}`}>
-                  {modalContent.alertTitle}
-                </h3>
-                <div className={`mt-2 text-sm ${colors.text}`}>
-                  <p>{modalContent.alertMessage}</p>
-                </div>
-              </div>
-            </div>
-          </div>
+  const handleBackToWelcome = () => {
+    setShowCommercialRegistration(false);
+  };
 
-          {modalContent.details && (
-            <div className="space-y-3">
-              {modalContent.details}
-            </div>
-          )}
+  const handleCloseAll = () => {
+    setShowCommercialRegistration(false);
+    setShowCommercialForm(false);
+    setShowWelcomeModal(false);
+    onClose();
+  };
 
-          <div className="pt-4 border-t border-gray-200">
-            {modalContent.canProceed ? (
-              <div className="flex space-x-3">
-                <button
-                  onClick={onClose}
-                  className="flex-1 flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#039994] hover:bg-[#02807c] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#039994]"
-                >
-                  Continue to Dashboard
-                </button>
-                <button
-                  onClick={onClose}
-                  className="flex-1 flex justify-center py-2 px-4 border border-[#039994] rounded-md shadow-sm text-sm font-medium text-[#039994] bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#039994]"
-                >
-                  Close
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => {
-                  // Navigate to the appropriate form based on what's missing
-                  if (!isAuthComplete) {
-                    navigateTo('/register/residence-user-registration/step-two');
-                  } else if (!isAgreementComplete) {
-                    navigateTo('/register/residence-user-registration/agreement');
-                  } else {
-                    onClose();
-                  }
-                }}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#039994] hover:bg-[#02807c] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#039994]"
-              >
-                {!isAuthComplete ? 'Complete Authorization' : !isAgreementComplete ? 'Accept Agreement' : 'I Understand'}
-              </button>
-            )}
-          </div>
+  const handleWelcomeModalClose = () => {
+    // Refresh the page when X button is clicked in welcome modal
+    window.location.reload();
+  };
+
+  if (isCheckingCommercialStatus) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="flex items-center justify-center">
+          <div className="w-12 h-12 border-4 border-gray-300 border-t-[#039994] rounded-full animate-spin"></div>
         </div>
       </div>
-    </div>
+    );
+  }
+
+  return (
+    <>
+      {showCommercialForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="relative w-full max-w-md mx-4">
+            <div className="rounded-2xl p-8 bg-white relative overflow-hidden">
+              <div className="mb-6">
+                <h2 className="font-[600] text-[24px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro">
+                  Commercial User Registration
+                </h2>
+              </div>
+
+              <form className="space-y-6">
+                <div>
+                  <label className={styles.labelClass}>
+                    Entity Type <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={formData.entityType}
+                    onChange={(e) => handleFormChange('entityType', e.target.value)}
+                    className={styles.selectClass}
+                    style={{ backgroundColor: '#F0F0F0' }}
+                  >
+                    <option value="individual">Individual</option>
+                    <option value="company">Company</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className={styles.labelClass}>
+                    Commercial Role <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={formData.commercialRole}
+                    onChange={(e) => handleFormChange('commercialRole', e.target.value)}
+                    className={styles.selectClass}
+                    style={{ backgroundColor: '#F0F0F0' }}
+                  >
+                    <option value="owner">Owner</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className={styles.labelClass}>
+                    Owner Full Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.ownerFullName}
+                    onChange={(e) => handleFormChange('ownerFullName', e.target.value)}
+                    className={styles.inputClass}
+                    style={{ backgroundColor: '#F0F0F0' }}
+                    placeholder="Enter owner full name"
+                  />
+                </div>
+
+                {formData.entityType === 'company' && (
+                  <div>
+                    <label className={styles.labelClass}>
+                      Company Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.companyName}
+                      onChange={(e) => handleFormChange('companyName', e.target.value)}
+                      className={styles.inputClass}
+                      style={{ backgroundColor: '#F0F0F0' }}
+                      placeholder="Enter company name"
+                    />
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleCommercialSubmit}
+                  disabled={isLoading}
+                  className={styles.buttonPrimary}
+                >
+                  {isLoading ? (
+                    <div className="flex items-center justify-center">
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                      Processing...
+                    </div>
+                  ) : (
+                    'Next'
+                  )}
+                </button>
+
+                {/* Terms and Conditions & Privacy Policy */}
+                <div className={styles.termsTextContainer}>
+                  <p>
+                    By continuing, you agree to our{' '}
+                    <a 
+                      href="/terms-and-conditions" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="hover:opacity-80"
+                    >
+                      Terms and Conditions
+                    </a>
+                    {' '}and{' '}
+                    <a 
+                      href="/privacy-policy" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="hover:opacity-80"
+                    >
+                      Privacy Policy
+                    </a>
+                  </p>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!showCommercialRegistration && !showCommercialForm && showWelcomeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="relative w-full max-w-md mx-4">
+            <div
+              className="rounded-2xl p-8 text-white relative overflow-hidden"
+              style={{ backgroundColor: '#039994' }}
+            >
+              <button
+                onClick={handleWelcomeModalClose}
+                className="absolute top-4 right-4 text-white hover:text-gray-200 transition-colors z-10"
+              >
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M18 6L6 18M6 6L18 18"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+              
+              <div className="text-center">
+                <h2 className="font-[600] text-[32px] leading-[110%] tracking-[-0.05em] text-white font-sfpro mb-2">
+                  Welcome to DCarbon,
+                </h2>
+                <h3 className="font-[600] text-[32px] leading-[110%] tracking-[-0.05em] text-white font-sfpro mb-6">
+                  {userData.userFirstName || "User"}
+                </h3>
+                
+                <p className="font-[400] text-[16px] leading-[140%] tracking-[-0.02em] text-white font-sfpro mb-8 opacity-90">
+                  Kindly create your first facility to begin using DCarbon's services and managing your facility as an Owner or Operator.
+                </p>
+                
+                <button
+                  onClick={handleCreateFacility}
+                  disabled={isCreatingFacility}
+                  className="w-full rounded-xl bg-white text-[#039994] font-[600] text-[16px] leading-[100%] tracking-[-0.05em] font-sfpro py-4 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed mb-6"
+                >
+                  {isCreatingFacility ? (
+                    <div className="flex items-center justify-center">
+                      <div className="w-5 h-5 border-2 border-[#039994] border-t-transparent rounded-full animate-spin mr-2"></div>
+                      Creating...
+                    </div>
+                  ) : (
+                    "Create a facility"
+                  )}
+                </button>
+
+                {/* Terms and Conditions & Privacy Policy */}
+                <div className="text-center">
+                  <p className="font-sfpro text-[10px] font-[800] leading-[100%] tracking-[-0.05em] underline text-white">
+                    By continuing, you agree to our{' '}
+                    <a 
+                      href="/terms-and-conditions" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="hover:opacity-80"
+                    >
+                      Terms and Conditions
+                    </a>
+                    {' '}and{' '}
+                    <a 
+                      href="/privacy-policy" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="hover:opacity-80"
+                    >
+                      Privacy Policy
+                    </a>
+                  </p>
+                </div>
+              </div>
+              
+              <div className="absolute top-0 right-0 w-32 h-32 opacity-10">
+                <div
+                  className="w-full h-full rounded-full"
+                  style={{
+                    background: "radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%)"
+                  }}
+                ></div>
+              </div>
+              <div className="absolute bottom-0 left-0 w-24 h-24 opacity-10">
+                <div
+                  className="w-full h-full rounded-full"
+                  style={{
+                    background: "radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%)"
+                  }}
+                ></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <CommercialRegistrationModal 
+        isOpen={showCommercialRegistration}
+        onClose={handleCloseAll}
+        onBack={handleBackToWelcome}
+      />
+    </>
   );
 }
