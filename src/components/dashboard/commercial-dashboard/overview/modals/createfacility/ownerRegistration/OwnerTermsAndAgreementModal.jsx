@@ -9,6 +9,7 @@ export default function OwnerTermsAndAgreementModal({ isOpen, onClose }) {
   const [showSignatureModal, setShowSignatureModal] = useState(false);
   const [showOwnerDetailsModal, setShowOwnerDetailsModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [hasSigned, setHasSigned] = useState(false);
   const contentRef = useRef(null);
 
   useEffect(() => {
@@ -34,13 +35,12 @@ export default function OwnerTermsAndAgreementModal({ isOpen, onClose }) {
   const acceptUserAgreementTerms = async () => {
     try {
       setIsLoading(true);
-      
       const userId = localStorage.getItem('userId');
       const authToken = localStorage.getItem('authToken');
       
       if (!userId || !authToken) {
         toast.error('Authentication required. Please log in again.');
-        return;
+        return false;
       }
 
       const response = await fetch(
@@ -72,16 +72,21 @@ export default function OwnerTermsAndAgreementModal({ isOpen, onClose }) {
     }
   };
 
-  const handleAccept = async () => {
-    const success = await acceptUserAgreementTerms();
-    if (success) {
-      setShowSignatureModal(true);
+  const handleSignFirst = () => {
+    if (!isChecked) {
+      toast.error('Please accept the agreement terms first');
+      return;
     }
+    setShowSignatureModal(true);
   };
 
-  const handleSignatureComplete = () => {
+  const handleSignatureComplete = async () => {
     setShowSignatureModal(false);
-    setShowOwnerDetailsModal(true);
+    setHasSigned(true);
+    const success = await acceptUserAgreementTerms();
+    if (success) {
+      setShowOwnerDetailsModal(true);
+    }
   };
 
   const handleSignatureCancel = () => {
@@ -116,24 +121,9 @@ export default function OwnerTermsAndAgreementModal({ isOpen, onClose }) {
       {isOpen && !showSignatureModal && !showOwnerDetailsModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
           <div className="relative w-full max-w-2xl bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
-            <button
-              onClick={onClose}
-              className="absolute top-4 right-4 z-10 w-6 h-6 flex items-center justify-center text-red-500 hover:text-red-700"
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M18 6L6 18M6 6L18 18"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
+            <button onClick={onClose} className="absolute top-4 right-4 z-10 w-6 h-6 flex items-center justify-center text-red-500 hover:text-red-700">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
 
@@ -146,66 +136,10 @@ export default function OwnerTermsAndAgreementModal({ isOpen, onClose }) {
                 </h2>
                 <div className="flex items-center gap-4">
                   <button onClick={handleDownload} className="text-[#15104D] hover:opacity-80">
-                    <svg
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        d="M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                      <path
-                        d="M7 10L12 15L17 10"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                      <path
-                        d="M12 15V3"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </button>
-                  
-                  <button className="text-[#15104D] hover:opacity-80">
-                    <svg
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        d="M6 9V2H18V9"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                      <path
-                        d="M6 18H4C3.46957 18 2.96086 17.7893 2.58579 17.4142C2.21071 17.0391 2 16.5304 2 16V11C2 10.4696 2.21071 9.96086 2.58579 9.58579C2.96086 9.21071 3.46957 9 4 9H20C20.5304 9 21.0391 9.21071 21.4142 9.58579C21.7893 9.96086 22 10.4696 22 11V16C22 16.5304 21.7893 17.0391 21.4142 17.4142C21.0391 17.7893 20.5304 18 20 18H18"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                      <path
-                        d="M18 14H6V22H18V14Z"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M7 10L12 15L17 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M12 15V3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                   </button>
                 </div>
@@ -221,10 +155,7 @@ export default function OwnerTermsAndAgreementModal({ isOpen, onClose }) {
                   onChange={(e) => setIsChecked(e.target.checked)}
                   className="mt-1 w-4 h-4 text-[#039994] border-gray-300 rounded focus:ring-[#039994] accent-[#039994]"
                 />
-                <label
-                  htmlFor="agreementCheckbox"
-                  className="ml-3 font-sans font-[400] text-[14px] leading-[150%] text-[#039994] cursor-pointer"
-                >
+                <label htmlFor="agreementCheckbox" className="ml-3 font-sans font-[400] text-[14px] leading-[150%] text-[#039994] cursor-pointer">
                   DCarbon Information Release Agreement
                 </label>
               </div>
@@ -246,7 +177,7 @@ export default function OwnerTermsAndAgreementModal({ isOpen, onClose }) {
 
               <div className="flex justify-between gap-4">
                 <button
-                  onClick={handleAccept}
+                  onClick={handleSignFirst}
                   disabled={!isChecked || isLoading}
                   className={`flex-1 rounded-md text-white font-semibold py-3 focus:outline-none focus:ring-2 focus:ring-[#039994] font-sans text-[14px] transition-colors ${
                     isChecked && !isLoading
@@ -254,7 +185,7 @@ export default function OwnerTermsAndAgreementModal({ isOpen, onClose }) {
                       : "bg-gray-400 cursor-not-allowed"
                   }`}
                 >
-                  {isLoading ? "Processing..." : "Accept"}
+                  {isLoading ? "Processing..." : hasSigned ? "Accept" : "Sign Agreement"}
                 </button>
                 <button
                   onClick={onClose}
