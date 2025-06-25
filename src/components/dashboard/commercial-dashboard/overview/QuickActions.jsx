@@ -5,6 +5,10 @@ const CommercialRegistrationModal = dynamic(
   () => import("./modals/createfacility/CommercialRegistrationModal"),
   { ssr: false }
 );
+const AddCommercialFacilityModal = dynamic(
+  () => import("./modals/createfacility/ownerAndOperatorRegistration/AddCommercialFacilityModal"),
+  { ssr: false }
+);
 const ResolvePendingActionsModal = dynamic(
   () => import("./modals/ResolvePendingActionsModal"),
   { ssr: false }
@@ -21,10 +25,20 @@ const InviteCollaboratorModal = dynamic(
 export default function QuickActions() {
   const [modal, setModal] = useState("");
   const [isDisabled, setIsDisabled] = useState(false);
+  const [hasCompletedRegistration, setHasCompletedRegistration] = useState(false);
 
   useEffect(() => {
     const loginResponse = JSON.parse(localStorage.getItem("loginResponse"));
-    if (loginResponse?.data?.user?.agreements === null && loginResponse?.data?.user?.utilityAuth?.length === 0) {
+    
+    // Check if user has completed registration (has agreements and utilityAuth)
+    if (loginResponse?.data?.user?.agreements !== null && 
+        loginResponse?.data?.user?.utilityAuth?.length > 0) {
+      setHasCompletedRegistration(true);
+    }
+    
+    // Check if user should be disabled (no agreements and no utilityAuth)
+    if (loginResponse?.data?.user?.agreements === null && 
+        loginResponse?.data?.user?.utilityAuth?.length === 0) {
       setIsDisabled(true);
     }
   }, []);
@@ -118,7 +132,12 @@ export default function QuickActions() {
         </div>
       </div>
 
-      {modal === "add" && <CommercialRegistrationModal isOpen onClose={closeModal} />}
+      {modal === "add" && hasCompletedRegistration && (
+        <AddCommercialFacilityModal isOpen onClose={closeModal} />
+      )}
+      {modal === "add" && !hasCompletedRegistration && (
+        <CommercialRegistrationModal isOpen onClose={closeModal} />
+      )}
       {modal === "resolve" && <ResolvePendingActionsModal isOpen onClose={closeModal} />}
       {modal === "statement" && <CurrentStatementModal isOpen onClose={closeModal} />}
       {modal === "invite" && <InviteCollaboratorModal isOpen onClose={closeModal} />}
