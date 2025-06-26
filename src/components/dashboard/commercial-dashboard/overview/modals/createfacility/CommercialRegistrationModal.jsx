@@ -1,20 +1,19 @@
 import React, { useState } from "react";
-import OwnerTermsAndAgreementModal from "./ownerRegistration/OwnerTermsAndAgreementModal";
-import OwnerAndOperatorTermsAndAgreementModal from "./ownerAndOperatorRegistration/OwnerAndOperatorTermsAndAgreementModal";
+import OwnerDetailsModal from "./ownerRegistration/OwnerDetailsModal";
+import OwnerAndOperatorDetailsModal from "./ownerAndOperatorRegistration/OwnerDetailsModal";
 
 export default function CommercialRegistrationModal({ isOpen, onClose, onBack }) {
   const [selectedRole, setSelectedRole] = useState('Owner');
-  const [showOwnerTerms, setShowOwnerTerms] = useState(false);
-  const [showOwnerOperatorTerms, setShowOwnerOperatorTerms] = useState(false);
+  const [showOwnerDetails, setShowOwnerDetails] = useState(false);
+  const [showOwnerOperatorDetails, setShowOwnerOperatorDetails] = useState(false);
 
   if (!isOpen) return null;
 
   const handleNext = () => {
-    console.log("Selected role:", selectedRole);
     if (selectedRole === 'Owner') {
-      setShowOwnerTerms(true);
+      setShowOwnerDetails(true);
     } else if (selectedRole === 'Owner & Operator') {
-      setShowOwnerOperatorTerms(true);
+      setShowOwnerOperatorDetails(true);
     }
   };
 
@@ -33,19 +32,18 @@ export default function CommercialRegistrationModal({ isOpen, onClose, onBack })
     return "Lorem ipsum dolor sit amet consectetur. Gravida dictum eget turpis hendrerit ultricies faucibus egestas erat. Donec auctor orci orci sapien fermentum pharetra. Eget tempor odio ut lacinia dictum justo suspendisse amet tempor. Quis risus tellus commodo mauris dui. Est egestas netus.";
   };
 
-  const handleCloseOwnerTerms = () => {
-    setShowOwnerTerms(false);
+  const handleCloseOwnerDetails = () => {
+    setShowOwnerDetails(false);
   };
 
-  const handleCloseOwnerOperatorTerms = () => {
-    setShowOwnerOperatorTerms(false);
+  const handleCloseOwnerOperatorDetails = () => {
+    setShowOwnerOperatorDetails(false);
   };
 
   return (
     <>
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
         <div className="relative w-full max-w-md bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
-          {/* Close Button */}
           <button
             onClick={onClose}
             className="absolute top-4 right-4 z-10 w-6 h-6 flex items-center justify-center text-red-500 hover:text-red-700"
@@ -172,16 +170,16 @@ export default function CommercialRegistrationModal({ isOpen, onClose, onBack })
         </div>
       </div>
 
-      {/* Owner Terms Modal */}
-      <OwnerTermsAndAgreementModal
-        isOpen={showOwnerTerms}
-        onClose={handleCloseOwnerTerms}
+      <OwnerDetailsModal
+        isOpen={showOwnerDetails}
+        onClose={handleCloseOwnerDetails}
+        onBack={() => setShowOwnerDetails(false)}
       />
 
-      {/* Owner & Operator Terms Modal */}
-      <OwnerAndOperatorTermsAndAgreementModal
-        isOpen={showOwnerOperatorTerms}
-        onClose={handleCloseOwnerOperatorTerms}
+      <OwnerAndOperatorDetailsModal
+        isOpen={showOwnerOperatorDetails}
+        onClose={handleCloseOwnerOperatorDetails}
+        onBack={() => setShowOwnerOperatorDetails(false)}
       />
     </>
   );

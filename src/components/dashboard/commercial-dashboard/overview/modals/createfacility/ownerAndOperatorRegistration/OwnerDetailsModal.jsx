@@ -1,33 +1,20 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
-import FinanceAndInstallerModal from './FinanceAndInstallerModal.jsx';
-import {
-  mainContainer,
-  headingContainer,
-  backArrow,
-  pageTitle,
-  progressContainer,
-  progressBarWrapper,
-  progressBarActive,
-  progressStepText,
-  formWrapper,
-  labelClass,
-  inputClass,
-  rowWrapper,
-  halfWidth,
-  buttonPrimary,
-  spinnerOverlay,
-  spinner,
-  termsTextContainer
-} from '../../styles.js';
+import OwnerAndOperatorTermsAndAgreementModal from './OwnerAndOperatorTermsAndAgreementModal';
+import FinanceAndInstallerModal from './FinanceAndInstallerModal';
 
 export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
   const [isMultipleOwners, setIsMultipleOwners] = useState(false);
   const [showFinanceModal, setShowFinanceModal] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
   const [ownerDetails, setOwnerDetails] = useState({
     ownerFullName: "",
     phoneNumber: "",
-    ownerAddress: "",
+    address1: "",
+    address2: "",
+    city: "",
+    state: "",
+    zipCode: "",
     ownerWebsite: ""
   });
   const [additionalOwners, setAdditionalOwners] = useState([{
@@ -35,13 +22,16 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
     email: "",
     phoneNumber: "",
     ownershipPercentage: "",
-    ownerAddress: "",
+    address1: "",
+    address2: "",
+    city: "",
+    state: "",
+    zipCode: "",
     ownerWebsite: ""
   }]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch existing user data on component mount
   useEffect(() => {
     if (isOpen) {
       fetchUserData();
@@ -74,27 +64,37 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
         throw new Error(data.message || 'Failed to fetch user data');
       }
 
-      // Pre-populate form with existing data
       if (data.data && data.data.commercialUser) {
         const commercialUser = data.data.commercialUser;
+        const addressParts = commercialUser.ownerAddress ? commercialUser.ownerAddress.split(', ') : [];
         setOwnerDetails({
           ownerFullName: commercialUser.ownerFullName || "",
           phoneNumber: commercialUser.phoneNumber || data.data.phoneNumber || "",
-          ownerAddress: commercialUser.ownerAddress || "",
+          address1: addressParts[0] || "",
+          address2: addressParts[1] || "",
+          city: addressParts[2] || "",
+          state: addressParts[3] || "",
+          zipCode: addressParts[4] || "",
           ownerWebsite: commercialUser.ownerWebsite || ""
         });
 
-        // Check if there are multiple users
         if (commercialUser.multipleUsers && commercialUser.multipleUsers.length > 0) {
           setIsMultipleOwners(true);
-          setAdditionalOwners(commercialUser.multipleUsers.map(user => ({
-            fullName: user.fullName || "",
-            email: user.email || "",
-            phoneNumber: user.phoneNumber || "",
-            ownershipPercentage: user.ownershipPercentage || "",
-            ownerAddress: user.ownerAddress || "",
-            ownerWebsite: user.ownerWebsite || ""
-          })));
+          setAdditionalOwners(commercialUser.multipleUsers.map(user => {
+            const userAddressParts = user.ownerAddress ? user.ownerAddress.split(', ') : [];
+            return {
+              fullName: user.fullName || "",
+              email: user.email || "",
+              phoneNumber: user.phoneNumber || "",
+              ownershipPercentage: user.ownershipPercentage || "",
+              address1: userAddressParts[0] || "",
+              address2: userAddressParts[1] || "",
+              city: userAddressParts[2] || "",
+              state: userAddressParts[3] || "",
+              zipCode: userAddressParts[4] || "",
+              ownerWebsite: user.ownerWebsite || ""
+            };
+          }));
         }
       }
     } catch (error) {
@@ -129,7 +129,11 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
       email: "",
       phoneNumber: "",
       ownershipPercentage: "",
-      ownerAddress: "",
+      address1: "",
+      address2: "",
+      city: "",
+      state: "",
+      zipCode: "",
       ownerWebsite: ""
     }]);
   };
@@ -153,19 +157,36 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
         throw new Error('Authentication required. Please log in again.');
       }
 
+      const ownerAddress = [
+        ownerDetails.address1,
+        ownerDetails.address2,
+        ownerDetails.city,
+        ownerDetails.state,
+        ownerDetails.zipCode
+      ].filter(Boolean).join(', ');
+
       const payload = {
         entityType: "individual",
-        commercialRole: "owner",
+        commercialRole: "both",
         ownerFullName: ownerDetails.ownerFullName,
         phoneNumber: ownerDetails.phoneNumber,
-        ownerAddress: ownerDetails.ownerAddress,
+        ownerAddress: ownerAddress,
         ownerWebsite: ownerDetails.ownerWebsite
       };
 
       if (isMultipleOwners && additionalOwners.length > 0) {
         payload.multipleUsers = additionalOwners.filter(owner => 
           owner.fullName.trim() !== "" || owner.email.trim() !== ""
-        );
+        ).map(owner => ({
+          ...owner,
+          ownerAddress: [
+            owner.address1,
+            owner.address2,
+            owner.city,
+            owner.state,
+            owner.zipCode
+          ].filter(Boolean).join(', ')
+        }));
       }
 
       const response = await fetch(
@@ -187,14 +208,18 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
       }
 
       toast.success('Owner details saved successfully!');
-      // Show finance modal instead of closing
-      setShowFinanceModal(true);
+      setShowTermsModal(true);
     } catch (error) {
       console.error('Error saving owner details:', error);
       toast.error(error.message || 'Failed to save owner details');
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleTermsModalClose = () => {
+    setShowTermsModal(false);
+    setShowFinanceModal(true);
   };
 
   const handleFinanceModalClose = () => {
@@ -216,19 +241,27 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
     );
   }
 
+  if (showTermsModal) {
+    return (
+      <OwnerAndOperatorTermsAndAgreementModal
+        isOpen={showTermsModal}
+        onClose={handleTermsModalClose}
+      />
+    );
+  }
+
   if (!isOpen) return null;
 
   return (
     <>
       {isLoading && (
-        <div className={spinnerOverlay}>
-          <div className={spinner}></div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-8 h-8 border-4 border-[#039994] border-t-transparent rounded-full animate-spin"></div>
         </div>
       )}
       
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
         <div className="relative w-full max-w-lg bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
-          {/* Header with back arrow and close button */}
           <div className="relative p-6 pb-4">
             {onBack && (
               <button
@@ -278,7 +311,6 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
               Owner's Details
             </h2>
 
-            {/* Progress bar */}
             <div className="flex items-center mt-4 mb-2">
               <div className="flex-1 h-1 bg-gray-200 rounded-full mr-4">
                 <div className="h-1 bg-[#039994] rounded-full" style={{ width: '50%' }}></div>
@@ -287,12 +319,10 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
             </div>
           </div>
 
-          {/* Form Content */}
           <div className="flex-1 overflow-y-auto px-6 pb-6">
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Generator Owner Section */}
               <div>
-                <label className={`${labelClass} text-sm`}>
+                <label className="block mb-2 text-sm font-medium text-[#1E1E1E] font-sfpro">
                   Generator Owner <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -301,13 +331,13 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
                   value={ownerDetails.ownerFullName}
                   onChange={handleInputChange}
                   placeholder="Full name"
-                  className={`${inputClass} text-sm placeholder-[#626060] bg-[#F0F0F0]`}
+                  className="w-full p-3 text-sm text-[#1E1E1E] bg-[#F0F0F0] rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] placeholder-[#626060] font-sfpro"
                   required
                 />
               </div>
 
               <div>
-                <label className={`${labelClass} text-sm`}>
+                <label className="block mb-2 text-sm font-medium text-[#1E1E1E] font-sfpro">
                   Phone Number <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -316,45 +346,103 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
                   value={ownerDetails.phoneNumber}
                   onChange={handleInputChange}
                   placeholder="Phone Number"
-                  className={`${inputClass} text-sm placeholder-[#626060] bg-[#F0F0F0]`}
+                  className="w-full p-3 text-sm text-[#1E1E1E] bg-[#F0F0F0] rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] placeholder-[#626060] font-sfpro"
                   required
                 />
               </div>
 
-              <div className={rowWrapper}>
-                <div className={halfWidth}>
-                  <label className={`${labelClass} text-sm`}>
-                    Address <span className="text-red-500">*</span>
+              <div>
+                <label className="block mb-2 text-sm font-medium text-[#1E1E1E] font-sfpro">
+                  Address 1 <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="address1"
+                  value={ownerDetails.address1}
+                  onChange={handleInputChange}
+                  placeholder="Street address"
+                  className="w-full p-3 text-sm text-[#1E1E1E] bg-[#F0F0F0] rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] placeholder-[#626060] font-sfpro"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block mb-2 text-sm font-medium text-[#1E1E1E] font-sfpro">
+                  Address 2
+                </label>
+                <input
+                  type="text"
+                  name="address2"
+                  value={ownerDetails.address2}
+                  onChange={handleInputChange}
+                  placeholder="Apt, suite, unit, etc."
+                  className="w-full p-3 text-sm text-[#1E1E1E] bg-[#F0F0F0] rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] placeholder-[#626060] font-sfpro"
+                />
+              </div>
+
+              <div className="flex space-x-4">
+                <div className="flex-1">
+                  <label className="block mb-2 text-sm font-medium text-[#1E1E1E] font-sfpro">
+                    City <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
-                    name="ownerAddress"
-                    value={ownerDetails.ownerAddress}
+                    name="city"
+                    value={ownerDetails.city}
                     onChange={handleInputChange}
-                    placeholder="E.g. Street, City, County, State"
-                    className={`${inputClass} text-sm placeholder-[#626060] bg-[#F0F0F0]`}
+                    placeholder="City"
+                    className="w-full p-3 text-sm text-[#1E1E1E] bg-[#F0F0F0] rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] placeholder-[#626060] font-sfpro"
                     required
                   />
                 </div>
-                <div className={halfWidth}>
-                  <label className={`${labelClass} text-sm`}>
-                    Website details
+                <div className="flex-1">
+                  <label className="block mb-2 text-sm font-medium text-[#1E1E1E] font-sfpro">
+                    State <span className="text-red-500">*</span>
                   </label>
                   <input
-                    type="url"
-                    name="ownerWebsite"
-                    value={ownerDetails.ownerWebsite}
+                    type="text"
+                    name="state"
+                    value={ownerDetails.state}
                     onChange={handleInputChange}
-                    placeholder="http://"
-                    className={`${inputClass} text-sm placeholder-[#626060] bg-[#F0F0F0]`}
+                    placeholder="State"
+                    className="w-full p-3 text-sm text-[#1E1E1E] bg-[#F0F0F0] rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] placeholder-[#626060] font-sfpro"
+                    required
                   />
                 </div>
               </div>
 
-              {/* Multiple Owners Section */}
+              <div>
+                <label className="block mb-2 text-sm font-medium text-[#1E1E1E] font-sfpro">
+                  Zip Code <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="zipCode"
+                  value={ownerDetails.zipCode}
+                  onChange={handleInputChange}
+                  placeholder="Zip code"
+                  className="w-full p-3 text-sm text-[#1E1E1E] bg-[#F0F0F0] rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] placeholder-[#626060] font-sfpro"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block mb-2 text-sm font-medium text-[#1E1E1E] font-sfpro">
+                  Website details
+                </label>
+                <input
+                  type="url"
+                  name="ownerWebsite"
+                  value={ownerDetails.ownerWebsite}
+                  onChange={handleInputChange}
+                  placeholder="http://"
+                  className="w-full p-3 text-sm text-[#1E1E1E] bg-[#F0F0F0] rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] placeholder-[#626060] font-sfpro"
+                />
+              </div>
+
               <div>
                 <div className="flex items-center justify-between">
-                  <label className={`${labelClass} text-sm`}>
+                  <label className="block mb-2 text-sm font-medium text-[#1E1E1E] font-sfpro">
                     Multiple Owners?
                   </label>
                   <div className="flex items-center space-x-4">
@@ -382,7 +470,6 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
                 </div>
               </div>
 
-              {/* Additional Owners Section */}
               {isMultipleOwners && (
                 <div className="space-y-4">
                   {additionalOwners.map((owner, index) => (
@@ -416,76 +503,138 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
                       </div>
 
                       <div className="space-y-3">
-                        <div className={rowWrapper}>
-                          <div className={halfWidth}>
+                        <div className="flex space-x-4">
+                          <div className="flex-1">
                             <input
                               type="text"
                               name="fullName"
                               value={owner.fullName}
                               onChange={(e) => handleAdditionalOwnerChange(index, e)}
                               placeholder="Full name *"
-                              className={`${inputClass} text-sm placeholder-[#626060] bg-[#F0F0F0]`}
+                              className="w-full p-3 text-sm text-[#1E1E1E] bg-[#F0F0F0] rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] placeholder-[#626060] font-sfpro"
                               required
                             />
                           </div>
-                          <div className={halfWidth}>
+                          <div className="flex-1">
                             <input
                               type="text"
                               name="ownershipPercentage"
                               value={owner.ownershipPercentage}
                               onChange={(e) => handleAdditionalOwnerChange(index, e)}
                               placeholder="% ownership"
-                              className={`${inputClass} text-sm placeholder-[#626060] bg-[#F0F0F0]`}
+                              className="w-full p-3 text-sm text-[#1E1E1E] bg-[#F0F0F0] rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] placeholder-[#626060] font-sfpro"
                             />
                           </div>
                         </div>
 
-                        <div className={rowWrapper}>
-                          <div className={halfWidth}>
+                        <div className="flex space-x-4">
+                          <div className="flex-1">
                             <input
                               type="email"
                               name="email"
                               value={owner.email}
                               onChange={(e) => handleAdditionalOwnerChange(index, e)}
                               placeholder="Email address *"
-                              className={`${inputClass} text-sm placeholder-[#626060] bg-[#F0F0F0]`}
+                              className="w-full p-3 text-sm text-[#1E1E1E] bg-[#F0F0F0] rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] placeholder-[#626060] font-sfpro"
                               required
                             />
                           </div>
-                          <div className={halfWidth}>
+                          <div className="flex-1">
                             <input
                               type="tel"
                               name="phoneNumber"
                               value={owner.phoneNumber}
                               onChange={(e) => handleAdditionalOwnerChange(index, e)}
                               placeholder="Phone Number *"
-                              className={`${inputClass} text-sm placeholder-[#626060] bg-[#F0F0F0]`}
+                              className="w-full p-3 text-sm text-[#1E1E1E] bg-[#F0F0F0] rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] placeholder-[#626060] font-sfpro"
                               required
                             />
                           </div>
                         </div>
 
-                        <div className={rowWrapper}>
-                          <div className={halfWidth}>
+                        <div>
+                          <label className="block mb-2 text-sm font-medium text-[#1E1E1E] font-sfpro">
+                            Address 1
+                          </label>
+                          <input
+                            type="text"
+                            name="address1"
+                            value={owner.address1}
+                            onChange={(e) => handleAdditionalOwnerChange(index, e)}
+                            placeholder="Street address"
+                            className="w-full p-3 text-sm text-[#1E1E1E] bg-[#F0F0F0] rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] placeholder-[#626060] font-sfpro"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block mb-2 text-sm font-medium text-[#1E1E1E] font-sfpro">
+                            Address 2
+                          </label>
+                          <input
+                            type="text"
+                            name="address2"
+                            value={owner.address2}
+                            onChange={(e) => handleAdditionalOwnerChange(index, e)}
+                            placeholder="Apt, suite, unit, etc."
+                            className="w-full p-3 text-sm text-[#1E1E1E] bg-[#F0F0F0] rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] placeholder-[#626060] font-sfpro"
+                          />
+                        </div>
+
+                        <div className="flex space-x-4">
+                          <div className="flex-1">
+                            <label className="block mb-2 text-sm font-medium text-[#1E1E1E] font-sfpro">
+                              City
+                            </label>
                             <input
                               type="text"
-                              name="ownerAddress"
-                              value={owner.ownerAddress}
+                              name="city"
+                              value={owner.city}
                               onChange={(e) => handleAdditionalOwnerChange(index, e)}
-                              placeholder="Address"
-                              className={`${inputClass} text-sm placeholder-[#626060] bg-[#F0F0F0]`}
+                              placeholder="City"
+                              className="w-full p-3 text-sm text-[#1E1E1E] bg-[#F0F0F0] rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] placeholder-[#626060] font-sfpro"
                             />
                           </div>
-                          <div className={halfWidth}>
+                          <div className="flex-1">
+                            <label className="block mb-2 text-sm font-medium text-[#1E1E1E] font-sfpro">
+                              State
+                            </label>
                             <input
-                              type="url"
-                              name="ownerWebsite"
-                              value={owner.ownerWebsite}
+                              type="text"
+                              name="state"
+                              value={owner.state}
                               onChange={(e) => handleAdditionalOwnerChange(index, e)}
-                              placeholder="Website"
-                              className={`${inputClass} text-sm placeholder-[#626060] bg-[#F0F0F0]`}
+                              placeholder="State"
+                              className="w-full p-3 text-sm text-[#1E1E1E] bg-[#F0F0F0] rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] placeholder-[#626060] font-sfpro"
                             />
                           </div>
+                        </div>
+
+                        <div>
+                          <label className="block mb-2 text-sm font-medium text-[#1E1E1E] font-sfpro">
+                            Zip Code
+                          </label>
+                          <input
+                            type="text"
+                            name="zipCode"
+                            value={owner.zipCode}
+                            onChange={(e) => handleAdditionalOwnerChange(index, e)}
+                            placeholder="Zip code"
+                            className="w-full p-3 text-sm text-[#1E1E1E] bg-[#F0F0F0] rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] placeholder-[#626060] font-sfpro"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block mb-2 text-sm font-medium text-[#1E1E1E] font-sfpro">
+                            Website
+                          </label>
+                          <input
+                            type="url"
+                            name="ownerWebsite"
+                            value={owner.ownerWebsite}
+                            onChange={(e) => handleAdditionalOwnerChange(index, e)}
+                            placeholder="Website"
+                            className="w-full p-3 text-sm text-[#1E1E1E] bg-[#F0F0F0] rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] placeholder-[#626060] font-sfpro"
+                          />
                         </div>
                       </div>
                     </div>
@@ -501,12 +650,11 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
                 </div>
               )}
 
-              {/* Submit Button */}
               <div className="pt-4">
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className={`${buttonPrimary} flex items-center justify-center disabled:opacity-50 text-sm`}
+                  className="w-full bg-[#039994] text-white font-semibold py-3 rounded-md hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-sm flex items-center justify-center disabled:opacity-50"
                 >
                   {isSubmitting ? (
                     <>
@@ -519,8 +667,7 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
                 </button>
               </div>
 
-              {/* Terms and Conditions */}
-              <div className={`${termsTextContainer} text-sm`}>
+              <div className="mt-4 text-center font-sfpro text-[10px] font-[800] leading-[100%] tracking-[-0.05em] underline text-[#1E1E1E]">
                 <span>Terms and Conditions</span>
                 <span className="mx-2">•</span>
                 <span>Privacy Policy</span>

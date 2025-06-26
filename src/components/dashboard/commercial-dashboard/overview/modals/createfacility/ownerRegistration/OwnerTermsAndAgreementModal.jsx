@@ -1,13 +1,13 @@
 import React, { useState, useRef, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import SignatureModal from "./SignatureModal.jsx";
-import OwnerDetailsModal from "./OwnerDetailsModal.jsx";
+import FinanceAndInstallerModal from "./FinanceAndInstallerModal.jsx";
 
 export default function OwnerTermsAndAgreementModal({ isOpen, onClose }) {
   const [isChecked, setIsChecked] = useState(false);
   const [scrolledToBottom, setScrolledToBottom] = useState(false);
   const [showSignatureModal, setShowSignatureModal] = useState(false);
-  const [showOwnerDetailsModal, setShowOwnerDetailsModal] = useState(false);
+  const [showFinanceModal, setShowFinanceModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [hasSigned, setHasSigned] = useState(false);
   const contentRef = useRef(null);
@@ -85,7 +85,7 @@ export default function OwnerTermsAndAgreementModal({ isOpen, onClose }) {
     setHasSigned(true);
     const success = await acceptUserAgreementTerms();
     if (success) {
-      setShowOwnerDetailsModal(true);
+      setShowFinanceModal(true);
     }
   };
 
@@ -93,14 +93,13 @@ export default function OwnerTermsAndAgreementModal({ isOpen, onClose }) {
     setShowSignatureModal(false);
   };
 
-  const handleOwnerDetailsComplete = () => {
-    setShowOwnerDetailsModal(false);
+  const handleFinanceModalClose = () => {
+    setShowFinanceModal(false);
     onClose();
   };
 
-  const handleOwnerDetailsBack = () => {
-    setShowOwnerDetailsModal(false);
-    setShowSignatureModal(true);
+  const handleFinanceModalBack = () => {
+    setShowFinanceModal(false);
   };
 
   const handleDownload = () => {
@@ -114,11 +113,21 @@ export default function OwnerTermsAndAgreementModal({ isOpen, onClose }) {
     document.body.removeChild(element);
   };
 
-  if (!isOpen && !showSignatureModal && !showOwnerDetailsModal) return null;
+  if (showFinanceModal) {
+    return (
+      <FinanceAndInstallerModal
+        isOpen={showFinanceModal}
+        onClose={handleFinanceModalClose}
+        onBack={handleFinanceModalBack}
+      />
+    );
+  }
+
+  if (!isOpen && !showSignatureModal) return null;
 
   return (
     <>
-      {isOpen && !showSignatureModal && !showOwnerDetailsModal && (
+      {isOpen && !showSignatureModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
           <div className="relative w-full max-w-2xl bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
             <button onClick={onClose} className="absolute top-4 right-4 z-10 w-6 h-6 flex items-center justify-center text-red-500 hover:text-red-700">
@@ -204,12 +213,6 @@ export default function OwnerTermsAndAgreementModal({ isOpen, onClose }) {
         isOpen={showSignatureModal}
         onClose={handleSignatureCancel}
         onComplete={handleSignatureComplete}
-      />
-
-      <OwnerDetailsModal
-        isOpen={showOwnerDetailsModal}
-        onClose={handleOwnerDetailsComplete}
-        onBack={handleOwnerDetailsBack}
       />
     </>
   );

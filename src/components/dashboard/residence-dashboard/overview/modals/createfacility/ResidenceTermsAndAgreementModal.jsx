@@ -1,13 +1,13 @@
 import React, { useState, useRef, useEffect } from "react";
 import { toast } from "react-hot-toast";
-import SignatureModal from "./SignatureModal.jsx";
-import FinanceAndInstallerModal from "./FinanceAndInstallerModal.jsx";
+import SignatureModal from "./SignatureModal";
+import UtilityAuthorizationModal from "./UtilityAuthorizationModal";
 
-export default function OwnerAndOperatorTermsAndAgreementModal({ isOpen, onClose }) {
+export default function ResidenceTermsAndAgreementModal({ isOpen, onClose }) {
   const [isChecked, setIsChecked] = useState(false);
   const [scrolledToBottom, setScrolledToBottom] = useState(false);
   const [showSignatureModal, setShowSignatureModal] = useState(false);
-  const [showFinanceModal, setShowFinanceModal] = useState(false);
+  const [showUtilityModal, setShowUtilityModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [hasSigned, setHasSigned] = useState(false);
   const contentRef = useRef(null);
@@ -85,7 +85,7 @@ export default function OwnerAndOperatorTermsAndAgreementModal({ isOpen, onClose
     setHasSigned(true);
     const success = await acceptUserAgreementTerms();
     if (success) {
-      setShowFinanceModal(true);
+      setShowUtilityModal(true);
     }
   };
 
@@ -93,13 +93,9 @@ export default function OwnerAndOperatorTermsAndAgreementModal({ isOpen, onClose
     setShowSignatureModal(false);
   };
 
-  const handleFinanceModalClose = () => {
-    setShowFinanceModal(false);
+  const handleUtilityModalClose = () => {
+    setShowUtilityModal(false);
     onClose();
-  };
-
-  const handleFinanceModalBack = () => {
-    setShowFinanceModal(false);
   };
 
   const handleDownload = () => {
@@ -107,18 +103,17 @@ export default function OwnerAndOperatorTermsAndAgreementModal({ isOpen, onClose
     const text = document.querySelector(".agreement-content").innerText;
     const file = new Blob([text], { type: "text/plain" });
     element.href = URL.createObjectURL(file);
-    element.download = "DCarbon_Owner_Operator_Agreement.txt";
+    element.download = "DCarbon_Agreement.txt";
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
   };
 
-  if (showFinanceModal) {
+  if (showUtilityModal) {
     return (
-      <FinanceAndInstallerModal
-        isOpen={showFinanceModal}
-        onClose={handleFinanceModalClose}
-        onBack={handleFinanceModalBack}
+      <UtilityAuthorizationModal
+        isOpen={showUtilityModal}
+        onClose={handleUtilityModalClose}
       />
     );
   }
@@ -141,14 +136,13 @@ export default function OwnerAndOperatorTermsAndAgreementModal({ isOpen, onClose
             <div className="p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="font-[600] text-[20px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sans">
-                  Terms of Agreement For Owner and Operator
+                  Terms of Agreement
                 </h2>
                 <div className="flex items-center gap-4">
                   <button onClick={handleDownload} className="text-[#15104D] hover:opacity-80">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M7 10L12 15L17 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M12 15V3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M7 6V4C7 3.46957 7.21071 2.96086 7.58579 2.58579C7.96086 2.21071 8.46957 2 9 2H15C15.5304 2 16.0391 2.21071 16.4142 2.58579C16.7893 2.96086 17 3.46957 17 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                   </button>
                 </div>
