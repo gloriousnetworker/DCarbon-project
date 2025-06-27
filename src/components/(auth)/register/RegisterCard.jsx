@@ -48,7 +48,7 @@ function RegisterCardContent() {
     Residential: 'RESIDENTIAL',
     Commercial: 'COMMERCIAL',
     Partner: 'PARTNER',
-    Operator: 'OPERATOR'
+    Operator: 'COMMERCIAL'
   };
 
   const availableUserCategories = urlReferralCode
@@ -97,8 +97,9 @@ function RegisterCardContent() {
       firstName,
       lastName,
       phoneNumber,
-      userType: userCategory === 'Operator' ? 'COMMERCIAL' : userTypeMapping[userCategory],
+      userType: userTypeMapping[userCategory],
       password,
+      isPartnerOperator: userCategory === 'Operator'
     };
 
     if (manualReferralCode.trim()) {
@@ -120,7 +121,7 @@ function RegisterCardContent() {
       });
 
       localStorage.setItem('userEmail', response.data.data.email);
-      localStorage.setItem('userType', userCategory === 'Operator' ? 'OPERATOR' : userTypeMapping[userCategory]);
+      localStorage.setItem('userType', userTypeMapping[userCategory]);
       toast.success('Registration successful');
       setShowModal(true);
     } catch (err) {
