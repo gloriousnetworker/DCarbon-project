@@ -30,24 +30,26 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
   }]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [fetchedOwnerData, setFetchedOwnerData] = useState(null);
+  const [isConfirming, setIsConfirming] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
-      fetchUserData();
+      fetchOwnerData();
     }
   }, [isOpen]);
 
-  const fetchUserData = async () => {
+  const fetchOwnerData = async () => {
     try {
-      const userId = localStorage.getItem('userId');
+      const referralCode = localStorage.getItem('ownerReferralCode');
       const authToken = localStorage.getItem('authToken');
 
-      if (!userId || !authToken) {
-        throw new Error('Authentication required. Please log in again.');
+      if (!referralCode || !authToken) {
+        throw new Error('Referral code or authentication token missing');
       }
 
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`,
+        `https://services.dcarbon.solutions/api/user/by-referral-code/${referralCode}`,
         {
           method: 'GET',
           headers: {
@@ -60,45 +62,18 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Failed to fetch user data');
+        throw new Error(data.message || 'Failed to fetch owner data');
       }
 
-      if (data.data && data.data.commercialUser) {
-        const commercialUser = data.data.commercialUser;
-        const addressParts = commercialUser.ownerAddress ? commercialUser.ownerAddress.split(', ') : [];
-        setOwnerDetails({
-          ownerFullName: commercialUser.ownerFullName || "",
-          phoneNumber: commercialUser.phoneNumber || data.data.phoneNumber || "",
-          address1: addressParts[0] || "",
-          address2: addressParts[1] || "",
-          city: addressParts[2] || "",
-          state: addressParts[3] || "",
-          zipCode: addressParts[4] || "",
-          ownerWebsite: commercialUser.ownerWebsite || ""
-        });
-
-        if (commercialUser.multipleUsers && commercialUser.multipleUsers.length > 0) {
-          setIsMultipleOwners(true);
-          setAdditionalOwners(commercialUser.multipleUsers.map(user => {
-            const userAddressParts = user.ownerAddress ? user.ownerAddress.split(', ') : [];
-            return {
-              fullName: user.fullName || "",
-              email: user.email || "",
-              phoneNumber: user.phoneNumber || "",
-              ownershipPercentage: user.ownershipPercentage || "",
-              address1: userAddressParts[0] || "",
-              address2: userAddressParts[1] || "",
-              city: userAddressParts[2] || "",
-              state: userAddressParts[3] || "",
-              zipCode: userAddressParts[4] || "",
-              ownerWebsite: user.ownerWebsite || ""
-            };
-          }));
-        }
-      }
+      setFetchedOwnerData(data.data);
+      setOwnerDetails(prev => ({
+        ...prev,
+        ownerFullName: `${data.data.firstName} ${data.data.lastName}`,
+        phoneNumber: data.data.phoneNumber
+      }));
     } catch (error) {
-      console.error('Error fetching user data:', error);
-      toast.error(error.message || 'Failed to load user data');
+      console.error('Error fetching owner data:', error);
+      toast.error(error.message || 'Failed to load owner data');
     } finally {
       setIsLoading(false);
     }
@@ -216,6 +191,15 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
     }
   };
 
+  const handleConfirm = () => {
+    setIsConfirming(true);
+    setShowTermsModal(true);
+  };
+
+  const handleDecline = () => {
+    onBack();
+  };
+
   const handleTermsModalClose = () => {
     setShowTermsModal(false);
     onClose();
@@ -287,7 +271,7 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
               </svg>
             </button>
 
-            <h2 className={`${styles.pageTitle} ${onBack ? 'ml-8' : ''}`}>Is this Your Owner's Details</h2>
+            <h2 className={`${styles.pageTitle} ${onBack ? 'ml-8' : ''}`}>Owner Details</h2>
 
             <div className={styles.progressContainer}>
               <div className={styles.progressBarWrapper}>
@@ -298,6 +282,26 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
           </div>
 
           <div className="flex-1 overflow-y-auto px-6 pb-6">
+            {fetchedOwnerData && (
+              <div className="mb-6 border border-gray-200 rounded-lg p-4">
+                <h3 className="font-sfpro font-[600] text-[16px] mb-4">Owner Information</h3>
+                <div className="space-y-3">
+                  <div>
+                    <p className="font-sfpro text-[12px] text-gray-500">Full Name</p>
+                    <p className="font-sfpro text-[14px]">{`${fetchedOwnerData.firstName} ${fetchedOwnerData.lastName}`}</p>
+                  </div>
+                  <div>
+                    <p className="font-sfpro text-[12px] text-gray-500">Email</p>
+                    <p className="font-sfpro text-[14px]">{fetchedOwnerData.email}</p>
+                  </div>
+                  <div>
+                    <p className="font-sfpro text-[12px] text-gray-500">Phone Number</p>
+                    <p className="font-sfpro text-[14px]">{fetchedOwnerData.phoneNumber}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className={styles.formWrapper}>
               <div>
                 <label className={styles.labelClass}>
@@ -311,6 +315,7 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
                   placeholder="Full name"
                   className={styles.inputClass}
                   required
+                  readOnly={!!fetchedOwnerData}
                 />
               </div>
 
@@ -326,6 +331,7 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
                   placeholder="Phone Number"
                   className={styles.inputClass}
                   required
+                  readOnly={!!fetchedOwnerData}
                 />
               </div>
 
@@ -628,16 +634,26 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
                 </div>
               )}
 
-              <div className="pt-4">
+              <div className="pt-4 flex space-x-4">
+                {fetchedOwnerData && (
+                  <button
+                    type="button"
+                    onClick={handleDecline}
+                    className="flex-1 border border-[#039994] text-[#039994] rounded-md py-3 font-sfpro font-semibold hover:bg-gray-50"
+                  >
+                    Decline
+                  </button>
+                )}
                 <button
-                  type="submit"
+                  type={fetchedOwnerData ? "button" : "submit"}
+                  onClick={fetchedOwnerData ? handleConfirm : null}
                   disabled={isSubmitting}
-                  className={styles.buttonPrimary}
+                  className={`flex-1 rounded-md bg-[#039994] text-white font-semibold py-3 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
                 >
                   {isSubmitting ? (
                     <>
                       Confirm and Continue
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin ml-2"></div>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin ml-2 inline-block"></div>
                     </>
                   ) : (
                     'Confirm and Continue'

@@ -4,10 +4,12 @@ import OwnerDetailsModal from "./ownerRegistration/OwnerDetailsModal";
 export default function CommercialRegistrationModal({ isOpen, onClose, onBack }) {
   const [selectedRole, setSelectedRole] = useState('Operator');
   const [showOwnerDetails, setShowOwnerDetails] = useState(false);
+  const [referralCode, setReferralCode] = useState('');
 
   if (!isOpen) return null;
 
   const handleNext = () => {
+    localStorage.setItem('ownerReferralCode', referralCode);
     if (selectedRole === 'Operator') {
       setShowOwnerDetails(true);
     }
@@ -108,9 +110,26 @@ export default function CommercialRegistrationModal({ isOpen, onClose, onBack })
                   </label>
                 </div>
 
+                <div className="mb-6">
+                  <label className="block mb-2 font-sfpro text-[12px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]">
+                    Owner's Referral Code
+                  </label>
+                  <input
+                    type="text"
+                    value={referralCode}
+                    onChange={(e) => setReferralCode(e.target.value)}
+                    placeholder="Enter referral code from your owner's invitation"
+                    className="w-full p-3 border border-gray-300 rounded-md font-sfpro text-[14px]"
+                  />
+                  <p className="mt-1 text-xs text-gray-500 font-sfpro">
+                    You can find this code in the invitation email sent to you by your owner.
+                  </p>
+                </div>
+
                 <button
                   onClick={handleNext}
-                  className="w-full rounded-md bg-[#039994] text-white font-semibold py-3 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px]"
+                  disabled={!referralCode.trim()}
+                  className={`w-full rounded-md font-semibold py-3 focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] ${referralCode.trim() ? 'bg-[#039994] text-white hover:bg-[#02857f]' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
                 >
                   Next
                 </button>
