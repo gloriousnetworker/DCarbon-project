@@ -39,6 +39,28 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
     }
   }, [isOpen]);
 
+  const parseAddress = (address) => {
+    if (!address) return { address1: "", address2: "", city: "", state: "", zipCode: "" };
+    
+    const parts = address.split(', ');
+    const addressParts = {
+      address1: "",
+      address2: "",
+      city: "",
+      state: "",
+      zipCode: ""
+    };
+
+    if (parts.length >= 4) {
+      addressParts.address1 = parts[0] || "";
+      addressParts.city = parts[1] || "";
+      addressParts.state = parts[2] || "";
+      addressParts.zipCode = parts[3] || "";
+    }
+
+    return addressParts;
+  };
+
   const fetchOwnerData = async () => {
     try {
       const referralCode = localStorage.getItem('ownerReferralCode');
@@ -66,11 +88,36 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
       }
 
       setFetchedOwnerData(data.data);
+      
+      const addressParts = parseAddress(data.data.commercialUser?.ownerAddress);
+      
       setOwnerDetails(prev => ({
         ...prev,
         ownerFullName: `${data.data.firstName} ${data.data.lastName}`,
-        phoneNumber: data.data.phoneNumber
+        phoneNumber: data.data.phoneNumber,
+        address1: addressParts.address1,
+        address2: addressParts.address2,
+        city: addressParts.city,
+        state: addressParts.state,
+        zipCode: addressParts.zipCode,
+        ownerWebsite: data.data.commercialUser?.ownerWebsite || ""
       }));
+
+      if (data.data.commercialUser?.multipleUsers && data.data.commercialUser.multipleUsers.length > 0) {
+        setIsMultipleOwners(true);
+        setAdditionalOwners(data.data.commercialUser.multipleUsers.map(user => ({
+          fullName: user.fullName || "",
+          email: user.email || "",
+          phoneNumber: user.phoneNumber || "",
+          ownershipPercentage: user.ownershipPercentage || "",
+          address1: user.address1 || "",
+          address2: user.address2 || "",
+          city: user.city || "",
+          state: user.state || "",
+          zipCode: user.zipCode || "",
+          ownerWebsite: user.ownerWebsite || ""
+        })));
+      }
     } catch (error) {
       console.error('Error fetching owner data:', error);
       toast.error(error.message || 'Failed to load owner data');
@@ -298,342 +345,31 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
                     <p className="font-sfpro text-[12px] text-gray-500">Phone Number</p>
                     <p className="font-sfpro text-[14px]">{fetchedOwnerData.phoneNumber}</p>
                   </div>
+                  {fetchedOwnerData.commercialUser?.ownerAddress && (
+                    <div>
+                      <p className="font-sfpro text-[12px] text-gray-500">Address</p>
+                      <p className="font-sfpro text-[14px]">{fetchedOwnerData.commercialUser.ownerAddress}</p>
+                    </div>
+                  )}
+                  {fetchedOwnerData.commercialUser?.ownerWebsite && (
+                    <div>
+                      <p className="font-sfpro text-[12px] text-gray-500">Website</p>
+                      <p className="font-sfpro text-[14px]">{fetchedOwnerData.commercialUser.ownerWebsite}</p>
+                    </div>
+                  )}
+                  <div>
+                    <p className="font-sfpro text-[12px] text-gray-500">Entity Type</p>
+                    <p className="font-sfpro text-[14px] capitalize">{fetchedOwnerData.commercialUser?.entityType}</p>
+                  </div>
+                  <div>
+                    <p className="font-sfpro text-[12px] text-gray-500">Commercial Role</p>
+                    <p className="font-sfpro text-[14px] capitalize">{fetchedOwnerData.commercialUser?.commercialRole}</p>
+                  </div>
                 </div>
               </div>
             )}
 
             <form onSubmit={handleSubmit} className={styles.formWrapper}>
-              <div>
-                <label className={styles.labelClass}>
-                  Generator Owner <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="ownerFullName"
-                  value={ownerDetails.ownerFullName}
-                  onChange={handleInputChange}
-                  placeholder="Full name"
-                  className={styles.inputClass}
-                  required
-                  readOnly={!!fetchedOwnerData}
-                />
-              </div>
-
-              <div>
-                <label className={styles.labelClass}>
-                  Phone Number <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="tel"
-                  name="phoneNumber"
-                  value={ownerDetails.phoneNumber}
-                  onChange={handleInputChange}
-                  placeholder="Phone Number"
-                  className={styles.inputClass}
-                  required
-                  readOnly={!!fetchedOwnerData}
-                />
-              </div>
-
-              <div>
-                <label className={styles.labelClass}>
-                  Address 1 <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="address1"
-                  value={ownerDetails.address1}
-                  onChange={handleInputChange}
-                  placeholder="Street address"
-                  className={styles.inputClass}
-                  required
-                />
-              </div>
-
-              <div>
-                <label className={styles.labelClass}>
-                  Address 2
-                </label>
-                <input
-                  type="text"
-                  name="address2"
-                  value={ownerDetails.address2}
-                  onChange={handleInputChange}
-                  placeholder="Apt, suite, unit, etc."
-                  className={styles.inputClass}
-                />
-              </div>
-
-              <div className={styles.rowWrapper}>
-                <div className={styles.halfWidth}>
-                  <label className={styles.labelClass}>
-                    City <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="city"
-                    value={ownerDetails.city}
-                    onChange={handleInputChange}
-                    placeholder="City"
-                    className={styles.inputClass}
-                    required
-                  />
-                </div>
-                <div className={styles.halfWidth}>
-                  <label className={styles.labelClass}>
-                    State <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="state"
-                    value={ownerDetails.state}
-                    onChange={handleInputChange}
-                    placeholder="State"
-                    className={styles.inputClass}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className={styles.labelClass}>
-                  Zip Code <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="zipCode"
-                  value={ownerDetails.zipCode}
-                  onChange={handleInputChange}
-                  placeholder="Zip code"
-                  className={styles.inputClass}
-                  required
-                />
-              </div>
-
-              <div>
-                <label className={styles.labelClass}>
-                  Website details
-                </label>
-                <input
-                  type="url"
-                  name="ownerWebsite"
-                  value={ownerDetails.ownerWebsite}
-                  onChange={handleInputChange}
-                  placeholder="http://"
-                  className={styles.inputClass}
-                />
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between">
-                  <label className={styles.labelClass}>
-                    Multiple Owners?
-                  </label>
-                  <div className="flex items-center space-x-4">
-                    <label className="flex items-center">
-                      <input
-                        type="radio"
-                        name="multipleOwners"
-                        checked={isMultipleOwners}
-                        onChange={() => setIsMultipleOwners(true)}
-                        className="w-4 h-4 text-[#039994] border-gray-300 focus:ring-[#039994] accent-[#039994]"
-                      />
-                      <span className="ml-2 text-sm font-sfpro text-[#1E1E1E]">Yes</span>
-                    </label>
-                    <label className="flex items-center">
-                      <input
-                        type="radio"
-                        name="multipleOwners"
-                        checked={!isMultipleOwners}
-                        onChange={() => setIsMultipleOwners(false)}
-                        className="w-4 h-4 text-[#039994] border-gray-300 focus:ring-[#039994] accent-[#039994]"
-                      />
-                      <span className="ml-2 text-sm font-sfpro text-[#1E1E1E]">No</span>
-                    </label>
-                  </div>
-                </div>
-              </div>
-
-              {isMultipleOwners && (
-                <div className="space-y-4">
-                  {additionalOwners.map((owner, index) => (
-                    <div key={index} className="border border-[#039994] rounded-lg p-4 relative">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="bg-[#039994] text-white px-3 py-1 rounded text-sm font-sfpro">
-                          {owner.fullName || `Owner ${index + 2}`}
-                        </div>
-                        <div className="flex space-x-2">
-                          <button
-                            type="button"
-                            className="text-[#039994] hover:text-[#02857f]"
-                          >
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="2"/>
-                              <path d="m18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2"/>
-                            </svg>
-                          </button>
-                          {additionalOwners.length > 1 && (
-                            <button
-                              type="button"
-                              onClick={() => removeAdditionalOwner(index)}
-                              className="text-red-500 hover:text-red-700"
-                            >
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2"/>
-                              </svg>
-                            </button>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="space-y-3">
-                        <div className={styles.rowWrapper}>
-                          <div className={styles.halfWidth}>
-                            <input
-                              type="text"
-                              name="fullName"
-                              value={owner.fullName}
-                              onChange={(e) => handleAdditionalOwnerChange(index, e)}
-                              placeholder="Full name *"
-                              className={styles.inputClass}
-                              required
-                            />
-                          </div>
-                          <div className={styles.halfWidth}>
-                            <input
-                              type="text"
-                              name="ownershipPercentage"
-                              value={owner.ownershipPercentage}
-                              onChange={(e) => handleAdditionalOwnerChange(index, e)}
-                              placeholder="% ownership"
-                              className={styles.inputClass}
-                            />
-                          </div>
-                        </div>
-
-                        <div className={styles.rowWrapper}>
-                          <div className={styles.halfWidth}>
-                            <input
-                              type="email"
-                              name="email"
-                              value={owner.email}
-                              onChange={(e) => handleAdditionalOwnerChange(index, e)}
-                              placeholder="Email address *"
-                              className={styles.inputClass}
-                              required
-                            />
-                          </div>
-                          <div className={styles.halfWidth}>
-                            <input
-                              type="tel"
-                              name="phoneNumber"
-                              value={owner.phoneNumber}
-                              onChange={(e) => handleAdditionalOwnerChange(index, e)}
-                              placeholder="Phone Number *"
-                              className={styles.inputClass}
-                              required
-                            />
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className={styles.labelClass}>
-                            Address 1
-                          </label>
-                          <input
-                            type="text"
-                            name="address1"
-                            value={owner.address1}
-                            onChange={(e) => handleAdditionalOwnerChange(index, e)}
-                            placeholder="Street address"
-                            className={styles.inputClass}
-                          />
-                        </div>
-
-                        <div>
-                          <label className={styles.labelClass}>
-                            Address 2
-                          </label>
-                          <input
-                            type="text"
-                            name="address2"
-                            value={owner.address2}
-                            onChange={(e) => handleAdditionalOwnerChange(index, e)}
-                            placeholder="Apt, suite, unit, etc."
-                            className={styles.inputClass}
-                          />
-                        </div>
-
-                        <div className={styles.rowWrapper}>
-                          <div className={styles.halfWidth}>
-                            <label className={styles.labelClass}>
-                              City
-                            </label>
-                            <input
-                              type="text"
-                              name="city"
-                              value={owner.city}
-                              onChange={(e) => handleAdditionalOwnerChange(index, e)}
-                              placeholder="City"
-                              className={styles.inputClass}
-                            />
-                          </div>
-                          <div className={styles.halfWidth}>
-                            <label className={styles.labelClass}>
-                              State
-                            </label>
-                            <input
-                              type="text"
-                              name="state"
-                              value={owner.state}
-                              onChange={(e) => handleAdditionalOwnerChange(index, e)}
-                              placeholder="State"
-                              className={styles.inputClass}
-                            />
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className={styles.labelClass}>
-                            Zip Code
-                          </label>
-                          <input
-                            type="text"
-                            name="zipCode"
-                            value={owner.zipCode}
-                            onChange={(e) => handleAdditionalOwnerChange(index, e)}
-                            placeholder="Zip code"
-                            className={styles.inputClass}
-                          />
-                        </div>
-
-                        <div>
-                          <label className={styles.labelClass}>
-                            Website
-                          </label>
-                          <input
-                            type="url"
-                            name="ownerWebsite"
-                            value={owner.ownerWebsite}
-                            onChange={(e) => handleAdditionalOwnerChange(index, e)}
-                            placeholder="Website"
-                            className={styles.inputClass}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-
-                  <button
-                    type="button"
-                    onClick={addAdditionalOwner}
-                    className="w-full border-2 border-dashed border-[#039994] rounded-lg p-4 text-[#039994] hover:bg-gray-50 transition-colors font-sfpro text-sm"
-                  >
-                    + Add Another Owner
-                  </button>
-                </div>
-              )}
-
               <div className="pt-4 flex space-x-4">
                 {fetchedOwnerData && (
                   <button
@@ -660,7 +396,6 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
                   )}
                 </button>
               </div>
-
               <div className={styles.termsTextContainer}>
                 <span>Terms and Conditions</span>
                 <span className="mx-2">•</span>

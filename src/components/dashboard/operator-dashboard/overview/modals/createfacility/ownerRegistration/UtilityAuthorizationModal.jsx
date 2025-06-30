@@ -12,7 +12,6 @@ import {
 
 export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
   const [loading, setLoading] = useState(false);
-  const [hasAuthorizedUtility, setHasAuthorizedUtility] = useState(false);
   const [utilityProviders, setUtilityProviders] = useState([]);
   const [selectedProvider, setSelectedProvider] = useState('');
   const [showProviderRequest, setShowProviderRequest] = useState(false);
@@ -24,23 +23,21 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
   const [utilityAuthEmail, setUtilityAuthEmail] = useState('');
   const [showIframe, setShowIframe] = useState(false);
   const [iframeUrl, setIframeUrl] = useState('');
-  const [authorizedUtilities, setAuthorizedUtilities] = useState([]);
-  const [selectedUtilityAuth, setSelectedUtilityAuth] = useState('');
   const [verifiedFacilities, setVerifiedFacilities] = useState([]);
   const [selectedFacilities, setSelectedFacilities] = useState([]);
   const [showFacilityModal, setShowFacilityModal] = useState(false);
   const [showAllFacilities, setShowAllFacilities] = useState(false);
+  const [ownerData, setOwnerData] = useState(null);
+  const [isLoadingOwner, setIsLoadingOwner] = useState(true);
 
   const baseUrl = 'https://services.dcarbon.solutions';
 
   useEffect(() => {
-    if (isOpen && !hasAuthorizedUtility) {
+    if (isOpen) {
+      fetchOwnerData();
       fetchUtilityProviders();
     }
-    if (isOpen && hasAuthorizedUtility) {
-      fetchAuthorizedUtilities();
-    }
-  }, [isOpen, hasAuthorizedUtility]);
+  }, [isOpen]);
 
   const getAuthToken = () => {
     return localStorage.getItem('authToken');
@@ -48,6 +45,40 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
 
   const getUserId = () => {
     return localStorage.getItem('userId');
+  };
+
+  const fetchOwnerData = async () => {
+    try {
+      const referralCode = localStorage.getItem('ownerReferralCode');
+      const authToken = getAuthToken();
+
+      if (!referralCode || !authToken) {
+        throw new Error('Referral code or authentication token missing');
+      }
+
+      const response = await fetch(
+        `${baseUrl}/api/user/by-referral-code/${referralCode}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch owner data');
+      }
+
+      setOwnerData(data.data);
+    } catch (error) {
+      toast.error(error.message || 'Failed to load owner data');
+    } finally {
+      setIsLoadingOwner(false);
+    }
   };
 
   const fetchUtilityProviders = async () => {
@@ -67,31 +98,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
     }
   };
 
-  const fetchAuthorizedUtilities = async () => {
-    try {
-      const response = await fetch(`${baseUrl}/api/auth/utility-auth/${getUserId()}`, {
-        headers: {
-          'Authorization': `Bearer ${getAuthToken()}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      const data = await response.json();
-      if (data.status === 'success') {
-        const validUtilities = data.data.filter(utility => 
-          utility.status === 'UPDATED' && 
-          utility.verificationToken && 
-          utility.meters && 
-          utility.meters.meters && 
-          utility.meters.meters.length > 0
-        );
-        setAuthorizedUtilities(validUtilities);
-      }
-    } catch (error) {
-      toast.error('Failed to fetch authorized utilities');
-    }
-  };
-
-  const fetchUserMeters = async (utilityId) => {
+  const fetchUserMeters = async () => {
     try {
       const response = await fetch(`${baseUrl}/api/auth/user-meters/${getUserId()}`, {
         headers: {
@@ -101,25 +108,13 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
       });
       const data = await response.json();
       if (data.status === 'success') {
-        const utility = data.data.find(u => u.id === utilityId);
+        const utility = data.data.find(u => u.utilityAuthEmail === utilityAuthEmail);
         if (utility && utility.meters && utility.meters.meters) {
           setVerifiedFacilities(utility.meters.meters);
         }
       }
     } catch (error) {
       toast.error('Failed to fetch user meters');
-    }
-  };
-
-  const handleUtilityAuthChange = (value) => {
-    setHasAuthorizedUtility(value);
-    if (!value) {
-      setUtilityAuthEmail('');
-      setSelectedUtilityAuth('');
-      setVerifiedFacilities([]);
-      setSelectedFacilities([]);
-    } else {
-      setSelectedProvider('');
     }
   };
 
@@ -193,7 +188,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
     }
   };
 
-  const handleVerifyUtilityAuth = async (verificationToken) => {
+  const handleVerifyUtilityAuth = async () => {
     setLoading(true);
     const toastId = toast.loading('Verifying utility authorization...');
 
@@ -205,7 +200,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          token: verificationToken
+          email: utilityAuthEmail
         })
       });
 
@@ -238,7 +233,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
     if (event.data && event.data.type === 'utility-auth-complete') {
       setShowIframe(false);
       toast.success('Utility authorization completed successfully!');
-      fetchAuthorizedUtilities();
+      fetchUserMeters();
     }
   };
 
@@ -252,24 +247,17 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (hasAuthorizedUtility) {
-      if (!selectedUtilityAuth) {
-        toast.error('Please select a utility authorization email');
-        return;
-      }
-      if (selectedFacilities.length === 0) {
-        toast.error('Please select at least one facility');
-        return;
-      }
-    } else {
-      if (!selectedProvider) {
-        toast.error('Please select a utility provider');
-        return;
-      }
-      if (!utilityAuthEmail) {
-        toast.error('Please enter your utility authorization email');
-        return;
-      }
+    if (!selectedProvider) {
+      toast.error('Please select a utility provider');
+      return;
+    }
+    if (!utilityAuthEmail) {
+      toast.error('Please enter your utility authorization email');
+      return;
+    }
+    if (verifiedFacilities.length > 0 && selectedFacilities.length === 0) {
+      toast.error('Please select at least one facility');
+      return;
     }
 
     setShowFacilityModal(true);
@@ -320,7 +308,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
 
   return (
     <>
-      {loading && (
+      {(loading || isLoadingOwner) && (
         <div className={spinnerOverlay}>
           <div className={spinner}></div>
         </div>
@@ -363,221 +351,187 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
           </div>
 
           <div className="flex-1 overflow-y-auto px-6 pb-6">
+            {ownerData && (
+              <div className="mb-6 border border-gray-200 rounded-lg p-4">
+                <h3 className="font-sfpro font-[600] text-[16px] mb-4">Owner Information</h3>
+                <div className="space-y-3">
+                  <div>
+                    <p className="font-sfpro text-[12px] text-gray-500">Full Name</p>
+                    <p className="font-sfpro text-[14px]">{`${ownerData.firstName} ${ownerData.lastName}`}</p>
+                  </div>
+                  <div>
+                    <p className="font-sfpro text-[12px] text-gray-500">Email</p>
+                    <p className="font-sfpro text-[14px]">{ownerData.email}</p>
+                  </div>
+                  <div>
+                    <p className="font-sfpro text-[12px] text-gray-500">Phone Number</p>
+                    <p className="font-sfpro text-[14px]">{ownerData.phoneNumber}</p>
+                  </div>
+                  {ownerData.commercialUser?.ownerAddress && (
+                    <div>
+                      <p className="font-sfpro text-[12px] text-gray-500">Address</p>
+                      <p className="font-sfpro text-[14px]">{ownerData.commercialUser.ownerAddress}</p>
+                    </div>
+                  )}
+                  {ownerData.commercialUser?.ownerWebsite && (
+                    <div>
+                      <p className="font-sfpro text-[12px] text-gray-500">Website</p>
+                      <p className="font-sfpro text-[14px]">{ownerData.commercialUser.ownerWebsite}</p>
+                    </div>
+                  )}
+                  <div>
+                    <p className="font-sfpro text-[12px] text-gray-500">Entity Type</p>
+                    <p className="font-sfpro text-[14px] capitalize">{ownerData.commercialUser?.entityType || 'individual'}</p>
+                  </div>
+                  <div>
+                    <p className="font-sfpro text-[12px] text-gray-500">Commercial Role</p>
+                    <p className="font-sfpro text-[14px] capitalize">{ownerData.commercialUser?.commercialRole || 'owner'}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label className={`${labelClass} text-sm mb-4 block`}>
-                  Do you have an authorized utility?
+                <label className={`${labelClass} text-sm mb-2 block`}>
+                  Input Utility Provider
                 </label>
-                <div className="flex items-center space-x-6">
-                  <label className="flex items-center">
+                <select
+                  value={selectedProvider}
+                  onChange={(e) => setSelectedProvider(e.target.value)}
+                  className={`${inputClass} text-sm w-full`}
+                >
+                  <option value="">Select Provider</option>
+                  {utilityProviders.map((provider) => (
+                    <option key={provider.id} value={provider.id}>
+                      {provider.name}
+                    </option>
+                  ))}
+                </select>
+                
+                <button
+                  type="button"
+                  onClick={() => setShowProviderRequest(!showProviderRequest)}
+                  className="text-[#039994] text-sm font-medium hover:underline mt-2"
+                >
+                  Utility Provider not listed?
+                </button>
+
+                {showProviderRequest && (
+                  <div className="mt-4 p-4 border border-gray-200 rounded-lg space-y-3">
+                    <h4 className="text-sm font-medium text-gray-700">Request New Provider</h4>
                     <input
-                      type="radio"
-                      name="hasAuthorizedUtility"
-                      checked={hasAuthorizedUtility === true}
-                      onChange={() => handleUtilityAuthChange(true)}
-                      className="w-4 h-4 text-[#039994] border-gray-300 focus:ring-[#039994] accent-[#039994]"
+                      type="text"
+                      placeholder="Provider Name"
+                      value={newProviderData.name}
+                      onChange={(e) => setNewProviderData({...newProviderData, name: e.target.value})}
+                      className={`${inputClass} text-sm w-full`}
                     />
-                    <span className="ml-2 text-sm font-sfpro text-[#1E1E1E]">Yes</span>
-                  </label>
-                  <label className="flex items-center">
                     <input
-                      type="radio"
-                      name="hasAuthorizedUtility"
-                      checked={hasAuthorizedUtility === false}
-                      onChange={() => handleUtilityAuthChange(false)}
-                      className="w-4 h-4 text-[#039994] border-gray-300 focus:ring-[#039994] accent-[#039994]"
+                      type="url"
+                      placeholder="Website URL"
+                      value={newProviderData.website}
+                      onChange={(e) => setNewProviderData({...newProviderData, website: e.target.value})}
+                      className={`${inputClass} text-sm w-full`}
                     />
-                    <span className="ml-2 text-sm font-sfpro text-[#1E1E1E]">No</span>
-                  </label>
+                    <input
+                      type="text"
+                      placeholder="Documentation (optional)"
+                      value={newProviderData.documentation}
+                      onChange={(e) => setNewProviderData({...newProviderData, documentation: e.target.value})}
+                      className={`${inputClass} text-sm w-full`}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleProviderRequest}
+                      disabled={loading}
+                      className="w-full px-4 py-2 bg-[#039994] text-white text-sm font-medium rounded-lg hover:bg-[#02857f] transition-colors disabled:opacity-50"
+                    >
+                      {loading ? 'Submitting...' : 'Submit Request'}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className={`${labelClass} text-sm mb-2 block`}>
+                  Utility authorization email
+                </label>
+                <div className="flex space-x-2">
+                  <input
+                    type="email"
+                    value={utilityAuthEmail}
+                    onChange={(e) => setUtilityAuthEmail(e.target.value)}
+                    placeholder="Email address"
+                    className={`${inputClass} flex-1 text-sm`}
+                  />
+                  <button
+                    type="button"
+                    onClick={verifiedFacilities.length > 0 ? handleVerifyUtilityAuth : handleVerifyEmail}
+                    disabled={loading || !utilityAuthEmail}
+                    className="px-4 py-2 bg-[#039994] text-white text-sm font-medium rounded-lg hover:bg-[#02857f] transition-colors disabled:opacity-50"
+                  >
+                    {verifiedFacilities.length > 0 ? 'Verify Again' : 'Verify'}
+                  </button>
                 </div>
               </div>
 
-              {hasAuthorizedUtility ? (
-                <div>
-                  <label className={`${labelClass} text-sm mb-2 block`}>
-                    Utility authorization email
-                  </label>
-                  <select
-                    value={selectedUtilityAuth}
-                    onChange={(e) => {
-                      setSelectedUtilityAuth(e.target.value);
-                      setVerifiedFacilities([]);
-                      setSelectedFacilities([]);
-                      setShowAllFacilities(false);
-                      fetchUserMeters(e.target.value);
-                    }}
-                    className={`${inputClass} text-sm w-full`}
-                  >
-                    <option value="">Select Email</option>
-                    {authorizedUtilities.map((utility) => (
-                      <option key={utility.id} value={utility.id}>
-                        {utility.utilityAuthEmail}
-                      </option>
-                    ))}
-                  </select>
-
-                  {selectedUtilityAuth && verifiedFacilities.length === 0 && (
-                    <div className="mt-4">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const selectedUtility = authorizedUtilities.find(u => u.id === selectedUtilityAuth);
-                          if (selectedUtility) {
-                            handleVerifyUtilityAuth(selectedUtility.verificationToken);
-                          }
-                        }}
-                        disabled={loading}
-                        className="px-4 py-2 bg-[#039994] text-white text-sm font-medium rounded-lg hover:bg-[#02857f] transition-colors disabled:opacity-50"
-                      >
-                        Verify
-                      </button>
-                    </div>
-                  )}
-
-                  {verifiedFacilities.length > 0 && (
-                    <div className="mt-6">
-                      <h3 className="text-lg font-semibold text-[#039994] mb-4">Facilities</h3>
-                      <div className="space-y-4">
-                        {displayedFacilities.map((meter) => (
-                          <div key={meter.uid} className="border border-gray-200 rounded-lg p-4">
-                            <div className="flex flex-col">
-                              <div className="flex-1">
-                                <div className="text-sm font-medium text-gray-900 mb-1">
-                                  Meter ID: {meter.uid}
-                                </div>
-                                <div className="text-xs text-gray-500 mb-2">
-                                  Meter Numbers: {meter.base?.meter_numbers?.join(', ') || 'N/A'}
-                                </div>
-                                <div className="text-xs text-gray-600 space-y-1">
-                                  <div><strong>Service Class:</strong> {meter.base?.service_class || 'N/A'}</div>
-                                  <div><strong>Service Tariff:</strong> {meter.base?.service_tariff || 'N/A'}</div>
-                                  <div><strong>Billing Address:</strong> {meter.base?.billing_address || 'N/A'}</div>
-                                </div>
-                              </div>
-                              <div className="mt-3 flex items-center justify-between">
-                                <span className="text-sm text-gray-700">
-                                  I agree to the Terms of Agreement
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    handleFacilitySelection(meter.uid, !selectedFacilities.includes(meter.uid));
-                                  }}
-                                  className={`w-6 h-6 rounded-full border-2 flex items-center justify-center 
-                                    ${selectedFacilities.includes(meter.uid) ? 'bg-[#039994] border-[#039994]' : 'border-gray-300'}`}
-                                >
-                                  {selectedFacilities.includes(meter.uid) && (
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                      <path d="M20 6L9 17L4 12" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                    </svg>
-                                  )}
-                                </button>
-                              </div>
+              {verifiedFacilities.length > 0 && (
+                <div className="mt-6">
+                  <h3 className="text-lg font-semibold text-[#039994] mb-4">Facilities</h3>
+                  <div className="space-y-4">
+                    {displayedFacilities.map((meter) => (
+                      <div key={meter.uid} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex flex-col">
+                          <div className="flex-1">
+                            <div className="text-sm font-medium text-gray-900 mb-1">
+                              Meter ID: {meter.uid}
+                            </div>
+                            <div className="text-xs text-gray-500 mb-2">
+                              Meter Numbers: {meter.base?.meter_numbers?.join(', ') || 'N/A'}
+                            </div>
+                            <div className="text-xs text-gray-600 space-y-1">
+                              <div><strong>Service Class:</strong> {meter.base?.service_class || 'N/A'}</div>
+                              <div><strong>Service Tariff:</strong> {meter.base?.service_tariff || 'N/A'}</div>
+                              <div><strong>Billing Address:</strong> {meter.base?.billing_address || 'N/A'}</div>
                             </div>
                           </div>
-                        ))}
-                      </div>
-                      {verifiedFacilities.length > 3 && !showAllFacilities && (
-                        <div className="text-center mt-4">
-                          <button
-                            type="button"
-                            onClick={() => setShowAllFacilities(true)}
-                            className="text-[#039994] text-sm font-medium hover:underline"
-                          >
-                            View more facilities
-                          </button>
+                          <div className="mt-3 flex items-center justify-between">
+                            <span className="text-sm text-gray-700">
+                              I agree to the Terms of Agreement
+                            </span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                handleFacilitySelection(meter.uid, !selectedFacilities.includes(meter.uid));
+                              }}
+                              className={`w-6 h-6 rounded-full border-2 flex items-center justify-center 
+                                ${selectedFacilities.includes(meter.uid) ? 'bg-[#039994] border-[#039994]' : 'border-gray-300'}`}
+                            >
+                              {selectedFacilities.includes(meter.uid) && (
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M20 6L9 17L4 12" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                              )}
+                            </button>
+                          </div>
                         </div>
-                      )}
+                      </div>
+                    ))}
+                  </div>
+                  {verifiedFacilities.length > 3 && !showAllFacilities && (
+                    <div className="text-center mt-4">
+                      <button
+                        type="button"
+                        onClick={() => setShowAllFacilities(true)}
+                        className="text-[#039994] text-sm font-medium hover:underline"
+                      >
+                        View more facilities
+                      </button>
                     </div>
                   )}
                 </div>
-              ) : (
-                <>
-                  <div>
-                    <label className={`${labelClass} text-sm mb-2 block`}>
-                      Input Utility Provider
-                    </label>
-                    <select
-                      value={selectedProvider}
-                      onChange={(e) => setSelectedProvider(e.target.value)}
-                      className={`${inputClass} text-sm w-full`}
-                    >
-                      <option value="">Select Provider</option>
-                      {utilityProviders.map((provider) => (
-                        <option key={provider.id} value={provider.id}>
-                          {provider.name}
-                        </option>
-                      ))}
-                    </select>
-                    
-                    <button
-                      type="button"
-                      onClick={() => setShowProviderRequest(!showProviderRequest)}
-                      className="text-[#039994] text-sm font-medium hover:underline mt-2"
-                    >
-                      Utility Provider not listed?
-                    </button>
-
-                    {showProviderRequest && (
-                      <div className="mt-4 p-4 border border-gray-200 rounded-lg space-y-3">
-                        <h4 className="text-sm font-medium text-gray-700">Request New Provider</h4>
-                        <input
-                          type="text"
-                          placeholder="Provider Name"
-                          value={newProviderData.name}
-                          onChange={(e) => setNewProviderData({...newProviderData, name: e.target.value})}
-                          className={`${inputClass} text-sm w-full`}
-                        />
-                        <input
-                          type="url"
-                          placeholder="Website URL"
-                          value={newProviderData.website}
-                          onChange={(e) => setNewProviderData({...newProviderData, website: e.target.value})}
-                          className={`${inputClass} text-sm w-full`}
-                        />
-                        <input
-                          type="text"
-                          placeholder="Documentation (optional)"
-                          value={newProviderData.documentation}
-                          onChange={(e) => setNewProviderData({...newProviderData, documentation: e.target.value})}
-                          className={`${inputClass} text-sm w-full`}
-                        />
-                        <button
-                          type="button"
-                          onClick={handleProviderRequest}
-                          disabled={loading}
-                          className="w-full px-4 py-2 bg-[#039994] text-white text-sm font-medium rounded-lg hover:bg-[#02857f] transition-colors disabled:opacity-50"
-                        >
-                          {loading ? 'Submitting...' : 'Submit Request'}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className={`${labelClass} text-sm mb-2 block`}>
-                      Utility authorization email
-                    </label>
-                    <div className="flex space-x-2">
-                      <input
-                        type="email"
-                        value={utilityAuthEmail}
-                        onChange={(e) => setUtilityAuthEmail(e.target.value)}
-                        placeholder="Email address"
-                        className={`${inputClass} flex-1 text-sm`}
-                      />
-                      <button
-                        type="button"
-                        onClick={handleVerifyEmail}
-                        disabled={loading || !utilityAuthEmail}
-                        className="px-4 py-2 bg-[#039994] text-white text-sm font-medium rounded-lg hover:bg-[#02857f] transition-colors disabled:opacity-50"
-                      >
-                        Verify
-                      </button>
-                    </div>
-                  </div>
-                </>
               )}
 
               <div className="pt-4 space-y-4">

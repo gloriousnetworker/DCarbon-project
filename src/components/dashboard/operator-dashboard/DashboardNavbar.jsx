@@ -11,37 +11,39 @@ const DashboardNavbar = ({
 }) => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotificationDot, setShowNotificationDot] = useState(false);
+  const [isOperator, setIsOperator] = useState(false);
 
   useEffect(() => {
-    const storedNotifications = localStorage.getItem('notifications');
+    const storedNotifications = localStorage.getItem("notifications");
     if (storedNotifications) {
       const notifications = JSON.parse(storedNotifications);
-      const unread = notifications.filter(n => !n.isRead).length;
+      const unread = notifications.filter((n) => !n.isRead).length;
       setUnreadCount(unread);
       setShowNotificationDot(unread > 0);
     }
-
+    const operatorFlag = JSON.parse(localStorage.getItem("isPartnerOperator") || "false");
+    setIsOperator(operatorFlag);
     const handleStorageChange = (e) => {
-      if (e.key === 'notifications') {
+      if (e.key === "notifications") {
         const notifications = JSON.parse(e.newValue);
-        const unread = notifications.filter(n => !n.isRead).length;
+        const unread = notifications.filter((n) => !n.isRead).length;
         setUnreadCount(unread);
         setShowNotificationDot(unread > 0);
-        if (unread > unreadCount) {
-          flashNotificationDot();
-        }
+        if (unread > unreadCount) flashNotificationDot();
+      }
+      if (e.key === "isPartnerOperator") {
+        setIsOperator(JSON.parse(e.newValue));
       }
     };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
   }, [unreadCount]);
 
   const flashNotificationDot = () => {
     let flashCount = 0;
     const maxFlashes = 3;
     const interval = setInterval(() => {
-      setShowNotificationDot(prev => !prev);
+      setShowNotificationDot((prev) => !prev);
       flashCount++;
       if (flashCount >= maxFlashes * 2) {
         clearInterval(interval);
@@ -60,6 +62,11 @@ const DashboardNavbar = ({
           <h1 className="font-[550] text-[16px] leading-[50%] tracking-[-0.05em] text-[#1E1E1E] font-sfpro text-center">
             {sectionDisplayMap[selectedSection]}
           </h1>
+          {isOperator && (
+            <span className="ml-2 px-2 py-1 rounded-md text-xs font-semibold bg-[#039994] text-white">
+              Operator
+            </span>
+          )}
         </div>
 
         <div className="flex-1 flex justify-center mx-4">
@@ -86,13 +93,11 @@ const DashboardNavbar = ({
               <FaBell className="text-[#039994]" size={20} />
               {showNotificationDot && unreadCount > 0 && (
                 <>
-                  <span className="absolute -top-1 -right-1 block h-2 w-2 rounded-full bg-red-500 animate-ping" />
-                  <span className="absolute -top-1 -right-1 block h-2 w-2 rounded-full bg-red-500" />
-                  {unreadCount > 0 && (
-                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                      {unreadCount}
-                    </span>
-                  )}
+                  <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-red-500 animate-ping" />
+                  <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-red-500" />
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                    {unreadCount}
+                  </span>
                 </>
               )}
             </button>

@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import { FaBars, FaSearch, FaBell, FaHeadset } from "react-icons/fa";
+import WelcomeModal from "../commercial-dashboard/overview/modals/WelcomeModal";
+import CommercialRegistrationModal from "../commercial-dashboard/overview/modals/createfacility/CommercialRegistrationModal";
 
 const DashboardNavbar = ({
   toggleSidebar,
@@ -11,37 +13,49 @@ const DashboardNavbar = ({
 }) => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotificationDot, setShowNotificationDot] = useState(false);
+  const [registrationStep, setRegistrationStep] = useState(1);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  const [showRegistrationModal, setShowRegistrationModal] = useState(false);
 
   useEffect(() => {
-    const storedNotifications = localStorage.getItem('notifications');
+    const storedUser = localStorage.getItem("loginResponse");
+    if (storedUser) {
+      const userData = JSON.parse(storedUser);
+      setRegistrationStep(userData.data.user.registrationStep || 1);
+    }
+
+    const storedNotifications = localStorage.getItem("notifications");
     if (storedNotifications) {
       const notifications = JSON.parse(storedNotifications);
-      const unread = notifications.filter(n => !n.isRead).length;
+      const unread = notifications.filter((n) => !n.isRead).length;
       setUnreadCount(unread);
       setShowNotificationDot(unread > 0);
     }
 
     const handleStorageChange = (e) => {
-      if (e.key === 'notifications') {
+      if (e.key === "notifications") {
         const notifications = JSON.parse(e.newValue);
-        const unread = notifications.filter(n => !n.isRead).length;
+        const unread = notifications.filter((n) => !n.isRead).length;
         setUnreadCount(unread);
         setShowNotificationDot(unread > 0);
         if (unread > unreadCount) {
           flashNotificationDot();
         }
+      } else if (e.key === "loginResponse") {
+        const userData = JSON.parse(e.newValue);
+        setRegistrationStep(userData.data.user.registrationStep || 1);
       }
     };
 
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
   }, [unreadCount]);
 
   const flashNotificationDot = () => {
     let flashCount = 0;
     const maxFlashes = 3;
     const interval = setInterval(() => {
-      setShowNotificationDot(prev => !prev);
+      setShowNotificationDot((prev) => !prev);
       flashCount++;
       if (flashCount >= maxFlashes * 2) {
         clearInterval(interval);
@@ -50,63 +64,114 @@ const DashboardNavbar = ({
     }, 300);
   };
 
+  const handleRegistrationClick = () => {
+    if (registrationStep === 1) {
+      setShowWelcomeModal(true);
+    } else {
+      setShowRegistrationModal(true);
+    }
+  };
+
+  const getProgressWidth = () => `${(registrationStep / 5) * 100}%`;
+
+  const getTooltipText = () =>
+    registrationStep === 5
+      ? "Registration complete! You can now generate facilities"
+      : `Complete registration step ${registrationStep} of 5`;
+
   return (
-    <header className="bg-white border-b border-gray-200">
-      <div className="max-w-full px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <button className="md:hidden" onClick={toggleSidebar}>
-            <FaBars className="text-gray-700" size={20} />
-          </button>
-          <h1 className="font-[550] text-[16px] leading-[50%] tracking-[-0.05em] text-[#1E1E1E] font-sfpro text-center">
-            {sectionDisplayMap[selectedSection]}
-          </h1>
-        </div>
-
-        <div className="flex-1 flex justify-center mx-4">
-          <div className="relative w-full max-w-md">
-            <span className="absolute inset-y-0 left-0 flex items-center">
-              <div className="bg-[#039994] h-full px-3 flex items-center justify-center rounded-l-md">
-                <FaSearch className="text-white" size={14} />
-              </div>
-            </span>
-            <input
-              type="text"
-              placeholder="Search"
-              className="w-full pl-12 pr-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#039994]"
-            />
+    <>
+      <header className="bg-white border-b border-gray-200">
+        <div className="max-w-full px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <button className="md:hidden" onClick={toggleSidebar}>
+              <FaBars className="text-gray-700" size={20} />
+            </button>
+            <h1 className="font-[550] text-[16px] leading-[50%] tracking-[-0.05em] text-[#1E1E1E] font-sfpro text-center">
+              {sectionDisplayMap[selectedSection]}
+            </h1>
           </div>
-        </div>
 
-        <div className="flex items-center space-x-6">
-          <div className="relative">
-            <button
-              onClick={() => onSectionChange("notifications")}
-              className="focus:outline-none relative"
-            >
-              <FaBell className="text-[#039994]" size={20} />
-              {showNotificationDot && unreadCount > 0 && (
-                <>
-                  <span className="absolute -top-1 -right-1 block h-2 w-2 rounded-full bg-red-500 animate-ping" />
-                  <span className="absolute -top-1 -right-1 block h-2 w-2 rounded-full bg-red-500" />
-                  {unreadCount > 0 && (
+          <div className="flex-1 flex justify-center mx-4">
+            <div className="relative w-full max-w-md">
+              <span className="absolute inset-y-0 left-0 flex items-center">
+                <div className="bg-[#039994] h-full px-3 flex items-center justify-center rounded-l-md">
+                  <FaSearch className="text-white" size={14} />
+                </div>
+              </span>
+              <input
+                type="text"
+                placeholder="Search"
+                className="w-full pl-12 pr-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#039994]"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-6">
+            <div className="relative group">
+              <div
+                onClick={handleRegistrationClick}
+                className="cursor-pointer px-4 py-2 bg-gray-100 rounded-md flex items-center"
+              >
+                <div className="w-32 h-2 bg-gray-200 rounded-full mr-3">
+                  <div
+                    className={`h-2 rounded-full ${
+                      registrationStep === 5 ? "bg-green-500" : "bg-[#039994]"
+                    }`}
+                    style={{ width: getProgressWidth() }}
+                  ></div>
+                </div>
+                <span className="text-xs font-medium">
+                  Step {registrationStep} of 5
+                </span>
+              </div>
+              <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 transform hidden group-hover:block">
+                <div className="relative bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
+                  {getTooltipText()}
+                  <span className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-800 rotate-45"></span>
+                </div>
+              </div>
+            </div>
+
+            <div className="relative">
+              <button
+                onClick={() => onSectionChange("notifications")}
+                className="focus:outline-none relative"
+              >
+                <FaBell className="text-[#039994]" size={20} />
+                {showNotificationDot && unreadCount > 0 && (
+                  <>
+                    <span className="absolute -top-1 -right-1 block h-2 w-2 rounded-full bg-red-500 animate-ping" />
+                    <span className="absolute -top-1 -right-1 block h-2 w-2 rounded-full bg-red-500" />
                     <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
                       {unreadCount}
                     </span>
-                  )}
-                </>
-              )}
+                  </>
+                )}
+              </button>
+            </div>
+
+            <button
+              onClick={() => onSectionChange("contactSupport")}
+              className="focus:outline-none"
+            >
+              <FaHeadset className="text-[#039994]" size={20} />
             </button>
           </div>
-
-          <button
-            onClick={() => onSectionChange("contactSupport")}
-            className="focus:outline-none"
-          >
-            <FaHeadset className="text-[#039994]" size={20} />
-          </button>
         </div>
-      </div>
-    </header>
+      </header>
+
+      <WelcomeModal
+        isOpen={showWelcomeModal}
+        onClose={() => setShowWelcomeModal(false)}
+      />
+
+      <CommercialRegistrationModal
+        isOpen={showRegistrationModal}
+        onClose={() => setShowRegistrationModal(false)}
+        currentStep={registrationStep}
+      />
+    </>
   );
 };
 
