@@ -109,9 +109,10 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
 
     setRequestingFinanceType(true);
     try {
-      const userId = localStorage.getItem('userId');
-      const token = localStorage.getItem('authToken');
-      
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const userId = loginResponse?.data?.user?.id;
+      const token = loginResponse?.data?.token;
+
       if (!userId || !token) throw new Error('Authentication required');
 
       const response = await axios.post(
@@ -250,7 +251,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
       )}
 
       {showRequestModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
             <h3 className="text-lg font-semibold mb-4">Request Finance Type</h3>
             <div className="mb-4">
@@ -288,8 +289,8 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
         </div>
       )}
 
-      {!showInviteOperatorModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+      {!showInviteOperatorModal && !showRequestModal && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black bg-opacity-50 p-4">
           <div className="relative w-full max-w-lg bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
             <div className="relative p-6 pb-4">
               {onBack && (

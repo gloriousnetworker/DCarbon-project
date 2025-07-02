@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
+import { toast } from 'react-hot-toast';
 
 const QuickActions = dynamic(() => import("./QuickActions"), { ssr: false });
 const Graph = dynamic(() => import("./Graph"), { ssr: false });
@@ -12,34 +13,74 @@ export default function DashboardOverview() {
   const [showAddUtilityModal, setShowAddUtilityModal] = useState(false);
   const [userData, setUserData] = useState({
     userFirstName: "",
+    userId: ""
   });
   const [isFirstTimeUser, setIsFirstTimeUser] = useState(false);
+  const [isCheckingCommercialStatus, setIsCheckingCommercialStatus] = useState(false);
 
   useEffect(() => {
-    const loadUserData = () => {
+    const loadUserData = async () => {
       if (typeof window === 'undefined') return;
       
-      const firstName = localStorage.getItem("userFirstName") || "User";
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const firstName = loginResponse?.data?.user?.firstName || "User";
+      const userId = loginResponse?.data?.user?.id || "";
       
       setUserData({
         userFirstName: firstName,
+        userId: userId
       });
 
       // Check if this is a first-time user
       const hasVisitedBefore = localStorage.getItem("hasVisitedDashboard");
       if (!hasVisitedBefore) {
         setIsFirstTimeUser(true);
-        // Show welcome modal after a short delay
-        const timer = setTimeout(() => {
-          setShowWelcomeModal(true);
-        }, 1000);
-
-        return () => clearTimeout(timer);
       }
+
+      // Always check commercial user status
+      await checkCommercialUserStatus(userId);
     };
 
     loadUserData();
   }, []);
+
+  const checkCommercialUserStatus = async (userId) => {
+    if (!userId) return;
+    
+    setIsCheckingCommercialStatus(true);
+    
+    try {
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const authToken = loginResponse?.data?.token;
+
+      if (!authToken) {
+        throw new Error('Authentication data not found');
+      }
+
+      const response = await fetch(`https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      });
+
+      const result = await response.json();
+
+      if (result.statusCode === 422 && result.status === 'fail') {
+        // User is not a commercial user, show welcome modal
+        setShowWelcomeModal(true);
+      } else if (result.statusCode !== 200 || result.status !== 'success') {
+        // Unexpected response, still show modal to be safe
+        setShowWelcomeModal(true);
+      }
+    } catch (error) {
+      console.error('Error checking commercial status:', error);
+      // On error, show modal to ensure user can complete registration
+      setShowWelcomeModal(true);
+    } finally {
+      setIsCheckingCommercialStatus(false);
+    }
+  };
 
   const handleCloseWelcomeModal = () => {
     setShowWelcomeModal(false);
@@ -54,6 +95,16 @@ export default function DashboardOverview() {
   const handleCloseAddUtilityModal = () => {
     setShowAddUtilityModal(false);
   };
+
+  if (isCheckingCommercialStatus) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="flex items-center justify-center">
+          <div className="w-12 h-12 border-4 border-gray-300 border-t-[#039994] rounded-full animate-spin"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full min-h-screen space-y-8 p-4">
@@ -76,8 +127,8 @@ export default function DashboardOverview() {
 
       <RecentRecSales />
 
-      {/* Welcome Modal - only show for first-time users */}
-      {showWelcomeModal && isFirstTimeUser && (
+      {/* Welcome Modal - show if user is not commercial user or first-time user */}
+      {showWelcomeModal && (
         <WelcomeModal 
           isOpen 
           onClose={handleCloseWelcomeModal}

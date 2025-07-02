@@ -44,15 +44,15 @@ export default function WelcomeModal({ isOpen, onClose, userData }) {
 
       const result = await response.json();
 
-      if (result.statusCode === 200 && result.status === 'success') {
-        onClose();
-      } else if (result.statusCode === 422 && result.status === 'fail') {
+      if (result.statusCode === 422 && result.status === 'fail') {
         const { firstName, lastName } = loginResponse.data.user;
         setFormData(prev => ({
           ...prev,
           ownerFullName: `${firstName || ''} ${lastName || ''}`.trim()
         }));
         setShowCommercialForm(true);
+      } else if (result.statusCode === 200 && result.status === 'success') {
+        onClose();
       } else {
         throw new Error('Unexpected response');
       }
@@ -158,7 +158,6 @@ export default function WelcomeModal({ isOpen, onClose, userData }) {
   };
 
   const handleWelcomeModalClose = () => {
-    // Refresh the page when X button is clicked in welcome modal
     window.location.reload();
   };
 
@@ -260,7 +259,6 @@ export default function WelcomeModal({ isOpen, onClose, userData }) {
                   )}
                 </button>
 
-                {/* Terms and Conditions & Privacy Policy */}
                 <div className={styles.termsTextContainer}>
                   <p>
                     By continuing, you agree to our{' '}
@@ -344,7 +342,6 @@ export default function WelcomeModal({ isOpen, onClose, userData }) {
                   )}
                 </button>
 
-                {/* Terms and Conditions & Privacy Policy */}
                 <div className="text-center">
                   <p className="font-sfpro text-[10px] font-[800] leading-[100%] tracking-[-0.05em] underline text-white">
                     By continuing, you agree to our{' '}

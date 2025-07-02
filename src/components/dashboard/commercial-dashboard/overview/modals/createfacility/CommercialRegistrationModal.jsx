@@ -223,7 +223,7 @@ export default function CommercialRegistrationModal({ isOpen, onClose }) {
 
   return (
     <>
-      {isOpen && (
+      {isOpen && !currentModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
           <div className="relative w-full max-w-md bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
             <button
@@ -345,7 +345,7 @@ export default function CommercialRegistrationModal({ isOpen, onClose }) {
 
                   {!loading && isRoleSelectionDisabled() && (
                     <div className="mb-4 p-2 bg-yellow-50 border border-yellow-200 rounded text-yellow-700 text-xs">
-                      Your commercial role is already set as {getCurrentRoleDisplay()} and cannot be changed.
+                      Your commercial role is already set as {getCurrentRoleDisplay()} and can be changed with the Change Role Details link above.
                     </div>
                   )}
 
