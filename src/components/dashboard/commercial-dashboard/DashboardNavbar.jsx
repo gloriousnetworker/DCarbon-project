@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import { FaBars, FaSearch, FaBell, FaHeadset } from "react-icons/fa";
-import WelcomeModal from "../commercial-dashboard/overview/modals/WelcomeModal";
 import CommercialRegistrationModal from "../commercial-dashboard/overview/modals/createfacility/CommercialRegistrationModal";
 
 const DashboardNavbar = ({
@@ -14,7 +13,6 @@ const DashboardNavbar = ({
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotificationDot, setShowNotificationDot] = useState(false);
   const [registrationStep, setRegistrationStep] = useState(1);
-  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [showRegistrationModal, setShowRegistrationModal] = useState(false);
 
   useEffect(() => {
@@ -57,7 +55,7 @@ const DashboardNavbar = ({
     const interval = setInterval(() => {
       setShowNotificationDot((prev) => !prev);
       flashCount++;
-      if (flashCount >= maxFlashes * 2) {
+      if (flashCount >= maxFlashtoast * 2) {
         clearInterval(interval);
         setShowNotificationDot(true);
       }
@@ -65,19 +63,32 @@ const DashboardNavbar = ({
   };
 
   const handleRegistrationClick = () => {
-    if (registrationStep === 1) {
-      setShowWelcomeModal(true);
-    } else {
-      setShowRegistrationModal(true);
-    }
+    setShowRegistrationModal(true);
   };
 
   const getProgressWidth = () => `${(registrationStep / 5) * 100}%`;
 
-  const getTooltipText = () =>
-    registrationStep === 5
-      ? "Registration complete! You can now generate facilities"
-      : `Complete registration step ${registrationStep} of 5`;
+  const getProgressColor = () => {
+    switch(registrationStep) {
+      case 1: return "bg-blue-500";
+      case 2: return "bg-purple-500";
+      case 3: return "bg-yellow-500";
+      case 4: return "bg-orange-500";
+      case 5: return "bg-green-500";
+      default: return "bg-[#039994]";
+    }
+  };
+
+  const getTooltipText = () => {
+    switch(registrationStep) {
+      case 1: return "Initial Commercial Registration completed";
+      case 2: return "Commercial Owner's details completed";
+      case 3: return "Agreements have been completed";
+      case 4: return "Finance Information has been completed";
+      case 5: return "Utility Authorization completed. You can now generate facilities";
+      default: return `Complete registration step ${registrationStep} of 5`;
+    }
+  };
 
   return (
     <>
@@ -111,13 +122,11 @@ const DashboardNavbar = ({
             <div className="relative group">
               <div
                 onClick={handleRegistrationClick}
-                className="cursor-pointer px-4 py-2 bg-gray-100 rounded-md flex items-center"
+                className="cursor-pointer px-4 py-2 bg-gray-100 rounded-md flex items-center hover:bg-gray-200 transition-colors"
               >
                 <div className="w-32 h-2 bg-gray-200 rounded-full mr-3">
                   <div
-                    className={`h-2 rounded-full ${
-                      registrationStep === 5 ? "bg-green-500" : "bg-[#039994]"
-                    }`}
+                    className={`h-2 rounded-full ${getProgressColor()}`}
                     style={{ width: getProgressWidth() }}
                   ></div>
                 </div>
@@ -160,11 +169,6 @@ const DashboardNavbar = ({
           </div>
         </div>
       </header>
-
-      <WelcomeModal
-        isOpen={showWelcomeModal}
-        onClose={() => setShowWelcomeModal(false)}
-      />
 
       <CommercialRegistrationModal
         isOpen={showRegistrationModal}

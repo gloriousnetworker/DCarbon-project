@@ -2,10 +2,13 @@ import React, { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import OwnerTermsAndAgreementModal from './OwnerTermsAndAgreementModal';
 import FinanceAndInstallerModal from './FinanceAndInstallerModal';
+import OperatorFinanceAndInstallerModal from '../ownerAndOperatorRegistration/FinanceAndInstallerModal';
+import * as styles from '../../styles';
 
 export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
   const [isMultipleOwners, setIsMultipleOwners] = useState(false);
   const [showFinanceModal, setShowFinanceModal] = useState(false);
+  const [showOperatorFinanceModal, setShowOperatorFinanceModal] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [ownerDetails, setOwnerDetails] = useState({
     ownerFullName: "",
@@ -31,6 +34,8 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
   }]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [showRoleDropdown, setShowRoleDropdown] = useState(false);
+  const [commercialRole, setCommercialRole] = useState('owner');
 
   useEffect(() => {
     if (isOpen) {
@@ -77,6 +82,10 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
           zipCode: addressParts[4] || "",
           ownerWebsite: commercialUser.ownerWebsite || ""
         });
+
+        if (commercialUser.commercialRole) {
+          setCommercialRole(commercialUser.commercialRole);
+        }
 
         if (commercialUser.multipleUsers && commercialUser.multipleUsers.length > 0) {
           setIsMultipleOwners(true);
@@ -167,7 +176,7 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
 
       const payload = {
         entityType: "individual",
-        commercialRole: "owner",
+        commercialRole: commercialRole,
         ownerFullName: ownerDetails.ownerFullName,
         phoneNumber: ownerDetails.phoneNumber,
         ownerAddress: ownerAddress,
@@ -208,7 +217,12 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
       }
 
       toast.success('Owner details saved successfully!');
-      setShowTermsModal(true);
+      
+      if (commercialRole === 'both') {
+        setShowOperatorFinanceModal(true);
+      } else {
+        setShowTermsModal(true);
+      }
     } catch (error) {
       console.error('Error saving owner details:', error);
       toast.error(error.message || 'Failed to save owner details');
@@ -231,12 +245,40 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
     setShowFinanceModal(false);
   };
 
+  const handleOperatorFinanceModalClose = () => {
+    setShowOperatorFinanceModal(false);
+    onClose();
+  };
+
+  const handleOperatorFinanceModalBack = () => {
+    setShowOperatorFinanceModal(false);
+  };
+
+  const toggleRoleDropdown = () => {
+    setShowRoleDropdown(!showRoleDropdown);
+  };
+
+  const handleRoleChange = (role) => {
+    setCommercialRole(role);
+    setShowRoleDropdown(false);
+  };
+
   if (showFinanceModal) {
     return (
       <FinanceAndInstallerModal
         isOpen={showFinanceModal}
         onClose={handleFinanceModalClose}
         onBack={handleFinanceModalBack}
+      />
+    );
+  }
+
+  if (showOperatorFinanceModal) {
+    return (
+      <OperatorFinanceAndInstallerModal
+        isOpen={showOperatorFinanceModal}
+        onClose={handleOperatorFinanceModalClose}
+        onBack={handleOperatorFinanceModalBack}
       />
     );
   }
@@ -255,8 +297,8 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
   return (
     <>
       {isLoading && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="w-8 h-8 border-4 border-[#039994] border-t-transparent rounded-full animate-spin"></div>
+        <div className={styles.spinnerOverlay}>
+          <div className={styles.spinner}></div>
         </div>
       )}
       
@@ -266,7 +308,7 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
             {onBack && (
               <button
                 onClick={onBack}
-                className="absolute left-6 top-6 text-[#039994] hover:text-[#02857f]"
+                className={styles.backArrow}
               >
                 <svg
                   width="20"
@@ -307,22 +349,50 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
               </svg>
             </button>
 
-            <h2 className="font-[600] text-[20px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro mt-8 text-center">
-              Owner's Details
-            </h2>
-
-            <div className="flex items-center mt-4 mb-2">
-              <div className="flex-1 h-1 bg-gray-200 rounded-full mr-4">
-                <div className="h-1 bg-[#039994] rounded-full" style={{ width: '50%' }}></div>
+            <div className="flex justify-between items-center mb-2">
+              <h2 className={styles.pageTitle}>
+                Owner's Details
+              </h2>
+              <div className="relative">
+                <button
+                  onClick={toggleRoleDropdown}
+                  className="text-[#039994] text-sm font-medium underline hover:text-[#02857f]"
+                >
+                  Change Role
+                </button>
+                {showRoleDropdown && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
+                    <div className="py-1">
+                      <button
+                        onClick={() => handleRoleChange('owner')}
+                        className={`block w-full text-left px-4 py-2 text-sm ${commercialRole === 'owner' ? 'bg-gray-100 text-[#039994]' : 'text-gray-700 hover:bg-gray-100'}`}
+                      >
+                        Owner
+                      </button>
+                      <button
+                        onClick={() => handleRoleChange('both')}
+                        className={`block w-full text-left px-4 py-2 text-sm ${commercialRole === 'both' ? 'bg-gray-100 text-[#039994]' : 'text-gray-700 hover:bg-gray-100'}`}
+                      >
+                        Owner & Operator
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
-              <span className="text-sm font-medium text-gray-500 font-sfpro">02/04</span>
+            </div>
+
+            <div className={styles.progressContainer}>
+              <div className={styles.progressBarWrapper}>
+                <div className={styles.progressBarActive}></div>
+              </div>
+              <span className={styles.progressStepText}>02/04</span>
             </div>
           </div>
 
           <div className="flex-1 overflow-y-auto px-6 pb-6">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block mb-2 text-sm font-medium text-[#1E1E1E] font-sfpro">
+                <label className={styles.labelClass}>
                   Generator Owner <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -331,13 +401,13 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
                   value={ownerDetails.ownerFullName}
                   onChange={handleInputChange}
                   placeholder="Full name"
-                  className="w-full p-3 text-sm text-[#1E1E1E] bg-[#F0F0F0] rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] placeholder-[#626060]"
+                  className={`${styles.inputClass} ${styles.grayPlaceholder}`}
                   required
                 />
               </div>
 
               <div>
-                <label className="block mb-2 text-sm font-medium text-[#1E1E1E] font-sfpro">
+                <label className={styles.labelClass}>
                   Phone Number <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -346,13 +416,13 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
                   value={ownerDetails.phoneNumber}
                   onChange={handleInputChange}
                   placeholder="Phone Number"
-                  className="w-full p-3 text-sm text-[#1E1E1E] bg-[#F0F0F0] rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] placeholder-[#626060]"
+                  className={`${styles.inputClass} ${styles.grayPlaceholder}`}
                   required
                 />
               </div>
 
               <div>
-                <label className="block mb-2 text-sm font-medium text-[#1E1E1E] font-sfpro">
+                <label className={styles.labelClass}>
                   Address 1 <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -361,13 +431,13 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
                   value={ownerDetails.address1}
                   onChange={handleInputChange}
                   placeholder="Street address"
-                  className="w-full p-3 text-sm text-[#1E1E1E] bg-[#F0F0F0] rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] placeholder-[#626060]"
+                  className={`${styles.inputClass} ${styles.grayPlaceholder}`}
                   required
                 />
               </div>
 
               <div>
-                <label className="block mb-2 text-sm font-medium text-[#1E1E1E] font-sfpro">
+                <label className={styles.labelClass}>
                   Address 2
                 </label>
                 <input
@@ -376,13 +446,13 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
                   value={ownerDetails.address2}
                   onChange={handleInputChange}
                   placeholder="Apt, suite, unit, etc."
-                  className="w-full p-3 text-sm text-[#1E1E1E] bg-[#F0F0F0] rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] placeholder-[#626060]"
+                  className={`${styles.inputClass} ${styles.grayPlaceholder}`}
                 />
               </div>
 
-              <div className="flex space-x-4">
-                <div className="flex-1">
-                  <label className="block mb-2 text-sm font-medium text-[#1E1E1E] font-sfpro">
+              <div className={styles.rowWrapper}>
+                <div className={styles.halfWidth}>
+                  <label className={styles.labelClass}>
                     City <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -391,12 +461,12 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
                     value={ownerDetails.city}
                     onChange={handleInputChange}
                     placeholder="City"
-                    className="w-full p-3 text-sm text-[#1E1E1E] bg-[#F0F0F0] rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] placeholder-[#626060]"
+                    className={`${styles.inputClass} ${styles.grayPlaceholder}`}
                     required
                   />
                 </div>
-                <div className="flex-1">
-                  <label className="block mb-2 text-sm font-medium text-[#1E1E1E] font-sfpro">
+                <div className={styles.halfWidth}>
+                  <label className={styles.labelClass}>
                     State <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -405,14 +475,14 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
                     value={ownerDetails.state}
                     onChange={handleInputChange}
                     placeholder="State"
-                    className="w-full p-3 text-sm text-[#1E1E1E] bg-[#F0F0F0] rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] placeholder-[#626060]"
+                    className={`${styles.inputClass} ${styles.grayPlaceholder}`}
                     required
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block mb-2 text-sm font-medium text-[#1E1E1E] font-sfpro">
+                <label className={styles.labelClass}>
                   Zip Code <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -421,13 +491,13 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
                   value={ownerDetails.zipCode}
                   onChange={handleInputChange}
                   placeholder="Zip code"
-                  className="w-full p-3 text-sm text-[#1E1E1E] bg-[#F0F0F0] rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] placeholder-[#626060]"
+                  className={`${styles.inputClass} ${styles.grayPlaceholder}`}
                   required
                 />
               </div>
 
               <div>
-                <label className="block mb-2 text-sm font-medium text-[#1E1E1E] font-sfpro">
+                <label className={styles.labelClass}>
                   Website details
                 </label>
                 <input
@@ -436,13 +506,13 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
                   value={ownerDetails.ownerWebsite}
                   onChange={handleInputChange}
                   placeholder="http://"
-                  className="w-full p-3 text-sm text-[#1E1E1E] bg-[#F0F0F0] rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] placeholder-[#626060]"
+                  className={`${styles.inputClass} ${styles.grayPlaceholder}`}
                 />
               </div>
 
               <div>
                 <div className="flex items-center justify-between">
-                  <label className="block mb-2 text-sm font-medium text-[#1E1E1E] font-sfpro">
+                  <label className={styles.labelClass}>
                     Multiple Owners?
                   </label>
                   <div className="flex items-center space-x-4">
@@ -454,7 +524,7 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
                         onChange={() => setIsMultipleOwners(true)}
                         className="w-4 h-4 text-[#039994] border-gray-300 focus:ring-[#039994] accent-[#039994]"
                       />
-                      <span className="ml-2 text-sm font-sfpro text-[#1E1E1E]">Yes</span>
+                      <span className={`ml-2 ${styles.labelClass}`}>Yes</span>
                     </label>
                     <label className="flex items-center">
                       <input
@@ -464,7 +534,7 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
                         onChange={() => setIsMultipleOwners(false)}
                         className="w-4 h-4 text-[#039994] border-gray-300 focus:ring-[#039994] accent-[#039994]"
                       />
-                      <span className="ml-2 text-sm font-sfpro text-[#1E1E1E]">No</span>
+                      <span className={`ml-2 ${styles.labelClass}`}>No</span>
                     </label>
                   </div>
                 </div>
@@ -503,57 +573,57 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
                       </div>
 
                       <div className="space-y-3">
-                        <div className="flex space-x-4">
-                          <div className="flex-1">
+                        <div className={styles.rowWrapper}>
+                          <div className={styles.halfWidth}>
                             <input
                               type="text"
                               name="fullName"
                               value={owner.fullName}
                               onChange={(e) => handleAdditionalOwnerChange(index, e)}
                               placeholder="Full name *"
-                              className="w-full p-3 text-sm text-[#1E1E1E] bg-[#F0F0F0] rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] placeholder-[#626060]"
+                              className={`${styles.inputClass} ${styles.grayPlaceholder}`}
                               required
                             />
                           </div>
-                          <div className="flex-1">
+                          <div className={styles.halfWidth}>
                             <input
                               type="text"
                               name="ownershipPercentage"
                               value={owner.ownershipPercentage}
                               onChange={(e) => handleAdditionalOwnerChange(index, e)}
                               placeholder="% ownership"
-                              className="w-full p-3 text-sm text-[#1E1E1E] bg-[#F0F0F0] rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] placeholder-[#626060]"
+                              className={`${styles.inputClass} ${styles.grayPlaceholder}`}
                             />
                           </div>
                         </div>
 
-                        <div className="flex space-x-4">
-                          <div className="flex-1">
+                        <div className={styles.rowWrapper}>
+                          <div className={styles.halfWidth}>
                             <input
                               type="email"
                               name="email"
                               value={owner.email}
                               onChange={(e) => handleAdditionalOwnerChange(index, e)}
                               placeholder="Email address *"
-                              className="w-full p-3 text-sm text-[#1E1E1E] bg-[#F0F0F0] rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] placeholder-[#626060]"
+                              className={`${styles.inputClass} ${styles.grayPlaceholder}`}
                               required
                             />
                           </div>
-                          <div className="flex-1">
+                          <div className={styles.halfWidth}>
                             <input
                               type="tel"
                               name="phoneNumber"
                               value={owner.phoneNumber}
                               onChange={(e) => handleAdditionalOwnerChange(index, e)}
                               placeholder="Phone Number *"
-                              className="w-full p-3 text-sm text-[#1E1E1E] bg-[#F0F0F0] rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] placeholder-[#626060]"
+                              className={`${styles.inputClass} ${styles.grayPlaceholder}`}
                               required
                             />
                           </div>
                         </div>
 
                         <div>
-                          <label className="block mb-2 text-sm font-medium text-[#1E1E1E] font-sfpro">
+                          <label className={styles.labelClass}>
                             Address 1
                           </label>
                           <input
@@ -562,12 +632,12 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
                             value={owner.address1}
                             onChange={(e) => handleAdditionalOwnerChange(index, e)}
                             placeholder="Street address"
-                            className="w-full p-3 text-sm text-[#1E1E1E] bg-[#F0F0F0] rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] placeholder-[#626060]"
+                            className={`${styles.inputClass} ${styles.grayPlaceholder}`}
                           />
                         </div>
 
                         <div>
-                          <label className="block mb-2 text-sm font-medium text-[#1E1E1E] font-sfpro">
+                          <label className={styles.labelClass}>
                             Address 2
                           </label>
                           <input
@@ -576,13 +646,13 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
                             value={owner.address2}
                             onChange={(e) => handleAdditionalOwnerChange(index, e)}
                             placeholder="Apt, suite, unit, etc."
-                            className="w-full p-3 text-sm text-[#1E1E1E] bg-[#F0F0F0] rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] placeholder-[#626060]"
+                            className={`${styles.inputClass} ${styles.grayPlaceholder}`}
                           />
                         </div>
 
-                        <div className="flex space-x-4">
-                          <div className="flex-1">
-                            <label className="block mb-2 text-sm font-medium text-[#1E1E1E] font-sfpro">
+                        <div className={styles.rowWrapper}>
+                          <div className={styles.halfWidth}>
+                            <label className={styles.labelClass}>
                               City
                             </label>
                             <input
@@ -591,11 +661,11 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
                               value={owner.city}
                               onChange={(e) => handleAdditionalOwnerChange(index, e)}
                               placeholder="City"
-                              className="w-full p-3 text-sm text-[#1E1E1E] bg-[#F0F0F0] rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] placeholder-[#626060]"
+                              className={`${styles.inputClass} ${styles.grayPlaceholder}`}
                             />
                           </div>
-                          <div className="flex-1">
-                            <label className="block mb-2 text-sm font-medium text-[#1E1E1E] font-sfpro">
+                          <div className={styles.halfWidth}>
+                            <label className={styles.labelClass}>
                               State
                             </label>
                             <input
@@ -604,13 +674,13 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
                               value={owner.state}
                               onChange={(e) => handleAdditionalOwnerChange(index, e)}
                               placeholder="State"
-                              className="w-full p-3 text-sm text-[#1E1E1E] bg-[#F0F0F0] rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] placeholder-[#626060]"
+                              className={`${styles.inputClass} ${styles.grayPlaceholder}`}
                             />
                           </div>
                         </div>
 
                         <div>
-                          <label className="block mb-2 text-sm font-medium text-[#1E1E1E] font-sfpro">
+                          <label className={styles.labelClass}>
                             Zip Code
                           </label>
                           <input
@@ -619,12 +689,12 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
                             value={owner.zipCode}
                             onChange={(e) => handleAdditionalOwnerChange(index, e)}
                             placeholder="Zip code"
-                            className="w-full p-3 text-sm text-[#1E1E1E] bg-[#F0F0F0] rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] placeholder-[#626060]"
+                            className={`${styles.inputClass} ${styles.grayPlaceholder}`}
                           />
                         </div>
 
                         <div>
-                          <label className="block mb-2 text-sm font-medium text-[#1E1E1E] font-sfpro">
+                          <label className={styles.labelClass}>
                             Website
                           </label>
                           <input
@@ -633,7 +703,7 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
                             value={owner.ownerWebsite}
                             onChange={(e) => handleAdditionalOwnerChange(index, e)}
                             placeholder="Website"
-                            className="w-full p-3 text-sm text-[#1E1E1E] bg-[#F0F0F0] rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] placeholder-[#626060]"
+                            className={`${styles.inputClass} ${styles.grayPlaceholder}`}
                           />
                         </div>
                       </div>
@@ -654,7 +724,7 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full bg-[#039994] text-white font-semibold py-3 rounded-md hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-sm flex items-center justify-center disabled:opacity-50"
+                  className={`${styles.buttonPrimary} flex items-center justify-center disabled:opacity-50`}
                 >
                   {isSubmitting ? (
                     <>
@@ -667,7 +737,7 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
                 </button>
               </div>
 
-              <div className="mt-4 text-center font-sfpro text-[10px] font-[800] leading-[100%] tracking-[-0.05em] underline text-[#1E1E1E]">
+              <div className={styles.termsTextContainer}>
                 <span>Terms and Conditions</span>
                 <span className="mx-2">•</span>
                 <span>Privacy Policy</span>
