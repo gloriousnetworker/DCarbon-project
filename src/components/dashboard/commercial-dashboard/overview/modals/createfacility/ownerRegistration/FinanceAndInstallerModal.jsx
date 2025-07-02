@@ -313,7 +313,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
               </button>
 
               <h2 className="font-[600] text-[20px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro mt-8 text-center">
-                Finance & Installer information
+                Finance & Installer information for Owner
               </h2>
               <div className="w-full h-1 bg-[#039994] rounded-full mt-2"></div>
 
