@@ -13,6 +13,7 @@ export default function WelcomeModal({ isOpen, onClose, userData }) {
   });
   const [referralCode, setReferralCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isReferralLoading, setIsReferralLoading] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -136,9 +137,44 @@ export default function WelcomeModal({ isOpen, onClose, userData }) {
     setCurrentStep('referralCode');
   };
 
-  const handleReferralSubmit = () => {
-    localStorage.setItem('ownerReferralCode', referralCode);
-    setCurrentStep('agreement');
+  const handleReferralSubmit = async () => {
+    if (!referralCode.trim()) {
+      toast.error('Referral code is required');
+      return;
+    }
+
+    setIsReferralLoading(true);
+
+    try {
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const authToken = loginResponse?.data?.token;
+
+      if (!authToken) {
+        throw new Error('Authentication token not found');
+      }
+
+      const response = await fetch(`https://services.dcarbon.solutions/api/user/referral/by-inviter-code/${referralCode}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      });
+
+      const result = await response.json();
+
+      if (result.status === 'success' && result.statusCode === 200) {
+        localStorage.setItem('referralResponse', JSON.stringify(result));
+        localStorage.setItem('ownerReferralCode', referralCode);
+        toast.success(result.message);
+        setCurrentStep('agreement');
+      } else {
+        throw new Error(result.message || 'Invalid referral code');
+      }
+    } catch (error) {
+      toast.error(error.message || 'Failed to validate referral code');
+    } finally {
+      setIsReferralLoading(false);
+    }
   };
 
   const handleCloseAll = () => {
@@ -373,7 +409,7 @@ export default function WelcomeModal({ isOpen, onClose, userData }) {
 
             <div>
               <label className="block mb-3 font-sfpro text-[12px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]">
-                Commercial Role
+                Commercial Roles
               </label>
               
               <div className="mb-6">
@@ -414,10 +450,17 @@ export default function WelcomeModal({ isOpen, onClose, userData }) {
 
               <button
                 onClick={handleReferralSubmit}
-                disabled={!referralCode.trim()}
-                className={`w-full rounded-md font-semibold py-3 focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] ${referralCode.trim() ? 'bg-[#039994] text-white hover:bg-[#02857f]' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
+                disabled={!referralCode.trim() || isReferralLoading}
+                className={`w-full rounded-md font-semibold py-3 focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] ${referralCode.trim() && !isReferralLoading ? 'bg-[#039994] text-white hover:bg-[#02857f]' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
               >
-                Next
+                {isReferralLoading ? (
+                  <div className="flex items-center justify-center">
+                    <div className="w-5 h-5 border-2 border-gray-500 border-t-transparent rounded-full animate-spin mr-2"></div>
+                    Validating...
+                  </div>
+                ) : (
+                  'Next'
+                )}
               </button>
 
               <div className="mt-4 text-center font-sfpro text-[10px] font-[800] leading-[100%] tracking-[-0.05em] underline text-[#1E1E1E]">

@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import AddCommercialFacilityModal from './AddCommercialFacilityModal';
-import {
-  buttonPrimary,
-  spinnerOverlay,
-  spinner,
-  labelClass,
-  inputClass,
-  termsTextContainer
-} from '../../styles.js';
+
+const buttonPrimary = "bg-[#039994] hover:bg-[#02857f] text-white font-medium py-2 px-4 rounded-lg transition-colors";
+const spinnerOverlay = "fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50";
+const spinner = "animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#039994]";
+const labelClass = "block text-sm font-medium text-gray-700";
+const inputClass = "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#039994] focus:ring focus:ring-[#039994] focus:ring-opacity-50 p-2 border";
+const termsTextContainer = "mt-4 text-center";
 
 export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
   const [loading, setLoading] = useState(false);
@@ -49,15 +48,16 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
 
   const fetchOwnerData = async () => {
     try {
-      const referralCode = localStorage.getItem('ownerReferralCode');
-      const authToken = getAuthToken();
-
-      if (!referralCode || !authToken) {
-        throw new Error('Referral code or authentication token missing');
+      const referralResponse = JSON.parse(localStorage.getItem('referralResponse'));
+      if (!referralResponse || !referralResponse.data || !referralResponse.data.inviterId) {
+        throw new Error('Owner information not found');
       }
 
+      const inviterId = referralResponse.data.inviterId;
+      const authToken = getAuthToken();
+
       const response = await fetch(
-        `${baseUrl}/api/user/by-referral-code/${referralCode}`,
+        `${baseUrl}/api/user/get-commercial-user/${inviterId}`,
         {
           method: 'GET',
           headers: {
@@ -357,7 +357,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
                 <div className="space-y-3">
                   <div>
                     <p className="font-sfpro text-[12px] text-gray-500">Full Name</p>
-                    <p className="font-sfpro text-[14px]">{`${ownerData.firstName} ${ownerData.lastName}`}</p>
+                    <p className="font-sfpro text-[14px]">{ownerData.commercialUser?.ownerFullName || `${ownerData.firstName} ${ownerData.lastName}`}</p>
                   </div>
                   <div>
                     <p className="font-sfpro text-[12px] text-gray-500">Email</p>
@@ -367,25 +367,17 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
                     <p className="font-sfpro text-[12px] text-gray-500">Phone Number</p>
                     <p className="font-sfpro text-[14px]">{ownerData.phoneNumber}</p>
                   </div>
-                  {ownerData.commercialUser?.ownerAddress && (
-                    <div>
-                      <p className="font-sfpro text-[12px] text-gray-500">Address</p>
-                      <p className="font-sfpro text-[14px]">{ownerData.commercialUser.ownerAddress}</p>
-                    </div>
-                  )}
-                  {ownerData.commercialUser?.ownerWebsite && (
-                    <div>
-                      <p className="font-sfpro text-[12px] text-gray-500">Website</p>
-                      <p className="font-sfpro text-[14px]">{ownerData.commercialUser.ownerWebsite}</p>
-                    </div>
-                  )}
                   <div>
-                    <p className="font-sfpro text-[12px] text-gray-500">Entity Type</p>
-                    <p className="font-sfpro text-[14px] capitalize">{ownerData.commercialUser?.entityType || 'individual'}</p>
+                    <p className="font-sfpro text-[12px] text-gray-500">Address</p>
+                    <p className="font-sfpro text-[14px]">{ownerData.commercialUser?.ownerAddress || 'N/A'}</p>
                   </div>
                   <div>
                     <p className="font-sfpro text-[12px] text-gray-500">Commercial Role</p>
                     <p className="font-sfpro text-[14px] capitalize">{ownerData.commercialUser?.commercialRole || 'owner'}</p>
+                  </div>
+                  <div>
+                    <p className="font-sfpro text-[12px] text-gray-500">Entity Type</p>
+                    <p className="font-sfpro text-[14px] capitalize">{ownerData.commercialUser?.entityType || 'individual'}</p>
                   </div>
                 </div>
               </div>
