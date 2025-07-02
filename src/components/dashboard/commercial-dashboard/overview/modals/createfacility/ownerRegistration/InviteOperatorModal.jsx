@@ -12,7 +12,7 @@ import {
 
 export default function InviteOperatorModal({ isOpen, onClose, onBack, onDashboardRefresh }) {
   const [loading, setLoading] = useState(false);
-  const [currentModal, setCurrentModal] = useState('invite'); // 'invite', 'emailSent', 'registrationSuccess'
+  const [currentModal, setCurrentModal] = useState('invite');
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -80,7 +80,7 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, onDashboa
       };
 
       const response = await axios.post(
-        `https://services.dcarbon.solutions/api/user/invite-user/${userId}`,
+        `https://services.dcarbon.solutions/api/user/invite-operator/${userId}`,
         payload,
         {
           headers: {
@@ -132,7 +132,6 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, onDashboa
     if (onDashboardRefresh) {
       onDashboardRefresh();
     }
-    // Refresh the page
     window.location.reload();
   };
 
@@ -152,10 +151,8 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, onDashboa
 
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
         <div className="relative w-full max-w-md bg-white rounded-2xl overflow-hidden">
-          {/* Invite Operator Modal */}
           {currentModal === 'invite' && (
             <div className="relative p-6">
-              {/* Back Button */}
               {onBack && (
                 <button
                   onClick={handleBackClick}
@@ -183,7 +180,6 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, onDashboa
                 </button>
               )}
 
-              {/* Close Button */}
               <button
                 onClick={handleClose}
                 disabled={loading}
@@ -209,7 +205,6 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, onDashboa
                 </svg>
               </button>
 
-              {/* Header */}
               <div className="flex flex-col items-center mt-8 mb-8">
                 <div className="mb-4">
                   <svg 
@@ -248,7 +243,6 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, onDashboa
                 </h2>
               </div>
 
-              {/* Form */}
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
                   <label className={`${labelClass} text-sm`}>
@@ -323,10 +317,8 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, onDashboa
             </div>
           )}
 
-          {/* Email Invitation Sent Modal */}
           {currentModal === 'emailSent' && (
             <div className="relative p-6">
-              {/* Close Button */}
               <button
                 onClick={handleClose}
                 className="absolute top-6 right-6 text-red-500 hover:text-red-700 transition-colors"
@@ -349,7 +341,6 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, onDashboa
                 </svg>
               </button>
 
-              {/* Content */}
               <div className="flex flex-col items-center mt-8 mb-8">
                 <div className="mb-6">
                   <svg 
@@ -394,10 +385,8 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, onDashboa
             </div>
           )}
 
-          {/* Registration Successful Modal */}
           {currentModal === 'registrationSuccess' && (
             <div className="relative p-6">
-              {/* Close Button */}
               <button
                 onClick={handleClose}
                 className="absolute top-6 right-6 text-red-500 hover:text-red-700 transition-colors"
@@ -420,7 +409,6 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, onDashboa
                 </svg>
               </button>
 
-              {/* Content */}
               <div className="flex flex-col items-center mt-8 mb-8">
                 <div className="mb-6">
                   <svg 
@@ -431,15 +419,15 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, onDashboa
                     xmlns="http://www.w3.org/2000/svg"
                   >
                     <path 
-                      d="M22 11.08V12C21.9988 14.1564 21.3005 16.2547 20.0093 17.9818C18.7182 19.7088 16.9033 20.9725 14.8354 21.5839C12.7674 22.1953 10.5573 22.1219 8.53447 21.3746C6.51168 20.6273 4.78465 19.2461 3.61096 17.4371C2.43727 15.628 1.87979 13.4905 2.02168 11.3363C2.16356 9.18203 2.99721 7.13214 4.39828 5.49883C5.79935 3.86553 7.69279 2.72636 9.79619 2.24223C11.8996 1.75809 14.1003 1.95185 16.07 2.79999" 
-                      stroke="#6366f1" 
+                      d="M12 8V12L14.5 14.5" 
+                      stroke="#039994" 
                       strokeWidth="2" 
                       strokeLinecap="round" 
                       strokeLinejoin="round"
                     />
-                    <polyline 
-                      points="22,4 12,14.01 9,11.01" 
-                      stroke="#6366f1" 
+                    <path 
+                      d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" 
+                      stroke="#039994" 
                       strokeWidth="2" 
                       strokeLinecap="round" 
                       strokeLinejoin="round"
@@ -448,11 +436,11 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, onDashboa
                 </div>
 
                 <h2 className="font-[600] text-[20px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro text-center mb-4">
-                  Registration Successful
+                  Almost Ready!
                 </h2>
 
                 <p className="text-sm text-gray-600 text-center mb-8 max-w-xs">
-                  Welcome to DCarbon, <span className="font-semibold">{getUserFirstName()}</span>
+                  Your Operator will authorize Utility API access to generate your facilities. You're one step away from starting with DCarbon.
                 </p>
 
                 <button 

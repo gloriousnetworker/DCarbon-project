@@ -684,7 +684,6 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
                   disabled={loading}
                 >
                   <option value="owner">Owner</option>
-                  <option value="operator">Operator</option>
                   <option value="both">Both</option>
                 </select>
               </div>

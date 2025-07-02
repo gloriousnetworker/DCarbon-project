@@ -27,10 +27,12 @@ export default function EditFacilityDetailsModal({ facility, onClose, onSave }) 
   const [selectedMeter, setSelectedMeter] = useState(null);
   const [isSameLocation, setIsSameLocation] = useState(null);
   const [selectedUtilityAuthEmail, setSelectedUtilityAuthEmail] = useState("");
+  const [commercialUserLoading, setCommercialUserLoading] = useState(false);
 
   useEffect(() => {
     fetchUtilityProviders();
     fetchUserMeters();
+    fetchCommercialUser();
   }, []);
 
   useEffect(() => {
@@ -40,12 +42,39 @@ export default function EditFacilityDetailsModal({ facility, onClose, onSave }) 
           ...prev,
           address: selectedMeter.base.service_address
         }));
-      } else if (isSameLocation === false) {
-        // Keep the current address if user chooses different location
-        // Don't auto-clear it in edit mode
       }
     }
   }, [selectedMeter, isSameLocation]);
+
+  const fetchCommercialUser = async () => {
+    const userId = localStorage.getItem("userId");
+    const authToken = localStorage.getItem("authToken");
+    if (!userId || !authToken) return;
+
+    setCommercialUserLoading(true);
+    try {
+      const response = await axios.get(
+        `https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`
+          }
+        }
+      );
+
+      if (response.data.status === "success") {
+        setFormData(prev => ({
+          ...prev,
+          name: response.data.data.commercialUser.ownerFullName || ""
+        }));
+      }
+    } catch (error) {
+      console.error("Error fetching commercial user:", error);
+    } finally {
+      setCommercialUserLoading(false);
+    }
+  };
 
   const fetchUtilityProviders = async () => {
     const authToken = localStorage.getItem("authToken");
@@ -162,7 +191,6 @@ export default function EditFacilityDetailsModal({ facility, onClose, onSave }) 
     try {
       setLoading(true);
       
-      // Prepare the data to send
       const processedData = {
         facilityName: formData.facilityName,
         address: formData.address,
@@ -217,7 +245,6 @@ export default function EditFacilityDetailsModal({ facility, onClose, onSave }) 
           </div>
         )}
 
-        {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-800">Edit Facility Details</h2>
           <button
@@ -229,10 +256,8 @@ export default function EditFacilityDetailsModal({ facility, onClose, onSave }) 
           </button>
         </div>
 
-        {/* Body */}
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Facility Name - Non-editable */}
             <div>
               <label className={`${labelClass} mb-2`}>
                 Facility Name
@@ -250,7 +275,6 @@ export default function EditFacilityDetailsModal({ facility, onClose, onSave }) 
               </p>
             </div>
 
-            {/* Owner/Operator Name */}
             <div>
               <label className={`${labelClass} mb-2`}>
                 Owner/Operator Name
@@ -261,11 +285,10 @@ export default function EditFacilityDetailsModal({ facility, onClose, onSave }) 
                 value={formData.name}
                 onChange={handleChange}
                 className={`${inputClass}`}
-                disabled={loading}
+                disabled={loading || commercialUserLoading}
               />
             </div>
 
-            {/* Utility Provider */}
             <div>
               <label className={`${labelClass} mb-2`}>
                 Utility Provider <span className="text-red-500">*</span>
@@ -291,7 +314,6 @@ export default function EditFacilityDetailsModal({ facility, onClose, onSave }) 
               </select>
             </div>
 
-            {/* Utility Username */}
             <div>
               <label className={`${labelClass} mb-2`}>
                 Utility Username
@@ -306,7 +328,6 @@ export default function EditFacilityDetailsModal({ facility, onClose, onSave }) 
               />
             </div>
 
-            {/* Utility Account */}
             <div>
               <label className={`${labelClass} mb-2`}>
                 Utility Account <span className="text-red-500">*</span>
@@ -336,7 +357,6 @@ export default function EditFacilityDetailsModal({ facility, onClose, onSave }) 
               </p>
             </div>
 
-            {/* Meter Selection */}
             {selectedUtilityAuthEmail && (
               <div>
                 <label className={`${labelClass} mb-2`}>
@@ -367,7 +387,6 @@ export default function EditFacilityDetailsModal({ facility, onClose, onSave }) 
               </div>
             )}
 
-            {/* Location Confirmation */}
             {selectedMeter && (
               <div className="md:col-span-2">
                 <div className="mb-3 p-3 bg-gray-50 rounded-md border border-gray-200">
@@ -401,7 +420,6 @@ export default function EditFacilityDetailsModal({ facility, onClose, onSave }) 
               </div>
             )}
 
-            {/* Installation Address */}
             <div className="md:col-span-2">
               <label className={`${labelClass} mb-2`}>
                 Installation Address <span className="text-red-500">*</span>
@@ -438,7 +456,6 @@ export default function EditFacilityDetailsModal({ facility, onClose, onSave }) 
               )}
             </div>
 
-            {/* Website */}
             <div>
               <label className={`${labelClass} mb-2`}>
                 Website
@@ -454,7 +471,6 @@ export default function EditFacilityDetailsModal({ facility, onClose, onSave }) 
               />
             </div>
 
-            {/* Multiple Owners */}
             <div>
               <label className={`${labelClass} mb-2`}>
                 Multiple Owners
@@ -470,7 +486,6 @@ export default function EditFacilityDetailsModal({ facility, onClose, onSave }) 
               />
             </div>
 
-            {/* Commercial Role */}
             <div>
               <label className={`${labelClass} mb-2`}>
                 Commercial Role <span className="text-red-500">*</span>
@@ -489,7 +504,6 @@ export default function EditFacilityDetailsModal({ facility, onClose, onSave }) 
               </select>
             </div>
 
-            {/* Entity Type */}
             <div>
               <label className={`${labelClass} mb-2`}>
                 Entity Type <span className="text-red-500">*</span>
@@ -509,7 +523,6 @@ export default function EditFacilityDetailsModal({ facility, onClose, onSave }) 
           </div>
         </div>
 
-        {/* Footer */}
         <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200">
           <button
             onClick={onClose}

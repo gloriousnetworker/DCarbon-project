@@ -199,6 +199,17 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
     );
   };
 
+  const getUtilityShortCode = (utilityAuthEmail) => {
+    const selectedData = userMeterData.find(
+      item => item.utilityAuthEmail === utilityAuthEmail
+    );
+
+    if (selectedData && selectedData.meters?.meters?.length > 0) {
+      return selectedData.meters.meters[0].utility || "";
+    }
+    return "";
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
 
@@ -507,7 +518,7 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
                   ) : (
                     utilityAuthEmailsWithMeters.map(item => (
                       <option key={item.id} value={item.utilityAuthEmail}>
-                        {item.utilityAuthEmail}
+                        {item.utilityAuthEmail} - {getUtilityShortCode(item.utilityAuthEmail)}
                       </option>
                     ))
                   )}
@@ -536,7 +547,7 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
                     ) : (
                       currentMeters.map(meter => (
                         <option key={meter.uid} value={meter.uid}>
-                          {meter.base.meter_numbers[0]} - {meter.base.service_tariff}
+                          {meter.uid} - {meter.base.service_tariff}
                         </option>
                       ))
                     )}
@@ -692,7 +703,6 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
                   disabled={loading}
                 >
                   <option value="owner">Owner</option>
-                  <option value="operator">Operator</option>
                   <option value="both">Both</option>
                 </select>
               </div>

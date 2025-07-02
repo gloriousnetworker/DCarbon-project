@@ -2,14 +2,16 @@ import React, { useState, useEffect } from "react";
 import { FiX } from "react-icons/fi";
 import axios from "axios";
 import toast from "react-hot-toast";
-import AddUtilityProvider from "../AddUtilityProvider";
+import AddUtilityProvider from "./AddUtilityProvider";
+import UtilityAuthorizationModal from "./UtilityAuthorizationModal";
+import FacilityCreatedSuccessfulModal from "./FacilityCreatedSuccessfulModal";
 import {
   labelClass,
   selectClass,
   inputClass,
   buttonPrimary,
   pageTitle,
-} from "../styles";
+} from "../../styles";
 import Loader from "@/components/loader/Loader.jsx";
 
 export default function AddCommercialFacilityModal({ isOpen, onClose }) {
@@ -38,8 +40,11 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
   const [financeTypes, setFinanceTypes] = useState([]);
   const [financeTypesLoading, setFinanceTypesLoading] = useState(false);
   const [showAddUtilityModal, setShowAddUtilityModal] = useState(false);
+  const [showUtilityAuthModal, setShowUtilityAuthModal] = useState(false);
   const [showFinanceTypeRequestModal, setShowFinanceTypeRequestModal] = useState(false);
   const [newFinanceTypeName, setNewFinanceTypeName] = useState("");
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [createdFacilityData, setCreatedFacilityData] = useState(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -194,6 +199,17 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
     );
   };
 
+  const getUtilityShortCode = (utilityAuthEmail) => {
+    const selectedData = userMeterData.find(
+      item => item.utilityAuthEmail === utilityAuthEmail
+    );
+
+    if (selectedData && selectedData.meters?.meters?.length > 0) {
+      return selectedData.meters.meters[0].utility || "";
+    }
+    return "";
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
 
@@ -330,10 +346,10 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
       );
 
       if (response.data.status === "success") {
-        toast.success(`Facility created successfully: ${response.data.data.facilityName}`);
+        setCreatedFacilityData(response.data.data);
         storeFacilityData(response.data.data);
         resetForm();
-        onClose();
+        setShowSuccessModal(true);
       } else {
         throw new Error(response.data.message || "Failed to create facility");
       }
@@ -350,11 +366,16 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
   };
 
   const handleOpenAddUtilityModal = () => {
-    setShowAddUtilityModal(true);
+    setShowUtilityAuthModal(true);
   };
 
   const handleCloseAddUtilityModal = () => {
     setShowAddUtilityModal(false);
+    fetchUserMeters();
+  };
+
+  const handleCloseUtilityAuthModal = () => {
+    setShowUtilityAuthModal(false);
     fetchUserMeters();
   };
 
@@ -417,7 +438,7 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
 
   return (
     <>
-      {!showAddUtilityModal && !showFinanceTypeRequestModal && (
+      {!showAddUtilityModal && !showUtilityAuthModal && !showFinanceTypeRequestModal && !showSuccessModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20">
           {loading && (
             <div className="absolute inset-0 z-10 flex items-center justify-center bg-white bg-opacity-70 rounded-md">
@@ -497,7 +518,7 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
                   ) : (
                     utilityAuthEmailsWithMeters.map(item => (
                       <option key={item.id} value={item.utilityAuthEmail}>
-                        {item.utilityAuthEmail}
+                        {item.utilityAuthEmail} - {getUtilityShortCode(item.utilityAuthEmail)}
                       </option>
                     ))
                   )}
@@ -505,7 +526,6 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
                 <p className="mt-1 text-xs text-gray-500">
                   Select the utility account containing your meters
                 </p>
-
               </div>
 
               {selectedUtilityAuthEmail && (
@@ -527,7 +547,7 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
                     ) : (
                       currentMeters.map(meter => (
                         <option key={meter.uid} value={meter.uid}>
-                          {meter.base.meter_numbers[0]} - {meter.base.service_tariff}
+                          {meter.uid} - {meter.base.service_tariff}
                         </option>
                       ))
                     )}
@@ -683,7 +703,6 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
                   disabled={loading}
                 >
                   <option value="owner">Owner</option>
-                  <option value="operator">Operator</option>
                   <option value="both">Both</option>
                 </select>
               </div>
@@ -730,6 +749,11 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
       <AddUtilityProvider
         isOpen={showAddUtilityModal}
         onClose={handleCloseAddUtilityModal}
+      />
+
+      <UtilityAuthorizationModal
+        isOpen={showUtilityAuthModal}
+        onClose={handleCloseUtilityAuthModal}
       />
 
       {showFinanceTypeRequestModal && (
@@ -779,6 +803,15 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
           </div>
         </div>
       )}
+
+      <FacilityCreatedSuccessfulModal
+        isOpen={showSuccessModal}
+        onClose={() => {
+          setShowSuccessModal(false);
+          onClose();
+        }}
+        facilityData={createdFacilityData}
+      />
     </>
   );
 }

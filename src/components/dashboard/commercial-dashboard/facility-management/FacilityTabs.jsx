@@ -1,4 +1,3 @@
-// ===== COMMERCIAL FACILITY TABS COMPONENT =====
 import React, { useState, useEffect } from "react";
 import { FiGrid, FiList, FiFilter } from "react-icons/fi";
 import AddCommercialFacilityModal from "./AddFacilityModal";
@@ -28,7 +27,6 @@ export default function CommercialFacilityTabs({
 
       const parsedResponse = JSON.parse(loginResponse);
       
-      // Check if login was successful
       if (parsedResponse.status !== "success") {
         setIsButtonDisabled(true);
         setDisableReason("Login not successful");
@@ -43,15 +41,12 @@ export default function CommercialFacilityTabs({
         return;
       }
 
-      // Check if agreements exist and are not empty
-      const agreements = userData.agreements;
-      if (!agreements || Object.keys(agreements).length === 0) {
+      if (userData.registrationStep !== 5) {
         setIsButtonDisabled(true);
-        setDisableReason("User agreements required");
+        setDisableReason("Registration not complete");
         return;
       }
 
-      // Check if utilityAuth exists and has valid status
       const utilityAuth = userData.utilityAuth;
       if (!utilityAuth || !Array.isArray(utilityAuth) || utilityAuth.length === 0) {
         setIsButtonDisabled(true);
@@ -59,13 +54,11 @@ export default function CommercialFacilityTabs({
         return;
       }
 
-      // Check if at least one utilityAuth has a valid status (not empty, not UPDATE_ERROR, not DECLINE)
       const hasValidUtilityAuth = utilityAuth.some(auth => {
         if (!auth || !auth.status || auth.status.trim() === "") {
           return false;
         }
         
-        // Disable if status is UPDATE_ERROR or DECLINE
         if (auth.status === "UPDATE_ERROR" || auth.status === "DECLINE") {
           return false;
         }
@@ -74,7 +67,6 @@ export default function CommercialFacilityTabs({
       });
 
       if (!hasValidUtilityAuth) {
-        // Check for specific error statuses for better error messages
         const hasUpdateError = utilityAuth.some(auth => 
           auth && auth.status === "UPDATE_ERROR"
         );
@@ -99,7 +91,6 @@ export default function CommercialFacilityTabs({
         return;
       }
 
-      // All checks passed
       setIsButtonDisabled(false);
       setDisableReason("");
 
@@ -123,9 +114,7 @@ export default function CommercialFacilityTabs({
   return (
     <>
       <div className="flex items-center justify-between">
-        {/* Left side: two icons (Grid / List) */}
         <div className="flex items-center space-x-4">
-          {/* Grid Icon */}
           <button
             onClick={() => setViewMode("cards")}
             className={`
@@ -135,7 +124,6 @@ export default function CommercialFacilityTabs({
           >
             <FiGrid size={18} />
           </button>
-          {/* List Icon */}
           <button
             onClick={() => setViewMode("table")}
             className={`
@@ -147,17 +135,7 @@ export default function CommercialFacilityTabs({
           </button>
         </div>
 
-        {/* Right side: Filter + Add Facility */}
         <div className="flex items-center space-x-2">
-          {/* Uncomment if you want to use the filter button */}
-          {/* <button
-            onClick={onFilter}
-            className="flex items-center space-x-1 border border-gray-300 px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-gray-50"
-          >
-            <FiFilter />
-            <span>Filter by</span>
-          </button> */}
-          
           <div className="relative group">
             <button
               onClick={handleAddFacility}
@@ -174,7 +152,6 @@ export default function CommercialFacilityTabs({
               + Add Commercial Facility
             </button>
             
-            {/* Tooltip for disabled state */}
             {isButtonDisabled && disableReason && (
               <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
                 {disableReason}
@@ -184,7 +161,6 @@ export default function CommercialFacilityTabs({
         </div>
       </div>
 
-      {/* Add Commercial Facility Modal */}
       <AddCommercialFacilityModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}

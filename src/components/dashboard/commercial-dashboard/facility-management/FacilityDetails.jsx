@@ -18,7 +18,6 @@ import InviteCollaboratorModal from "./InviteCollaboratorModal";
 import EditFacilityDetailsModal from "./EditFacilityDetailsModal";
 import { pageTitle, labelClass, inputClass } from "./styles";
 
-// Mock data for the energy production chart
 const energyData = [
   { month: 'Jan', kwh: 45 },
   { month: 'Feb', kwh: 30 },
@@ -67,6 +66,8 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
         return "text-yellow-600";
       case "REJECTED":
         return "text-red-600";
+      case "REQUIRED":
+        return "text-orange-600";
       default:
         return "text-gray-600";
     }
@@ -81,6 +82,8 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
         return "bg-yellow-500";
       case "REJECTED":
         return "bg-red-500";
+      case "REQUIRED":
+        return "bg-orange-500";
       default:
         return "bg-gray-500";
     }
@@ -91,7 +94,6 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
     try {
       const urlParts = url.split('/');
       const fileName = urlParts[urlParts.length - 1];
-      // Decode URL-encoded characters and clean up the filename
       return decodeURIComponent(fileName).replace(/^\d+-/, '');
     } catch (error) {
       return 'Document';
@@ -118,7 +120,6 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
     const facilityId = facilityData.id;
     const baseUrl = 'https://services.dcarbon.solutions';
     
-    // Define endpoints for different document types (corrected endpoints)
     const endpoints = {
       financeAgreement: `${baseUrl}/api/facility/update-facility-financial-agreement/${facilityId}`,
       proofOfAddress: `${baseUrl}/api/facility/update-facility-proof-of-address/${facilityId}`,
@@ -128,7 +129,6 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
       sysOpDataAccess: `${baseUrl}/api/facility/update-sys-op-data-access/${facilityId}`
     };
 
-    // Define the correct field names for each document type
     const fieldNames = {
       financeAgreement: 'financeAgreementUrl',
       proofOfAddress: 'proofOfAddressUrl',
@@ -155,7 +155,6 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
       const result = await response.json();
 
       if (result.status === 'success') {
-        // Update the facility data with the new document info
         setFacilityData(prevData => ({
           ...prevData,
           ...result.data
@@ -184,7 +183,6 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
     input.onchange = (e) => {
       const file = e.target.files[0];
       if (file) {
-        // Check file size (limit to 10MB)
         if (file.size > 10 * 1024 * 1024) {
           toast.error('File size must be less than 10MB');
           return;
@@ -206,10 +204,10 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
     const isUploading = uploadingDoc === docType;
     const isRejected = status?.toUpperCase() === "REJECTED";
     const isExpanded = expandedRejections[docType];
+    const displayStatus = !url ? "REQUIRED" : status || "PENDING";
     
     return (
       <div className="mb-3">
-        {/* Document title and status */}
         <div className="flex justify-between items-center mb-2">
           <span className="text-black text-sm font-medium">{title}</span>
           <div className="flex items-center space-x-2">
@@ -222,13 +220,12 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
                 <FiAlertCircle className="text-red-500" size={14} />
               </button>
             )}
-            <span className={`px-2 py-1 rounded-full text-xs font-medium text-white ${getStatusBgColor(status)}`}>
-              {status || "NOT_UPLOADED"}
+            <span className={`px-2 py-1 rounded-full text-xs font-medium text-white ${getStatusBgColor(displayStatus)}`}>
+              {displayStatus}
             </span>
           </div>
         </div>
 
-        {/* Rejection reason (expandable) */}
         {isRejected && rejectionReason && isExpanded && (
           <div className="mb-2 p-2 bg-red-50 border border-red-200 rounded-md">
             <div className="flex items-start space-x-2">
@@ -241,7 +238,6 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
           </div>
         )}
         
-        {/* Document placeholder/upload area - reduced height */}
         <div 
           className={`bg-[#F0F0F0] rounded-lg p-3 cursor-pointer hover:bg-gray-200 transition-colors flex items-center justify-center h-12 ${
             isRejected ? 'border-2 border-red-200' : ''
@@ -292,7 +288,6 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
           )}
         </div>
 
-        {/* Re-upload prompt for rejected documents */}
         {isRejected && url && (
           <div className="mt-1 text-xs text-red-600 flex items-center space-x-1">
             <FiAlertCircle size={10} />
@@ -352,7 +347,6 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
 
   return (
     <div className="bg-white">
-      {/* Header */}
       <div className="p-4 border-b border-gray-200">
         <button
           onClick={onBack}
@@ -387,10 +381,8 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="p-4">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-          {/* Facility Information */}
           <div className="bg-white border border-gray-200 rounded-lg p-4">
             <div className="space-y-2">
               <div className="flex justify-between items-center">
@@ -438,7 +430,6 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
             </div>
           </div>
 
-          {/* Facility Documents */}
           <div className="bg-white border border-gray-200 rounded-lg p-4">
             <h3 className="text-sm font-semibold text-[#039994] mb-3">Facility Documents</h3>
             
@@ -467,7 +458,6 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
           </div>
         </div>
 
-        {/* Energy Production Section */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
           <div className="lg:col-span-3 bg-white border border-gray-200 rounded-lg p-4">
             <div className="flex justify-between items-center mb-4">
@@ -536,7 +526,6 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
         </div>
       </div>
 
-      {/* Modals */}
       {showInviteModal && (
         <InviteCollaboratorModal
           isOpen={showInviteModal}
