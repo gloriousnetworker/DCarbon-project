@@ -221,7 +221,7 @@ export default function SignatureModal({ isOpen, onClose, onComplete }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
       <div className="relative w-full max-w-lg bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
-        <button onClick={onClose} className="absolute top-4 right-4 z-10 w-6 h-6 flex items-center justify-center text-red-500 hover:text-red-700">
+        <button onClick={() => { onClose(); window.location.reload(); }} className="absolute top-4 right-4 z-10 w-6 h-6 flex items-center justify-center text-red-500 hover:text-red-700">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
@@ -395,7 +395,7 @@ export default function SignatureModal({ isOpen, onClose, onComplete }) {
 
           <div className="flex justify-between gap-4">
             <button
-              onClick={onClose}
+              onClick={() => { onClose(); window.location.reload(); }}
               disabled={isUploading}
               className="flex-1 rounded-md bg-white border border-[#039994] text-[#039994] font-semibold py-3 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] transition-colors disabled:opacity-50"
             >

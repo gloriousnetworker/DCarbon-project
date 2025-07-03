@@ -28,6 +28,8 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
   const [showAllFacilities, setShowAllFacilities] = useState(false);
   const [ownerData, setOwnerData] = useState(null);
   const [isLoadingOwner, setIsLoadingOwner] = useState(true);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [totalSteps] = useState(4);
 
   const baseUrl = 'https://services.dcarbon.solutions';
 
@@ -111,6 +113,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
         const utility = data.data.find(u => u.utilityAuthEmail === utilityAuthEmail);
         if (utility && utility.meters && utility.meters.meters) {
           setVerifiedFacilities(utility.meters.meters);
+          setCurrentStep(3);
         }
       }
     } catch (error) {
@@ -178,6 +181,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
         toast.success('Utility authorization initiated successfully!', { id: toastId });
         setIframeUrl('https://utilityapi.com/authorize/DCarbon_Solutions');
         setShowIframe(true);
+        setCurrentStep(2);
       } else {
         toast.error('Failed to initiate utility authorization', { id: toastId });
       }
@@ -210,6 +214,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
         toast.success(data.message, { id: toastId });
         if (data.data && data.data.meters && data.data.meters.meters) {
           setVerifiedFacilities(data.data.meters.meters);
+          setCurrentStep(3);
         }
       } else {
         toast.error('Verification failed', { id: toastId });
@@ -260,6 +265,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
       return;
     }
 
+    setCurrentStep(4);
     setShowFacilityModal(true);
   };
 
@@ -275,7 +281,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
         <div className="relative w-full max-w-4xl h-[90vh] bg-white rounded-2xl overflow-hidden">
           <div className="flex items-center justify-between p-4 border-b">
-            <h3 className="text-lg font-semibold text-[#039994]">Utility Authorization</h3>
+            <h3 className="text-lg font-semibold text-[#039994]">Utility Authorization Portal</h3>
             <button
               onClick={() => setShowIframe(false)}
               className="text-red-500 hover:text-red-700"
@@ -284,6 +290,14 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
                 <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
+          </div>
+          <div className="p-4 bg-yellow-50 border-b border-yellow-200">
+            <p className="text-sm text-yellow-700">
+              <strong>Step 2:</strong> Enter the email of your DCarbon account you are authorizing for, then choose your utility provider.
+            </p>
+            <p className="text-sm text-yellow-700 mt-1">
+              <strong>Step 3:</strong> Enter your Utility Account credentials and authorize access when prompted.
+            </p>
           </div>
           <iframe
             src={iframeUrl}
@@ -340,13 +354,13 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
             <h2 className="font-[600] text-[20px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro mt-8 text-center">
               Utility Authorization
             </h2>
-            <div className="w-full h-1 bg-[#039994] rounded-full mt-2"></div>
-
-            <div className="flex items-center mt-4 mb-2">
-              <div className="flex-1 h-1 bg-gray-200 rounded-full mr-4">
-                <div className="h-1 bg-[#039994] rounded-full w-1/2"></div>
+            <div className="flex items-center justify-center mt-4">
+              <div className="flex items-center">
+                <div className="w-96 h-1 bg-gray-200 rounded-full mr-2">
+                  <div className="h-1 bg-[#039994] rounded-full" style={{ width: `${(currentStep/totalSteps)*100}%` }}></div>
+                </div>
+                <span className="text-sm font-medium text-gray-500 font-sfpro">{currentStep}/{totalSteps}</span>
               </div>
-              <span className="text-sm font-medium text-gray-500 font-sfpro whitespace-nowrap">02/04</span>
             </div>
           </div>
 
@@ -384,9 +398,14 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="bg-blue-50 p-3 rounded-lg">
+                <p className="text-sm text-blue-700">
+                  <strong>Step 1:</strong> Select your Utility Provider from the list below.
+                </p>
+              </div>
               <div>
                 <label className={`${labelClass} text-sm mb-2 block`}>
-                  Input Utility Provider
+                  Utility Provider
                 </label>
                 <select
                   value={selectedProvider}
@@ -445,6 +464,11 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
                 )}
               </div>
 
+              <div className="bg-blue-50 p-3 rounded-lg">
+                <p className="text-sm text-blue-700">
+                  <strong>Step 2:</strong> Enter the email used in your Utility Account to fetch meters from Utility API.
+                </p>
+              </div>
               <div>
                 <label className={`${labelClass} text-sm mb-2 block`}>
                   Utility authorization email
@@ -463,67 +487,74 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
                     disabled={loading || !utilityAuthEmail}
                     className="px-4 py-2 bg-[#039994] text-white text-sm font-medium rounded-lg hover:bg-[#02857f] transition-colors disabled:opacity-50"
                   >
-                    {verifiedFacilities.length > 0 ? 'Verify Again' : 'Verify'}
+                    {verifiedFacilities.length > 0 ? 'Verify Again' : 'Authorize'}
                   </button>
                 </div>
               </div>
 
               {verifiedFacilities.length > 0 && (
-                <div className="mt-6">
-                  <h3 className="text-lg font-semibold text-[#039994] mb-4">Facilities</h3>
-                  <div className="space-y-4">
-                    {displayedFacilities.map((meter) => (
-                      <div key={meter.uid} className="border border-gray-200 rounded-lg p-4">
-                        <div className="flex flex-col">
-                          <div className="flex-1">
-                            <div className="text-sm font-medium text-gray-900 mb-1">
-                              Meter ID: {meter.uid}
+                <>
+                  <div className="bg-blue-50 p-3 rounded-lg">
+                    <p className="text-sm text-blue-700">
+                      <strong>Step 3:</strong> Select the facilities you want to add to your DCarbon account.
+                    </p>
+                  </div>
+                  <div className="mt-6">
+                    <h3 className="text-lg font-semibold text-[#039994] mb-4">Facilities</h3>
+                    <div className="space-y-4">
+                      {displayedFacilities.map((meter) => (
+                        <div key={meter.uid} className="border border-gray-200 rounded-lg p-4">
+                          <div className="flex flex-col">
+                            <div className="flex-1">
+                              <div className="text-sm font-medium text-gray-900 mb-1">
+                                Meter ID: {meter.uid}
+                              </div>
+                              <div className="text-xs text-gray-500 mb-2">
+                                Meter Numbers: {meter.base?.meter_numbers?.join(', ') || 'N/A'}
+                              </div>
+                              <div className="text-xs text-gray-600 space-y-1">
+                                <div><strong>Service Class:</strong> {meter.base?.service_class || 'N/A'}</div>
+                                <div><strong>Service Tariff:</strong> {meter.base?.service_tariff || 'N/A'}</div>
+                                <div><strong>Billing Address:</strong> {meter.base?.billing_address || 'N/A'}</div>
+                              </div>
                             </div>
-                            <div className="text-xs text-gray-500 mb-2">
-                              Meter Numbers: {meter.base?.meter_numbers?.join(', ') || 'N/A'}
+                            <div className="mt-3 flex items-center justify-between">
+                              <span className="text-sm text-gray-700">
+                                I agree to the Terms of Agreement
+                              </span>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  handleFacilitySelection(meter.uid, !selectedFacilities.includes(meter.uid));
+                                }}
+                                className={`w-6 h-6 rounded-full border-2 flex items-center justify-center 
+                                  ${selectedFacilities.includes(meter.uid) ? 'bg-[#039994] border-[#039994]' : 'border-gray-300'}`}
+                              >
+                                {selectedFacilities.includes(meter.uid) && (
+                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M20 6L9 17L4 12" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                  </svg>
+                                )}
+                              </button>
                             </div>
-                            <div className="text-xs text-gray-600 space-y-1">
-                              <div><strong>Service Class:</strong> {meter.base?.service_class || 'N/A'}</div>
-                              <div><strong>Service Tariff:</strong> {meter.base?.service_tariff || 'N/A'}</div>
-                              <div><strong>Billing Address:</strong> {meter.base?.billing_address || 'N/A'}</div>
-                            </div>
-                          </div>
-                          <div className="mt-3 flex items-center justify-between">
-                            <span className="text-sm text-gray-700">
-                              I agree to the Terms of Agreement
-                            </span>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                handleFacilitySelection(meter.uid, !selectedFacilities.includes(meter.uid));
-                              }}
-                              className={`w-6 h-6 rounded-full border-2 flex items-center justify-center 
-                                ${selectedFacilities.includes(meter.uid) ? 'bg-[#039994] border-[#039994]' : 'border-gray-300'}`}
-                            >
-                              {selectedFacilities.includes(meter.uid) && (
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                  <path d="M20 6L9 17L4 12" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                </svg>
-                              )}
-                            </button>
                           </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                  {verifiedFacilities.length > 3 && !showAllFacilities && (
-                    <div className="text-center mt-4">
-                      <button
-                        type="button"
-                        onClick={() => setShowAllFacilities(true)}
-                        className="text-[#039994] text-sm font-medium hover:underline"
-                      >
-                        View more facilities
-                      </button>
+                      ))}
                     </div>
-                  )}
-                </div>
+                    {verifiedFacilities.length > 3 && !showAllFacilities && (
+                      <div className="text-center mt-4">
+                        <button
+                          type="button"
+                          onClick={() => setShowAllFacilities(true)}
+                          className="text-[#039994] text-sm font-medium hover:underline"
+                        >
+                          View more facilities
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </>
               )}
 
               <div className="pt-4 space-y-4">

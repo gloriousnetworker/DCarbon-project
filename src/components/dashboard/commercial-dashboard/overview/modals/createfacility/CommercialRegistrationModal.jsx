@@ -11,40 +11,104 @@ import UtilityAuthorizationModal from "./ownerAndOperatorRegistration/UtilityAut
 export default function CommercialRegistrationModal({ isOpen, onClose }) {
   const [selectedRole, setSelectedRole] = useState('Owner');
   const [currentModal, setCurrentModal] = useState(null);
-  const [registrationStep, setRegistrationStep] = useState(1);
   const [commercialData, setCommercialData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [currentStage, setCurrentStage] = useState(1);
+
+  const checkStage2Completion = async (userId, authToken) => {
+    try {
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        }
+      );
+      const result = await response.json();
+      return result.status === 'success' && result.data?.commercialUser?.ownerAddress;
+    } catch (error) {
+      console.error('Error checking stage 2:', error);
+      return false;
+    }
+  };
+
+  const checkStage5Completion = async (userId, authToken) => {
+    try {
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        }
+      );
+      const result = await response.json();
+      return result.status === 'success' && result.data?.meters?.length > 0;
+    } catch (error) {
+      console.error('Error checking stage 5:', error);
+      return false;
+    }
+  };
+
+  const checkUserProgress = async () => {
+    try {
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const userId = loginResponse?.data?.user?.id;
+      const authToken = loginResponse?.data?.token;
+
+      if (!userId || !authToken) return;
+
+      const stageChecks = [
+        { stage: 2, check: () => checkStage2Completion(userId, authToken) },
+        { stage: 3, url: `https://services.dcarbon.solutions/api/user/accept-user-agreement-terms/${userId}`, method: 'PUT' },
+        { stage: 4, url: `https://services.dcarbon.solutions/api/user/update-financial-agreement/${userId}`, method: 'PUT' },
+        { stage: 5, check: () => checkStage5Completion(userId, authToken) }
+      ];
+
+      let highestCompletedStage = 1;
+
+      for (const { stage, url, method, check } of stageChecks) {
+        try {
+          let isCompleted = false;
+          if (check) {
+            isCompleted = await check();
+          } else {
+            const response = await fetch(url, {
+              method,
+              headers: {
+                'Authorization': `Bearer ${authToken}`
+              }
+            });
+            const result = await response.json();
+            isCompleted = response.ok && result.status === 'success';
+          }
+          if (isCompleted) {
+            highestCompletedStage = stage;
+          }
+        } catch (error) {
+          console.error(`Error checking stage ${stage}:`, error);
+        }
+      }
+
+      setCurrentStage(highestCompletedStage + 1);
+    } catch (error) {
+      console.error('Error checking user progress:', error);
+    }
+  };
 
   useEffect(() => {
     if (isOpen) {
       const fetchCommercialData = async () => {
         setLoading(true);
         try {
-          const userId = localStorage.getItem("userId");
-          const authToken = localStorage.getItem("authToken");
+          const loginResponse = JSON.parse(localStorage.getItem("loginResponse") || '{}');
+          const userId = loginResponse?.data?.user?.id;
+          const authToken = loginResponse?.data?.token;
           
-          if (!userId || !authToken) {
-            const loginResponse = JSON.parse(localStorage.getItem("loginResponse"));
-            if (loginResponse?.data?.user?.id && loginResponse?.token) {
-              const response = await fetch(`https://services.dcarbon.solutions/api/user/get-commercial-user/${loginResponse.data.user.id}`, {
-                headers: {
-                  'Authorization': `Bearer ${loginResponse.token}`
-                }
-              });
-              
-              if (response.ok) {
-                const data = await response.json();
-                setCommercialData(data.data);
-                setRegistrationStep(loginResponse?.data?.user?.registrationStep || 1);
-                
-                if (data.data?.commercialUser?.commercialRole === 'owner') {
-                  setSelectedRole('Owner');
-                } else if (data.data?.commercialUser?.commercialRole === 'both') {
-                  setSelectedRole('Owner & Operator');
-                }
-              }
-            }
-          } else {
+          if (userId && authToken) {
             const response = await fetch(`https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`, {
               headers: {
                 'Authorization': `Bearer ${authToken}`
@@ -55,9 +119,6 @@ export default function CommercialRegistrationModal({ isOpen, onClose }) {
               const data = await response.json();
               setCommercialData(data.data);
               
-              const loginResponse = JSON.parse(localStorage.getItem("loginResponse"));
-              setRegistrationStep(loginResponse?.data?.user?.registrationStep || 1);
-              
               if (data.data?.commercialUser?.commercialRole === 'owner') {
                 setSelectedRole('Owner');
               } else if (data.data?.commercialUser?.commercialRole === 'both') {
@@ -65,6 +126,7 @@ export default function CommercialRegistrationModal({ isOpen, onClose }) {
               }
             }
           }
+          await checkUserProgress();
         } catch (error) {
           console.error('Error fetching commercial data:', error);
         } finally {
@@ -77,13 +139,10 @@ export default function CommercialRegistrationModal({ isOpen, onClose }) {
   }, [isOpen]);
 
   const handleNext = () => {
-    const loginResponse = JSON.parse(localStorage.getItem("loginResponse"));
-    const step = loginResponse?.data?.user?.registrationStep || 1;
-
     if (selectedRole === 'Owner') {
-      handleOwnerFlow(step);
+      handleOwnerFlow(currentStage);
     } else {
-      handleOwnerOperatorFlow(step);
+      handleOwnerOperatorFlow(currentStage);
     }
   };
 
@@ -130,6 +189,7 @@ export default function CommercialRegistrationModal({ isOpen, onClose }) {
   const closeAllModals = () => {
     setCurrentModal(null);
     onClose();
+    checkUserProgress();
   };
 
   const getHeaderTitle = () => {
@@ -152,7 +212,6 @@ export default function CommercialRegistrationModal({ isOpen, onClose }) {
 
   const getCurrentRoleDisplay = () => {
     if (!commercialData?.commercialUser?.commercialRole) return '';
-    
     const role = commercialData.commercialUser.commercialRole;
     if (role === 'both') return 'Owner & Operator';
     return role.charAt(0).toUpperCase() + role.slice(1);
@@ -242,10 +301,10 @@ export default function CommercialRegistrationModal({ isOpen, onClose }) {
                 </h2>
 
                 <div className="w-full h-1 bg-gray-200 rounded-full mb-1">
-                  <div className="h-1 bg-[#039994] rounded-full" style={{ width: '25%' }}></div>
+                  <div className="h-1 bg-[#039994] rounded-full" style={{ width: `${(currentStage-1)*25}%` }}></div>
                 </div>
                 <div className="text-right mb-6">
-                  <span className="text-[12px] font-medium text-gray-500 font-sfpro">01/04</span>
+                  <span className="text-[12px] font-medium text-gray-500 font-sfpro">{currentStage-1}/4</span>
                 </div>
 
                 {loading && (

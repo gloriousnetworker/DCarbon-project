@@ -2,14 +2,6 @@ import React, { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import axios from "axios";
 import UtilityAuthorizationModal from './UtilityAuthorizationModal.jsx';
-import {
-  buttonPrimary,
-  spinnerOverlay,
-  spinner,
-  labelClass,
-  inputClass,
-  termsTextContainer
-} from '../../styles.js';
 
 export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const [loading, setLoading] = useState(false);
@@ -20,8 +12,6 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [requestingFinanceType, setRequestingFinanceType] = useState(false);
   const [requestedFinanceTypeName, setRequestedFinanceTypeName] = useState('');
-  const [showDocumentsModal, setShowDocumentsModal] = useState(false);
-  const [showInviteOperatorModal, setShowInviteOperatorModal] = useState(false);
   const [showUtilityModal, setShowUtilityModal] = useState(false);
   const [file, setFile] = useState(null);
 
@@ -242,19 +232,11 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const handleUtilityModalClose = () => {
     setShowUtilityModal(false);
     onClose();
+    window.location.reload();
   };
 
   const handleUtilityModalBack = () => {
     setShowUtilityModal(false);
-  };
-
-  const handleInviteOperatorModalClose = () => {
-    setShowInviteOperatorModal(false);
-    setShowDocumentsModal(true);
-  };
-
-  const handleInviteOperatorModalBack = () => {
-    setShowInviteOperatorModal(false);
   };
 
   if (!isOpen) return null;
@@ -262,8 +244,8 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   return (
     <>
       {loading && (
-        <div className={spinnerOverlay}>
-          <div className={spinner}></div>
+        <div className="fixed inset-0 z-[60] bg-black bg-opacity-30 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#039994]"></div>
         </div>
       )}
 
@@ -306,7 +288,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
         </div>
       )}
 
-      {!showUtilityModal && !showInviteOperatorModal && (
+      {!showUtilityModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
           <div className="relative w-full max-w-lg bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
             <div className="relative p-6 pb-4">
@@ -322,7 +304,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
               )}
 
               <button
-                onClick={onClose}
+                onClick={() => { onClose(); window.location.reload(); }}
                 className="absolute top-6 right-6 text-red-500 hover:text-red-700"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -333,20 +315,21 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
               <h2 className="font-[600] text-[20px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro mt-8 text-center">
                 Finance & Installer information for Owner and Operator
               </h2>
-              <div className="w-full h-1 bg-[#039994] rounded-full mt-2"></div>
-
-              <div className="flex items-center mt-4 mb-2">
-                <div className="flex-1 h-1 bg-gray-200 rounded-full mr-4">
-                  <div className="h-1 bg-[#039994] rounded-full" style={{ width: '75%' }}></div>
+             
+              <div className="flex items-center justify-center mt-4">
+                <div className="flex items-center">
+                  <div className="w-96 h-1 bg-gray-200 rounded-full mr-2">
+                    <div className="h-1 bg-[#039994] rounded-full" style={{ width: '80%' }}></div>
+                  </div>
+                  <span className="text-sm font-medium text-gray-500 font-sfpro">04/05</span>
                 </div>
-                <span className="text-sm font-medium text-gray-500 font-sfpro whitespace-nowrap">03/04</span>
               </div>
             </div>
 
             <div className="flex-1 overflow-y-auto px-6 pb-6">
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className={`${labelClass} text-sm flex items-center`}>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 text-sm flex items-center">
                     Finance type <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
@@ -354,7 +337,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                       name="financeType"
                       value={formData.financeType}
                       onChange={handleInputChange}
-                      className={`${inputClass} text-sm bg-[#F0F0F0] appearance-none pr-10`}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] text-sm bg-[#F0F0F0] appearance-none pr-10"
                       required
                       disabled={loadingFinanceTypes}
                     >
@@ -380,7 +363,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
 
                 {showFinanceCompany && (
                   <div>
-                    <label className={`${labelClass} text-sm flex items-center`}>
+                    <label className="block text-sm font-medium text-gray-700 mb-1 text-sm flex items-center">
                       Finance company <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
@@ -388,7 +371,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                         name="financeCompany"
                         value={formData.financeCompany}
                         onChange={handleInputChange}
-                        className={`${inputClass} text-sm bg-[#F0F0F0] appearance-none pr-10`}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] text-sm bg-[#F0F0F0] appearance-none pr-10"
                         required
                       >
                         <option value="">Choose company</option>
@@ -409,7 +392,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
 
                 {showUploadField && (
                   <div>
-                    <label className={`${labelClass} text-sm flex items-center`}>
+                    <label className="block text-sm font-medium text-gray-700 mb-1 text-sm flex items-center">
                       Upload Finance Agreement <span className="text-red-500">*</span>
                     </label>
                     <div className="flex items-center gap-2">
@@ -436,7 +419,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                 )}
 
                 <div>
-                  <label className={`${labelClass} text-sm flex items-center`}>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 text-sm flex items-center">
                     Select installer <span className="text-gray-500 text-xs">(optional)</span>
                   </label>
                   <div className="relative">
@@ -444,7 +427,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                       name="installer"
                       value={formData.installer}
                       onChange={handleInputChange}
-                      className={`${inputClass} text-sm bg-[#F0F0F0] appearance-none pr-10`}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] text-sm bg-[#F0F0F0] appearance-none pr-10"
                       disabled={loadingInstallers}
                     >
                       <option value="">{loadingInstallers ? 'Loading...' : 'Choose installer'}</option>
@@ -464,7 +447,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
 
                 {showCustomInstaller && (
                   <div>
-                    <label className={`${labelClass} text-sm flex items-center`}>
+                    <label className="block text-sm font-medium text-gray-700 mb-1 text-sm flex items-center">
                       Installer Name <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -473,7 +456,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                       value={formData.customInstaller}
                       onChange={handleInputChange}
                       placeholder="Enter your installer name"
-                      className={`${inputClass} text-sm bg-[#F0F0F0]`}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] text-sm bg-[#F0F0F0]"
                       required
                     />
                   </div>
@@ -481,7 +464,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className={`${labelClass} text-sm flex items-center`}>
+                    <label className="block text-sm font-medium text-gray-700 mb-1 text-sm flex items-center">
                       System Size <span className="text-gray-500 text-xs">(optional)</span>
                     </label>
                     <input
@@ -490,12 +473,12 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                       value={formData.systemSize}
                       onChange={handleInputChange}
                       placeholder="Input system size"
-                      className={`${inputClass} text-sm bg-[#F0F0F0] placeholder-[#626060]`}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] text-sm bg-[#F0F0F0] placeholder-[#626060]"
                     />
                   </div>
 
                   <div>
-                    <label className={`${labelClass} text-sm flex items-center`}>
+                    <label className="block text-sm font-medium text-gray-700 mb-1 text-sm flex items-center">
                       COD <span className="text-gray-500 text-xs">(optional)</span>
                     </label>
                     <input
@@ -504,7 +487,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                       value={formData.cod}
                       onChange={handleInputChange}
                       placeholder="Input COD"
-                      className={`${inputClass} text-sm bg-[#F0F0F0] placeholder-[#626060]`}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] text-sm bg-[#F0F0F0] placeholder-[#626060]"
                     />
                   </div>
                 </div>
@@ -513,7 +496,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                   <button
                     type="submit"
                     disabled={loading}
-                    className={`${buttonPrimary} flex items-center justify-center disabled:opacity-50 text-sm`}
+                    className="w-full px-4 py-3 bg-[#039994] text-white rounded-md hover:bg-[#028882] focus:outline-none focus:ring-2 focus:ring-[#039994] font-semibold flex items-center justify-center disabled:opacity-50 text-sm"
                   >
                     {loading ? (
                       <>
@@ -526,7 +509,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                   </button>
                 </div>
 
-                <div className={`${termsTextContainer} text-sm text-center`}>
+                <div className="text-center text-sm text-gray-500 text-sm text-center">
                   <span>Terms and Conditions</span>
                   <span className="mx-2">•</span>
                   <span>Privacy Policy</span>

@@ -30,6 +30,8 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
   const [selectedFacilities, setSelectedFacilities] = useState([]);
   const [showFacilityModal, setShowFacilityModal] = useState(false);
   const [showAllFacilities, setShowAllFacilities] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [totalSteps] = useState(4);
 
   const baseUrl = 'https://services.dcarbon.solutions';
 
@@ -104,6 +106,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
         const utility = data.data.find(u => u.id === utilityId);
         if (utility && utility.meters && utility.meters.meters) {
           setVerifiedFacilities(utility.meters.meters);
+          setCurrentStep(3);
         }
       }
     } catch (error) {
@@ -113,6 +116,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
 
   const handleUtilityAuthChange = (value) => {
     setHasAuthorizedUtility(value);
+    setCurrentStep(1);
     if (!value) {
       setUtilityAuthEmail('');
       setSelectedUtilityAuth('');
@@ -183,6 +187,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
         toast.success('Utility authorization initiated successfully!', { id: toastId });
         setIframeUrl('https://utilityapi.com/authorize/DCarbon_Solutions');
         setShowIframe(true);
+        setCurrentStep(2);
       } else {
         toast.error('Failed to initiate utility authorization', { id: toastId });
       }
@@ -215,6 +220,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
         toast.success(data.message, { id: toastId });
         if (data.data && data.data.meters && data.data.meters.meters) {
           setVerifiedFacilities(data.data.meters.meters);
+          setCurrentStep(3);
         }
       } else {
         toast.error('Verification failed', { id: toastId });
@@ -272,6 +278,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
       }
     }
 
+    setCurrentStep(4);
     setShowFacilityModal(true);
   };
 
@@ -291,7 +298,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
         <div className="relative w-full max-w-4xl h-[90vh] bg-white rounded-2xl overflow-hidden">
           <div className="flex items-center justify-between p-4 border-b">
-            <h3 className="text-lg font-semibold text-[#039994]">Utility Authorization</h3>
+            <h3 className="text-lg font-semibold text-[#039994]">Utility Authorization Portal</h3>
             <button
               onClick={() => setShowIframe(false)}
               className="text-red-500 hover:text-red-700"
@@ -300,6 +307,14 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
                 <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
+          </div>
+          <div className="p-4 bg-yellow-50 border-b border-yellow-200">
+            <p className="text-sm text-yellow-700">
+              <strong>Step 2:</strong> Enter the email of your DCarbon account you are authorizing for, then choose your utility provider.
+            </p>
+            <p className="text-sm text-yellow-700 mt-1">
+              <strong>Step 3:</strong> Enter your Utility Account credentials and authorize access when prompted.
+            </p>
           </div>
           <iframe
             src={iframeUrl}
@@ -359,13 +374,13 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
             <h2 className="font-[600] text-[20px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro mt-8 text-center">
               Utility Authorization
             </h2>
-            <div className="w-full h-1 bg-[#039994] rounded-full mt-2"></div>
-
-            <div className="flex items-center mt-4 mb-2">
-              <div className="flex-1 h-1 bg-gray-200 rounded-full mr-4">
-                <div className="h-1 bg-[#039994] rounded-full w-1/2"></div>
+            <div className="flex items-center justify-center mt-4">
+              <div className="flex items-center">
+                <div className="w-96 h-1 bg-gray-200 rounded-full mr-2">
+                  <div className="h-1 bg-[#039994] rounded-full" style={{ width: `${(currentStep/totalSteps)*100}%` }}></div>
+                </div>
+                <span className="text-sm font-medium text-gray-500 font-sfpro">{currentStep}/{totalSteps}</span>
               </div>
-              <span className="text-sm font-medium text-gray-500 font-sfpro whitespace-nowrap">02/04</span>
             </div>
           </div>
 
@@ -373,7 +388,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label className={`${labelClass} text-sm mb-4 block`}>
-                  Do you have an authorized utility?
+                  Is your DCarbon account able to fetch meters from Utility API?
                 </label>
                 <div className="flex items-center space-x-6">
                   <label className="flex items-center">
@@ -400,28 +415,35 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
               </div>
 
               {hasAuthorizedUtility ? (
-                <div>
-                  <label className={`${labelClass} text-sm mb-2 block`}>
-                    Utility authorization email
-                  </label>
-                  <select
-                    value={selectedUtilityAuth}
-                    onChange={(e) => {
-                      setSelectedUtilityAuth(e.target.value);
-                      setVerifiedFacilities([]);
-                      setSelectedFacilities([]);
-                      setShowAllFacilities(false);
-                      fetchUserMeters(e.target.value);
-                    }}
-                    className={`${inputClass} text-sm w-full`}
-                  >
-                    <option value="">Select Email</option>
-                    {authorizedUtilities.map((utility) => (
-                      <option key={utility.id} value={utility.id}>
-                        {utility.utilityAuthEmail}
-                      </option>
-                    ))}
-                  </select>
+                <div className="space-y-4">
+                  <div className="bg-blue-50 p-3 rounded-lg">
+                    <p className="text-sm text-blue-700">
+                      <strong>All you need to do:</strong> Select the email and fetch the meters associated with the account, then proceed to generating your facility.
+                    </p>
+                  </div>
+                  <div>
+                    <label className={`${labelClass} text-sm mb-2 block`}>
+                      Utility authorization email
+                    </label>
+                    <select
+                      value={selectedUtilityAuth}
+                      onChange={(e) => {
+                        setSelectedUtilityAuth(e.target.value);
+                        setVerifiedFacilities([]);
+                        setSelectedFacilities([]);
+                        setShowAllFacilities(false);
+                        fetchUserMeters(e.target.value);
+                      }}
+                      className={`${inputClass} text-sm w-full`}
+                    >
+                      <option value="">Select Email</option>
+                      {authorizedUtilities.map((utility) => (
+                        <option key={utility.id} value={utility.id}>
+                          {utility.utilityAuthEmail}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
                   {selectedUtilityAuth && verifiedFacilities.length === 0 && (
                     <div className="mt-4">
@@ -436,7 +458,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
                         disabled={loading}
                         className="px-4 py-2 bg-[#039994] text-white text-sm font-medium rounded-lg hover:bg-[#02857f] transition-colors disabled:opacity-50"
                       >
-                        Verify
+                        Fetch Meters
                       </button>
                     </div>
                   )}
@@ -501,87 +523,99 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
                 </div>
               ) : (
                 <>
-                  <div>
-                    <label className={`${labelClass} text-sm mb-2 block`}>
-                      Input Utility Provider
-                    </label>
-                    <select
-                      value={selectedProvider}
-                      onChange={(e) => setSelectedProvider(e.target.value)}
-                      className={`${inputClass} text-sm w-full`}
-                    >
-                      <option value="">Select Provider</option>
-                      {utilityProviders.map((provider) => (
-                        <option key={provider.id} value={provider.id}>
-                          {provider.name}
-                        </option>
-                      ))}
-                    </select>
-                    
-                    <button
-                      type="button"
-                      onClick={() => setShowProviderRequest(!showProviderRequest)}
-                      className="text-[#039994] text-sm font-medium hover:underline mt-2"
-                    >
-                      Utility Provider not listed?
-                    </button>
+                  <div className="space-y-4">
+                    <div className="bg-blue-50 p-3 rounded-lg">
+                      <p className="text-sm text-blue-700">
+                        <strong>Step 1:</strong> Select your Utility Provider from the list below.
+                      </p>
+                    </div>
+                    <div>
+                      <label className={`${labelClass} text-sm mb-2 block`}>
+                        Utility Provider
+                      </label>
+                      <select
+                        value={selectedProvider}
+                        onChange={(e) => setSelectedProvider(e.target.value)}
+                        className={`${inputClass} text-sm w-full`}
+                      >
+                        <option value="">Select Provider</option>
+                        {utilityProviders.map((provider) => (
+                          <option key={provider.id} value={provider.id}>
+                            {provider.name}
+                          </option>
+                        ))}
+                      </select>
+                      
+                      <button
+                        type="button"
+                        onClick={() => setShowProviderRequest(!showProviderRequest)}
+                        className="text-[#039994] text-sm font-medium hover:underline mt-2"
+                      >
+                        Utility Provider not listed?
+                      </button>
 
-                    {showProviderRequest && (
-                      <div className="mt-4 p-4 border border-gray-200 rounded-lg space-y-3">
-                        <h4 className="text-sm font-medium text-gray-700">Request New Provider</h4>
+                      {showProviderRequest && (
+                        <div className="mt-4 p-4 border border-gray-200 rounded-lg space-y-3">
+                          <h4 className="text-sm font-medium text-gray-700">Request New Provider</h4>
+                          <input
+                            type="text"
+                            placeholder="Provider Name"
+                            value={newProviderData.name}
+                            onChange={(e) => setNewProviderData({...newProviderData, name: e.target.value})}
+                            className={`${inputClass} text-sm w-full`}
+                          />
+                          <input
+                            type="url"
+                            placeholder="Website URL"
+                            value={newProviderData.website}
+                            onChange={(e) => setNewProviderData({...newProviderData, website: e.target.value})}
+                            className={`${inputClass} text-sm w-full`}
+                          />
+                          <input
+                            type="text"
+                            placeholder="Documentation (optional)"
+                            value={newProviderData.documentation}
+                            onChange={(e) => setNewProviderData({...newProviderData, documentation: e.target.value})}
+                            className={`${inputClass} text-sm w-full`}
+                          />
+                          <button
+                            type="button"
+                            onClick={handleProviderRequest}
+                            disabled={loading}
+                            className="w-full px-4 py-2 bg-[#039994] text-white text-sm font-medium rounded-lg hover:bg-[#02857f] transition-colors disabled:opacity-50"
+                          >
+                            {loading ? 'Submitting...' : 'Submit Request'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="bg-blue-50 p-3 rounded-lg">
+                      <p className="text-sm text-blue-700">
+                        <strong>Step 2:</strong> Enter the email used in your Utility Account to fetch meters from Utility API.
+                      </p>
+                    </div>
+                    <div>
+                      <label className={`${labelClass} text-sm mb-2 block`}>
+                        Utility authorization email
+                      </label>
+                      <div className="flex space-x-2">
                         <input
-                          type="text"
-                          placeholder="Provider Name"
-                          value={newProviderData.name}
-                          onChange={(e) => setNewProviderData({...newProviderData, name: e.target.value})}
-                          className={`${inputClass} text-sm w-full`}
-                        />
-                        <input
-                          type="url"
-                          placeholder="Website URL"
-                          value={newProviderData.website}
-                          onChange={(e) => setNewProviderData({...newProviderData, website: e.target.value})}
-                          className={`${inputClass} text-sm w-full`}
-                        />
-                        <input
-                          type="text"
-                          placeholder="Documentation (optional)"
-                          value={newProviderData.documentation}
-                          onChange={(e) => setNewProviderData({...newProviderData, documentation: e.target.value})}
-                          className={`${inputClass} text-sm w-full`}
+                          type="email"
+                          value={utilityAuthEmail}
+                          onChange={(e) => setUtilityAuthEmail(e.target.value)}
+                          placeholder="Email address"
+                          className={`${inputClass} flex-1 text-sm`}
                         />
                         <button
                           type="button"
-                          onClick={handleProviderRequest}
-                          disabled={loading}
-                          className="w-full px-4 py-2 bg-[#039994] text-white text-sm font-medium rounded-lg hover:bg-[#02857f] transition-colors disabled:opacity-50"
+                          onClick={handleVerifyEmail}
+                          disabled={loading || !utilityAuthEmail}
+                          className="px-4 py-2 bg-[#039994] text-white text-sm font-medium rounded-lg hover:bg-[#02857f] transition-colors disabled:opacity-50"
                         >
-                          {loading ? 'Submitting...' : 'Submit Request'}
+                          Authorize
                         </button>
                       </div>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className={`${labelClass} text-sm mb-2 block`}>
-                      Utility authorization email
-                    </label>
-                    <div className="flex space-x-2">
-                      <input
-                        type="email"
-                        value={utilityAuthEmail}
-                        onChange={(e) => setUtilityAuthEmail(e.target.value)}
-                        placeholder="Email address"
-                        className={`${inputClass} flex-1 text-sm`}
-                      />
-                      <button
-                        type="button"
-                        onClick={handleVerifyEmail}
-                        disabled={loading || !utilityAuthEmail}
-                        className="px-4 py-2 bg-[#039994] text-white text-sm font-medium rounded-lg hover:bg-[#02857f] transition-colors disabled:opacity-50"
-                      >
-                        Verify
-                      </button>
                     </div>
                   </div>
                 </>

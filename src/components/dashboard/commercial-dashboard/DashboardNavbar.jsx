@@ -12,16 +12,120 @@ const DashboardNavbar = ({
 }) => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotificationDot, setShowNotificationDot] = useState(false);
-  const [registrationStep, setRegistrationStep] = useState(1);
+  const [currentStage, setCurrentStage] = useState(1);
   const [showRegistrationModal, setShowRegistrationModal] = useState(false);
+  const [progressWidth, setProgressWidth] = useState("20%");
+  const [progressColor, setProgressColor] = useState("bg-blue-500");
+
+  const updateRegistrationStep = (step) => {
+    setCurrentStage(step);
+    const newWidth = `${(step / 5) * 100}%`;
+    setProgressWidth(newWidth);
+    
+    switch(step) {
+      case 1: setProgressColor("bg-blue-500"); break;
+      case 2: setProgressColor("bg-purple-500"); break;
+      case 3: setProgressColor("bg-yellow-500"); break;
+      case 4: setProgressColor("bg-orange-500"); break;
+      case 5: setProgressColor("bg-green-500"); break;
+      default: setProgressColor("bg-[#039994]");
+    }
+  };
+
+  const checkStage2Completion = async (userId, authToken) => {
+    try {
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        }
+      );
+      const result = await response.json();
+      return result.status === 'success' && result.data?.commercialUser?.ownerAddress;
+    } catch (error) {
+      console.error('Error checking stage 2:', error);
+      return false;
+    }
+  };
+
+  const checkStage5Completion = async (userId, authToken) => {
+    try {
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        }
+      );
+      const result = await response.json();
+      return result.status === 'success' && result.data?.meters?.length > 0;
+    } catch (error) {
+      console.error('Error checking stage 5:', error);
+      return false;
+    }
+  };
+
+  const checkUserProgress = async () => {
+    try {
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const userId = loginResponse?.data?.user?.id;
+      const authToken = loginResponse?.data?.token;
+
+      if (!userId || !authToken) return;
+
+      const stageChecks = [
+        { stage: 2, check: () => checkStage2Completion(userId, authToken) },
+        { stage: 3, url: `https://services.dcarbon.solutions/api/user/accept-user-agreement-terms/${userId}`, method: 'PUT' },
+        { stage: 4, url: `https://services.dcarbon.solutions/api/user/update-financial-agreement/${userId}`, method: 'PUT' },
+        { stage: 5, check: () => checkStage5Completion(userId, authToken) }
+      ];
+
+      let highestCompletedStage = 1;
+
+      for (const { stage, url, method, check } of stageChecks) {
+        try {
+          let isCompleted = false;
+          if (check) {
+            isCompleted = await check();
+          } else {
+            const response = await fetch(url, {
+              method,
+              headers: {
+                'Authorization': `Bearer ${authToken}`
+              }
+            });
+            const result = await response.json();
+            isCompleted = response.ok && result.status === 'success';
+          }
+          if (isCompleted) {
+            highestCompletedStage = stage;
+          }
+        } catch (error) {
+          console.error(`Error checking stage ${stage}:`, error);
+        }
+      }
+
+      const newStage = highestCompletedStage + 1;
+      if (newStage !== currentStage) {
+        updateRegistrationStep(newStage);
+      }
+    } catch (error) {
+      console.error('Error checking user progress:', error);
+    }
+  };
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("loginResponse");
-    if (storedUser) {
-      const userData = JSON.parse(storedUser);
-      setRegistrationStep(userData.data.user.registrationStep || 1);
-    }
+    checkUserProgress();
+    const interval = setInterval(checkUserProgress, 15000);
+    return () => clearInterval(interval);
+  }, []);
 
+  useEffect(() => {
     const storedNotifications = localStorage.getItem("notifications");
     if (storedNotifications) {
       const notifications = JSON.parse(storedNotifications);
@@ -40,8 +144,7 @@ const DashboardNavbar = ({
           flashNotificationDot();
         }
       } else if (e.key === "loginResponse") {
-        const userData = JSON.parse(e.newValue);
-        setRegistrationStep(userData.data.user.registrationStep || 1);
+        checkUserProgress();
       }
     };
 
@@ -55,7 +158,7 @@ const DashboardNavbar = ({
     const interval = setInterval(() => {
       setShowNotificationDot((prev) => !prev);
       flashCount++;
-      if (flashCount >= maxFlashtoast * 2) {
+      if (flashCount >= maxFlashes * 2) {
         clearInterval(interval);
         setShowNotificationDot(true);
       }
@@ -66,27 +169,14 @@ const DashboardNavbar = ({
     setShowRegistrationModal(true);
   };
 
-  const getProgressWidth = () => `${(registrationStep / 5) * 100}%`;
-
-  const getProgressColor = () => {
-    switch(registrationStep) {
-      case 1: return "bg-blue-500";
-      case 2: return "bg-purple-500";
-      case 3: return "bg-yellow-500";
-      case 4: return "bg-orange-500";
-      case 5: return "bg-green-500";
-      default: return "bg-[#039994]";
-    }
-  };
-
   const getTooltipText = () => {
-    switch(registrationStep) {
-      case 1: return "Initial Commercial Registration completed";
-      case 2: return "Commercial Owner's details completed";
-      case 3: return "Agreements have been completed";
-      case 4: return "Finance Information has been completed";
-      case 5: return "Utility Authorization completed. You can now generate facilities";
-      default: return `Complete registration step ${registrationStep} of 5`;
+    switch(currentStage) {
+      case 1: return "Account creation completed";
+      case 2: return "Complete commercial registration with owner details and address";
+      case 3: return "Accept terms and conditions";
+      case 4: return "Submit financial information";
+      case 5: return "Connect utility meters";
+      default: return `Complete registration step ${currentStage} of 5`;
     }
   };
 
@@ -124,14 +214,14 @@ const DashboardNavbar = ({
                 onClick={handleRegistrationClick}
                 className="cursor-pointer px-4 py-2 bg-gray-100 rounded-md flex items-center hover:bg-gray-200 transition-colors"
               >
-                <div className="w-32 h-2 bg-gray-200 rounded-full mr-3">
+                <div className="w-32 h-2 bg-gray-200 rounded-full mr-3 transition-all duration-500">
                   <div
-                    className={`h-2 rounded-full ${getProgressColor()}`}
-                    style={{ width: getProgressWidth() }}
+                    className={`h-2 rounded-full ${progressColor} transition-all duration-500`}
+                    style={{ width: progressWidth }}
                   ></div>
                 </div>
                 <span className="text-xs font-medium">
-                  Step {registrationStep} of 5
+                  Step {currentStage} of 5
                 </span>
               </div>
               <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 transform hidden group-hover:block">
@@ -173,7 +263,7 @@ const DashboardNavbar = ({
       <CommercialRegistrationModal
         isOpen={showRegistrationModal}
         onClose={() => setShowRegistrationModal(false)}
-        currentStep={registrationStep}
+        currentStep={currentStage}
       />
     </>
   );

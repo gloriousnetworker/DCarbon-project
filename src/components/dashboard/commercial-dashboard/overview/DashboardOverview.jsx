@@ -8,6 +8,62 @@ const RecentRecSales = dynamic(() => import("./RecentRecSales"), { ssr: false })
 const WelcomeModal = dynamic(() => import("./modals/WelcomeModal"), { ssr: false });
 const AddUtilityProvider = dynamic(() => import("./modals/AddUtilityProvider"), { ssr: false });
 
+const ProgressTracker = ({ currentStage }) => {
+  const stages = [
+    { id: 1, name: "Sign Up", tooltip: "Account creation completed" },
+    { id: 2, name: "Commercial Registration", tooltip: "Owner details and address completed" },
+    { id: 3, name: "Terms Acceptance", tooltip: "Terms and conditions signed" },
+    { id: 4, name: "Financial Agreement", tooltip: "Financial information submitted" },
+    { id: 5, name: "Utility Authorization", tooltip: "Utility meters connected" }
+  ];
+
+  return (
+    <div className="w-full bg-white rounded-lg shadow-sm p-4 mb-6">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-lg font-semibold text-gray-800">Onboarding Progress</h2>
+        <span className="text-sm font-medium text-[#039994]">
+          Stage {currentStage} of {stages.length}
+        </span>
+      </div>
+      <div className="relative">
+        <div className="flex justify-between mb-2">
+          {stages.map((stage) => (
+            <div key={stage.id} className="flex flex-col items-center group relative">
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                  stage.id === currentStage ? "bg-[#039994] text-white" : stage.id < currentStage ? "bg-[#039994] text-white" : "bg-gray-200 text-gray-600"
+                }`}
+              >
+                {stage.id}
+              </div>
+              <span
+                className={`text-xs mt-1 text-center ${
+                  stage.id === currentStage ? "text-[#039994] font-medium" : stage.id < currentStage ? "text-[#039994] font-medium" : "text-gray-500"
+                }`}
+              >
+                {stage.name}
+              </span>
+              <div className="absolute top-full mt-2 hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap z-10">
+                {stage.tooltip}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="absolute top-4 left-0 right-0 flex justify-between px-4 -z-10">
+          {stages.slice(0, stages.length - 1).map((stage) => (
+            <div
+              key={stage.id}
+              className={`h-1 flex-1 mx-2 ${
+                stage.id < currentStage ? "bg-[#039994]" : "bg-gray-200"
+              }`}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function DashboardOverview() {
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [showAddUtilityModal, setShowAddUtilityModal] = useState(false);
@@ -17,6 +73,91 @@ export default function DashboardOverview() {
   });
   const [isFirstTimeUser, setIsFirstTimeUser] = useState(false);
   const [isCheckingCommercialStatus, setIsCheckingCommercialStatus] = useState(false);
+  const [currentStage, setCurrentStage] = useState(1);
+
+  const checkStage2Completion = async (userId, authToken) => {
+    try {
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        }
+      );
+      const result = await response.json();
+      return result.status === 'success' && result.data?.commercialUser?.ownerAddress;
+    } catch (error) {
+      console.error('Error checking stage 2:', error);
+      return false;
+    }
+  };
+
+  const checkStage5Completion = async (userId, authToken) => {
+    try {
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        }
+      );
+      const result = await response.json();
+      return result.status === 'success' && result.data?.meters?.length > 0;
+    } catch (error) {
+      console.error('Error checking stage 5:', error);
+      return false;
+    }
+  };
+
+  const checkUserProgress = async () => {
+    try {
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const userId = loginResponse?.data?.user?.id;
+      const authToken = loginResponse?.data?.token;
+
+      if (!userId || !authToken) return;
+
+      const stageChecks = [
+        { stage: 2, check: () => checkStage2Completion(userId, authToken) },
+        { stage: 3, url: `https://services.dcarbon.solutions/api/user/accept-user-agreement-terms/${userId}`, method: 'PUT' },
+        { stage: 4, url: `https://services.dcarbon.solutions/api/user/update-financial-agreement/${userId}`, method: 'PUT' },
+        { stage: 5, check: () => checkStage5Completion(userId, authToken) }
+      ];
+
+      let highestCompletedStage = 1;
+
+      for (const { stage, url, method, check } of stageChecks) {
+        try {
+          let isCompleted = false;
+          if (check) {
+            isCompleted = await check();
+          } else {
+            const response = await fetch(url, {
+              method,
+              headers: {
+                'Authorization': `Bearer ${authToken}`
+              }
+            });
+            const result = await response.json();
+            isCompleted = response.ok && result.status === 'success';
+          }
+          if (isCompleted) {
+            highestCompletedStage = stage;
+          }
+        } catch (error) {
+          console.error(`Error checking stage ${stage}:`, error);
+        }
+      }
+
+      setCurrentStage(highestCompletedStage + 1);
+    } catch (error) {
+      console.error('Error checking user progress:', error);
+    }
+  };
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -31,14 +172,13 @@ export default function DashboardOverview() {
         userId: userId
       });
 
-      // Check if this is a first-time user
       const hasVisitedBefore = localStorage.getItem("hasVisitedDashboard");
       if (!hasVisitedBefore) {
         setIsFirstTimeUser(true);
       }
 
-      // Always check commercial user status
       await checkCommercialUserStatus(userId);
+      await checkUserProgress();
     };
 
     loadUserData();
@@ -67,15 +207,12 @@ export default function DashboardOverview() {
       const result = await response.json();
 
       if (result.statusCode === 422 && result.status === 'fail') {
-        // User is not a commercial user, show welcome modal
         setShowWelcomeModal(true);
       } else if (result.statusCode !== 200 || result.status !== 'success') {
-        // Unexpected response, still show modal to be safe
         setShowWelcomeModal(true);
       }
     } catch (error) {
       console.error('Error checking commercial status:', error);
-      // On error, show modal to ensure user can complete registration
       setShowWelcomeModal(true);
     } finally {
       setIsCheckingCommercialStatus(false);
@@ -84,8 +221,8 @@ export default function DashboardOverview() {
 
   const handleCloseWelcomeModal = () => {
     setShowWelcomeModal(false);
-    // Mark that user has visited the dashboard
     localStorage.setItem("hasVisitedDashboard", "true");
+    checkUserProgress();
   };
 
   const handleOpenAddUtilityModal = () => {
@@ -94,6 +231,7 @@ export default function DashboardOverview() {
 
   const handleCloseAddUtilityModal = () => {
     setShowAddUtilityModal(false);
+    checkUserProgress();
   };
 
   if (isCheckingCommercialStatus) {
@@ -108,7 +246,6 @@ export default function DashboardOverview() {
 
   return (
     <div className="w-full min-h-screen space-y-8 p-4">
-      {/* Header Section */}
       <div className="flex justify-between items-start mb-4">
         <div>
           <h1 className="font-[600] text-[16px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro">
@@ -117,6 +254,7 @@ export default function DashboardOverview() {
         </div>
       </div>
 
+      <ProgressTracker currentStage={currentStage} />
       <QuickActions />
 
       <hr className="border-gray-300" />
@@ -127,7 +265,6 @@ export default function DashboardOverview() {
 
       <RecentRecSales />
 
-      {/* Welcome Modal - show if user is not commercial user or first-time user */}
       {showWelcomeModal && (
         <WelcomeModal 
           isOpen 

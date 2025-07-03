@@ -232,7 +232,8 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
         }
       }
 
-      setShowInviteOperatorModal(true);
+      window.location.reload();
+      
     } catch (err) {
       toast.error(err.response?.data?.message || err.message || 'Operation failed', { id: toastId });
     } finally {
@@ -289,7 +290,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
         </div>
       )}
 
-      {!showInviteOperatorModal && !showRequestModal && (
+      {!showRequestModal && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black bg-opacity-50 p-4">
           <div className="relative w-full max-w-lg bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
             <div className="relative p-6 pb-4">
@@ -316,13 +317,14 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
               <h2 className="font-[600] text-[20px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro mt-8 text-center">
                 Finance & Installer information for Owner
               </h2>
-              <div className="w-full h-1 bg-[#039994] rounded-full mt-2"></div>
-
-              <div className="flex items-center mt-4 mb-2">
-                <div className="flex-1 h-1 bg-gray-200 rounded-full mr-4">
-                  <div className="h-1 bg-[#039994] rounded-full" style={{ width: '75%' }}></div>
+              
+              <div className="flex items-center justify-center mt-4">
+                <div className="flex items-center">
+                  <div className="w-96 h-1 bg-gray-200 rounded-full mr-2">
+                    <div className="h-1 bg-[#039994] rounded-full" style={{ width: '80%' }}></div>
+                  </div>
+                  <span className="text-sm font-medium text-gray-500 font-sfpro">04/05</span>
                 </div>
-                <span className="text-sm font-medium text-gray-500 font-sfpro">03/04</span>
               </div>
             </div>
 
@@ -518,17 +520,6 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
             </div>
           </div>
         </div>
-      )}
-
-      {showInviteOperatorModal && (
-        <InviteOperatorModal 
-          isOpen={showInviteOperatorModal}
-          onClose={() => {
-            setShowInviteOperatorModal(false);
-            setShowDocumentsModal(true);
-          }}
-          onBack={() => setShowInviteOperatorModal(false)}
-        />
       )}
     </>
   );
