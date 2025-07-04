@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import axios from "axios";
-import UploadFacilityDocumentsModal from "./UploadFacilityDocumentsModal";
 import InviteOperatorModal from "./InviteOperatorModal";
 import {
   buttonPrimary,
@@ -21,7 +20,6 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [requestingFinanceType, setRequestingFinanceType] = useState(false);
   const [requestedFinanceTypeName, setRequestedFinanceTypeName] = useState('');
-  const [showDocumentsModal, setShowDocumentsModal] = useState(false);
   const [showInviteOperatorModal, setShowInviteOperatorModal] = useState(false);
   const [file, setFile] = useState(null);
 
@@ -232,13 +230,22 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
         }
       }
 
-      window.location.reload();
-      
+      setShowInviteOperatorModal(true);
     } catch (err) {
       toast.error(err.response?.data?.message || err.message || 'Operation failed', { id: toastId });
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleInviteOperatorModalClose = () => {
+    setShowInviteOperatorModal(false);
+    onClose();
+    window.location.reload();
+  };
+
+  const handleInviteOperatorModalBack = () => {
+    setShowInviteOperatorModal(false);
   };
 
   if (!isOpen) return null;
@@ -290,7 +297,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
         </div>
       )}
 
-      {!showRequestModal && (
+      {!showInviteOperatorModal && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black bg-opacity-50 p-4">
           <div className="relative w-full max-w-lg bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
             <div className="relative p-6 pb-4">
@@ -306,7 +313,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
               )}
 
               <button
-                onClick={onClose}
+                onClick={() => { onClose(); window.location.reload(); }}
                 className="absolute top-6 right-6 text-red-500 hover:text-red-700"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -520,6 +527,14 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
             </div>
           </div>
         </div>
+      )}
+
+      {showInviteOperatorModal && (
+        <InviteOperatorModal
+          isOpen={showInviteOperatorModal}
+          onClose={handleInviteOperatorModalClose}
+          onBack={handleInviteOperatorModalBack}
+        />
       )}
     </>
   );

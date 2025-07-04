@@ -7,6 +7,7 @@ import FinanceAndInstallerModal from "./ownerRegistration/FinanceAndInstallerMod
 import OperatorFinanceAndInstallerModal from "./ownerAndOperatorRegistration/FinanceAndInstallerModal";
 import AddCommercialFacilityModal from "./ownerAndOperatorRegistration/AddCommercialFacilityModal";
 import UtilityAuthorizationModal from "./ownerAndOperatorRegistration/UtilityAuthorizationModal";
+import InviteOperatorModal from "./ownerRegistration/InviteOperatorModal";
 
 export default function CommercialRegistrationModal({ isOpen, onClose }) {
   const [selectedRole, setSelectedRole] = useState('Owner');
@@ -14,6 +15,7 @@ export default function CommercialRegistrationModal({ isOpen, onClose }) {
   const [commercialData, setCommercialData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [currentStage, setCurrentStage] = useState(1);
+  const [showInviteOperatorModal, setShowInviteOperatorModal] = useState(false);
 
   const checkStage2Completion = async (userId, authToken) => {
     try {
@@ -107,18 +109,18 @@ export default function CommercialRegistrationModal({ isOpen, onClose }) {
           const loginResponse = JSON.parse(localStorage.getItem("loginResponse") || '{}');
           const userId = loginResponse?.data?.user?.id;
           const authToken = loginResponse?.data?.token;
-          
+
           if (userId && authToken) {
             const response = await fetch(`https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`, {
               headers: {
                 'Authorization': `Bearer ${authToken}`
               }
             });
-            
+
             if (response.ok) {
               const data = await response.json();
               setCommercialData(data.data);
-              
+
               if (data.data?.commercialUser?.commercialRole === 'owner') {
                 setSelectedRole('Owner');
               } else if (data.data?.commercialUser?.commercialRole === 'both') {
@@ -133,7 +135,7 @@ export default function CommercialRegistrationModal({ isOpen, onClose }) {
           setLoading(false);
         }
       };
-      
+
       fetchCommercialData();
     }
   }, [isOpen]);
@@ -147,7 +149,7 @@ export default function CommercialRegistrationModal({ isOpen, onClose }) {
   };
 
   const handleOwnerFlow = (step) => {
-    switch(step) {
+    switch (step) {
       case 1:
       case 2:
         setCurrentModal('ownerDetails');
@@ -167,7 +169,7 @@ export default function CommercialRegistrationModal({ isOpen, onClose }) {
   };
 
   const handleOwnerOperatorFlow = (step) => {
-    switch(step) {
+    switch (step) {
       case 1:
       case 2:
         setCurrentModal('ownerOperatorDetails');
@@ -197,8 +199,8 @@ export default function CommercialRegistrationModal({ isOpen, onClose }) {
   };
 
   const getRoleDescription = (role) => {
-    return role === 'Owner' 
-      ? "Register as a facility owner only" 
+    return role === 'Owner'
+      ? "Register as a facility owner only"
       : "Register as both owner and operator";
   };
 
@@ -225,8 +227,18 @@ export default function CommercialRegistrationModal({ isOpen, onClose }) {
     }
   };
 
+  const handleInviteOperator = () => {
+    setCurrentModal(null);
+    setShowInviteOperatorModal(true);
+  };
+
+  const handleInviteOperatorModalClose = () => {
+    setShowInviteOperatorModal(false);
+    onClose();
+  };
+
   const renderCurrentModal = () => {
-    switch(currentModal) {
+    switch (currentModal) {
       case 'ownerDetails':
         return <OwnerDetailsModal isOpen={true} onClose={closeAllModals} />;
       case 'ownerOperatorDetails':
@@ -252,23 +264,36 @@ export default function CommercialRegistrationModal({ isOpen, onClose }) {
                 className="absolute top-4 right-4 z-10 w-6 h-6 flex items-center justify-center text-red-500 hover:text-red-700"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </button>
 
               <div className="p-6">
                 <h2 className="font-[600] text-[20px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro mb-4">
-                  Utility Authorization
+                  Owner's Utility Authorization
                 </h2>
                 <p className="font-sfpro text-[14px] leading-[150%] text-gray-700 mb-6">
-                  Your request for Utility Authorization by your Operator is in progress. You will be notified to continue once approved.
+                  🎉 Finance information completed! You're one step away from generating your DCarbon facility.
+                  <br /><br />
+                  Next step: Invite your operator to complete the authorization process. Once they're done, you'll be able to add facilities.
+                  <br /><br />
+                  Already invited your operator? You can close this and wait for them to complete their part.
                 </p>
-                <button
-                  onClick={closeAllModals}
-                  className="w-full rounded-md bg-[#039994] text-white font-semibold py-3 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px]"
-                >
-                  Close
-                </button>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={closeAllModals}
+                    className="flex-1 rounded-md border border-[#039994] text-[#039994] font-semibold py-3 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px]"
+                  >
+                    Close
+                  </button>
+                  <button
+                    onClick={handleInviteOperator}
+                    className="flex-1 rounded-md bg-[#039994] text-white font-semibold py-3 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px]"
+                  >
+                    Invite Operator
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -278,11 +303,11 @@ export default function CommercialRegistrationModal({ isOpen, onClose }) {
     }
   };
 
-  if (!isOpen && !currentModal) return null;
+  if (!isOpen && !currentModal && !showInviteOperatorModal) return null;
 
   return (
     <>
-      {isOpen && !currentModal && (
+      {isOpen && !currentModal && !showInviteOperatorModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
           <div className="relative w-full max-w-md bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
             <button
@@ -290,7 +315,7 @@ export default function CommercialRegistrationModal({ isOpen, onClose }) {
               className="absolute top-4 right-4 z-10 w-6 h-6 flex items-center justify-center text-red-500 hover:text-red-700"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </button>
 
@@ -301,10 +326,10 @@ export default function CommercialRegistrationModal({ isOpen, onClose }) {
                 </h2>
 
                 <div className="w-full h-1 bg-gray-200 rounded-full mb-1">
-                  <div className="h-1 bg-[#039994] rounded-full" style={{ width: `${(currentStage-1)*25}%` }}></div>
+                  <div className="h-1 bg-[#039994] rounded-full" style={{ width: `${(currentStage - 1) * 25}%` }}></div>
                 </div>
                 <div className="text-right mb-6">
-                  <span className="text-[12px] font-medium text-gray-500 font-sfpro">{currentStage-1}/4</span>
+                  <span className="text-[12px] font-medium text-gray-500 font-sfpro">{currentStage - 1}/4</span>
                 </div>
 
                 {loading && (
@@ -345,13 +370,11 @@ export default function CommercialRegistrationModal({ isOpen, onClose }) {
                   <label className="block mb-3 font-sfpro text-[12px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]">
                     Commercial Role
                   </label>
-                  
+
                   <div className="mb-3">
-                    <label className={`flex items-start justify-between p-3 border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50 ${
-                      selectedRole === 'Owner' ? 'bg-white' : 'bg-[#F0F0F0]'
-                    } ${
-                      isRoleSelectionDisabled() ? 'opacity-50 cursor-not-allowed' : ''
-                    }`}>
+                    <label className={`flex items-start justify-between p-3 border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50 ${selectedRole === 'Owner' ? 'bg-white' : 'bg-[#F0F0F0]'
+                      } ${isRoleSelectionDisabled() ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}>
                       <div className="flex-1 pr-3">
                         <div className="font-sfpro font-[600] text-[14px] leading-[100%] tracking-[-0.05em] text-[#1E1E1E] mb-1">
                           Owner
@@ -375,11 +398,9 @@ export default function CommercialRegistrationModal({ isOpen, onClose }) {
                   </div>
 
                   <div className="mb-6">
-                    <label className={`flex items-start justify-between p-3 border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50 ${
-                      selectedRole === 'Owner & Operator' ? 'bg-white' : 'bg-[#F0F0F0]'
-                    } ${
-                      isRoleSelectionDisabled() ? 'opacity-50 cursor-not-allowed' : ''
-                    }`}>
+                    <label className={`flex items-start justify-between p-3 border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50 ${selectedRole === 'Owner & Operator' ? 'bg-white' : 'bg-[#F0F0F0]'
+                      } ${isRoleSelectionDisabled() ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}>
                       <div className="flex-1 pr-3">
                         <div className="font-sfpro font-[600] text-[14px] leading-[100%] tracking-[-0.05em] text-[#1E1E1E] mb-1">
                           Owner & Operator
@@ -411,11 +432,10 @@ export default function CommercialRegistrationModal({ isOpen, onClose }) {
                   <button
                     onClick={handleNext}
                     disabled={loading || isNextButtonDisabled()}
-                    className={`w-full rounded-md text-white font-semibold py-3 focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] ${
-                      loading || isNextButtonDisabled() 
-                        ? 'bg-gray-400 cursor-not-allowed' 
+                    className={`w-full rounded-md text-white font-semibold py-3 focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] ${loading || isNextButtonDisabled()
+                        ? 'bg-gray-400 cursor-not-allowed'
                         : 'bg-[#039994] hover:bg-[#02857f]'
-                    }`}
+                      }`}
                   >
                     {loading ? 'Loading...' : 'Next'}
                   </button>
@@ -433,6 +453,13 @@ export default function CommercialRegistrationModal({ isOpen, onClose }) {
       )}
 
       {renderCurrentModal()}
+
+      {showInviteOperatorModal && (
+        <InviteOperatorModal
+          isOpen={showInviteOperatorModal}
+          onClose={handleInviteOperatorModalClose}
+        />
+      )}
     </>
   );
 }

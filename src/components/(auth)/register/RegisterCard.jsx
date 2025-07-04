@@ -32,15 +32,23 @@ function RegisterCardContent() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
   const [hoveredButton, setHoveredButton] = useState(null);
+  const [isOperatorType, setIsOperatorType] = useState(false);
 
   const searchParams = useSearchParams();
 
   useEffect(() => {
     const code = searchParams.get('referral');
+    const type = searchParams.get('type');
+    
     if (code) {
       setUrlReferralCode(code);
       setShowReferralField(true);
       toast.success(`You've been invited with referral code: ${code}`);
+    }
+    
+    if (type && type.toLowerCase() === 'operator') {
+      setIsOperatorType(true);
+      setUserCategory('Operator');
     }
   }, [searchParams]);
 
@@ -51,9 +59,14 @@ function RegisterCardContent() {
     Operator: 'COMMERCIAL'
   };
 
-  const availableUserCategories = urlReferralCode
-    ? ['Residential', 'Commercial', 'Operator']
-    : ['Residential', 'Commercial', 'Partner'];
+  const getAvailableUserCategories = () => {
+    if (isOperatorType) {
+      return ['Operator'];
+    }
+    return urlReferralCode
+      ? ['Residential', 'Commercial', 'Operator']
+      : ['Residential', 'Commercial', 'Partner'];
+  };
 
   const validateForm = () => {
     if (
@@ -135,7 +148,13 @@ function RegisterCardContent() {
   };
 
   const togglePasswordVisibility = () => setPasswordVisible((prev) => !prev);
-  const handleUserCategory = (category) => setUserCategory(category);
+  
+  const handleUserCategory = (category) => {
+    if (isOperatorType && category !== 'Operator') {
+      return;
+    }
+    setUserCategory(category);
+  };
 
   const toggleReferralField = () => {
     setShowReferralField(!showReferralField);
@@ -156,6 +175,12 @@ function RegisterCardContent() {
     }
     return '';
   };
+
+  const isCategoryDisabled = (category) => {
+    return isOperatorType && category !== 'Operator';
+  };
+
+  const availableUserCategories = getAvailableUserCategories();
 
   return (
     <>
@@ -187,6 +212,12 @@ function RegisterCardContent() {
           {urlReferralCode && (
             <div className="mb-4 p-3 bg-green-100 text-green-800 rounded-md text-sm">
               You're registering with referral code: <strong>{urlReferralCode}</strong>
+            </div>
+          )}
+
+          {isOperatorType && (
+            <div className="mb-4 p-3 bg-blue-100 text-blue-800 rounded-md text-sm">
+              You have been invited to register as an <strong>Operator</strong>
             </div>
           )}
 
@@ -345,15 +376,18 @@ function RegisterCardContent() {
                       onClick={() => handleUserCategory(category)}
                       onMouseEnter={() => setHoveredButton(category)}
                       onMouseLeave={() => setHoveredButton(null)}
+                      disabled={isCategoryDisabled(category)}
                       className={`w-full text-center px-4 py-2 rounded-md text-sm font-sfpro transition duration-300 ease-in-out ${
-                        userCategory === category
+                        isCategoryDisabled(category)
+                          ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                          : userCategory === category
                           ? 'bg-[#039994] text-white'
-                          : 'bg-transparent text-[#039994] border border-[#039994]'
-                      } hover:bg-[#02857f] hover:text-white`}
+                          : 'bg-transparent text-[#039994] border border-[#039994] hover:bg-[#02857f] hover:text-white'
+                      }`}
                     >
                       {category}
                     </button>
-                    {hoveredButton === category && (
+                    {hoveredButton === category && !isCategoryDisabled(category) && (
                       <div className="absolute z-10 w-full mt-1 p-2 text-xs bg-white border border-gray-200 rounded shadow-lg">
                         {getButtonTooltip(category)}
                       </div>
