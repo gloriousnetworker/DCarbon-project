@@ -33,6 +33,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
   const [currentStep, setCurrentStep] = useState(1);
   const [totalSteps] = useState(5);
   const [meterFetchInterval, setMeterFetchInterval] = useState(null);
+  const [hasMeters, setHasMeters] = useState(false);
 
   const baseUrl = 'https://services.dcarbon.solutions';
 
@@ -42,6 +43,9 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
     }
     if (isOpen && hasAuthorizedUtility) {
       fetchAuthorizedUtilities();
+    }
+    if (isOpen) {
+      checkUserMeters();
     }
   }, [isOpen, hasAuthorizedUtility]);
 
@@ -59,6 +63,25 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
 
   const getUserId = () => {
     return localStorage.getItem('userId');
+  };
+
+  const checkUserMeters = async () => {
+    try {
+      const response = await fetch(`${baseUrl}/api/auth/user-meters/${getUserId()}`, {
+        headers: {
+          'Authorization': `Bearer ${getAuthToken()}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      const data = await response.json();
+      if (data.status === 'success' && data.data && data.data.length > 0) {
+        setHasMeters(true);
+      } else {
+        setHasMeters(false);
+      }
+    } catch (error) {
+      setHasMeters(false);
+    }
   };
 
   const fetchUtilityProviders = async () => {
@@ -275,6 +298,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
       toast.success('Utility authorization completed successfully!');
       fetchAuthorizedUtilities();
       setCurrentStep(3);
+      checkUserMeters();
     }
   };
 
@@ -287,27 +311,6 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (hasAuthorizedUtility) {
-      if (!selectedUtilityAuth) {
-        toast.error('Please select a utility authorization email');
-        return;
-      }
-      if (selectedFacilities.length === 0) {
-        toast.error('Please select at least one facility');
-        return;
-      }
-    } else {
-      if (!selectedProvider) {
-        toast.error('Please select a utility provider');
-        return;
-      }
-      if (!utilityAuthEmail) {
-        toast.error('Please enter your utility authorization email');
-        return;
-      }
-    }
-
     setShowFacilityModal(true);
     setCurrentStep(5);
   };
@@ -315,6 +318,18 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
   const handleFacilityModalClose = () => {
     setShowFacilityModal(false);
     onClose();
+    window.location.reload();
+  };
+
+  const handleIframeClose = () => {
+    setShowIframe(false);
+    onClose();
+    window.location.reload();
+  };
+
+  const handleMainModalClose = () => {
+    onClose();
+    window.location.reload();
   };
 
   const displayedFacilities = showAllFacilities ? verifiedFacilities : verifiedFacilities.slice(0, 3);
@@ -326,7 +341,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
           <div className="flex items-center justify-between p-4 border-b">
             <h3 className="text-lg font-semibold text-[#039994]">Utility Authorization Portal</h3>
             <button
-              onClick={() => setShowIframe(false)}
+              onClick={handleIframeClose}
               className="text-red-500 hover:text-red-700"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -386,7 +401,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
             )}
 
             <button
-              onClick={onClose}
+              onClick={handleMainModalClose}
               className="absolute top-6 right-6 text-red-500 hover:text-red-700"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -408,6 +423,13 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
           </div>
 
           <div className="flex-1 overflow-y-auto px-6 pb-6">
+            {hasMeters && (
+              <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-3">
+                <p className="text-sm text-green-700">
+                  <strong>Success!</strong> You have authorized meters and can now generate facilities.
+                </p>
+              </div>
+            )}
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label className={`${labelClass} text-sm mb-4 block`}>
@@ -644,27 +666,23 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
                 </>
               )}
 
-              {(!hasAuthorizedUtility || verifiedFacilities.length > 0) && (
-                <div className="pt-4 space-y-4">
-                  {verifiedFacilities.length > 0 && (
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className={`${buttonPrimary} w-full py-3 text-white font-medium rounded-lg transition-colors`}
-                    >
-                      {loading ? 'Processing...' : 'Add Commercial Facility'}
-                    </button>
-                  )}
-                  
-                  <div className={termsTextContainer}>
-                    <p className="text-xs text-center text-gray-500">
-                      <a href="#" className="underline hover:no-underline">Terms and Conditions</a>
-                      {' • '}
-                      <a href="#" className="underline hover:no-underline">Privacy Policy</a>
-                    </p>
-                  </div>
+              <div className="pt-4 space-y-4">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className={`${buttonPrimary} w-full py-3 text-white font-medium rounded-lg transition-colors`}
+                >
+                  {loading ? 'Processing...' : 'Add Commercial Facility'}
+                </button>
+                
+                <div className={termsTextContainer}>
+                  <p className="text-xs text-center text-gray-500">
+                    <a href="#" className="underline hover:no-underline">Terms and Conditions</a>
+                    {' • '}
+                    <a href="#" className="underline hover:no-underline">Privacy Policy</a>
+                  </p>
                 </div>
-              )}
+              </div>
             </form>
           </div>
         </div>
