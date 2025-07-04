@@ -36,6 +36,7 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
   const [isLoading, setIsLoading] = useState(true);
   const [showRoleDropdown, setShowRoleDropdown] = useState(false);
   const [commercialRole, setCommercialRole] = useState('owner');
+  const [originalCommercialRole, setOriginalCommercialRole] = useState('owner');
 
   useEffect(() => {
     if (isOpen) {
@@ -85,6 +86,7 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
 
         if (commercialUser.commercialRole) {
           setCommercialRole(commercialUser.commercialRole);
+          setOriginalCommercialRole(commercialUser.commercialRole);
         }
 
         if (commercialUser.multipleUsers && commercialUser.multipleUsers.length > 0) {
@@ -218,10 +220,18 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
 
       toast.success('Owner details saved successfully!');
       
-      if (commercialRole === 'both') {
-        setShowOperatorFinanceModal(true);
+      if (commercialRole !== originalCommercialRole) {
+        toast.success('Role changed successfully!');
+        setTimeout(() => {
+          onClose();
+          window.location.reload();
+        }, 1500);
       } else {
-        setShowTermsModal(true);
+        if (commercialRole === 'both') {
+          setShowOperatorFinanceModal(true);
+        } else {
+          setShowTermsModal(true);
+        }
       }
     } catch (error) {
       console.error('Error saving owner details:', error);

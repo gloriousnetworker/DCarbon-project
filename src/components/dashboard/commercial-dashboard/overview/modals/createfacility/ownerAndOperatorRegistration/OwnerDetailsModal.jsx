@@ -8,7 +8,6 @@ import * as styles from '../../styles';
 export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
   const [isMultipleOwners, setIsMultipleOwners] = useState(false);
   const [showFinanceModal, setShowFinanceModal] = useState(false);
-  const [showOwnerFinanceModal, setShowOwnerFinanceModal] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [ownerDetails, setOwnerDetails] = useState({
     ownerFullName: "",
@@ -36,6 +35,7 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
   const [isLoading, setIsLoading] = useState(true);
   const [showRoleDropdown, setShowRoleDropdown] = useState(false);
   const [commercialRole, setCommercialRole] = useState('both');
+  const [originalCommercialRole, setOriginalCommercialRole] = useState('both');
 
   useEffect(() => {
     if (isOpen) {
@@ -85,6 +85,7 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
 
         if (commercialUser.commercialRole) {
           setCommercialRole(commercialUser.commercialRole);
+          setOriginalCommercialRole(commercialUser.commercialRole);
         }
 
         if (commercialUser.multipleUsers && commercialUser.multipleUsers.length > 0) {
@@ -218,10 +219,14 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
 
       toast.success('Owner details saved successfully!');
       
-      if (commercialRole === 'both') {
-        setShowTermsModal(true);
+      if (commercialRole !== originalCommercialRole) {
+        toast.success('Role changed successfully!');
+        setTimeout(() => {
+          onClose();
+          window.location.reload();
+        }, 1500);
       } else {
-        setShowOwnerFinanceModal(true);
+        setShowTermsModal(true);
       }
     } catch (error) {
       console.error('Error saving owner details:', error);
@@ -245,15 +250,6 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
     setShowFinanceModal(false);
   };
 
-  const handleOwnerFinanceModalClose = () => {
-    setShowOwnerFinanceModal(false);
-    onClose();
-  };
-
-  const handleOwnerFinanceModalBack = () => {
-    setShowOwnerFinanceModal(false);
-  };
-
   const toggleRoleDropdown = () => {
     setShowRoleDropdown(!showRoleDropdown);
   };
@@ -269,16 +265,6 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
         isOpen={showFinanceModal}
         onClose={handleFinanceModalClose}
         onBack={handleFinanceModalBack}
-      />
-    );
-  }
-
-  if (showOwnerFinanceModal) {
-    return (
-      <OwnerFinanceAndInstallerModal
-        isOpen={showOwnerFinanceModal}
-        onClose={handleOwnerFinanceModalClose}
-        onBack={handleOwnerFinanceModalBack}
       />
     );
   }

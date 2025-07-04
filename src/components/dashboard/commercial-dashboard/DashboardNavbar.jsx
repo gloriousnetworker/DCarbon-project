@@ -18,11 +18,12 @@ const DashboardNavbar = ({
   const [progressColor, setProgressColor] = useState("bg-blue-500");
 
   const updateRegistrationStep = (step) => {
-    setCurrentStage(step);
-    const newWidth = `${(step / 5) * 100}%`;
+    const displayStep = step > 5 ? 5 : step;
+    setCurrentStage(displayStep);
+    const newWidth = `${(displayStep / 5) * 100}%`;
     setProgressWidth(newWidth);
     
-    switch(step) {
+    switch(displayStep) {
       case 1: setProgressColor("bg-blue-500"); break;
       case 2: setProgressColor("bg-purple-500"); break;
       case 3: setProgressColor("bg-yellow-500"); break;
@@ -63,7 +64,7 @@ const DashboardNavbar = ({
         }
       );
       const result = await response.json();
-      return result.status === 'success' && result.data?.meters?.length > 0;
+      return result.status === 'success' && result.data?.length > 0 && result.data.some(item => item.meters?.meters?.length > 0);
     } catch (error) {
       console.error('Error checking stage 5:', error);
       return false;
@@ -110,10 +111,8 @@ const DashboardNavbar = ({
         }
       }
 
-      const newStage = highestCompletedStage + 1;
-      if (newStage !== currentStage) {
-        updateRegistrationStep(newStage);
-      }
+      const newStage = highestCompletedStage === 5 ? 5 : highestCompletedStage + 1;
+      updateRegistrationStep(newStage);
     } catch (error) {
       console.error('Error checking user progress:', error);
     }
@@ -175,7 +174,7 @@ const DashboardNavbar = ({
       case 2: return "Complete commercial registration with owner details and address";
       case 3: return "Accept terms and conditions";
       case 4: return "Submit financial information";
-      case 5: return "Connect utility meters";
+      case 5: return "Utility meters connected - Registration complete!";
       default: return `Complete registration step ${currentStage} of 5`;
     }
   };

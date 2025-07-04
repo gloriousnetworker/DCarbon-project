@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
-import AddCommercialFacilityModal from './AddCommercialFacilityModal';
 
 const buttonPrimary = "bg-[#039994] hover:bg-[#02857f] text-white font-medium py-2 px-4 rounded-lg transition-colors";
 const spinnerOverlay = "fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50";
@@ -22,14 +21,11 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
   const [utilityAuthEmail, setUtilityAuthEmail] = useState('');
   const [showIframe, setShowIframe] = useState(false);
   const [iframeUrl, setIframeUrl] = useState('');
-  const [verifiedFacilities, setVerifiedFacilities] = useState([]);
-  const [selectedFacilities, setSelectedFacilities] = useState([]);
-  const [showFacilityModal, setShowFacilityModal] = useState(false);
-  const [showAllFacilities, setShowAllFacilities] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [ownerData, setOwnerData] = useState(null);
   const [isLoadingOwner, setIsLoadingOwner] = useState(true);
   const [currentStep, setCurrentStep] = useState(1);
-  const [totalSteps] = useState(4);
+  const [totalSteps] = useState(2);
 
   const baseUrl = 'https://services.dcarbon.solutions';
 
@@ -44,8 +40,12 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
     return localStorage.getItem('authToken');
   };
 
-  const getUserId = () => {
-    return localStorage.getItem('userId');
+  const getOwnerUserId = () => {
+    const referralResponse = JSON.parse(localStorage.getItem('referralResponse'));
+    if (referralResponse && referralResponse.data && referralResponse.data.inviterId) {
+      return referralResponse.data.inviterId;
+    }
+    return null;
   };
 
   const fetchOwnerData = async () => {
@@ -100,27 +100,6 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
     }
   };
 
-  const fetchUserMeters = async () => {
-    try {
-      const response = await fetch(`${baseUrl}/api/auth/user-meters/${getUserId()}`, {
-        headers: {
-          'Authorization': `Bearer ${getAuthToken()}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      const data = await response.json();
-      if (data.status === 'success') {
-        const utility = data.data.find(u => u.utilityAuthEmail === utilityAuthEmail);
-        if (utility && utility.meters && utility.meters.meters) {
-          setVerifiedFacilities(utility.meters.meters);
-          setCurrentStep(3);
-        }
-      }
-    } catch (error) {
-      toast.error('Failed to fetch user meters');
-    }
-  };
-
   const handleProviderRequest = async () => {
     if (!newProviderData.name || !newProviderData.website) {
       toast.error('Please fill in provider name and website');
@@ -160,11 +139,17 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
       return;
     }
 
+    const ownerUserId = getOwnerUserId();
+    if (!ownerUserId) {
+      toast.error('Owner ID not found');
+      return;
+    }
+
     setLoading(true);
     const toastId = toast.loading('Initiating utility authorization...');
 
     try {
-      const response = await fetch(`${baseUrl}/api/auth/initiate-utility-auth/${getUserId()}`, {
+      const response = await fetch(`${baseUrl}/api/auth/initiate-utility-auth/${ownerUserId}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${getAuthToken()}`,
@@ -182,6 +167,10 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
         setIframeUrl('https://utilityapi.com/authorize/DCarbon_Solutions');
         setShowIframe(true);
         setCurrentStep(2);
+        setSelectedProvider('');
+        setUtilityAuthEmail('');
+        setShowProviderRequest(false);
+        setNewProviderData({ name: '', website: '', documentation: 'NA' });
       } else {
         toast.error('Failed to initiate utility authorization', { id: toastId });
       }
@@ -192,53 +181,10 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
     }
   };
 
-  const handleVerifyUtilityAuth = async () => {
-    setLoading(true);
-    const toastId = toast.loading('Verifying utility authorization...');
-
-    try {
-      const response = await fetch(`${baseUrl}/api/auth/check-utility-auth`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${getAuthToken()}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          email: utilityAuthEmail
-        })
-      });
-
-      const data = await response.json();
-      
-      if (data.status === 'success') {
-        toast.success(data.message, { id: toastId });
-        if (data.data && data.data.meters && data.data.meters.meters) {
-          setVerifiedFacilities(data.data.meters.meters);
-          setCurrentStep(3);
-        }
-      } else {
-        toast.error('Verification failed', { id: toastId });
-      }
-    } catch (error) {
-      toast.error('Failed to verify utility authorization', { id: toastId });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleFacilitySelection = (facilityUid, isSelected) => {
-    if (isSelected) {
-      setSelectedFacilities(prev => [...prev, facilityUid]);
-    } else {
-      setSelectedFacilities(prev => prev.filter(uid => uid !== facilityUid));
-    }
-  };
-
   const handleIframeMessage = (event) => {
     if (event.data && event.data.type === 'utility-auth-complete') {
       setShowIframe(false);
-      toast.success('Utility authorization completed successfully!');
-      fetchUserMeters();
+      setShowSuccessModal(true);
     }
   };
 
@@ -260,21 +206,46 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
       toast.error('Please enter your utility authorization email');
       return;
     }
-    if (verifiedFacilities.length > 0 && selectedFacilities.length === 0) {
-      toast.error('Please select at least one facility');
-      return;
-    }
 
-    setCurrentStep(4);
-    setShowFacilityModal(true);
+    handleVerifyEmail();
   };
 
-  const handleFacilityModalClose = () => {
-    setShowFacilityModal(false);
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
     onClose();
+    window.location.reload();
   };
 
-  const displayedFacilities = showAllFacilities ? verifiedFacilities : verifiedFacilities.slice(0, 3);
+  if (showSuccessModal) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+        <div className="relative w-full max-w-lg bg-white rounded-2xl overflow-hidden">
+          <div className="p-6">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M20 6L9 17L4 12" stroke="#10B981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              <h2 className="font-[600] text-[20px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro mb-4">
+                Authorization Successful
+              </h2>
+              <p className="text-gray-600 text-sm mb-6">
+                Please wait while Utility API returns the Meters associated to this DCarbon Account. 
+                To know when your Meters have been successfully fetched, your Stages will show completed.
+              </p>
+              <button
+                onClick={handleSuccessModalClose}
+                className={`${buttonPrimary} w-full py-3 text-white font-medium rounded-lg transition-colors`}
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (showIframe) {
     return (
@@ -306,15 +277,6 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
           />
         </div>
       </div>
-    );
-  }
-
-  if (showFacilityModal) {
-    return (
-      <AddCommercialFacilityModal 
-        isOpen={true}
-        onClose={handleFacilityModalClose}
-      />
     );
   }
 
@@ -473,89 +435,14 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
                 <label className={`${labelClass} text-sm mb-2 block`}>
                   Utility authorization email
                 </label>
-                <div className="flex space-x-2">
-                  <input
-                    type="email"
-                    value={utilityAuthEmail}
-                    onChange={(e) => setUtilityAuthEmail(e.target.value)}
-                    placeholder="Email address"
-                    className={`${inputClass} flex-1 text-sm`}
-                  />
-                  <button
-                    type="button"
-                    onClick={verifiedFacilities.length > 0 ? handleVerifyUtilityAuth : handleVerifyEmail}
-                    disabled={loading || !utilityAuthEmail}
-                    className="px-4 py-2 bg-[#039994] text-white text-sm font-medium rounded-lg hover:bg-[#02857f] transition-colors disabled:opacity-50"
-                  >
-                    {verifiedFacilities.length > 0 ? 'Verify Again' : 'Authorize'}
-                  </button>
-                </div>
+                <input
+                  type="email"
+                  value={utilityAuthEmail}
+                  onChange={(e) => setUtilityAuthEmail(e.target.value)}
+                  placeholder="Email address"
+                  className={`${inputClass} text-sm w-full`}
+                />
               </div>
-
-              {verifiedFacilities.length > 0 && (
-                <>
-                  <div className="bg-blue-50 p-3 rounded-lg">
-                    <p className="text-sm text-blue-700">
-                      <strong>Step 3:</strong> Select the facilities you want to add to your DCarbon account.
-                    </p>
-                  </div>
-                  <div className="mt-6">
-                    <h3 className="text-lg font-semibold text-[#039994] mb-4">Facilities</h3>
-                    <div className="space-y-4">
-                      {displayedFacilities.map((meter) => (
-                        <div key={meter.uid} className="border border-gray-200 rounded-lg p-4">
-                          <div className="flex flex-col">
-                            <div className="flex-1">
-                              <div className="text-sm font-medium text-gray-900 mb-1">
-                                Meter ID: {meter.uid}
-                              </div>
-                              <div className="text-xs text-gray-500 mb-2">
-                                Meter Numbers: {meter.base?.meter_numbers?.join(', ') || 'N/A'}
-                              </div>
-                              <div className="text-xs text-gray-600 space-y-1">
-                                <div><strong>Service Class:</strong> {meter.base?.service_class || 'N/A'}</div>
-                                <div><strong>Service Tariff:</strong> {meter.base?.service_tariff || 'N/A'}</div>
-                                <div><strong>Billing Address:</strong> {meter.base?.billing_address || 'N/A'}</div>
-                              </div>
-                            </div>
-                            <div className="mt-3 flex items-center justify-between">
-                              <span className="text-sm text-gray-700">
-                                I agree to the Terms of Agreement
-                              </span>
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  handleFacilitySelection(meter.uid, !selectedFacilities.includes(meter.uid));
-                                }}
-                                className={`w-6 h-6 rounded-full border-2 flex items-center justify-center 
-                                  ${selectedFacilities.includes(meter.uid) ? 'bg-[#039994] border-[#039994]' : 'border-gray-300'}`}
-                              >
-                                {selectedFacilities.includes(meter.uid) && (
-                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M20 6L9 17L4 12" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                  </svg>
-                                )}
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    {verifiedFacilities.length > 3 && !showAllFacilities && (
-                      <div className="text-center mt-4">
-                        <button
-                          type="button"
-                          onClick={() => setShowAllFacilities(true)}
-                          className="text-[#039994] text-sm font-medium hover:underline"
-                        >
-                          View more facilities
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
 
               <div className="pt-4 space-y-4">
                 <button
@@ -563,7 +450,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
                   disabled={loading}
                   className={`${buttonPrimary} w-full py-3 text-white font-medium rounded-lg transition-colors`}
                 >
-                  {loading ? 'Processing...' : 'Add Commercial Facility'}
+                  {loading ? 'Processing...' : 'Authorize'}
                 </button>
                 
                 <div className={termsTextContainer}>
