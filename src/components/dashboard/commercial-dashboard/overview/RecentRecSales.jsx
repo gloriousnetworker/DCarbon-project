@@ -8,10 +8,38 @@ export default function UserSalesStatement() {
   const [isDisabled, setIsDisabled] = useState(false);
 
   useEffect(() => {
-    const loginResponse = JSON.parse(localStorage.getItem("loginResponse"));
-    if (loginResponse?.data?.user?.agreements === null && loginResponse?.data?.user?.utilityAuth?.length === 0) {
-      setIsDisabled(true);
-    }
+    const checkMeters = async () => {
+      const loginResponse = JSON.parse(localStorage.getItem("loginResponse") || '{}');
+      const userId = loginResponse?.data?.user?.id;
+      const authToken = loginResponse?.data?.token;
+
+      if (!userId || !authToken) {
+        setIsDisabled(true);
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`,
+          {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${authToken}`
+            }
+          }
+        );
+        const result = await response.json();
+        const metersExist = result.status === 'success' && 
+                           result.data?.length > 0 && 
+                           result.data.some(item => item.meters?.meters?.length > 0);
+        setIsDisabled(!metersExist);
+      } catch (error) {
+        console.error('Error checking meters:', error);
+        setIsDisabled(true);
+      }
+    };
+
+    checkMeters();
   }, []);
 
   useEffect(() => {

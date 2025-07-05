@@ -12,13 +12,43 @@ export default function Graph() {
   const [chartLoading, setChartLoading] = useState(true);
   const [recData, setRecData] = useState({ totalRecs: 0, loading: true, error: null });
   const [energyData, setEnergyData] = useState({ solarProduction: [], energyConsumed: [], recsCreated: [], recsSold: [], loading: true });
-  const [isDisabled, setIsDisabled] = useState(false);
+  const [hasMeters, setHasMeters] = useState(false);
+  const [metersLoading, setMetersLoading] = useState(true);
 
   useEffect(() => {
-    const loginResponse = JSON.parse(localStorage.getItem("loginResponse"));
-    if (loginResponse?.data?.user?.agreements === null && loginResponse?.data?.user?.utilityAuth?.length === 0) {
-      setIsDisabled(true);
-    }
+    const checkMeters = async () => {
+      const loginResponse = JSON.parse(localStorage.getItem("loginResponse") || '{}');
+      const userId = loginResponse?.data?.user?.id;
+      const authToken = loginResponse?.data?.token;
+
+      if (!userId || !authToken) {
+        setMetersLoading(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`,
+          {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${authToken}`
+            }
+          }
+        );
+        const result = await response.json();
+        const metersExist = result.status === 'success' && 
+                           result.data?.length > 0 && 
+                           result.data.some(item => item.meters?.meters?.length > 0);
+        setHasMeters(metersExist);
+      } catch (error) {
+        console.error('Error checking meters:', error);
+      } finally {
+        setMetersLoading(false);
+      }
+    };
+
+    checkMeters();
   }, []);
 
   const getUserId = () => {
@@ -51,8 +81,10 @@ export default function Graph() {
       }
     };
 
-    fetchFacilities();
-  }, []);
+    if (!metersLoading) {
+      fetchFacilities();
+    }
+  }, [metersLoading]);
 
   useEffect(() => {
     const fetchEnergyData = async () => {
@@ -63,7 +95,6 @@ export default function Graph() {
         setMonthlyData(emptyMonthlyData);
         setEnergyData({ solarProduction: emptyMonthlyData, energyConsumed: emptyMonthlyData, recsCreated: emptyMonthlyData, recsSold: emptyMonthlyData, loading: false });
       } catch (err) {
-        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
         const emptyData = months.map(month => ({ month, value: 0 }));
         setMonthlyData(emptyData);
       } finally {
@@ -92,14 +123,14 @@ export default function Graph() {
   const getChartUnits = () => (chartType === "RECs Created" || chartType === "RECs Sold") ? "RECs" : "MWh";
   const yAxisValues = [100, 75, 50, 25, 0];
 
-  if (loading) return <div className="flex justify-center items-center h-64"><div className="animate-pulse text-gray-500">Loading facilities...</div></div>;
-  if (error) return <div className="text-red-500 p-4">Error loading facilities: {error}</div>;
+  if (metersLoading || loading) return <div className="flex justify-center items-center h-64"><div className="animate-pulse text-gray-500">Loading data...</div></div>;
+  if (error) return <div className="text-red-500 p-4">Error loading data: {error}</div>;
 
   const chartData = getCurrentChartData();
   const stats = getActualStats();
 
   return (
-    <div className={`w-full bg-gray-50 min-h-screen p-6 ${isDisabled ? "opacity-50 pointer-events-none" : ""}`}>
+    <div className={`w-full bg-gray-50 min-h-screen p-6 ${!hasMeters ? "opacity-50 pointer-events-none" : ""}`}>
       <h2 className="text-2xl font-bold text-[#039994] mb-6">Energy Performance</h2>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="col-span-1 lg:col-span-2 bg-white rounded-lg shadow-sm p-6">

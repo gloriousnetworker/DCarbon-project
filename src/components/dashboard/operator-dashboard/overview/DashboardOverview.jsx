@@ -17,12 +17,14 @@ const ProgressTracker = ({ currentStage }) => {
     { id: 5, name: "Meters", tooltip: "Utility meters connected" }
   ];
 
+  const currentDisplayStage = currentStage > 5 ? 5 : currentStage;
+
   return (
     <div className="w-full bg-white rounded-lg shadow-sm p-4 mb-6">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-semibold text-gray-800">Onboarding Progress</h2>
         <span className="text-sm font-medium text-[#039994]">
-          Stage {currentStage} of {stages.length}
+          Stage {currentDisplayStage} of {stages.length}
         </span>
       </div>
       <div className="relative">
@@ -31,14 +33,14 @@ const ProgressTracker = ({ currentStage }) => {
             <div key={stage.id} className="flex flex-col items-center group relative">
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                  stage.id === currentStage ? "bg-[#039994] text-white" : stage.id < currentStage ? "bg-[#039994] text-white" : "bg-gray-200 text-gray-600"
+                  stage.id === currentDisplayStage ? "bg-[#039994] text-white" : stage.id < currentDisplayStage ? "bg-[#039994] text-white" : "bg-gray-200 text-gray-600"
                 }`}
               >
                 {stage.id}
               </div>
               <span
                 className={`text-xs mt-1 text-center ${
-                  stage.id === currentStage ? "text-[#039994] font-medium" : stage.id < currentStage ? "text-[#039994] font-medium" : "text-gray-500"
+                  stage.id === currentDisplayStage ? "text-[#039994] font-medium" : stage.id < currentDisplayStage ? "text-[#039994] font-medium" : "text-gray-500"
                 }`}
               >
                 {stage.name}
@@ -54,7 +56,7 @@ const ProgressTracker = ({ currentStage }) => {
             <div
               key={stage.id}
               className={`h-1 flex-1 mx-2 ${
-                stage.id < currentStage ? "bg-[#039994]" : "bg-gray-200"
+                stage.id < currentDisplayStage ? "bg-[#039994]" : "bg-gray-200"
               }`}
             />
           ))}
@@ -74,6 +76,7 @@ export default function DashboardOverview() {
   const [isFirstTimeUser, setIsFirstTimeUser] = useState(false);
   const [isCheckingCommercialStatus, setIsCheckingCommercialStatus] = useState(false);
   const [currentStage, setCurrentStage] = useState(1);
+  const [meterCheckInterval, setMeterCheckInterval] = useState(null);
 
   const checkStage1Completion = async (userId, authToken) => {
     try {
@@ -125,7 +128,10 @@ export default function DashboardOverview() {
         }
       );
       const result = await response.json();
-      return result.status === 'success' && result.data?.meters?.length > 0;
+      const hasMeters = result.status === 'success' && 
+                       result.data?.length > 0 && 
+                       result.data.some(item => item.meters?.meters?.length > 0);
+      return hasMeters;
     } catch (error) {
       console.error('Error checking stage 5:', error);
       return false;
@@ -167,16 +173,27 @@ export default function DashboardOverview() {
           }
           if (isCompleted) {
             highestCompletedStage = stage;
-          } else {
-            break;
           }
         } catch (error) {
           console.error(`Error checking stage ${stage}:`, error);
-          break;
         }
       }
 
-      setCurrentStage(highestCompletedStage + 1);
+      const newStage = highestCompletedStage === 5 ? 5 : highestCompletedStage + 1;
+      setCurrentStage(newStage);
+
+      // If we're at stage 4 but not yet completed, start checking for meters
+      if (newStage === 4 && !meterCheckInterval) {
+        const interval = setInterval(async () => {
+          const hasMeters = await checkStage5Completion(userId, authToken);
+          if (hasMeters) {
+            setCurrentStage(5);
+            clearInterval(interval);
+            setMeterCheckInterval(null);
+          }
+        }, 5000);
+        setMeterCheckInterval(interval);
+      }
     } catch (error) {
       console.error('Error checking user progress:', error);
     }
@@ -205,6 +222,12 @@ export default function DashboardOverview() {
     };
 
     loadUserData();
+
+    return () => {
+      if (meterCheckInterval) {
+        clearInterval(meterCheckInterval);
+      }
+    };
   }, []);
 
   const checkCommercialUserStatus = async (userId) => {

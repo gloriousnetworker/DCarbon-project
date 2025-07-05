@@ -227,50 +227,6 @@ const DashboardNotifications = () => {
               ))}
             </div>
           )}
-          
-          {/* <div className="mt-8 pt-6 border-t border-gray-200">
-            <h3 className="text-lg font-bold text-[#1E1E1E] mb-4">Notification Settings</h3>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className={`${labelClass} text-gray-700`}>Enable Email Notifications</span>
-                <button
-                  type="button"
-                  onClick={handleToggleEmail}
-                  className={`${toggleButtonBase} ${emailNotifications ? 'bg-[#039994]' : 'bg-gray-300'}`}
-                >
-                  <span
-                    className={`${toggleHandleBase} ${emailNotifications ? 'translate-x-5' : 'translate-x-1'}`}
-                  />
-                </button>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className={`${labelClass} text-gray-700`}>Enable On-screen Notifications</span>
-                <button
-                  type="button"
-                  onClick={handleToggleOnScreen}
-                  className={`${toggleButtonBase} ${onScreenNotifications ? 'bg-[#039994]' : 'bg-gray-300'}`}
-                >
-                  <span
-                    className={`${toggleHandleBase} ${onScreenNotifications ? 'translate-x-5' : 'translate-x-1'}`}
-                  />
-                </button>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className={`${labelClass} text-gray-700`}>Receive System Notifications</span>
-                <button
-                  type="button"
-                  onClick={handleToggleSystem}
-                  className={`${toggleButtonBase} ${systemNotifications ? 'bg-[#039994]' : 'bg-gray-300'}`}
-                >
-                  <span
-                    className={`${toggleHandleBase} ${systemNotifications ? 'translate-x-5' : 'translate-x-1'}`}
-                  />
-                </button>
-              </div>
-            </div>
-          </div> */}
         </div>
       )}
     </div>

@@ -1,14 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import AddCommercialFacilityModal from './AddCommercialFacilityModal';
-import {
-  buttonPrimary,
-  spinnerOverlay,
-  spinner,
-  labelClass,
-  inputClass,
-  termsTextContainer
-} from '../../styles.js';
 
 export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
   const [loading, setLoading] = useState(false);
@@ -33,7 +25,9 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
   const [currentStep, setCurrentStep] = useState(1);
   const [totalSteps] = useState(5);
   const [meterFetchInterval, setMeterFetchInterval] = useState(null);
-  const [hasMeters, setHasMeters] = useState(false);
+  const [userMetersData, setUserMetersData] = useState([]);
+  const [hasValidMeters, setHasValidMeters] = useState(false);
+  const [utilityStatus, setUtilityStatus] = useState('');
 
   const baseUrl = 'https://services.dcarbon.solutions';
 
@@ -43,8 +37,6 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
     }
     if (isOpen && hasAuthorizedUtility) {
       fetchAuthorizedUtilities();
-    }
-    if (isOpen) {
       checkUserMeters();
     }
   }, [isOpen, hasAuthorizedUtility]);
@@ -74,13 +66,32 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
         }
       });
       const data = await response.json();
-      if (data.status === 'success' && data.data && data.data.length > 0) {
-        setHasMeters(true);
+      
+      if (data.status === 'success' && data.data) {
+        setUserMetersData(data.data);
+        
+        // Check if any utility has valid meters
+        const hasMeters = data.data.some(utility => 
+          utility.meters && 
+          utility.meters.meters && 
+          utility.meters.meters.length > 0
+        );
+        
+        setHasValidMeters(hasMeters);
+        
+        // Set status for display
+        if (data.data.length > 0) {
+          setUtilityStatus(data.data[0].status || '');
+        }
       } else {
-        setHasMeters(false);
+        setUserMetersData([]);
+        setHasValidMeters(false);
+        setUtilityStatus('');
       }
     } catch (error) {
-      setHasMeters(false);
+      setUserMetersData([]);
+      setHasValidMeters(false);
+      setUtilityStatus('');
     }
   };
 
@@ -111,14 +122,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
       });
       const data = await response.json();
       if (data.status === 'success') {
-        const validUtilities = data.data.filter(utility => 
-          utility.status === 'UPDATED' && 
-          utility.verificationToken && 
-          utility.meters && 
-          utility.meters.meters && 
-          utility.meters.meters.length > 0
-        );
-        setAuthorizedUtilities(validUtilities);
+        setAuthorizedUtilities(data.data);
       }
     } catch (error) {
       toast.error('Failed to fetch authorized utilities');
@@ -134,20 +138,28 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
         }
       });
       const data = await response.json();
+      
       if (data.status === 'success') {
         const utility = data.data.find(u => u.id === utilityId);
-        if (utility && utility.meters && utility.meters.meters) {
-          setVerifiedFacilities(utility.meters.meters);
-          if (meterFetchInterval) {
-            clearInterval(meterFetchInterval);
-            setMeterFetchInterval(null);
+        if (utility) {
+          setUtilityStatus(utility.status || '');
+          
+          if (utility.meters && utility.meters.meters && utility.meters.meters.length > 0) {
+            setVerifiedFacilities(utility.meters.meters);
+            setHasValidMeters(true);
+            if (meterFetchInterval) {
+              clearInterval(meterFetchInterval);
+              setMeterFetchInterval(null);
+            }
+          } else {
+            setHasValidMeters(false);
+            startMeterFetchInterval(utilityId);
           }
-        } else {
-          startMeterFetchInterval(utilityId);
         }
       }
     } catch (error) {
       toast.error('Failed to fetch user meters');
+      setHasValidMeters(false);
     }
   };
 
@@ -169,8 +181,10 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
       setSelectedUtilityAuth('');
       setVerifiedFacilities([]);
       setSelectedFacilities([]);
+      setHasValidMeters(false);
     } else {
       setSelectedProvider('');
+      checkUserMeters();
     }
   };
 
@@ -267,9 +281,10 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
         toast.success(data.message, { id: toastId });
         if (data.data && data.data.meters && data.data.meters.meters) {
           setVerifiedFacilities(data.data.meters.meters);
+          setHasValidMeters(true);
           setCurrentStep(4);
         } else {
-          const selectedUtility = authorizedUtilities.find(u => u.id === selectedUtilityAuth);
+          const selectedUtility = userMetersData.find(u => u.id === selectedUtilityAuth);
           if (selectedUtility) {
             startMeterFetchInterval(selectedUtilityAuth);
           }
@@ -381,8 +396,8 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
   return (
     <>
       {loading && (
-        <div className={spinnerOverlay}>
-          <div className={spinner}></div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
+          <div className="w-8 h-8 border-4 border-[#039994] border-t-transparent rounded-full animate-spin"></div>
         </div>
       )}
 
@@ -423,16 +438,23 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
           </div>
 
           <div className="flex-1 overflow-y-auto px-6 pb-6">
-            {hasMeters && (
+            {hasValidMeters ? (
               <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-3">
                 <p className="text-sm text-green-700">
-                  <strong>Success!</strong> You have authorized meters and can now generate facilities.
+                  <strong>Success!</strong> Meters have been successfully fetched. You can now generate facilities.
+                </p>
+              </div>
+            ) : utilityStatus && (
+              <div className="mb-4 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                <p className="text-sm text-yellow-700">
+                  <strong>Status:</strong> {utilityStatus}. {utilityStatus === 'INITIATED' ? 'Please complete the authorization process.' : 'Waiting for meters to be fetched...'}
                 </p>
               </div>
             )}
+
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label className={`${labelClass} text-sm mb-4 block`}>
+                <label className="block text-sm font-medium text-gray-700 mb-4">
                   Is your DCarbon account able to fetch meters from Utility API?
                 </label>
                 <div className="flex items-center space-x-6">
@@ -467,7 +489,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
                     </p>
                   </div>
                   <div>
-                    <label className={`${labelClass} text-sm mb-2 block`}>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Utility authorization email
                     </label>
                     <select
@@ -479,10 +501,10 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
                         setShowAllFacilities(false);
                         fetchUserMeters(e.target.value);
                       }}
-                      className={`${inputClass} text-sm w-full`}
+                      className="block w-full px-3 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#039994] focus:border-[#039994]"
                     >
                       <option value="">Select Email</option>
-                      {authorizedUtilities.map((utility) => (
+                      {userMetersData.map((utility) => (
                         <option key={utility.id} value={utility.id}>
                           {utility.utilityAuthEmail}
                         </option>
@@ -495,7 +517,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
                       <button
                         type="button"
                         onClick={() => {
-                          const selectedUtility = authorizedUtilities.find(u => u.id === selectedUtilityAuth);
+                          const selectedUtility = userMetersData.find(u => u.id === selectedUtilityAuth);
                           if (selectedUtility) {
                             handleVerifyUtilityAuth(selectedUtility.verificationToken);
                           }
@@ -575,13 +597,13 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
                       </p>
                     </div>
                     <div>
-                      <label className={`${labelClass} text-sm mb-2 block`}>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
                         Utility Provider
                       </label>
                       <select
                         value={selectedProvider}
                         onChange={(e) => setSelectedProvider(e.target.value)}
-                        className={`${inputClass} text-sm w-full`}
+                        className="block w-full px-3 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#039994] focus:border-[#039994]"
                       >
                         <option value="">Select Provider</option>
                         {utilityProviders.map((provider) => (
@@ -607,21 +629,21 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
                             placeholder="Provider Name"
                             value={newProviderData.name}
                             onChange={(e) => setNewProviderData({...newProviderData, name: e.target.value})}
-                            className={`${inputClass} text-sm w-full`}
+                            className="block w-full px-3 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#039994] focus:border-[#039994]"
                           />
                           <input
                             type="url"
                             placeholder="Website URL"
                             value={newProviderData.website}
                             onChange={(e) => setNewProviderData({...newProviderData, website: e.target.value})}
-                            className={`${inputClass} text-sm w-full`}
+                            className="block w-full px-3 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#039994] focus:border-[#039994]"
                           />
                           <input
                             type="text"
                             placeholder="Documentation (optional)"
                             value={newProviderData.documentation}
                             onChange={(e) => setNewProviderData({...newProviderData, documentation: e.target.value})}
-                            className={`${inputClass} text-sm w-full`}
+                            className="block w-full px-3 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#039994] focus:border-[#039994]"
                           />
                           <button
                             type="button"
@@ -641,7 +663,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
                       </p>
                     </div>
                     <div>
-                      <label className={`${labelClass} text-sm mb-2 block`}>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
                         Utility authorization email
                       </label>
                       <div className="flex space-x-2">
@@ -650,7 +672,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
                           value={utilityAuthEmail}
                           onChange={(e) => setUtilityAuthEmail(e.target.value)}
                           placeholder="Email address"
-                          className={`${inputClass} flex-1 text-sm`}
+                          className="flex-1 block w-full px-3 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#039994] focus:border-[#039994]"
                         />
                         <button
                           type="button"
@@ -669,13 +691,13 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
               <div className="pt-4 space-y-4">
                 <button
                   type="submit"
-                  disabled={loading}
-                  className={`${buttonPrimary} w-full py-3 text-white font-medium rounded-lg transition-colors`}
+                  disabled={loading || !hasValidMeters}
+                  className={`w-full py-3 bg-[#039994] text-white font-medium rounded-lg transition-colors hover:bg-[#02857f] disabled:opacity-50`}
                 >
                   {loading ? 'Processing...' : 'Add Commercial Facility'}
                 </button>
                 
-                <div className={termsTextContainer}>
+                <div className="mt-2">
                   <p className="text-xs text-center text-gray-500">
                     <a href="#" className="underline hover:no-underline">Terms and Conditions</a>
                     {' • '}

@@ -24,25 +24,47 @@ const InviteCollaboratorModal = dynamic(
 
 export default function QuickActions() {
   const [modal, setModal] = useState("");
-  const [isDisabled, setIsDisabled] = useState(false);
-  const [hasCompletedRegistration, setHasCompletedRegistration] = useState(false);
+  const [hasMeters, setHasMeters] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loginResponse = JSON.parse(localStorage.getItem("loginResponse"));
+    const checkMeters = async () => {
+      const loginResponse = JSON.parse(localStorage.getItem("loginResponse") || '{}');
+      const userId = loginResponse?.data?.user?.id;
+      const authToken = loginResponse?.data?.token;
 
-    if (loginResponse?.data?.user?.agreements !== null &&
-        loginResponse?.data?.user?.utilityAuth?.length > 0) {
-      setHasCompletedRegistration(true);
-    }
+      if (!userId || !authToken) {
+        setLoading(false);
+        return;
+      }
 
-    if (loginResponse?.data?.user?.agreements === null &&
-        loginResponse?.data?.user?.utilityAuth?.length === 0) {
-      setIsDisabled(true);
-    }
+      try {
+        const response = await fetch(
+          `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`,
+          {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${authToken}`
+            }
+          }
+        );
+        const result = await response.json();
+        const metersExist = result.status === 'success' && 
+                           result.data?.length > 0 && 
+                           result.data.some(item => item.meters?.meters?.length > 0);
+        setHasMeters(metersExist);
+      } catch (error) {
+        console.error('Error checking meters:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkMeters();
   }, []);
 
   const openModal = (type) => {
-    if (isDisabled && type !== "add") return;
+    if (loading) return;
     if (type === "resolve" || type === "statement") return;
     setModal(type);
   };
@@ -50,6 +72,14 @@ export default function QuickActions() {
   const closeModal = () => {
     setModal("");
   };
+
+  if (loading) {
+    return (
+      <div className="w-full py-4 px-4 flex justify-center items-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#039994]"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full py-4 px-4">
@@ -74,10 +104,11 @@ export default function QuickActions() {
         </div>
 
         <div
-          className={`p-4 min-h-[100px] rounded-2xl flex flex-col items-start justify-start transition-opacity ${isDisabled ? "opacity-50 cursor-not-allowed" : "cursor-not-allowed"}`}
+          className={`p-4 min-h-[100px] rounded-2xl flex flex-col items-start justify-start ${hasMeters ? "cursor-pointer hover:opacity-90" : "opacity-50 cursor-not-allowed"}`}
           style={{
             background: "radial-gradient(433.01% 729.42% at 429.68% -283.45%, rgba(6, 155, 150, 0.3) 0%, #FFFFFF 100%)",
           }}
+          onClick={() => hasMeters && openModal("resolve")}
         >
           <img
             src="/vectors/Files.png"
@@ -92,10 +123,11 @@ export default function QuickActions() {
         </div>
 
         <div
-          className={`p-4 min-h-[100px] rounded-2xl flex flex-col items-start justify-start transition-opacity ${isDisabled ? "opacity-50 cursor-not-allowed" : "cursor-not-allowed"}`}
+          className={`p-4 min-h-[100px] rounded-2xl flex flex-col items-start justify-start ${hasMeters ? "cursor-pointer hover:opacity-90" : "opacity-50 cursor-not-allowed"}`}
           style={{
             background: "radial-gradient(185.83% 225.47% at 148.19% -135.83%, #D3D3D3 0%, #1E1E1E 100%)",
           }}
+          onClick={() => hasMeters && openModal("statement")}
         >
           <img
             src="/vectors/HandCoins.png"
@@ -110,11 +142,11 @@ export default function QuickActions() {
         </div>
 
         <div
-          className={`p-4 min-h-[100px] rounded-2xl flex flex-col items-start justify-start cursor-pointer hover:opacity-90 transition-opacity ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
+          className={`p-4 min-h-[100px] rounded-2xl flex flex-col items-start justify-start ${hasMeters ? "cursor-pointer hover:opacity-90" : "opacity-50 cursor-not-allowed"}`}
           style={{
             background: "radial-gradient(60% 119.12% at 114.01% -10%, #00B4AE 0%, #004E4B 100%)",
           }}
-          onClick={() => openModal("invite")}
+          onClick={() => hasMeters && openModal("invite")}
         >
           <img
             src="/vectors/Share.png"
@@ -129,13 +161,15 @@ export default function QuickActions() {
         </div>
       </div>
 
-      {modal === "add" && hasCompletedRegistration && (
+      {modal === "add" && hasMeters && (
         <AddCommercialFacilityModal isOpen onClose={closeModal} />
       )}
-      {modal === "add" && !hasCompletedRegistration && (
+      {modal === "add" && !hasMeters && (
         <CommercialRegistrationModal isOpen onClose={closeModal} />
       )}
       {modal === "invite" && <InviteCollaboratorModal isOpen onClose={closeModal} />}
+      {modal === "statement" && <CurrentStatementModal isOpen onClose={closeModal} />}
+      {modal === "resolve" && <ResolvePendingActionsModal isOpen onClose={closeModal} />}
     </div>
   );
 }

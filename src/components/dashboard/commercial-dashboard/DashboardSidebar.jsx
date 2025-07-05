@@ -1,17 +1,7 @@
-// app/components/DashboardSidebar.js
-'use client';
+"use client";
 
 import React, { useState, useEffect } from "react";
-import {
-  FiHome,
-  FiTrendingUp,
-  FiUser,
-  FiBell,
-  FiHelpCircle,
-  FiHeadphones,
-  FiLogOut,
-} from "react-icons/fi";
-import { FiZap } from "react-icons/fi";
+import { FiHome, FiTrendingUp, FiUser, FiBell, FiHelpCircle, FiHeadphones, FiLogOut, FiZap } from "react-icons/fi";
 import Image from "next/image";
 import { useProfile } from "../contexts/ProfileContext";
 
@@ -22,43 +12,22 @@ const DashboardSidebar = ({
   hasPendingActions = false,
 }) => {
   const [isClient, setIsClient] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const { profile } = useProfile();
 
   useEffect(() => {
     setIsClient(true);
+    const storedNotifications = localStorage.getItem("notifications");
+    if (storedNotifications) {
+      const notifications = JSON.parse(storedNotifications);
+      setUnreadCount(notifications.filter((n) => !n.isRead).length);
+    }
   }, []);
 
   const isActive = (section) => section === selectedSection;
 
-  // Style constants
-  const sidebarContainer = 'bg-white w-64 min-h-screen flex flex-col border-r border-gray-200 overflow-y-auto hide-scrollbar';
-  const sidebarSection = 'px-4 py-2';
-  const sidebarDivider = 'my-2 border-gray-200 mx-4';
-  const sectionHeading = 'text-xs font-sfpro font-normal tracking-[0.2em] text-[#1E1E1E] uppercase';
-  
-  const menuItemBase = 'flex items-center gap-2 px-4 py-2 rounded-md w-full text-left transition-colors text-sm font-sfpro';
-  const menuItemActive = 'bg-[#039994] text-white';
-  const menuItemInactive = 'text-[#1E1E1E] hover:bg-gray-100';
-  const iconBase = 'w-4 h-4';
-  
-  const userInfoContainer = 'px-4 py-3 flex flex-col items-start';
-  const userProfile = 'flex items-center space-x-3 mb-3';
-  const greetingText = 'text-[#1E1E1E] font-sfpro text-sm';
-  const userName = 'text-[#1E1E1E] font-sfpro text-sm font-semibold';
-  const activeDot = 'w-2 h-2 rounded-full bg-[#039994] ml-2';
-
-  if (!isClient) {
-    return (
-      <aside className={sidebarContainer}>
-        <div className="flex justify-center p-4">
-          <div className="h-8 w-[120px] bg-gray-200 rounded"></div>
-        </div>
-      </aside>
-    );
-  }
-
   return (
-    <aside className={sidebarContainer}>
+    <aside className="bg-white w-64 min-h-screen flex flex-col border-r border-gray-200 overflow-y-auto hide-scrollbar">
       {toggleSidebar && (
         <div className="md:hidden flex justify-end p-4">
           <button
@@ -80,98 +49,105 @@ const DashboardSidebar = ({
         />
       </div>
 
-      <div className={sidebarSection}>
-        <h3 className={sectionHeading}>DASHBOARD</h3>
+      <div className="px-4 py-2">
+        <h3 className="text-xs font-sfpro font-normal tracking-[0.2em] text-[#1E1E1E] uppercase">DASHBOARD</h3>
       </div>
 
       <nav className="flex-1 flex flex-col space-y-1 px-2">
         <button
           onClick={() => onSectionChange("overview")}
-          className={`${menuItemBase} ${
-            isActive("overview") ? menuItemActive : menuItemInactive
+          className={`flex items-center gap-2 px-4 py-2 rounded-md w-full text-left transition-colors text-sm font-sfpro ${
+            isActive("overview") ? 'bg-[#039994] text-white' : 'text-[#1E1E1E] hover:bg-gray-100'
           }`}
         >
-          <FiHome className={iconBase} color={isActive("overview") ? "#FFFFFF" : "#039994"} />
+          <FiHome className="w-4 h-4" color={isActive("overview") ? "#FFFFFF" : "#039994"} />
           <span>Overview</span>
         </button>
         <button
           onClick={() => onSectionChange("generatorManagement")}
-          className={`${menuItemBase} ${
-            isActive("generatorManagement") ? menuItemActive : menuItemInactive
+          className={`flex items-center gap-2 px-4 py-2 rounded-md w-full text-left transition-colors text-sm font-sfpro ${
+            isActive("generatorManagement") ? 'bg-[#039994] text-white' : 'text-[#1E1E1E] hover:bg-gray-100'
           }`}
         >
-          <FiZap className={iconBase} color={isActive("generatorManagement") ? "#FFFFFF" : "#039994"} />
+          <FiZap className="w-4 h-4" color={isActive("generatorManagement") ? "#FFFFFF" : "#039994"} />
           <span>Generator Management</span>
         </button>
         <button
           onClick={() => onSectionChange("report")}
-          className={`${menuItemBase} ${
-            isActive("report") ? menuItemActive : menuItemInactive
+          className={`flex items-center gap-2 px-4 py-2 rounded-md w-full text-left transition-colors text-sm font-sfpro ${
+            isActive("report") ? 'bg-[#039994] text-white' : 'text-[#1E1E1E] hover:bg-gray-100'
           }`}
         >
-          <FiTrendingUp className={iconBase} color={isActive("report") ? "#FFFFFF" : "#039994"} />
+          <FiTrendingUp className="w-4 h-4" color={isActive("report") ? "#FFFFFF" : "#039994"} />
           <span>Report</span>
         </button>
       </nav>
 
-      <hr className={sidebarDivider} />
+      <hr className="my-2 border-gray-200 mx-4" />
 
-      <div className={sidebarSection}>
-        <h3 className={sectionHeading}>SETTINGS</h3>
+      <div className="px-4 py-2">
+        <h3 className="text-xs font-sfpro font-normal tracking-[0.2em] text-[#1E1E1E] uppercase">SETTINGS</h3>
       </div>
 
       <nav className="flex-1 flex flex-col space-y-1 px-2">
         <button
           onClick={() => onSectionChange("myAccount")}
-          className={`${menuItemBase} ${
-            isActive("myAccount") ? menuItemActive : menuItemInactive
+          className={`flex items-center gap-2 px-4 py-2 rounded-md w-full text-left transition-colors text-sm font-sfpro ${
+            isActive("myAccount") ? 'bg-[#039994] text-white' : 'text-[#1E1E1E] hover:bg-gray-100'
           }`}
         >
-          <FiUser className={iconBase} color={isActive("myAccount") ? "#FFFFFF" : "#039994"} />
+          <FiUser className="w-4 h-4" color={isActive("myAccount") ? "#FFFFFF" : "#039994"} />
           <span>My Account</span>
         </button>
         <button
           onClick={() => onSectionChange("notifications")}
-          className={`${menuItemBase} ${
-            isActive("notifications") ? menuItemActive : menuItemInactive
+          className={`flex items-center gap-2 px-4 py-2 rounded-md w-full text-left transition-colors text-sm font-sfpro ${
+            isActive("notifications") ? 'bg-[#039994] text-white' : 'text-[#1E1E1E] hover:bg-gray-100'
           }`}
         >
-          <FiBell className={iconBase} color={isActive("notifications") ? "#FFFFFF" : "#039994"} />
+          <div className="relative">
+            <FiBell className="w-4 h-4" color={isActive("notifications") ? "#FFFFFF" : "#039994"} />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-4 w-4 flex items-center justify-center">
+                {unreadCount}
+              </span>
+            )}
+          </div>
           <span>Notification</span>
         </button>
       </nav>
 
-      <hr className={sidebarDivider} />
+      <hr className="my-2 border-gray-200 mx-4" />
 
-      <div className={sidebarSection}>
-        <h3 className={sectionHeading}>SUPPORT</h3>
+      <div className="px-4 py-2">
+        <h3 className="text-xs font-sfpro font-normal tracking-[0.2em] text-[#1E1E1E] uppercase">SUPPORT</h3>
       </div>
 
       <nav className="flex-1 flex flex-col space-y-1 px-2">
         <button
           onClick={() => onSectionChange("helpCenter")}
-          className={`${menuItemBase} ${
-            isActive("helpCenter") ? menuItemActive : menuItemInactive
+          className={`flex items-center gap-2 px-4 py-2 rounded-md w-full text-left transition-colors text-sm font-sfpro ${
+            isActive("helpCenter") ? 'bg-[#039994] text-white' : 'text-[#1E1E1E] hover:bg-gray-100'
           }`}
         >
-          <FiHelpCircle className={iconBase} color={isActive("helpCenter") ? "#FFFFFF" : "#039994"} />
+          <FiHelpCircle className="w-4 h-4" color={isActive("helpCenter") ? "#FFFFFF" : "#039994"} />
           <span>Help Centre (FAQs)</span>
         </button>
         <button
           onClick={() => onSectionChange("contactSupport")}
-          className={`${menuItemBase} ${
-            isActive("contactSupport") ? menuItemActive : menuItemInactive
+          className={`flex items-center gap-2 px-4 py-2 rounded-md w-full text-left transition-colors text-sm font-sfpro ${
+            isActive("contactSupport") ? 'bg-[#039994] text-white' : 'text-[#1E1E1E] hover:bg-gray-100'
           }`}
         >
-          <FiHeadphones className={iconBase} color={isActive("contactSupport") ? "#FFFFFF" : "#039994"} />
+          <FiHeadphones className="w-4 h-4" color={isActive("contactSupport") ? "#FFFFFF" : "#039994"} />
           <span>Contact Support</span>
         </button>
       </nav>
 
-      <hr className={sidebarDivider} />
+      <hr className="my-2 border-gray-200 mx-4" />
 
-      <div className={userInfoContainer}>
-        <div className={userProfile}>
+      <div className="px-4 py-3 flex flex-col items-start">
+        <div className="flex items-center space-x-3 mb-3">
           <div className="w-8 h-8 rounded-full overflow-hidden relative">
             {profile.picture ? (
               <Image
@@ -193,18 +169,18 @@ const DashboardSidebar = ({
             )}
           </div>
           <div className="flex items-center">
-            <span className={greetingText}>Hi, </span>
-            <span className={userName}>{profile.firstName}</span>
-            <span className={activeDot}></span>
+            <span className="text-[#1E1E1E] font-sfpro text-sm">Hi, </span>
+            <span className="text-[#1E1E1E] font-sfpro text-sm font-semibold">{profile.firstName}</span>
+            <span className="w-2 h-2 rounded-full bg-[#039994] ml-2"></span>
           </div>
         </div>
         <button
           onClick={() => onSectionChange("logout")}
-          className={`${menuItemBase} ${
-            isActive("logout") ? menuItemActive : menuItemInactive
+          className={`flex items-center gap-2 px-4 py-2 rounded-md w-full text-left transition-colors text-sm font-sfpro ${
+            isActive("logout") ? 'bg-[#039994] text-white' : 'text-[#1E1E1E] hover:bg-gray-100'
           }`}
         >
-          <FiLogOut className={iconBase} color={isActive("logout") ? "#FFFFFF" : "#039994"} />
+          <FiLogOut className="w-4 h-4" color={isActive("logout") ? "#FFFFFF" : "#039994"} />
           <span>Log out</span>
         </button>
       </div>

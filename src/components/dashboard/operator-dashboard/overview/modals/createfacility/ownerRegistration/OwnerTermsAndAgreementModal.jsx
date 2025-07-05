@@ -59,6 +59,15 @@ export default function OwnerTermsAndAgreementModal({ isOpen, onClose }) {
       const data = await response.json();
 
       if (response.ok && data.status === 'success') {
+        const referralResponse = localStorage.getItem('referralResponse');
+        if (referralResponse) {
+          const referralData = JSON.parse(referralResponse);
+          if (referralData.data && referralData.data.inviterId) {
+            const operatorId = localStorage.getItem('userId');
+            localStorage.setItem('operatorId', operatorId);
+            localStorage.setItem('userId', referralData.data.inviterId);
+          }
+        }
         toast.success('Terms and conditions accepted successfully!');
         return true;
       } else {
