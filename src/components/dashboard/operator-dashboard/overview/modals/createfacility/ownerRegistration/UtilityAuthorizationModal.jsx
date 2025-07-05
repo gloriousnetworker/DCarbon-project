@@ -243,7 +243,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
 
   const handleVerifyEmail = async () => {
     if (!utilityAuthEmail) {
-      toast.error('Please enter your utility authorization email');
+      toast.error('Please enter your DCarbon email');
       return;
     }
 
@@ -381,10 +381,10 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
           </div>
           <div className="p-4 bg-yellow-50 border-b border-yellow-200">
             <p className="text-sm text-yellow-700">
-              <strong>Step 2:</strong> Enter the email of your DCarbon account you are authorizing for, then choose your utility provider.
+              <strong>Step 3:</strong> Enter the email of your DCarbon account you are authorizing for, then choose your utility provider.
             </p>
             <p className="text-sm text-yellow-700 mt-1">
-              <strong>Step 3:</strong> Enter your Utility Account credentials and authorize access when prompted.
+              <strong>Step 4:</strong> Enter your Utility Account credentials and authorize access when prompted.
             </p>
           </div>
           <iframe
@@ -552,12 +552,12 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
 
                 <div className="bg-blue-50 p-3 rounded-lg">
                   <p className="text-sm text-blue-700">
-                    <strong>Step 2:</strong> Enter the email used in your Utility Account to fetch meters from Utility API.
+                    <strong>Step 2:</strong> Enter the email used in signing to DCarbon to connect and fetch meters from Utility API.
                   </p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Utility authorization email
+                    DCarbon Email
                   </label>
                   <input
                     type="email"

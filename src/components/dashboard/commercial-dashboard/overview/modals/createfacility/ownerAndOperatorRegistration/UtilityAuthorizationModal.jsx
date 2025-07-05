@@ -659,12 +659,12 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
 
                     <div className="bg-blue-50 p-3 rounded-lg">
                       <p className="text-sm text-blue-700">
-                        <strong>Step 2:</strong> Enter the email used in your Utility Account to fetch meters from Utility API.
+                        <strong>Step 2:</strong> Enter the email used in signing up with DCarbon to connect and fetch meters from Utility API.
                       </p>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Utility authorization email
+                        DCarbon Email
                       </label>
                       <div className="flex space-x-2">
                         <input

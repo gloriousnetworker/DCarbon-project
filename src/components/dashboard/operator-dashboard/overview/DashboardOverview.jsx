@@ -13,11 +13,10 @@ const ProgressTracker = ({ currentStage }) => {
     { id: 1, name: "Registration", tooltip: "Commercial registration completed" },
     { id: 2, name: "Referral", tooltip: "Owner referral code verified" },
     { id: 3, name: "Agreement", tooltip: "Terms and conditions signed" },
-    { id: 4, name: "Utility Auth", tooltip: "Utility authorization initiated" },
-    { id: 5, name: "Meters", tooltip: "Utility meters connected" }
+    { id: 4, name: "Meters", tooltip: "Utility meters connected" }
   ];
 
-  const currentDisplayStage = currentStage > 5 ? 5 : currentStage;
+  const currentDisplayStage = currentStage > 4 ? 4 : currentStage;
 
   return (
     <div className="w-full bg-white rounded-lg shadow-sm p-4 mb-6">
@@ -79,130 +78,113 @@ export default function DashboardOverview() {
   const [meterCheckInterval, setMeterCheckInterval] = useState(null);
 
   const checkStage1Completion = async (userId, authToken) => {
-    try {
-      const response = await fetch(
-        `https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`
-          }
+    const response = await fetch(
+      `https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`,
+      {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
         }
-      );
-      const result = await response.json();
-      return result.status === 'success' && result.data?.commercialUser?.ownerFullName;
-    } catch (error) {
-      console.error('Error checking stage 1:', error);
-      return false;
-    }
+      }
+    );
+    const result = await response.json();
+    return result.status === 'success' && result.data?.commercialUser?.ownerFullName;
   };
 
   const checkStage2Completion = async (userId, authToken) => {
-    try {
-      const response = await fetch(
-        `https://services.dcarbon.solutions/api/user/referral/by-user-id/${userId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`
-          }
+    const response = await fetch(
+      `https://services.dcarbon.solutions/api/user/referral/by-user-id/${userId}`,
+      {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
         }
-      );
-      const result = await response.json();
-      return result.status === 'success' && result.data?.referral?.inviterId;
-    } catch (error) {
-      console.error('Error checking stage 2:', error);
-      return false;
-    }
+      }
+    );
+    const result = await response.json();
+    return result.status === 'success' && result.data?.referral?.inviterId;
   };
 
-  const checkStage5Completion = async (userId, authToken) => {
-    try {
-      const response = await fetch(
-        `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`
-          }
+  const checkStage3Completion = async (userId, authToken) => {
+    const response = await fetch(
+      `https://services.dcarbon.solutions/api/user/accept-user-agreement-terms/${userId}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
         }
-      );
-      const result = await response.json();
-      const hasMeters = result.status === 'success' && 
-                       result.data?.length > 0 && 
-                       result.data.some(item => item.meters?.meters?.length > 0);
-      return hasMeters;
-    } catch (error) {
-      console.error('Error checking stage 5:', error);
-      return false;
-    }
+      }
+    );
+    const result = await response.json();
+    return result.status === 'success';
+  };
+
+  const checkStage4Completion = async (userId, authToken) => {
+    const response = await fetch(
+      `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`,
+      {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      }
+    );
+    const result = await response.json();
+    return result.status === 'success' && 
+           result.data?.length > 0 && 
+           result.data.some(item => item.meters?.meters?.length > 0);
   };
 
   const checkUserProgress = async () => {
-    try {
-      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
-      const userId = loginResponse?.data?.user?.id;
-      const authToken = loginResponse?.data?.token;
+    const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+    const userId = loginResponse?.data?.user?.id;
+    const authToken = loginResponse?.data?.token;
 
-      if (!userId || !authToken) return;
+    if (!userId || !authToken) return;
 
-      const stageChecks = [
-        { stage: 1, check: () => checkStage1Completion(userId, authToken) },
-        { stage: 2, check: () => checkStage2Completion(userId, authToken) },
-        { stage: 3, url: `https://services.dcarbon.solutions/api/user/accept-user-agreement-terms/${userId}`, method: 'PUT' },
-        { stage: 4, url: `https://services.dcarbon.solutions/api/auth/initiate-utility-auth/${userId}`, method: 'POST' },
-        { stage: 5, check: () => checkStage5Completion(userId, authToken) }
-      ];
+    const stage1 = await checkStage1Completion(userId, authToken);
+    if (!stage1) {
+      setCurrentStage(1);
+      return;
+    }
 
-      let highestCompletedStage = 0;
+    const stage2 = await checkStage2Completion(userId, authToken);
+    if (!stage2) {
+      setCurrentStage(2);
+      return;
+    }
 
-      for (const { stage, url, method, check } of stageChecks) {
-        try {
-          let isCompleted = false;
-          if (check) {
-            isCompleted = await check();
-          } else {
-            const response = await fetch(url, {
-              method,
-              headers: {
-                'Authorization': `Bearer ${authToken}`
-              }
-            });
-            const result = await response.json();
-            isCompleted = response.ok && result.status === 'success';
-          }
-          if (isCompleted) {
-            highestCompletedStage = stage;
-          }
-        } catch (error) {
-          console.error(`Error checking stage ${stage}:`, error);
-        }
+    const stage3 = await checkStage3Completion(userId, authToken);
+    if (!stage3) {
+      setCurrentStage(3);
+      return;
+    }
+
+    const stage4 = await checkStage4Completion(userId, authToken);
+    if (stage4) {
+      setCurrentStage(4);
+      if (meterCheckInterval) {
+        clearInterval(meterCheckInterval);
+        setMeterCheckInterval(null);
       }
-
-      const newStage = highestCompletedStage === 5 ? 5 : highestCompletedStage + 1;
-      setCurrentStage(newStage);
-
-      // If we're at stage 4 but not yet completed, start checking for meters
-      if (newStage === 4 && !meterCheckInterval) {
+    } else {
+      setCurrentStage(3);
+      if (!meterCheckInterval) {
         const interval = setInterval(async () => {
-          const hasMeters = await checkStage5Completion(userId, authToken);
+          const hasMeters = await checkStage4Completion(userId, authToken);
           if (hasMeters) {
-            setCurrentStage(5);
+            setCurrentStage(4);
             clearInterval(interval);
             setMeterCheckInterval(null);
           }
         }, 5000);
         setMeterCheckInterval(interval);
       }
-    } catch (error) {
-      console.error('Error checking user progress:', error);
     }
   };
 
   useEffect(() => {
     const loadUserData = async () => {
-      if (typeof window === 'undefined') return;
-      
       const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
       const firstName = loginResponse?.data?.user?.firstName || "User";
       const userId = loginResponse?.data?.user?.id || "";
@@ -235,34 +217,27 @@ export default function DashboardOverview() {
     
     setIsCheckingCommercialStatus(true);
     
-    try {
-      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
-      const authToken = loginResponse?.data?.token;
+    const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+    const authToken = loginResponse?.data?.token;
 
-      if (!authToken) {
-        throw new Error('Authentication data not found');
+    if (!authToken) return;
+
+    const response = await fetch(`https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${authToken}`
       }
+    });
 
-      const response = await fetch(`https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${authToken}`
-        }
-      });
+    const result = await response.json();
 
-      const result = await response.json();
-
-      if (result.statusCode === 422 && result.status === 'fail') {
-        setShowWelcomeModal(true);
-      } else if (result.statusCode !== 200 || result.status !== 'success') {
-        setShowWelcomeModal(true);
-      }
-    } catch (error) {
-      console.error('Error checking commercial status:', error);
+    if (result.statusCode === 422 && result.status === 'fail') {
       setShowWelcomeModal(true);
-    } finally {
-      setIsCheckingCommercialStatus(false);
+    } else if (result.statusCode !== 200 || result.status !== 'success') {
+      setShowWelcomeModal(true);
     }
+    
+    setIsCheckingCommercialStatus(false);
   };
 
   const handleCloseWelcomeModal = () => {
