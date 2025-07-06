@@ -22,6 +22,8 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const [requestedFinanceTypeName, setRequestedFinanceTypeName] = useState('');
   const [showAgreementModal, setShowAgreementModal] = useState(false);
   const [file, setFile] = useState(null);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [totalSteps] = useState(4);
 
   const [formData, setFormData] = useState({
     financeType: "",
@@ -229,12 +231,18 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
         }
       }
 
+      setCurrentStep(4);
       setShowAgreementModal(true);
     } catch (err) {
       toast.error(err.response?.data?.message || err.message || 'Operation failed', { id: toastId });
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCloseModal = () => {
+    onClose();
+    window.location.reload();
   };
 
   if (!isOpen) return null;
@@ -302,7 +310,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
               )}
 
               <button
-                onClick={onClose}
+                onClick={handleCloseModal}
                 className="absolute top-6 right-6 text-red-500 hover:text-red-700"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -313,13 +321,14 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
               <h2 className="font-[600] text-[20px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro mt-8 text-center">
                 Finance & Installer information
               </h2>
-              <div className="w-full h-1 bg-[#039994] rounded-full mt-2"></div>
 
-              <div className="flex items-center mt-4 mb-2">
-                <div className="flex-1 h-1 bg-gray-200 rounded-full mr-4">
-                  <div className="h-1 bg-[#039994] rounded-full" style={{ width: '75%' }}></div>
+              <div className="flex items-center justify-center mt-4">
+                <div className="flex items-center">
+                  <div className="w-96 h-1 bg-gray-200 rounded-full mr-2">
+                    <div className="h-1 bg-[#039994] rounded-full" style={{ width: `${(currentStep/totalSteps)*100}%` }}></div>
+                  </div>
+                  <span className="text-sm font-medium text-gray-500 font-sfpro">{currentStep}/{totalSteps}</span>
                 </div>
-                <span className="text-sm font-medium text-gray-500 font-sfpro">03/04</span>
               </div>
             </div>
 
@@ -522,7 +531,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
           isOpen={showAgreementModal}
           onClose={() => {
             setShowAgreementModal(false);
-            onClose();
+            handleCloseModal();
           }}
         />
       )}

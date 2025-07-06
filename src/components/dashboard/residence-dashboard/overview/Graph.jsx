@@ -17,7 +17,6 @@ const MONTHS = [
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
 
-// Color constants
 const COLORS = {
   solarProduction: "#039994",
   earnings: "#1E1E1E",
@@ -26,45 +25,44 @@ const COLORS = {
 };
 
 export default function SolarProductionAndEarningsDashboard() {
-  // State for view controls
   const [solarView, setSolarView] = useState("Yearly");
   const [solarYear, setSolarYear] = useState(new Date().getFullYear().toString());
   const [earningsYear, setEarningsYear] = useState(new Date().getFullYear().toString());
-  
-  // State for data loading
   const [loadingSolarData, setLoadingSolarData] = useState(true);
   const [loadingEarningsData, setLoadingEarningsData] = useState(true);
-  
-  // State for display type
   const [displayType, setDisplayType] = useState("Solar Production");
-  
-  // State for chart data
   const [solarProductionData, setSolarProductionData] = useState([]);
   const [netEnergyData, setNetEnergyData] = useState([]);
   const [recsGeneratedData, setRecsGeneratedData] = useState([]);
   const [earningsData, setEarningsData] = useState([]);
-
-  // Dropdown state
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [hasMeters, setHasMeters] = useState(false);
 
-  // Generate solar production data
+  const checkMeters = async () => {
+    try {
+      const response = await fetch('/api/meters', { method: 'GET' });
+      const data = await response.json();
+      if (data?.meters?.length > 0) {
+        setHasMeters(true);
+      }
+    } catch (error) {
+      console.error('Error fetching meters:', error);
+    }
+  };
+
   useEffect(() => {
+    checkMeters();
+  }, []);
+
+  useEffect(() => {
+    if (!hasMeters) return;
     setLoadingSolarData(true);
-    
-    // Generate realistic data for solar production
     setTimeout(() => {
       const solarData = MONTHS.map((month, index) => {
-        // Base value with seasonal variation (more in summer months)
         const monthIndex = index;
         const seasonalFactor = Math.sin((monthIndex / 11) * Math.PI * 2);
-        
-        // Higher in summer (May-Aug), lower in winter
         let value = 50 + seasonalFactor * 40;
-        
-        // Add some random variation
         value += Math.floor(Math.random() * 15) - 5;
-        
-        // Adjust for specific months to match the image
         if (month === "May" || month === "Nov") value = 90;
         if (month === "Apr" || month === "Aug") value = 30;
         if (month === "Jan" || month === "Dec") value = 75;
@@ -73,56 +71,35 @@ export default function SolarProductionAndEarningsDashboard() {
         if (month === "Sep") value = 50;
         if (month === "Oct") value = 75;
         if (month === "Mar") value = 65;
-        
-        return {
-          month,
-          value: Math.max(0, Math.min(100, Math.floor(value))),
-        };
+        return { month, value: Math.max(0, Math.min(100, Math.floor(value))) };
       });
-      
       setSolarProductionData(solarData);
-      
-      // Generate data for Net Energy Exported (different pattern)
       const netEnergyData = MONTHS.map((month, index) => {
         const monthIndex = index;
         let value = 40 + Math.sin((monthIndex / 11) * Math.PI * 2) * 35;
         value += Math.floor(Math.random() * 10);
-        return {
-          month,
-          value: Math.max(0, Math.min(100, Math.floor(value))),
-        };
+        return { month, value: Math.max(0, Math.min(100, Math.floor(value))) };
       });
-      
       setNetEnergyData(netEnergyData);
-      
-      // Generate data for RECs Generated (different pattern)
       const recsData = MONTHS.map((month, index) => {
         const monthIndex = index;
         let value = 60 + Math.cos((monthIndex / 11) * Math.PI * 2) * 25;
         value += Math.floor(Math.random() * 10);
-        return {
-          month,
-          value: Math.max(0, Math.min(100, Math.floor(value))),
-        };
+        return { month, value: Math.max(0, Math.min(100, Math.floor(value))) };
       });
-      
       setRecsGeneratedData(recsData);
       setLoadingSolarData(false);
     }, 600);
-  }, [solarYear, solarView]);
+  }, [solarYear, solarView, hasMeters]);
 
-  // Generate earnings data
   useEffect(() => {
+    if (!hasMeters) return;
     setLoadingEarningsData(true);
-    
-    // Generate realistic earnings data that follows the pattern in the image
     setTimeout(() => {
-      const data = MONTHS.map((month, index) => {
-        // Pattern from image: starts low, peaks in Nov, drops in Dec
+      const data = MONTHS.map((month) => {
         let value;
-        
         switch (month) {
-          case "Jan": value = 0; break;  // Start at 0
+          case "Jan": value = 0; break;
           case "Feb": value = 10; break;
           case "Mar": value = 20; break;
           case "Apr": value = 5; break;
@@ -136,52 +113,36 @@ export default function SolarProductionAndEarningsDashboard() {
           case "Dec": value = 65; break;
           default: value = 50;
         }
-        
-        return {
-          month,
-          value
-        };
+        return { month, value };
       });
-      
       setEarningsData(data);
       setLoadingEarningsData(false);
     }, 600);
-  }, [earningsYear]);
+  }, [earningsYear, hasMeters]);
 
-  // Get current chart data based on selected display type
   const getCurrentChartData = () => {
     switch (displayType) {
-      case "Solar Production":
-        return solarProductionData;
-      case "Net Energy Exported":
-        return netEnergyData;
-      case "RECs Generated":
-        return recsGeneratedData;
-      default:
-        return solarProductionData;
+      case "Solar Production": return solarProductionData;
+      case "Net Energy Exported": return netEnergyData;
+      case "RECs Generated": return recsGeneratedData;
+      default: return solarProductionData;
     }
   };
 
-  // Get current chart color based on selected display type
   const getCurrentChartColor = () => {
     switch (displayType) {
-      case "Solar Production":
-        return COLORS.solarProduction;
-      case "Net Energy Exported":
-        return COLORS.netEnergy;
-      case "RECs Generated":
-        return COLORS.recsGenerated;
-      default:
-        return COLORS.solarProduction;
+      case "Solar Production": return COLORS.solarProduction;
+      case "Net Energy Exported": return COLORS.netEnergy;
+      case "RECs Generated": return COLORS.recsGenerated;
+      default: return COLORS.solarProduction;
     }
   };
 
-  // Toggle dropdown
   const toggleDropdown = () => {
+    if (!hasMeters) return;
     setDropdownOpen(!dropdownOpen);
   };
 
-  // Select display type
   const selectDisplayType = (type) => {
     setDisplayType(type);
     setDropdownOpen(false);
@@ -189,8 +150,7 @@ export default function SolarProductionAndEarningsDashboard() {
 
   return (
     <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {/* Solar Production Card */}
-      <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col">
+      <div className={`bg-white rounded-2xl shadow-lg p-6 flex flex-col ${!hasMeters ? 'opacity-50' : ''}`}>
         <div className="flex justify-between items-center">
           <div className="relative">
             <h3 
@@ -201,8 +161,6 @@ export default function SolarProductionAndEarningsDashboard() {
               {displayType}
               <ChevronDown className="h-5 w-5 ml-1" />
             </h3>
-            
-            {/* Dropdown menu */}
             {dropdownOpen && (
               <div className="absolute z-10 mt-1 w-48 bg-white rounded-md shadow-lg">
                 <div className="py-1">
@@ -228,21 +186,21 @@ export default function SolarProductionAndEarningsDashboard() {
               </div>
             )}
           </div>
-          
           <div className="flex items-center space-x-2 text-xs">
             <select
               value={solarView}
               onChange={(e) => setSolarView(e.target.value)}
               className="px-2 py-1 border rounded"
+              disabled={!hasMeters}
             >
               <option>Yearly</option>
               <option>Monthly</option>
             </select>
-            
             <select
               value={solarYear}
               onChange={(e) => setSolarYear(e.target.value)}
               className="px-2 py-1 border rounded"
+              disabled={!hasMeters}
             >
               {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(year => (
                 <option key={year} value={year}>{year}</option>
@@ -250,10 +208,12 @@ export default function SolarProductionAndEarningsDashboard() {
             </select>
           </div>
         </div>
-
         <hr className="my-4" />
-
-        {loadingSolarData ? (
+        {!hasMeters ? (
+          <div className="flex-1 flex items-center justify-center">
+            <p className="text-gray-500 text-xs">Waiting for meter data...</p>
+          </div>
+        ) : loadingSolarData ? (
           <div className="flex-1 flex items-center justify-center">
             <p className="text-gray-500 animate-pulse text-xs">Loading…</p>
           </div>
@@ -266,19 +226,8 @@ export default function SolarProductionAndEarningsDashboard() {
                 margin={{ top: 10, right: 10, left: 0, bottom: 10 }}
               >
                 <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#f5f5f5" />
-                <XAxis
-                  dataKey="month"
-                  tick={{ fontSize: 10 }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  domain={[0, 100]}
-                  ticks={[0, 25, 50, 75, 100]}
-                  tick={{ fontSize: 10 }}
-                  axisLine={false}
-                  tickLine={false}
-                />
+                <XAxis dataKey="month" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                <YAxis domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                 <Tooltip
                   content={({ active, payload }) => {
                     if (active && payload && payload.length) {
@@ -293,25 +242,15 @@ export default function SolarProductionAndEarningsDashboard() {
                     return null;
                   }}
                 />
-                <Bar
-                  dataKey="value"
-                  fill={getCurrentChartColor()}
-                  radius={[8, 8, 0, 0]}
-                  background={{ fill: '#f5f5f5', radius: [8, 8, 0, 0] }}
-                />
+                <Bar dataKey="value" fill={getCurrentChartColor()} radius={[8, 8, 0, 0]} background={{ fill: '#f5f5f5', radius: [8, 8, 0, 0] }} />
               </BarChart>
             </ResponsiveContainer>
           </>
         )}
       </div>
-
-      {/* Earnings Card */}
-      <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col">
+      <div className={`bg-white rounded-2xl shadow-lg p-6 flex flex-col ${!hasMeters ? 'opacity-50' : ''}`}>
         <div className="flex justify-between items-center">
-          <h3 
-            className="text-lg font-semibold flex items-center"
-            style={{ color: COLORS.earnings }}
-          >
+          <h3 className="text-lg font-semibold flex items-center" style={{ color: COLORS.earnings }}>
             <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
               <path d="M12 20V10" />
               <path d="M18 20V4" />
@@ -319,12 +258,12 @@ export default function SolarProductionAndEarningsDashboard() {
             </svg>
             Earnings
           </h3>
-          
           <div className="flex items-center space-x-2 text-xs">
             <select
               value={earningsYear}
               onChange={(e) => setEarningsYear(e.target.value)}
               className="px-2 py-1 border rounded"
+              disabled={!hasMeters}
             >
               {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(year => (
                 <option key={year} value={year}>{year}</option>
@@ -332,52 +271,25 @@ export default function SolarProductionAndEarningsDashboard() {
             </select>
           </div>
         </div>
-
         <hr className="my-4" />
-
-        {loadingEarningsData ? (
+        {!hasMeters ? (
+          <div className="flex-1 flex items-center justify-center">
+            <p className="text-gray-500 text-xs">Waiting for meter data...</p>
+          </div>
+        ) : loadingEarningsData ? (
           <div className="flex-1 flex items-center justify-center">
             <p className="text-gray-500 animate-pulse text-xs">Loading…</p>
           </div>
         ) : (
           <>
-            <div className="text-xs mb-2">
-              <div>Earnings</div>
-            </div>
+            <div className="text-xs mb-2"><div>Earnings</div></div>
             <ResponsiveContainer width="100%" height={250}>
-              <LineChart
-                data={earningsData}
-                margin={{ top: 10, right: 10, left: 0, bottom: 5 }}
-              >
+              <LineChart data={earningsData} margin={{ top: 10, right: 10, left: 0, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f5f5f5" />
-                <XAxis
-                  dataKey="month"
-                  tick={{ fontSize: 10 }}
-                  axisLine={{ stroke: '#E0E0E0' }}
-                  tickLine={false}
-                />
-                <YAxis 
-                  width={30}
-                  orientation="right"
-                  tick={{ fontSize: 10 }}
-                  axisLine={{ stroke: '#E0E0E0' }}
-                  tickLine={false}
-                  domain={[0, 100]}
-                  ticks={[0, 25, 50, 75, 100]}
-                  tickFormatter={(v) => `${v}k`}
-                />
-                <Tooltip
-                  formatter={(v) => `${v}k`}
-                  labelFormatter={(label) => `Month: ${label}`}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="value"
-                  stroke={COLORS.solarProduction}
-                  strokeWidth={2}
-                  dot={{ r: 3, fill: COLORS.solarProduction }}
-                  activeDot={{ r: 5, fill: COLORS.solarProduction }}
-                />
+                <XAxis dataKey="month" tick={{ fontSize: 10 }} axisLine={{ stroke: '#E0E0E0' }} tickLine={false} />
+                <YAxis width={30} orientation="right" tick={{ fontSize: 10 }} axisLine={{ stroke: '#E0E0E0' }} tickLine={false} domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tickFormatter={(v) => `${v}k`} />
+                <Tooltip formatter={(v) => `${v}k`} labelFormatter={(label) => `Month: ${label}`} />
+                <Line type="monotone" dataKey="value" stroke={COLORS.solarProduction} strokeWidth={2} dot={{ r: 3, fill: COLORS.solarProduction }} activeDot={{ r: 5, fill: COLORS.solarProduction }} />
               </LineChart>
             </ResponsiveContainer>
           </>

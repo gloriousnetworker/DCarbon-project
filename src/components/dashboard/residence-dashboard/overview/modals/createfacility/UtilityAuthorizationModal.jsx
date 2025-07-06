@@ -1,14 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import AddResidentialFacilityModal from './AddResidentialFacilityModal';
-import {
-  buttonPrimary,
-  spinnerOverlay,
-  spinner,
-  labelClass,
-  inputClass,
-  termsTextContainer
-} from '../../styles.js';
 
 export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
   const [loading, setLoading] = useState(false);
@@ -31,7 +23,11 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
   const [showFacilityModal, setShowFacilityModal] = useState(false);
   const [showAllFacilities, setShowAllFacilities] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
-  const [totalSteps] = useState(4);
+  const [totalSteps] = useState(5);
+  const [meterFetchInterval, setMeterFetchInterval] = useState(null);
+  const [userMetersData, setUserMetersData] = useState([]);
+  const [hasValidMeters, setHasValidMeters] = useState(false);
+  const [utilityStatus, setUtilityStatus] = useState('');
 
   const baseUrl = 'https://services.dcarbon.solutions';
 
@@ -41,8 +37,17 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
     }
     if (isOpen && hasAuthorizedUtility) {
       fetchAuthorizedUtilities();
+      checkUserMeters();
     }
   }, [isOpen, hasAuthorizedUtility]);
+
+  useEffect(() => {
+    return () => {
+      if (meterFetchInterval) {
+        clearInterval(meterFetchInterval);
+      }
+    };
+  }, [meterFetchInterval]);
 
   const getAuthToken = () => {
     return localStorage.getItem('authToken');
@@ -50,6 +55,39 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
 
   const getUserId = () => {
     return localStorage.getItem('userId');
+  };
+
+  const checkUserMeters = async () => {
+    try {
+      const response = await fetch(`${baseUrl}/api/auth/user-meters/${getUserId()}`, {
+        headers: {
+          'Authorization': `Bearer ${getAuthToken()}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      const data = await response.json();
+      
+      if (data.status === 'success' && data.data) {
+        setUserMetersData(data.data);
+        const hasMeters = data.data.some(utility => 
+          utility.meters && 
+          utility.meters.meters && 
+          utility.meters.meters.length > 0
+        );
+        setHasValidMeters(hasMeters);
+        if (data.data.length > 0) {
+          setUtilityStatus(data.data[0].status || '');
+        }
+      } else {
+        setUserMetersData([]);
+        setHasValidMeters(false);
+        setUtilityStatus('');
+      }
+    } catch (error) {
+      setUserMetersData([]);
+      setHasValidMeters(false);
+      setUtilityStatus('');
+    }
   };
 
   const fetchUtilityProviders = async () => {
@@ -79,14 +117,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
       });
       const data = await response.json();
       if (data.status === 'success') {
-        const validUtilities = data.data.filter(utility => 
-          utility.status === 'UPDATED' && 
-          utility.verificationToken && 
-          utility.meters && 
-          utility.meters.meters && 
-          utility.meters.meters.length > 0
-        );
-        setAuthorizedUtilities(validUtilities);
+        setAuthorizedUtilities(data.data);
       }
     } catch (error) {
       toast.error('Failed to fetch authorized utilities');
@@ -102,16 +133,38 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
         }
       });
       const data = await response.json();
+      
       if (data.status === 'success') {
         const utility = data.data.find(u => u.id === utilityId);
-        if (utility && utility.meters && utility.meters.meters) {
-          setVerifiedFacilities(utility.meters.meters);
-          setCurrentStep(3);
+        if (utility) {
+          setUtilityStatus(utility.status || '');
+          if (utility.meters && utility.meters.meters && utility.meters.meters.length > 0) {
+            setVerifiedFacilities(utility.meters.meters);
+            setHasValidMeters(true);
+            if (meterFetchInterval) {
+              clearInterval(meterFetchInterval);
+              setMeterFetchInterval(null);
+            }
+          } else {
+            setHasValidMeters(false);
+            startMeterFetchInterval(utilityId);
+          }
         }
       }
     } catch (error) {
       toast.error('Failed to fetch user meters');
+      setHasValidMeters(false);
     }
+  };
+
+  const startMeterFetchInterval = (utilityId) => {
+    if (meterFetchInterval) {
+      clearInterval(meterFetchInterval);
+    }
+    const interval = setInterval(() => {
+      fetchUserMeters(utilityId);
+    }, 5000);
+    setMeterFetchInterval(interval);
   };
 
   const handleUtilityAuthChange = (value) => {
@@ -122,8 +175,10 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
       setSelectedUtilityAuth('');
       setVerifiedFacilities([]);
       setSelectedFacilities([]);
+      setHasValidMeters(false);
     } else {
       setSelectedProvider('');
+      checkUserMeters();
     }
   };
 
@@ -220,7 +275,13 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
         toast.success(data.message, { id: toastId });
         if (data.data && data.data.meters && data.data.meters.meters) {
           setVerifiedFacilities(data.data.meters.meters);
-          setCurrentStep(3);
+          setHasValidMeters(true);
+          setCurrentStep(4);
+        } else {
+          const selectedUtility = userMetersData.find(u => u.id === selectedUtilityAuth);
+          if (selectedUtility) {
+            startMeterFetchInterval(selectedUtilityAuth);
+          }
         }
       } else {
         toast.error('Verification failed', { id: toastId });
@@ -245,6 +306,8 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
       setShowIframe(false);
       toast.success('Utility authorization completed successfully!');
       fetchAuthorizedUtilities();
+      setCurrentStep(3);
+      checkUserMeters();
     }
   };
 
@@ -257,38 +320,25 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (hasAuthorizedUtility) {
-      if (!selectedUtilityAuth) {
-        toast.error('Please select a utility authorization email');
-        return;
-      }
-      if (selectedFacilities.length === 0) {
-        toast.error('Please select at least one facility');
-        return;
-      }
-    } else {
-      if (!selectedProvider) {
-        toast.error('Please select a utility provider');
-        return;
-      }
-      if (!utilityAuthEmail) {
-        toast.error('Please enter your utility authorization email');
-        return;
-      }
-    }
-
-    setCurrentStep(4);
     setShowFacilityModal(true);
+    setCurrentStep(5);
   };
 
   const handleFacilityModalClose = () => {
     setShowFacilityModal(false);
     onClose();
+    window.location.reload();
   };
 
-  const handleBackToUtilityAuth = () => {
-    setShowFacilityModal(false);
+  const handleIframeClose = () => {
+    setShowIframe(false);
+    onClose();
+    window.location.reload();
+  };
+
+  const handleMainModalClose = () => {
+    onClose();
+    window.location.reload();
   };
 
   const displayedFacilities = showAllFacilities ? verifiedFacilities : verifiedFacilities.slice(0, 3);
@@ -300,7 +350,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
           <div className="flex items-center justify-between p-4 border-b">
             <h3 className="text-lg font-semibold text-[#039994]">Utility Authorization Portal</h3>
             <button
-              onClick={() => setShowIframe(false)}
+              onClick={handleIframeClose}
               className="text-red-500 hover:text-red-700"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -310,10 +360,10 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
           </div>
           <div className="p-4 bg-yellow-50 border-b border-yellow-200">
             <p className="text-sm text-yellow-700">
-              <strong>Step 2:</strong> Enter the email of your DCarbon account you are authorizing for, then choose your utility provider.
+              <strong>Step 3:</strong> Enter the email of your DCarbon account you are authorizing for, then choose your utility provider.
             </p>
             <p className="text-sm text-yellow-700 mt-1">
-              <strong>Step 3:</strong> Enter your Utility Account credentials and authorize access when prompted.
+              <strong>Step 4:</strong> Enter your Utility Account credentials and authorize access when prompted.
             </p>
           </div>
           <iframe
@@ -331,7 +381,6 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
       <AddResidentialFacilityModal 
         isOpen={true}
         onClose={handleFacilityModalClose}
-        onBack={handleBackToUtilityAuth}
         selectedMeters={selectedFacilities}
         utilityAuthEmail={hasAuthorizedUtility ? selectedUtilityAuth : utilityAuthEmail}
       />
@@ -343,8 +392,8 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
   return (
     <>
       {loading && (
-        <div className={spinnerOverlay}>
-          <div className={spinner}></div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
+          <div className="w-8 h-8 border-4 border-[#039994] border-t-transparent rounded-full animate-spin"></div>
         </div>
       )}
 
@@ -363,7 +412,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
             )}
 
             <button
-              onClick={onClose}
+              onClick={handleMainModalClose}
               className="absolute top-6 right-6 text-red-500 hover:text-red-700"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -385,9 +434,23 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
           </div>
 
           <div className="flex-1 overflow-y-auto px-6 pb-6">
+            {hasValidMeters ? (
+              <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-3">
+                <p className="text-sm text-green-700">
+                  <strong>Success!</strong> Meters have been successfully fetched. You can now generate facilities.
+                </p>
+              </div>
+            ) : utilityStatus && (
+              <div className="mb-4 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                <p className="text-sm text-yellow-700">
+                  <strong>Status:</strong> {utilityStatus}. {utilityStatus === 'INITIATED' ? 'Please complete the authorization process.' : 'Waiting for meters to be fetched...'}
+                </p>
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label className={`${labelClass} text-sm mb-4 block`}>
+                <label className="block text-sm font-medium text-gray-700 mb-4">
                   Is your DCarbon account able to fetch meters from Utility API?
                 </label>
                 <div className="flex items-center space-x-6">
@@ -422,7 +485,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
                     </p>
                   </div>
                   <div>
-                    <label className={`${labelClass} text-sm mb-2 block`}>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Utility authorization email
                     </label>
                     <select
@@ -434,10 +497,10 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
                         setShowAllFacilities(false);
                         fetchUserMeters(e.target.value);
                       }}
-                      className={`${inputClass} text-sm w-full`}
+                      className="block w-full px-3 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#039994] focus:border-[#039994]"
                     >
                       <option value="">Select Email</option>
-                      {authorizedUtilities.map((utility) => (
+                      {userMetersData.map((utility) => (
                         <option key={utility.id} value={utility.id}>
                           {utility.utilityAuthEmail}
                         </option>
@@ -450,7 +513,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
                       <button
                         type="button"
                         onClick={() => {
-                          const selectedUtility = authorizedUtilities.find(u => u.id === selectedUtilityAuth);
+                          const selectedUtility = userMetersData.find(u => u.id === selectedUtilityAuth);
                           if (selectedUtility) {
                             handleVerifyUtilityAuth(selectedUtility.verificationToken);
                           }
@@ -530,13 +593,13 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
                       </p>
                     </div>
                     <div>
-                      <label className={`${labelClass} text-sm mb-2 block`}>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
                         Utility Provider
                       </label>
                       <select
                         value={selectedProvider}
                         onChange={(e) => setSelectedProvider(e.target.value)}
-                        className={`${inputClass} text-sm w-full`}
+                        className="block w-full px-3 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#039994] focus:border-[#039994]"
                       >
                         <option value="">Select Provider</option>
                         {utilityProviders.map((provider) => (
@@ -562,21 +625,21 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
                             placeholder="Provider Name"
                             value={newProviderData.name}
                             onChange={(e) => setNewProviderData({...newProviderData, name: e.target.value})}
-                            className={`${inputClass} text-sm w-full`}
+                            className="block w-full px-3 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#039994] focus:border-[#039994]"
                           />
                           <input
                             type="url"
                             placeholder="Website URL"
                             value={newProviderData.website}
                             onChange={(e) => setNewProviderData({...newProviderData, website: e.target.value})}
-                            className={`${inputClass} text-sm w-full`}
+                            className="block w-full px-3 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#039994] focus:border-[#039994]"
                           />
                           <input
                             type="text"
                             placeholder="Documentation (optional)"
                             value={newProviderData.documentation}
                             onChange={(e) => setNewProviderData({...newProviderData, documentation: e.target.value})}
-                            className={`${inputClass} text-sm w-full`}
+                            className="block w-full px-3 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#039994] focus:border-[#039994]"
                           />
                           <button
                             type="button"
@@ -592,12 +655,12 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
 
                     <div className="bg-blue-50 p-3 rounded-lg">
                       <p className="text-sm text-blue-700">
-                        <strong>Step 2:</strong> Enter the email used in your Utility Account to fetch meters from Utility API.
+                        <strong>Step 2:</strong> Enter the email used in signing up with DCarbon to connect and fetch meters from Utility API.
                       </p>
                     </div>
                     <div>
-                      <label className={`${labelClass} text-sm mb-2 block`}>
-                        Utility authorization email
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        DCarbon Email
                       </label>
                       <div className="flex space-x-2">
                         <input
@@ -605,7 +668,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
                           value={utilityAuthEmail}
                           onChange={(e) => setUtilityAuthEmail(e.target.value)}
                           placeholder="Email address"
-                          className={`${inputClass} flex-1 text-sm`}
+                          className="flex-1 block w-full px-3 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#039994] focus:border-[#039994]"
                         />
                         <button
                           type="button"
@@ -624,13 +687,13 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
               <div className="pt-4 space-y-4">
                 <button
                   type="submit"
-                  disabled={loading}
-                  className={`${buttonPrimary} w-full py-3 text-white font-medium rounded-lg transition-colors`}
+                  disabled={loading || !hasValidMeters}
+                  className={`w-full py-3 bg-[#039994] text-white font-medium rounded-lg transition-colors hover:bg-[#02857f] disabled:opacity-50`}
                 >
                   {loading ? 'Processing...' : 'Add Residential Facility'}
                 </button>
                 
-                <div className={termsTextContainer}>
+                <div className="mt-2">
                   <p className="text-xs text-center text-gray-500">
                     <a href="#" className="underline hover:no-underline">Terms and Conditions</a>
                     {' • '}

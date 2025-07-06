@@ -3,303 +3,241 @@ import dynamic from "next/dynamic";
 
 const QuickActions = dynamic(() => import("./QuickActions"), { ssr: false });
 const Graph = dynamic(() => import("./Graph"), { ssr: false });
-const CustomerCard = dynamic(() => import("./CustomerCards"), { ssr: false });
+const CustomerCard = dynamic(() => import("./RecentTransactions"), { ssr: false });
 const WelcomeModal = dynamic(() => import("./modals/WelcomeModal"), { ssr: false });
-const AddUtilityProvider = dynamic(() => import("./modals/AddUtilityProvider"), { ssr: false });
+const FinanceAndInstallerModal = dynamic(() => import("./modals/createfacility/FinanceAndInstallerModal"), { ssr: false });
+const ResidenceTermsAndAgreementModal = dynamic(() => import("./modals/createfacility/ResidenceTermsAndAgreementModal"), { ssr: false });
+const UtilityAuthorizationModal = dynamic(() => import("./modals/createfacility/UtilityAuthorizationModal"), { ssr: false });
+
+const ProgressTracker = ({ currentStage, completedStages, onStageClick }) => {
+  const stages = [
+    { id: 1, name: "Dashboard Access", tooltip: "Welcome to your dashboard" },
+    { id: 2, name: "Financial Info", tooltip: "Complete financial information" },
+    { id: 3, name: "Agreements", tooltip: "Sign terms and conditions" },
+    { id: 4, name: "Utility Auth", tooltip: "Authorize utility access" }
+  ];
+
+  return (
+    <div className="w-full bg-white rounded-lg shadow-sm p-4 mb-6">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-lg font-semibold text-gray-800">Onboarding Progress</h2>
+        <span className="text-sm font-medium text-[#039994]">
+          Stage {currentStage} of {stages.length}
+        </span>
+      </div>
+      <div className="relative">
+        <div className="flex justify-between mb-2">
+          {stages.map((stage) => (
+            <div 
+              key={stage.id} 
+              className="flex flex-col items-center group relative"
+              onClick={() => completedStages.includes(stage.id) ? onStageClick(stage.id) : null}
+            >
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center border-2 cursor-pointer ${
+                  completedStages.includes(stage.id)
+                    ? "bg-[#039994] border-[#039994] text-white"
+                    : stage.id === currentStage
+                    ? "border-[#039994] text-[#039994]"
+                    : "border-gray-300 text-gray-400"
+                } ${completedStages.includes(stage.id) ? 'hover:bg-[#028882]' : ''}`}
+              >
+                {stage.id}
+              </div>
+              <span
+                className={`text-xs mt-1 text-center ${
+                  completedStages.includes(stage.id) || stage.id === currentStage
+                    ? "text-[#039994] font-medium"
+                    : "text-gray-500"
+                }`}
+              >
+                {stage.name}
+              </span>
+              {completedStages.includes(stage.id) && (
+                <div className="absolute top-full mt-2 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  <div className="relative bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
+                    {stage.tooltip}
+                    <span className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-800 rotate-45"></span>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+        <div className="absolute top-4 left-0 right-0 flex justify-between px-4 -z-10">
+          {stages.slice(0, stages.length - 1).map((stage) => (
+            <div
+              key={stage.id}
+              className={`h-1 flex-1 mx-2 ${
+                completedStages.includes(stage.id + 1) ? "bg-[#039994]" : "bg-gray-200"
+              }`}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default function DashboardOverview() {
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
-  const [showAddUtilityModal, setShowAddUtilityModal] = useState(false);
-  const [authStatus, setAuthStatus] = useState("PENDING");
-  const [agreementStatus, setAgreementStatus] = useState("PENDING");
-  const [utilityAuthDetails, setUtilityAuthDetails] = useState([]);
-  const [utilityAuthEmails, setUtilityAuthEmails] = useState([]);
+  const [showFinanceModal, setShowFinanceModal] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [showUtilityModal, setShowUtilityModal] = useState(false);
   const [userData, setUserData] = useState({
     userFirstName: "",
-    utilityAuth: null,
-    agreements: null
+    userId: ""
   });
-  const [hasCheckedStatus, setHasCheckedStatus] = useState(false);
+  const [currentStage, setCurrentStage] = useState(1);
+  const [completedStages, setCompletedStages] = useState([]);
+
+  const checkStage2Completion = async (userId, authToken) => {
+    try {
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/user/financial-info/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        }
+      );
+      const result = await response.json();
+      return result.status === 'success' && result.data?.financialInfo !== null;
+    } catch (error) {
+      return false;
+    }
+  };
+
+  const checkStage3Completion = async (userId, authToken) => {
+    try {
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/user/check-agreements/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        }
+      );
+      const result = await response.json();
+      return result.status === 'success' && result.data?.agreementsAccepted;
+    } catch (error) {
+      return false;
+    }
+  };
+
+  const checkStage4Completion = async (userId, authToken) => {
+    try {
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        }
+      );
+      const result = await response.json();
+      return result.status === 'success' && result.data?.length > 0 && result.data.some(item => item.meters?.meters?.length > 0);
+    } catch (error) {
+      return false;
+    }
+  };
+
+  const checkUserProgress = async () => {
+    try {
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const userId = loginResponse?.data?.user?.id;
+      const authToken = loginResponse?.data?.token;
+
+      if (!userId || !authToken) return;
+
+      const newCompletedStages = [1];
+      let currentStage = 2;
+
+      const stage2Completed = await checkStage2Completion(userId, authToken);
+      if (stage2Completed) {
+        newCompletedStages.push(2);
+        currentStage = 3;
+      }
+
+      const stage3Completed = await checkStage3Completion(userId, authToken);
+      if (stage3Completed && newCompletedStages.includes(2)) {
+        newCompletedStages.push(3);
+        currentStage = 4;
+      }
+
+      const stage4Completed = await checkStage4Completion(userId, authToken);
+      if (stage4Completed && newCompletedStages.includes(3)) {
+        newCompletedStages.push(4);
+        currentStage = 4;
+      }
+
+      setCompletedStages(newCompletedStages);
+      setCurrentStage(currentStage);
+    } catch (error) {
+      console.error('Error checking user progress:', error);
+    }
+  };
+
+  const handleStageClick = (stageId) => {
+    if (stageId === 2) {
+      setShowFinanceModal(true);
+    } else if (stageId === 3) {
+      setShowTermsModal(true);
+    } else if (stageId === 4) {
+      setShowUtilityModal(true);
+    }
+  };
+
+  const handleCloseWelcomeModal = () => {
+    setShowWelcomeModal(false);
+    localStorage.setItem("hasVisitedDashboard", "true");
+    checkUserProgress();
+  };
+
+  const handleCloseFinanceModal = () => {
+    setShowFinanceModal(false);
+    checkUserProgress();
+  };
+
+  const handleCloseTermsModal = () => {
+    setShowTermsModal(false);
+    checkUserProgress();
+  };
+
+  const handleCloseUtilityModal = () => {
+    setShowUtilityModal(false);
+    checkUserProgress();
+  };
 
   useEffect(() => {
-    const loadUserData = () => {
+    const loadUserData = async () => {
       if (typeof window === 'undefined') return;
       
-      const firstName = localStorage.getItem("userFirstName") || "User";
-      const loginResponse = JSON.parse(localStorage.getItem("loginResponse") || "null");
-      
-      const user = loginResponse?.data?.user || null;
-      const utilityAuth = user?.utilityAuth || [];
-      const utilityAuthEmail = user?.utilityAuthEmail || [];
-      let agreements = user?.agreements || null;
-      
-      if (!agreements) {
-        const userAgreements = JSON.parse(localStorage.getItem("userAgreements") || "null");
-        if (userAgreements) {
-          agreements = userAgreements;
-        }
-      }
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const firstName = loginResponse?.data?.user?.firstName || "User";
+      const userId = loginResponse?.data?.user?.id || "";
       
       setUserData({
         userFirstName: firstName,
-        utilityAuth: utilityAuth,
-        agreements: agreements
+        userId: userId
       });
 
-      setUtilityAuthDetails(utilityAuth);
-      setUtilityAuthEmails(utilityAuthEmail);
-
-      let currentAuthStatus = "PENDING";
-      if (utilityAuth.length > 0) {
-        const hasValidAuth = utilityAuth.some(auth => 
-          auth.status === "AUTHORIZED" || auth.status === "UPDATED"
-        );
-        currentAuthStatus = hasValidAuth ? "COMPLETED" : "PENDING";
+      const hasVisitedBefore = localStorage.getItem("hasVisitedDashboard");
+      if (!hasVisitedBefore) {
+        setShowWelcomeModal(true);
       }
-      setAuthStatus(currentAuthStatus);
 
-      let currentAgreementStatus = "PENDING";
-      if (agreements?.termsAccepted === true) {
-        currentAgreementStatus = "ACCEPTED";
-      }
-      setAgreementStatus(currentAgreementStatus);
-      
-      setHasCheckedStatus(true);
+      await checkUserProgress();
     };
 
     loadUserData();
   }, []);
 
-  useEffect(() => {
-    if (hasCheckedStatus) {
-      const shouldShowModal = 
-        authStatus !== "COMPLETED" || 
-        agreementStatus !== "ACCEPTED";
-      
-      if (shouldShowModal && shouldShowWelcomeModal()) {
-        const timer = setTimeout(() => {
-          setShowWelcomeModal(true);
-        }, 1000);
-
-        return () => clearTimeout(timer);
-      }
-    }
-  }, [authStatus, agreementStatus, hasCheckedStatus]);
-
-  const handleCloseWelcomeModal = () => {
-    setShowWelcomeModal(false);
-    localStorage.setItem("welcomeModalShown", "true");
-  };
-
-  const handleShowWelcomeModal = () => {
-    localStorage.removeItem("welcomeModalShown");
-    setShowWelcomeModal(true);
-  };
-
-  const handleOpenAddUtilityModal = () => {
-    setShowAddUtilityModal(true);
-  };
-
-  const handleCloseAddUtilityModal = () => {
-    setShowAddUtilityModal(false);
-  };
-
-  const shouldShowWelcomeModal = () => {
-    if (typeof window === 'undefined') return false;
-    return localStorage.getItem("welcomeModalShown") !== "true";
-  };
-
-  const getErrorUtilityAuths = () => {
-    if (utilityAuthDetails.length === 0 || utilityAuthEmails.length === 0) return [];
-
-    const errorAuths = [];
-    utilityAuthDetails.forEach((auth, index) => {
-      if (auth.status === "UPDATE_ERROR" || auth.status === "ERROR" || auth.status === "FAILED") {
-        errorAuths.push({
-          email: utilityAuthEmails[index] || 'Unknown email',
-          status: auth.status
-        });
-      }
-    });
-
-    return errorAuths;
-  };
-
-  const getUtilityAuthStatusMessage = () => {
-    if (utilityAuthDetails.length === 0) return null;
-
-    const hasValidStatus = utilityAuthDetails.some(auth => 
-      auth.status === "AUTHORIZED" || auth.status === "UPDATED"
-    );
-
-    if (hasValidStatus) return null;
-
-    const hasErrorStatus = utilityAuthDetails.some(auth => 
-      auth.status === "UPDATE_ERROR" || 
-      auth.status === "ERROR" ||
-      auth.status === "FAILED"
-    );
-
-    const hasPendingStatus = utilityAuthDetails.some(auth => 
-      auth.status === "PENDING" || 
-      auth.status === "PROCESSING"
-    );
-
-    if (hasErrorStatus) {
-      return {
-        type: "error",
-        message: (
-          <>
-            There was an issue with your utility provider authorization. Our team has been notified and will resolve this shortly. 
-            <button 
-              onClick={handleShowWelcomeModal}
-              className="font-medium text-red-700 underline hover:text-red-600 ml-1"
-            >
-              Click here
-            </button> for more details.
-          </>
-        )
-      };
-    }
-
-    if (hasPendingStatus) {
-      return {
-        type: "warning",
-        message: (
-          <>
-            Your utility provider authorization is being processed. 
-            <button 
-              onClick={handleShowWelcomeModal}
-              className="font-medium text-yellow-700 underline hover:text-yellow-600 ml-1"
-            >
-              Click here
-            </button> to learn what this means for your account.
-          </>
-        )
-      };
-    }
-
-    return null;
-  };
-
-  const getAgreementStatusMessage = () => {
-    if (agreementStatus !== "ACCEPTED") {
-      return {
-        type: "error",
-        message: (
-          <>
-            You need to accept the user agreement to add residences and access full features. 
-            <button 
-              onClick={handleShowWelcomeModal}
-              className="font-medium text-red-700 underline hover:text-red-600 ml-1"
-            >
-              Click here
-            </button> to complete this requirement.
-          </>
-        )
-      };
-    }
-    return null;
-  };
-
-  const utilityAuthMessage = getUtilityAuthStatusMessage();
-  const agreementMessage = getAgreementStatusMessage();
-  const errorAuths = getErrorUtilityAuths();
-
   return (
     <div className="w-full min-h-screen space-y-8 p-4">
-      {utilityAuthMessage && (
-        <div className={`${
-          utilityAuthMessage.type === 'warning' 
-            ? 'bg-yellow-50 border-l-4 border-yellow-400' 
-            : 'bg-red-50 border-l-4 border-red-400'
-        } p-4`}>
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg 
-                className={`h-5 w-5 ${
-                  utilityAuthMessage.type === 'warning' ? 'text-yellow-400' : 'text-red-400'
-                }`} 
-                xmlns="http://www.w3.org/2000/svg" 
-                viewBox="0 0 20 20" 
-                fill="currentColor"
-              >
-                <path 
-                  fillRule="evenodd" 
-                  d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" 
-                  clipRule="evenodd" 
-                />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <p className={`text-sm ${
-                utilityAuthMessage.type === 'warning' ? 'text-yellow-700' : 'text-red-700'
-              }`}>
-                {utilityAuthMessage.message}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {agreementMessage && (
-        <div className="bg-red-50 border-l-4 border-red-400 p-4">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg 
-                className="h-5 w-5 text-red-400" 
-                xmlns="http://www.w3.org/2000/svg" 
-                viewBox="0 0 20 20" 
-                fill="currentColor"
-              >
-                <path 
-                  fillRule="evenodd" 
-                  d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" 
-                  clipRule="evenodd" 
-                />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <p className="text-sm text-red-700">
-                {agreementMessage.message}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {errorAuths.length > 0 && (
-        <div className="space-y-2">
-          {errorAuths.map((errorAuth, index) => (
-            <div key={index} className="bg-orange-50 border-l-4 border-orange-400 p-3">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <svg 
-                    className="h-4 w-4 text-orange-400" 
-                    xmlns="http://www.w3.org/2000/svg" 
-                    viewBox="0 0 20 20" 
-                    fill="currentColor"
-                  >
-                    <path 
-                      fillRule="evenodd" 
-                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" 
-                      clipRule="evenodd" 
-                    />
-                  </svg>
-                </div>
-                <div className="ml-3">
-                  <p className="text-xs text-orange-700">
-                    <strong>Authorization Issue:</strong> There was an error with the authorization for{' '}
-                    <span className="font-medium">{errorAuth.email}</span>. 
-                    Please try contacting your Utility Provider or the DCarbon Team for assistance.
-                  </p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
       <div className="flex justify-between items-start mb-4">
         <div>
           <h1 className="font-[600] text-[24px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro">
@@ -308,10 +246,12 @@ export default function DashboardOverview() {
         </div>
       </div>
 
-      <QuickActions 
-        authStatus={authStatus} 
-        setAuthStatus={setAuthStatus}
+      <ProgressTracker 
+        currentStage={currentStage} 
+        completedStages={completedStages} 
+        onStageClick={handleStageClick}
       />
+      <QuickActions />
 
       <hr className="border-gray-300" />
 
@@ -321,22 +261,34 @@ export default function DashboardOverview() {
 
       <CustomerCard />
 
-      {showWelcomeModal && shouldShowWelcomeModal() && (
+      {showWelcomeModal && (
         <WelcomeModal 
           isOpen 
           onClose={handleCloseWelcomeModal}
           userData={userData}
-          authStatus={authStatus}
-          agreementStatus={agreementStatus}
-          utilityAuthDetails={utilityAuthDetails}
-          utilityAuthEmails={utilityAuthEmails}
+          currentStage={currentStage}
+          completedStages={completedStages}
         />
       )}
 
-      {showAddUtilityModal && (
-        <AddUtilityProvider 
-          isOpen={showAddUtilityModal}
-          onClose={handleCloseAddUtilityModal}
+      {showFinanceModal && (
+        <FinanceAndInstallerModal
+          isOpen={showFinanceModal}
+          onClose={handleCloseFinanceModal}
+        />
+      )}
+
+      {showTermsModal && (
+        <ResidenceTermsAndAgreementModal
+          isOpen={showTermsModal}
+          onClose={handleCloseTermsModal}
+        />
+      )}
+
+      {showUtilityModal && (
+        <UtilityAuthorizationModal
+          isOpen={showUtilityModal}
+          onClose={handleCloseUtilityModal}
         />
       )}
     </div>

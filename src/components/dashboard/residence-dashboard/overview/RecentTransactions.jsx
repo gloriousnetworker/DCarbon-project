@@ -12,38 +12,49 @@ export default function RecentTransactions() {
   ]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [hasMeters, setHasMeters] = useState(false);
+
+  const checkMeters = async () => {
+    try {
+      const response = await fetch('/api/meters', { method: 'GET' });
+      const data = await response.json();
+      if (data?.meters?.length > 0) {
+        setHasMeters(true);
+      }
+    } catch (error) {
+      console.error('Error fetching meters:', error);
+    }
+  };
 
   useEffect(() => {
-    // This would be replaced with actual API call in production
+    checkMeters();
+  }, []);
+
+  useEffect(() => {
+    if (!hasMeters) return;
     const fetchTransactions = async () => {
       try {
         setLoading(true);
-        // Mock API call - in real implementation, replace with actual endpoint
-        // const response = await axios.get('https://api.example.com/transactions');
-        // setTransactions(response.data);
-        
-        // For demo purposes, we're using the hardcoded data
-        // Simulating API delay
         await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Data already set in initial state
       } catch (err) {
         setError(err.message || "Failed to load transactions");
       } finally {
         setLoading(false);
       }
     };
-
     fetchTransactions();
-  }, []);
+  }, [hasMeters]);
 
   return (
-    <div className="w-full bg-white rounded-lg shadow p-6">
+    <div className={`w-full bg-white rounded-lg shadow p-6 ${!hasMeters ? 'opacity-50' : ''}`}>
       <h3 className="text-lg font-semibold mb-4" style={{ color: "#039994" }}>
         Recent Transactions
       </h3>
-      
-      {loading ? (
+      {!hasMeters ? (
+        <div className="flex justify-center items-center h-16">
+          <p className="text-gray-500">Waiting for meter data...</p>
+        </div>
+      ) : loading ? (
         <div className="flex justify-center items-center h-16">
           <p className="animate-pulse text-gray-500">Loading transactions...</p>
         </div>
