@@ -13,15 +13,85 @@ const DashboardSidebar = ({
 }) => {
   const [isClient, setIsClient] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [showNotificationDot, setShowNotificationDot] = useState(false);
+  const [notificationCheckInterval, setNotificationCheckInterval] = useState(null);
   const { profile } = useProfile();
+
+  const fetchNotifications = async () => {
+    try {
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const userId = loginResponse?.data?.user?.id;
+      const authToken = loginResponse?.data?.token;
+
+      if (!userId || !authToken) return;
+
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/user/notifications/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.status === 'success' && result.data) {
+          const unreadNotifications = result.data.filter(notification => !notification.isRead);
+          const unreadCount = unreadNotifications.length;
+          setUnreadCount(unreadCount);
+          setShowNotificationDot(unreadCount > 0);
+          
+          localStorage.setItem('notifications', JSON.stringify(result.data));
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    }
+  };
+
+  const flashNotificationDot = () => {
+    let flashCount = 0;
+    const maxFlashes = 3;
+    const interval = setInterval(() => {
+      setShowNotificationDot((prev) => !prev);
+      flashCount++;
+      if (flashCount >= maxFlashes * 2) {
+        clearInterval(interval);
+        setShowNotificationDot(true);
+      }
+    }, 300);
+  };
 
   useEffect(() => {
     setIsClient(true);
-    const storedNotifications = localStorage.getItem("notifications");
-    if (storedNotifications) {
-      const notifications = JSON.parse(storedNotifications);
-      setUnreadCount(notifications.filter((n) => !n.isRead).length);
-    }
+    fetchNotifications();
+
+    const notificationInterval = setInterval(fetchNotifications, 30000);
+    setNotificationCheckInterval(notificationInterval);
+
+    const handleStorageChange = (e) => {
+      if (e.key === "notifications") {
+        const notifications = JSON.parse(e.newValue || '[]');
+        const unread = notifications.filter((n) => !n.isRead).length;
+        setUnreadCount(unread);
+        setShowNotificationDot(unread > 0);
+        if (unread > unreadCount) {
+          flashNotificationDot();
+        }
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      if (notificationCheckInterval) {
+        clearInterval(notificationCheckInterval);
+      }
+    };
   }, []);
 
   const isActive = (section) => section === selectedSection;
@@ -107,10 +177,14 @@ const DashboardSidebar = ({
         >
           <div className="relative">
             <FiBell className="w-4 h-4" color={isActive("notifications") ? "#FFFFFF" : "#039994"} />
-            {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-4 w-4 flex items-center justify-center">
-                {unreadCount}
-              </span>
+            {showNotificationDot && unreadCount > 0 && (
+              <>
+                <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-red-500 animate-ping" />
+                <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-red-500" />
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                  {unreadCount}
+                </span>
+              </>
             )}
           </div>
           <span>Notification</span>

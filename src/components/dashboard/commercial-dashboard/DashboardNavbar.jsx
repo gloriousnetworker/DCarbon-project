@@ -16,6 +16,42 @@ const DashboardNavbar = ({
   const [showRegistrationModal, setShowRegistrationModal] = useState(false);
   const [progressWidth, setProgressWidth] = useState("20%");
   const [progressColor, setProgressColor] = useState("bg-blue-500");
+  const [notificationCheckInterval, setNotificationCheckInterval] = useState(null);
+
+  const fetchNotifications = async () => {
+    try {
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const userId = loginResponse?.data?.user?.id;
+      const authToken = loginResponse?.data?.token;
+
+      if (!userId || !authToken) return;
+
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/user/notifications/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.status === 'success' && result.data) {
+          const unreadNotifications = result.data.filter(notification => !notification.isRead);
+          const unreadCount = unreadNotifications.length;
+          setUnreadCount(unreadCount);
+          setShowNotificationDot(unreadCount > 0);
+          
+          localStorage.setItem('notifications', JSON.stringify(result.data));
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    }
+  };
 
   const updateRegistrationStep = (step) => {
     const displayStep = step > 5 ? 5 : step;
@@ -84,38 +120,35 @@ const DashboardNavbar = ({
     } catch (error) {}
   };
 
-  useEffect(() => {
-    checkUserProgress();
-    const interval = setInterval(checkUserProgress, 15000);
-    return () => clearInterval(interval);
-  }, []);
+  const flashNotificationDot = () => {
+    let flashCount = 0;
+    const maxFlashes = 3;
+    const interval = setInterval(() => {
+      setShowNotificationDot((prev) => !prev);
+      flashCount++;
+      if (flashCount >= maxFlashes * 2) {
+        clearInterval(interval);
+        setShowNotificationDot(true);
+      }
+    }, 300);
+  };
 
   useEffect(() => {
-    const storedNotifications = localStorage.getItem("notifications");
-    if (storedNotifications) {
-      const notifications = JSON.parse(storedNotifications);
-      const unread = notifications.filter((n) => !n.isRead).length;
-      setUnreadCount(unread);
-      setShowNotificationDot(unread > 0);
-    }
+    fetchNotifications();
+    checkUserProgress();
+
+    const notificationInterval = setInterval(fetchNotifications, 30000);
+    setNotificationCheckInterval(notificationInterval);
+    const progressInterval = setInterval(checkUserProgress, 15000);
 
     const handleStorageChange = (e) => {
       if (e.key === "notifications") {
-        const notifications = JSON.parse(e.newValue);
+        const notifications = JSON.parse(e.newValue || '[]');
         const unread = notifications.filter((n) => !n.isRead).length;
         setUnreadCount(unread);
         setShowNotificationDot(unread > 0);
         if (unread > unreadCount) {
-          let flashCount = 0;
-          const maxFlashes = 3;
-          const interval = setInterval(() => {
-            setShowNotificationDot((prev) => !prev);
-            flashCount++;
-            if (flashCount >= maxFlashes * 2) {
-              clearInterval(interval);
-              setShowNotificationDot(true);
-            }
-          }, 300);
+          flashNotificationDot();
         }
       } else if (e.key === "loginResponse") {
         checkUserProgress();
@@ -123,8 +156,15 @@ const DashboardNavbar = ({
     };
 
     window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
-  }, [unreadCount]);
+    
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      if (notificationCheckInterval) {
+        clearInterval(notificationCheckInterval);
+      }
+      clearInterval(progressInterval);
+    };
+  }, []);
 
   const handleRegistrationClick = () => {
     setShowRegistrationModal(true);
@@ -201,8 +241,8 @@ const DashboardNavbar = ({
                 <FaBell className="text-[#039994]" size={20} />
                 {showNotificationDot && unreadCount > 0 && (
                   <>
-                    <span className="absolute -top-1 -right-1 block h-2 w-2 rounded-full bg-red-500 animate-ping" />
-                    <span className="absolute -top-1 -right-1 block h-2 w-2 rounded-full bg-red-500" />
+                    <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-red-500 animate-ping" />
+                    <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-red-500" />
                     <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
                       {unreadCount}
                     </span>

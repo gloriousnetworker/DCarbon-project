@@ -3,6 +3,7 @@ import { FiX } from "react-icons/fi";
 import axios from "axios";
 import toast from "react-hot-toast";
 import AddUtilityProvider from "./AddUtilityProvider";
+import UtilityAuthorizationModal from "./createfacility/UtilityAuthorizationModal";
 import { 
   pageTitle, 
   labelClass, 
@@ -51,10 +52,10 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
   const [financeTypes, setFinanceTypes] = useState([]);
   const [financeTypesLoading, setFinanceTypesLoading] = useState(false);
   const [showAddUtilityModal, setShowAddUtilityModal] = useState(false);
+  const [showUtilityAuthModal, setShowUtilityAuthModal] = useState(false);
   const [showAddFinanceTypeModal, setShowAddFinanceTypeModal] = useState(false);
   const [newFinanceType, setNewFinanceType] = useState("");
 
-  // Check if finance type is cash (case insensitive)
   const isCashType = formData.financeType.toLowerCase() === 'cash';
   const showUploadField = !isCashType && formData.financeType !== '';
   const showFinanceCompany = !isCashType && formData.financeType !== '';
@@ -227,6 +228,17 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
     );
   };
 
+  const getUtilityShortCode = (utilityAuthEmail) => {
+    const selectedData = userMeterData.find(
+      item => item.utilityAuthEmail === utilityAuthEmail
+    );
+
+    if (selectedData && selectedData.meters?.meters?.length > 0) {
+      return selectedData.meters.meters[0].utility || "";
+    }
+    return "";
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -267,7 +279,6 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
       setFormData(prev => ({
         ...prev,
         financeNamingCode: selectedFinanceType?.namingCode || "",
-        // Clear finance company and agreement when finance type changes
         financeCompany: "",
         financeAgreement: null
       }));
@@ -360,14 +371,12 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
       return;
     }
 
-    // Only validate finance agreement if finance type is not cash
     if (showUploadField && !formData.financeAgreement) {
       toast.error("Please upload the financial agreement");
       setLoading(false);
       return;
     }
 
-    // Only validate finance company if finance type is not cash
     if (showFinanceCompany && !formData.financeCompany) {
       toast.error("Please select a finance company");
       setLoading(false);
@@ -422,11 +431,16 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
   };
 
   const handleOpenAddUtilityModal = () => {
-    setShowAddUtilityModal(true);
+    setShowUtilityAuthModal(true);
   };
 
   const handleCloseAddUtilityModal = () => {
     setShowAddUtilityModal(false);
+    fetchUserMeters();
+  };
+
+  const handleCloseUtilityAuthModal = () => {
+    setShowUtilityAuthModal(false);
     fetchUserMeters();
   };
 
@@ -502,7 +516,7 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
 
   return (
     <>
-      {!showAddUtilityModal && !showAddFinanceTypeModal && (
+      {!showAddUtilityModal && !showUtilityAuthModal && !showAddFinanceTypeModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20">
           {loading && (
             <div className={spinnerOverlay}>
@@ -519,7 +533,7 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
               <FiX size={20} />
             </button>
 
-            <h2 className={pageTitle}>Add Residence</h2>
+            <h2 className={pageTitle}>Add Residential Facility</h2>
 
             <form onSubmit={handleSubmit} className="space-y-4 mt-6">
               <div>
@@ -564,7 +578,7 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
                   ) : (
                     utilityAuthEmailsWithMeters.map(item => (
                       <option key={item.id} value={item.utilityAuthEmail}>
-                        {item.utilityAuthEmail}
+                        {item.utilityAuthEmail} - {getUtilityShortCode(item.utilityAuthEmail)}
                       </option>
                     ))
                   )}
@@ -891,6 +905,11 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
       <AddUtilityProvider
         isOpen={showAddUtilityModal}
         onClose={handleCloseAddUtilityModal}
+      />
+
+      <UtilityAuthorizationModal
+        isOpen={showUtilityAuthModal}
+        onClose={handleCloseUtilityAuthModal}
       />
 
       {showAddFinanceTypeModal && (

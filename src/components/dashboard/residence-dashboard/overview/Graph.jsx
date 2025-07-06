@@ -40,11 +40,23 @@ export default function SolarProductionAndEarningsDashboard() {
 
   const checkMeters = async () => {
     try {
-      const response = await fetch('/api/meters', { method: 'GET' });
-      const data = await response.json();
-      if (data?.meters?.length > 0) {
-        setHasMeters(true);
-      }
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const userId = loginResponse?.data?.user?.id;
+      const authToken = loginResponse?.data?.token;
+
+      if (!userId || !authToken) return;
+
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        }
+      );
+      const result = await response.json();
+      setHasMeters(result.status === 'success' && result.data?.length > 0 && result.data.some(item => item.meters?.meters?.length > 0));
     } catch (error) {
       console.error('Error fetching meters:', error);
     }
@@ -211,7 +223,7 @@ export default function SolarProductionAndEarningsDashboard() {
         <hr className="my-4" />
         {!hasMeters ? (
           <div className="flex-1 flex items-center justify-center">
-            <p className="text-gray-500 text-xs">Waiting for meter data...</p>
+            <p className="text-gray-500 text-xs">Complete utility authorization</p>
           </div>
         ) : loadingSolarData ? (
           <div className="flex-1 flex items-center justify-center">
@@ -274,7 +286,7 @@ export default function SolarProductionAndEarningsDashboard() {
         <hr className="my-4" />
         {!hasMeters ? (
           <div className="flex-1 flex items-center justify-center">
-            <p className="text-gray-500 text-xs">Waiting for meter data...</p>
+            <p className="text-gray-500 text-xs">Complete utility authorization</p>
           </div>
         ) : loadingEarningsData ? (
           <div className="flex-1 flex items-center justify-center">

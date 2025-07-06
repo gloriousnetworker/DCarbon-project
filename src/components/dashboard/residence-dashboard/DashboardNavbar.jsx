@@ -20,6 +20,7 @@ const DashboardNavbar = ({
   const [showUtilityModal, setShowUtilityModal] = useState(false);
   const [showResidenceModal, setShowResidenceModal] = useState(false);
   const [meterCheckInterval, setMeterCheckInterval] = useState(null);
+  const [notificationCheckInterval, setNotificationCheckInterval] = useState(null);
 
   const stages = [
     { id: 1, name: "Financial Info", tooltip: "Complete financial information" },
@@ -27,6 +28,41 @@ const DashboardNavbar = ({
     { id: 3, name: "Utility Auth", tooltip: "Authorize utility access" },
     { id: 4, name: "Add Facility", tooltip: "Create your residence facility" }
   ];
+
+  const fetchNotifications = async () => {
+    try {
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const userId = loginResponse?.data?.user?.id;
+      const authToken = loginResponse?.data?.token;
+
+      if (!userId || !authToken) return;
+
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/user/notifications/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.status === 'success' && result.data) {
+          const unreadNotifications = result.data.filter(notification => !notification.isRead);
+          const unreadCount = unreadNotifications.length;
+          setUnreadCount(unreadCount);
+          setShowNotificationDot(unreadCount > 0);
+          
+          localStorage.setItem('notifications', JSON.stringify(result.data));
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    }
+  };
 
   const checkStage1Completion = async (userId, authToken) => {
     const response = await fetch(
@@ -135,17 +171,15 @@ const DashboardNavbar = ({
   };
 
   useEffect(() => {
-    const storedNotifications = localStorage.getItem("notifications");
-    if (storedNotifications) {
-      const notifications = JSON.parse(storedNotifications);
-      const unread = notifications.filter((n) => !n.isRead).length;
-      setUnreadCount(unread);
-      setShowNotificationDot(unread > 0);
-    }
+    fetchNotifications();
+    checkUserProgress();
+
+    const notificationInterval = setInterval(fetchNotifications, 30000);
+    setNotificationCheckInterval(notificationInterval);
 
     const handleStorageChange = (e) => {
       if (e.key === "notifications") {
-        const notifications = JSON.parse(e.newValue);
+        const notifications = JSON.parse(e.newValue || '[]');
         const unread = notifications.filter((n) => !n.isRead).length;
         setUnreadCount(unread);
         setShowNotificationDot(unread > 0);
@@ -153,12 +187,15 @@ const DashboardNavbar = ({
       }
     };
 
-    checkUserProgress();
     window.addEventListener("storage", handleStorageChange);
+    
     return () => {
       window.removeEventListener("storage", handleStorageChange);
       if (meterCheckInterval) {
         clearInterval(meterCheckInterval);
+      }
+      if (notificationCheckInterval) {
+        clearInterval(notificationCheckInterval);
       }
     };
   }, []);
