@@ -3,10 +3,11 @@ import { FiX } from "react-icons/fi";
 import axios from "axios";
 import toast from "react-hot-toast";
 import AddUtilityProvider from "./AddUtilityProvider";
-import {
-  pageTitle,
-  labelClass,
-  inputClass,
+import UtilityAuthorizationModal from "./createfacility/UtilityAuthorizationModal";
+import { 
+  pageTitle, 
+  labelClass, 
+  inputClass, 
   selectClass,
   buttonPrimary,
   uploadHeading,
@@ -16,7 +17,7 @@ import {
   uploadButtonStyle,
   uploadNoteStyle,
   spinnerOverlay
-} from "./styles";
+} from "../styles";
 import Loader from "@/components/loader/Loader.jsx";
 
 export default function AddResidentialFacilityModal({ isOpen, onClose }) {
@@ -51,10 +52,12 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
   const [financeTypes, setFinanceTypes] = useState([]);
   const [financeTypesLoading, setFinanceTypesLoading] = useState(false);
   const [showAddUtilityModal, setShowAddUtilityModal] = useState(false);
+  const [showUtilityAuthModal, setShowUtilityAuthModal] = useState(false);
   const [showAddFinanceTypeModal, setShowAddFinanceTypeModal] = useState(false);
   const [newFinanceType, setNewFinanceType] = useState("");
+  const [meterAgreementAccepted, setMeterAgreementAccepted] = useState(false);
+  const [acceptingAgreement, setAcceptingAgreement] = useState(false);
 
-  // Check if finance type is cash (case insensitive)
   const isCashType = formData.financeType.toLowerCase() === 'cash';
   const showUploadField = !isCashType && formData.financeType !== '';
   const showFinanceCompany = !isCashType && formData.financeType !== '';
@@ -73,7 +76,7 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
       if (isSameLocation === true) {
         const serviceAddress = selectedMeter.base.service_address;
         const zipCode = extractZipCode(serviceAddress);
-
+        
         setFormData(prev => ({
           ...prev,
           address: serviceAddress,
@@ -215,16 +218,67 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
 
   const getCurrentMeters = () => {
     if (!selectedUtilityAuthEmail) return [];
-
+    
     const selectedData = userMeterData.find(
       item => item.utilityAuthEmail === selectedUtilityAuthEmail
     );
-
+    
     if (!selectedData || !selectedData.meters?.meters) return [];
-
+    
     return selectedData.meters.meters.filter(
       meter => meter.base.service_class === "electric"
     );
+  };
+
+  const getUtilityShortCode = (utilityAuthEmail) => {
+    const selectedData = userMeterData.find(
+      item => item.utilityAuthEmail === utilityAuthEmail
+    );
+
+    if (selectedData && selectedData.meters?.meters?.length > 0) {
+      return selectedData.meters.meters[0].utility || "";
+    }
+    return "";
+  };
+
+  const handleAcceptMeterAgreement = async () => {
+    const userId = localStorage.getItem("userId");
+    const authToken = localStorage.getItem("authToken");
+
+    if (!userId || !authToken) {
+      toast.error("Authentication required");
+      return;
+    }
+
+    setAcceptingAgreement(true);
+    try {
+      const response = await axios.put(
+        `https://services.dcarbon.solutions/api/user/accept-user-agreement-terms/${userId}`,
+        {},
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`
+          }
+        }
+      );
+
+      if (response.data.status === "success") {
+        setMeterAgreementAccepted(true);
+        toast.success("Meter agreement accepted successfully");
+      } else {
+        throw new Error(response.data.message || "Failed to accept agreement");
+      }
+    } catch (error) {
+      console.error("Error accepting meter agreement:", error);
+      toast.error(
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to accept meter agreement"
+      );
+    } finally {
+      setAcceptingAgreement(false);
+    }
   };
 
   const handleChange = (e) => {
@@ -239,6 +293,7 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
       const meter = currentMeters.find(m => m.uid === value);
       setSelectedMeter(meter || null);
       setIsSameLocation(null);
+      setMeterAgreementAccepted(false);
       setFormData(prev => ({
         ...prev,
         address: "",
@@ -267,7 +322,6 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
       setFormData(prev => ({
         ...prev,
         financeNamingCode: selectedFinanceType?.namingCode || "",
-        // Clear finance company and agreement when finance type changes
         financeCompany: "",
         financeAgreement: null
       }));
@@ -285,6 +339,7 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
     }));
     setSelectedMeter(null);
     setIsSameLocation(null);
+    setMeterAgreementAccepted(false);
   };
 
   const handleLocationChoice = (choice) => {
@@ -300,15 +355,15 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
   const handleUpload = async () => {
     if (!file) return;
     setUploading(true);
-
+    
     try {
       await new Promise(resolve => setTimeout(resolve, 1000));
-
+      
       setFormData(prev => ({
         ...prev,
         financeAgreement: file.name
       }));
-
+      
       toast.success('Financial agreement uploaded successfully!');
       setUploadSuccess(true);
     } catch (err) {
@@ -339,6 +394,7 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
     setSelectedMeter(null);
     setIsSameLocation(null);
     setSelectedUtilityAuthEmail("");
+    setMeterAgreementAccepted(false);
   };
 
   const handleSubmit = async (e) => {
@@ -360,16 +416,20 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
       return;
     }
 
-    // Only validate finance agreement if finance type is not cash
     if (showUploadField && !formData.financeAgreement) {
       toast.error("Please upload the financial agreement");
       setLoading(false);
       return;
     }
 
-    // Only validate finance company if finance type is not cash
     if (showFinanceCompany && !formData.financeCompany) {
       toast.error("Please select a finance company");
+      setLoading(false);
+      return;
+    }
+
+    if (selectedMeter && !meterAgreementAccepted) {
+      toast.error("Please accept the meter agreement");
       setLoading(false);
       return;
     }
@@ -422,11 +482,16 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
   };
 
   const handleOpenAddUtilityModal = () => {
-    setShowAddUtilityModal(true);
+    setShowUtilityAuthModal(true);
   };
 
   const handleCloseAddUtilityModal = () => {
     setShowAddUtilityModal(false);
+    fetchUserMeters();
+  };
+
+  const handleCloseUtilityAuthModal = () => {
+    setShowUtilityAuthModal(false);
     fetchUserMeters();
   };
 
@@ -482,15 +547,16 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
     }
   };
 
-  const isFormComplete =
-    formData.utilityProvider &&
+  const isFormComplete = 
+    formData.utilityProvider && 
     formData.installer &&
     formData.address &&
     formData.meterId &&
     formData.zipCode &&
     formData.systemCapacity &&
     (isCashType || (formData.financeCompany && (!showUploadField || formData.financeAgreement))) &&
-    (selectedMeter ? isSameLocation !== null : true);
+    (selectedMeter ? isSameLocation !== null : true) &&
+    (selectedMeter ? meterAgreementAccepted : true);
 
   const utilityAuthEmailsWithMeters = userMeterData.filter(
     item => item.meters?.meters?.length > 0
@@ -502,14 +568,14 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
 
   return (
     <>
-      {!showAddUtilityModal && !showAddFinanceTypeModal && (
+      {!showAddUtilityModal && !showUtilityAuthModal && !showAddFinanceTypeModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20">
           {loading && (
             <div className={spinnerOverlay}>
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#039994]"></div>
             </div>
           )}
-
+          
           <div className="relative bg-white p-6 rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
             <button
               onClick={onClose}
@@ -519,7 +585,7 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
               <FiX size={20} />
             </button>
 
-            <h2 className={pageTitle}>Add Residence</h2>
+            <h2 className={pageTitle}>Add Residential Facility</h2>
 
             <form onSubmit={handleSubmit} className="space-y-4 mt-6">
               <div>
@@ -564,7 +630,7 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
                   ) : (
                     utilityAuthEmailsWithMeters.map(item => (
                       <option key={item.id} value={item.utilityAuthEmail}>
-                        {item.utilityAuthEmail}
+                        {item.utilityAuthEmail} - {getUtilityShortCode(item.utilityAuthEmail)}
                       </option>
                     ))
                   )}
@@ -572,7 +638,13 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
                 <p className="mt-1 text-xs text-gray-500">
                   Select the utility account containing your meters
                 </p>
-
+                <button
+                  type="button"
+                  onClick={handleOpenAddUtilityModal}
+                  className="mt-2 text-xs text-[#039994] hover:text-[#02857f] underline focus:outline-none"
+                >
+                  Meters to be registered not listed? Add Utility account
+                </button>
               </div>
 
               {selectedUtilityAuthEmail && (
@@ -604,13 +676,6 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
                   </p>
                 </div>
               )}
-              <button
-                type="button"
-                onClick={handleOpenAddUtilityModal}
-                className="mt-2 text-xs text-[#039994] hover:text-[#02857f] underline focus:outline-none"
-              >
-                Meters to be registered not listed? Add Utility account
-              </button>
 
               {selectedMeter && (
                 <div className="mb-3 p-2 bg-gray-50 rounded-md border border-gray-200 text-sm">
@@ -621,8 +686,9 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
                   <div className="flex gap-2">
                     <button
                       type="button"
-                      className={`px-3 py-1 rounded-md border text-sm ${isSameLocation === true ? 'bg-green-100 border-green-500 text-green-700' : 'border-gray-300 hover:bg-gray-50'
-                        }`}
+                      className={`px-3 py-1 rounded-md border text-sm ${
+                        isSameLocation === true ? 'bg-green-100 border-green-500 text-green-700' : 'border-gray-300 hover:bg-gray-50'
+                      }`}
                       onClick={() => handleLocationChoice(true)}
                       disabled={loading}
                     >
@@ -630,14 +696,36 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
                     </button>
                     <button
                       type="button"
-                      className={`px-3 py-1 rounded-md border text-sm ${isSameLocation === false ? 'bg-blue-100 border-blue-500 text-blue-700' : 'border-gray-300 hover:bg-gray-50'
-                        }`}
+                      className={`px-3 py-1 rounded-md border text-sm ${
+                        isSameLocation === false ? 'bg-blue-100 border-blue-500 text-blue-700' : 'border-gray-300 hover:bg-gray-50'
+                      }`}
                       onClick={() => handleLocationChoice(false)}
                       disabled={loading}
                     >
                       No
                     </button>
                   </div>
+                </div>
+              )}
+
+              {selectedMeter && isSameLocation !== null && (
+                <div className="mb-3 p-2 bg-gray-50 rounded-md border border-gray-200 text-sm">
+                  <p className="font-medium mb-2">
+                    By clicking "Accept Meter Agreement", you agree that the selected meter can be used to create this residential facility.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleAcceptMeterAgreement}
+                    className={`w-full py-2 rounded-md text-white font-medium ${meterAgreementAccepted ? 'bg-green-600' : 'bg-black hover:bg-gray-800'}`}
+                    disabled={meterAgreementAccepted || acceptingAgreement}
+                  >
+                    {acceptingAgreement ? 'Processing...' : meterAgreementAccepted ? 'Meter Agreement Accepted' : 'Accept Meter Agreement'}
+                  </button>
+                  {meterAgreementAccepted && (
+                    <p className="mt-2 text-green-600 text-sm text-center">
+                      Meter agreement accepted successfully
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -815,8 +903,9 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
                       type="button"
                       onClick={handleUpload}
                       disabled={!file || uploading || uploadSuccess}
-                      className={`${uploadButtonStyle} ${!file || uploading || uploadSuccess ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#039994]'
-                        }`}
+                      className={`${uploadButtonStyle} ${
+                        !file || uploading || uploadSuccess ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#039994]'
+                      }`}
                     >
                       {uploading ? (
                         <svg
@@ -889,6 +978,11 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
       <AddUtilityProvider
         isOpen={showAddUtilityModal}
         onClose={handleCloseAddUtilityModal}
+      />
+
+      <UtilityAuthorizationModal
+        isOpen={showUtilityAuthModal}
+        onClose={handleCloseUtilityAuthModal}
       />
 
       {showAddFinanceTypeModal && (

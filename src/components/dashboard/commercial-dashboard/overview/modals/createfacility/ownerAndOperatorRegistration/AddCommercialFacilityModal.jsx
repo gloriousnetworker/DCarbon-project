@@ -45,6 +45,8 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
   const [newFinanceTypeName, setNewFinanceTypeName] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [createdFacilityData, setCreatedFacilityData] = useState(null);
+  const [meterAgreementAccepted, setMeterAgreementAccepted] = useState(false);
+  const [acceptingAgreement, setAcceptingAgreement] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -239,6 +241,7 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
       const meter = currentMeters.find(m => m.uid === value);
       setSelectedMeter(meter || null);
       setIsSameLocation(null);
+      setMeterAgreementAccepted(false);
       setFormData(prev => ({
         ...prev,
         meterIds: [value],
@@ -261,10 +264,51 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
     }));
     setSelectedMeter(null);
     setIsSameLocation(null);
+    setMeterAgreementAccepted(false);
   };
 
   const handleLocationChoice = (choice) => {
     setIsSameLocation(choice);
+  };
+
+  const handleAcceptMeterAgreement = async () => {
+    const userId = localStorage.getItem("userId");
+    const authToken = localStorage.getItem("authToken");
+
+    if (!userId || !authToken) {
+      toast.error("Authentication required");
+      return;
+    }
+
+    setAcceptingAgreement(true);
+    try {
+      const response = await axios.put(
+        `https://services.dcarbon.solutions/api/user/accept-user-agreement-terms/${userId}`,
+        {},
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`
+          }
+        }
+      );
+
+      if (response.data.status === "success") {
+        setMeterAgreementAccepted(true);
+        toast.success("Meter agreement accepted successfully");
+      } else {
+        throw new Error(response.data.message || "Failed to accept agreement");
+      }
+    } catch (error) {
+      console.error("Error accepting meter agreement:", error);
+      toast.error(
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to accept meter agreement"
+      );
+    } finally {
+      setAcceptingAgreement(false);
+    }
   };
 
   const storeFacilityData = (facilityData) => {
@@ -305,6 +349,7 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
     setSelectedMeter(null);
     setIsSameLocation(null);
     setSelectedUtilityAuthEmail("");
+    setMeterAgreementAccepted(false);
   };
 
   const handleSubmit = async (e) => {
@@ -426,7 +471,8 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
     formData.utilityProviderNamingCode &&
     formData.installerNamingCode &&
     formData.financeNamingCode &&
-    (selectedMeter ? isSameLocation !== null : true);
+    (selectedMeter ? isSameLocation !== null : true) &&
+    (selectedMeter ? meterAgreementAccepted : true);
 
   const utilityAuthEmailsWithMeters = userMeterData.filter(
     item => item.meters?.meters?.length > 0
@@ -626,6 +672,27 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
                       : "Enter the facility address manually"
                     }
                   </p>
+                </div>
+              )}
+
+              {selectedMeter && isSameLocation !== null && (
+                <div className="mb-3 p-2 bg-gray-50 rounded-md border border-gray-200 text-sm">
+                  <p className="font-medium mb-2">
+                    By clicking "Accept Meter Agreement", you agree that the selected meter can be used to create this commercial facility.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleAcceptMeterAgreement}
+                    className={`w-full py-2 rounded-md text-white font-medium ${meterAgreementAccepted ? 'bg-green-600' : 'bg-black hover:bg-gray-800'}`}
+                    disabled={meterAgreementAccepted || acceptingAgreement}
+                  >
+                    {acceptingAgreement ? 'Processing...' : meterAgreementAccepted ? 'Meter Agreement Accepted' : 'Accept Meter Agreement'}
+                  </button>
+                  {meterAgreementAccepted && (
+                    <p className="mt-2 text-green-600 text-sm text-center">
+                      Meter agreement accepted successfully
+                    </p>
+                  )}
                 </div>
               )}
 

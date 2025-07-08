@@ -55,6 +55,8 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
   const [showUtilityAuthModal, setShowUtilityAuthModal] = useState(false);
   const [showAddFinanceTypeModal, setShowAddFinanceTypeModal] = useState(false);
   const [newFinanceType, setNewFinanceType] = useState("");
+  const [meterAgreementAccepted, setMeterAgreementAccepted] = useState(false);
+  const [acceptingAgreement, setAcceptingAgreement] = useState(false);
 
   const isCashType = formData.financeType.toLowerCase() === 'cash';
   const showUploadField = !isCashType && formData.financeType !== '';
@@ -239,6 +241,46 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
     return "";
   };
 
+  const handleAcceptMeterAgreement = async () => {
+    const userId = localStorage.getItem("userId");
+    const authToken = localStorage.getItem("authToken");
+
+    if (!userId || !authToken) {
+      toast.error("Authentication required");
+      return;
+    }
+
+    setAcceptingAgreement(true);
+    try {
+      const response = await axios.put(
+        `https://services.dcarbon.solutions/api/user/accept-user-agreement-terms/${userId}`,
+        {},
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`
+          }
+        }
+      );
+
+      if (response.data.status === "success") {
+        setMeterAgreementAccepted(true);
+        toast.success("Meter agreement accepted successfully");
+      } else {
+        throw new Error(response.data.message || "Failed to accept agreement");
+      }
+    } catch (error) {
+      console.error("Error accepting meter agreement:", error);
+      toast.error(
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to accept meter agreement"
+      );
+    } finally {
+      setAcceptingAgreement(false);
+    }
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -251,6 +293,7 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
       const meter = currentMeters.find(m => m.uid === value);
       setSelectedMeter(meter || null);
       setIsSameLocation(null);
+      setMeterAgreementAccepted(false);
       setFormData(prev => ({
         ...prev,
         address: "",
@@ -296,6 +339,7 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
     }));
     setSelectedMeter(null);
     setIsSameLocation(null);
+    setMeterAgreementAccepted(false);
   };
 
   const handleLocationChoice = (choice) => {
@@ -350,6 +394,7 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
     setSelectedMeter(null);
     setIsSameLocation(null);
     setSelectedUtilityAuthEmail("");
+    setMeterAgreementAccepted(false);
   };
 
   const handleSubmit = async (e) => {
@@ -379,6 +424,12 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
 
     if (showFinanceCompany && !formData.financeCompany) {
       toast.error("Please select a finance company");
+      setLoading(false);
+      return;
+    }
+
+    if (selectedMeter && !meterAgreementAccepted) {
+      toast.error("Please accept the meter agreement");
       setLoading(false);
       return;
     }
@@ -504,7 +555,8 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
     formData.zipCode &&
     formData.systemCapacity &&
     (isCashType || (formData.financeCompany && (!showUploadField || formData.financeAgreement))) &&
-    (selectedMeter ? isSameLocation !== null : true);
+    (selectedMeter ? isSameLocation !== null : true) &&
+    (selectedMeter ? meterAgreementAccepted : true);
 
   const utilityAuthEmailsWithMeters = userMeterData.filter(
     item => item.meters?.meters?.length > 0
@@ -653,6 +705,27 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
                       No
                     </button>
                   </div>
+                </div>
+              )}
+
+              {selectedMeter && isSameLocation !== null && (
+                <div className="mb-3 p-2 bg-gray-50 rounded-md border border-gray-200 text-sm">
+                  <p className="font-medium mb-2">
+                    By clicking "Accept Meter Agreement", you agree that the selected meter can be used to create this residential facility.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleAcceptMeterAgreement}
+                    className={`w-full py-2 rounded-md text-white font-medium ${meterAgreementAccepted ? 'bg-green-600' : 'bg-black hover:bg-gray-800'}`}
+                    disabled={meterAgreementAccepted || acceptingAgreement}
+                  >
+                    {acceptingAgreement ? 'Processing...' : meterAgreementAccepted ? 'Meter Agreement Accepted' : 'Accept Meter Agreement'}
+                  </button>
+                  {meterAgreementAccepted && (
+                    <p className="mt-2 text-green-600 text-sm text-center">
+                      Meter agreement accepted successfully
+                    </p>
+                  )}
                 </div>
               )}
 
