@@ -2,9 +2,9 @@ import React, { useState, useEffect } from "react";
 import { FiX } from "react-icons/fi";
 import axios from "axios";
 import toast from "react-hot-toast";
-import AddUtilityProvider from "./AddUtilityProvider";
-import UtilityAuthorizationModal from "./UtilityAuthorizationModal";
-import FacilityCreatedSuccessfulModal from "./FacilityCreatedSuccessfulModal";
+import AddUtilityProvider from "./ownerAndOperatorRegistration/AddUtilityProvider";
+import UtilityAuthorizationModal from "./ownerAndOperatorRegistration/UtilityAuthorizationModal";
+import FacilityCreatedSuccessfulModal from "./ownerAndOperatorRegistration/FacilityCreatedSuccessfulModal";
 import {
   labelClass,
   selectClass,

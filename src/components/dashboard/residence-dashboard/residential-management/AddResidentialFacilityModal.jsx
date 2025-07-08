@@ -3,7 +3,7 @@ import { FiX } from "react-icons/fi";
 import axios from "axios";
 import toast from "react-hot-toast";
 import AddUtilityProvider from "./AddUtilityProvider";
-import UtilityAuthorizationModal from "./createfacility/UtilityAuthorizationModal";
+import UtilityAuthorizationModal from "../overview/modals/createfacility/UtilityAuthorizationModal";
 import { 
   pageTitle, 
   labelClass, 
@@ -17,7 +17,7 @@ import {
   uploadButtonStyle,
   uploadNoteStyle,
   spinnerOverlay
-} from "../styles";
+} from "./styles";
 import Loader from "@/components/loader/Loader.jsx";
 
 export default function AddResidentialFacilityModal({ isOpen, onClose }) {
