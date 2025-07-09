@@ -3,7 +3,7 @@ import { FiX } from "react-icons/fi";
 import axios from "axios";
 import toast from "react-hot-toast";
 import AddUtilityProvider from "./AddUtilityProvider";
-import UtilityAuthorizationModal from "./createfacility/UtilityAuthorizationModal";
+import UtilityAuthorizationModal from "../modals/createfacility/UtilityAuthorizationModal";
 import { 
   pageTitle, 
   labelClass, 
@@ -666,7 +666,7 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
                     ) : (
                       currentMeters.map(meter => (
                         <option key={meter.uid} value={meter.uid}>
-                          {meter.base.meter_numbers[0]} - {meter.base.service_tariff}
+                          {meter.base.meter_numbers[0]} - {meter.base.billing_address}
                         </option>
                       ))
                     )}

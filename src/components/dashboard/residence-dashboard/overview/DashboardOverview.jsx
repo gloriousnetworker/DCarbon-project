@@ -91,42 +91,6 @@ export default function DashboardOverview() {
   const [currentStage, setCurrentStage] = useState(1);
   const [completedStages, setCompletedStages] = useState([]);
 
-  const checkStage2Completion = async (userId, authToken) => {
-    try {
-      const response = await fetch(
-        `https://services.dcarbon.solutions/api/user/financial-info/${userId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`
-          }
-        }
-      );
-      const result = await response.json();
-      return result.status === 'success' && result.data?.financialInfo !== null;
-    } catch (error) {
-      return false;
-    }
-  };
-
-  const checkStage3Completion = async (userId, authToken) => {
-    try {
-      const response = await fetch(
-        `https://services.dcarbon.solutions/api/user/check-agreements/${userId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`
-          }
-        }
-      );
-      const result = await response.json();
-      return result.status === 'success' && result.data?.agreementsAccepted;
-    } catch (error) {
-      return false;
-    }
-  };
-
   const checkStage4Completion = async (userId, authToken) => {
     try {
       const response = await fetch(
@@ -139,7 +103,7 @@ export default function DashboardOverview() {
         }
       );
       const result = await response.json();
-      return result.status === 'success' && result.data?.length > 0 && result.data.some(item => item.meters?.meters?.length > 0);
+      return result.status === 'success' && result.data?.length > 0;
     } catch (error) {
       return false;
     }
@@ -156,21 +120,12 @@ export default function DashboardOverview() {
       const newCompletedStages = [1];
       let currentStage = 2;
 
-      const stage2Completed = await checkStage2Completion(userId, authToken);
-      if (stage2Completed) {
-        newCompletedStages.push(2);
-        currentStage = 3;
-      }
-
-      const stage3Completed = await checkStage3Completion(userId, authToken);
-      if (stage3Completed && newCompletedStages.includes(2)) {
-        newCompletedStages.push(3);
-        currentStage = 4;
-      }
-
       const stage4Completed = await checkStage4Completion(userId, authToken);
-      if (stage4Completed && newCompletedStages.includes(3)) {
-        newCompletedStages.push(4);
+      if (stage4Completed) {
+        newCompletedStages.push(2, 3, 4);
+        currentStage = 4;
+      } else {
+        newCompletedStages.push(2, 3);
         currentStage = 4;
       }
 

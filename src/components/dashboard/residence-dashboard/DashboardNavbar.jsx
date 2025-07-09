@@ -55,7 +55,6 @@ const DashboardNavbar = ({
           const unreadCount = unreadNotifications.length;
           setUnreadCount(unreadCount);
           setShowNotificationDot(unreadCount > 0);
-          
           localStorage.setItem('notifications', JSON.stringify(result.data));
         }
       }
@@ -64,109 +63,55 @@ const DashboardNavbar = ({
     }
   };
 
-  const checkStage1Completion = async (userId, authToken) => {
-    const response = await fetch(
-      `https://services.dcarbon.solutions/api/user/financial-info/${userId}`,
-      {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${authToken}`
-        }
-      }
-    );
-    const result = await response.json();
-    return result.status === 'success' && result.data?.financialInfo !== null;
-  };
-
-  const checkStage2Completion = async (userId, authToken) => {
-    const response = await fetch(
-      `https://services.dcarbon.solutions/api/user/check-agreements/${userId}`,
-      {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${authToken}`
-        }
-      }
-    );
-    const result = await response.json();
-    return result.status === 'success' && result.data?.agreementsAccepted;
-  };
-
-  const checkStage3Completion = async (userId, authToken) => {
-    const response = await fetch(
-      `https://services.dcarbon.solutions/api/auth/utility-auth/${userId}`,
-      {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${authToken}`
-        }
-      }
-    );
-    const result = await response.json();
-    return result.status === 'success' && result.data?.length > 0;
-  };
-
   const checkStage4Completion = async (userId, authToken) => {
-    const response = await fetch(
-      `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`,
-      {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${authToken}`
+    try {
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
         }
-      }
-    );
-    const result = await response.json();
-    return result.status === 'success' && 
-           result.data?.length > 0 && 
-           result.data.some(item => item.meters?.meters?.length > 0);
+      );
+      const result = await response.json();
+      return result.status === 'success' && result.data?.length > 0;
+    } catch (error) {
+      return false;
+    }
   };
 
   const checkUserProgress = async () => {
-    const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
-    const userId = loginResponse?.data?.user?.id;
-    const authToken = loginResponse?.data?.token;
+    try {
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const userId = loginResponse?.data?.user?.id;
+      const authToken = loginResponse?.data?.token;
 
-    if (!userId || !authToken) return;
+      if (!userId || !authToken) return;
 
-    const stage1 = await checkStage1Completion(userId, authToken);
-    if (!stage1) {
-      setCurrentStage(1);
-      return;
-    }
-
-    const stage2 = await checkStage2Completion(userId, authToken);
-    if (!stage2) {
-      setCurrentStage(2);
-      return;
-    }
-
-    const stage3 = await checkStage3Completion(userId, authToken);
-    if (!stage3) {
-      setCurrentStage(3);
-      return;
-    }
-
-    const stage4 = await checkStage4Completion(userId, authToken);
-    if (stage4) {
-      setCurrentStage(4);
-      if (meterCheckInterval) {
-        clearInterval(meterCheckInterval);
-        setMeterCheckInterval(null);
+      const hasMeters = await checkStage4Completion(userId, authToken);
+      if (hasMeters) {
+        setCurrentStage(4);
+        if (meterCheckInterval) {
+          clearInterval(meterCheckInterval);
+          setMeterCheckInterval(null);
+        }
+      } else {
+        setCurrentStage(1);
+        if (!meterCheckInterval) {
+          const interval = setInterval(async () => {
+            const hasMeters = await checkStage4Completion(userId, authToken);
+            if (hasMeters) {
+              setCurrentStage(4);
+              clearInterval(interval);
+              setMeterCheckInterval(null);
+            }
+          }, 5000);
+          setMeterCheckInterval(interval);
+        }
       }
-    } else {
-      setCurrentStage(3);
-      if (!meterCheckInterval) {
-        const interval = setInterval(async () => {
-          const hasMeters = await checkStage4Completion(userId, authToken);
-          if (hasMeters) {
-            setCurrentStage(4);
-            clearInterval(interval);
-            setMeterCheckInterval(null);
-          }
-        }, 5000);
-        setMeterCheckInterval(interval);
-      }
+    } catch (error) {
+      console.error('Error checking user progress:', error);
     }
   };
 
@@ -191,12 +136,8 @@ const DashboardNavbar = ({
     
     return () => {
       window.removeEventListener("storage", handleStorageChange);
-      if (meterCheckInterval) {
-        clearInterval(meterCheckInterval);
-      }
-      if (notificationCheckInterval) {
-        clearInterval(notificationCheckInterval);
-      }
+      if (meterCheckInterval) clearInterval(meterCheckInterval);
+      if (notificationCheckInterval) clearInterval(notificationCheckInterval);
     };
   }, []);
 
@@ -225,15 +166,10 @@ const DashboardNavbar = ({
   };
 
   const handleProgressClick = () => {
-    if (currentStage === 1) {
-      setShowFinanceModal(true);
-    } else if (currentStage === 2) {
-      setShowTermsModal(true);
-    } else if (currentStage === 3) {
-      setShowUtilityModal(true);
-    } else if (currentStage === 4) {
-      setShowResidenceModal(true);
-    }
+    if (currentStage === 1) setShowFinanceModal(true);
+    else if (currentStage === 2) setShowTermsModal(true);
+    else if (currentStage === 3) setShowUtilityModal(true);
+    else if (currentStage === 4) setShowResidenceModal(true);
   };
 
   const handleModalClose = () => {
@@ -324,33 +260,10 @@ const DashboardNavbar = ({
         </div>
       </header>
 
-      {showFinanceModal && (
-        <FinanceAndInstallerModal
-          isOpen={showFinanceModal}
-          onClose={handleModalClose}
-        />
-      )}
-
-      {showTermsModal && (
-        <ResidenceTermsAndAgreementModal
-          isOpen={showTermsModal}
-          onClose={handleModalClose}
-        />
-      )}
-
-      {showUtilityModal && (
-        <UtilityAuthorizationModal
-          isOpen={showUtilityModal}
-          onClose={handleModalClose}
-        />
-      )}
-
-      {showResidenceModal && (
-        <AddResidenceFacilityModal
-          isOpen={showResidenceModal}
-          onClose={handleModalClose}
-        />
-      )}
+      {showFinanceModal && <FinanceAndInstallerModal isOpen={showFinanceModal} onClose={handleModalClose} />}
+      {showTermsModal && <ResidenceTermsAndAgreementModal isOpen={showTermsModal} onClose={handleModalClose} />}
+      {showUtilityModal && <UtilityAuthorizationModal isOpen={showUtilityModal} onClose={handleModalClose} />}
+      {showResidenceModal && <AddResidenceFacilityModal isOpen={showResidenceModal} onClose={handleModalClose} />}
     </>
   );
 };

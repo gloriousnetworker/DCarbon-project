@@ -666,7 +666,7 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
                     ) : (
                       currentMeters.map(meter => (
                         <option key={meter.uid} value={meter.uid}>
-                          {meter.base.meter_numbers[0]} - {meter.base.service_tariff}
+                          {meter.base.meter_numbers[0]} - {meter.base.billing_address}
                         </option>
                       ))
                     )}
