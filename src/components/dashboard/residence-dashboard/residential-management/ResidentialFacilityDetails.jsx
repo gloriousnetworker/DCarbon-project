@@ -13,7 +13,6 @@ import {
 import axios from "axios";
 import toast from "react-hot-toast";
 
-// Styles (inline for this example)
 const labelClass = "block text-sm font-medium text-gray-700 mb-1";
 const buttonPrimary = "bg-[#039994] text-white px-4 py-2 rounded-md hover:bg-[#028580] transition-colors";
 const spinnerOverlay = "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50";
@@ -23,7 +22,6 @@ const inputClass = "w-full px-3 py-2 border border-gray-300 rounded-md focus:out
 const selectClass = "px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] focus:border-transparent";
 const backArrow = "flex items-center text-[#039994] hover:underline";
 
-// Updated Document type mappings with correct status field names
 const DOCUMENT_TYPES = {
   recAgreement: { 
     name: "REC Agreement", 
@@ -90,7 +88,7 @@ const DOCUMENT_TYPES = {
   },
   utilityAccountInfo: { 
     name: "Utility Account Info", 
-    endpoint: "utility-auth",
+    endpoint: "utility-account-info",
     urlField: "utilityAccountInfoUrl",
     statusField: "utilityAccountInfoStatus",
     rejectionField: "utilityAccountInfoRejectionReason"
@@ -111,11 +109,9 @@ const DOCUMENT_TYPES = {
   }
 };
 
-// PDF Viewer Modal Component - Updated to properly display PDF contents
 const PDFViewerModal = ({ isOpen, onClose, url, title }) => {
   if (!isOpen) return null;
 
-  // Function to handle different file types
   const renderFileContent = () => {
     if (!url) return <div>No document available</div>;
     
@@ -195,14 +191,20 @@ const PDFViewerModal = ({ isOpen, onClose, url, title }) => {
 const DocumentUploadModal = ({ isOpen, onClose, onUpload, docType, facilityId }) => {
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [fileName, setFileName] = useState('');
+  const [fileInputKey, setFileInputKey] = useState(Date.now());
 
   const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
+    const selectedFile = e.target.files[0];
+    if (selectedFile) {
+      setFile(selectedFile);
+      setFileName(selectedFile.name);
+    }
   };
 
   const handleUpload = async () => {
     if (!file) {
-      toast.error("Please select a file");
+      toast.error("Please select a file to upload");
       return;
     }
 
@@ -236,6 +238,9 @@ const DocumentUploadModal = ({ isOpen, onClose, onUpload, docType, facilityId })
 
       toast.success("Document uploaded successfully");
       onUpload(response.data.data);
+      setFile(null);
+      setFileName('');
+      setFileInputKey(Date.now());
       onClose();
     } catch (error) {
       console.error("Upload error:", error);
@@ -244,6 +249,14 @@ const DocumentUploadModal = ({ isOpen, onClose, onUpload, docType, facilityId })
       setUploading(false);
     }
   };
+
+  useEffect(() => {
+    if (!isOpen) {
+      setFile(null);
+      setFileName('');
+      setFileInputKey(Date.now());
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -255,17 +268,36 @@ const DocumentUploadModal = ({ isOpen, onClose, onUpload, docType, facilityId })
         </h3>
         
         <div className="mb-4">
-          <input
-            type="file"
-            onChange={handleFileChange}
-            className={inputClass}
-            accept=".pdf,.jpg,.jpeg,.png"
-          />
+          <label className="block mb-2">
+            <span className={labelClass}>Select File</span>
+            <div className="flex items-center">
+              <label className={uploadButtonStyle + " cursor-pointer"}>
+                <input
+                  key={fileInputKey}
+                  type="file"
+                  onChange={handleFileChange}
+                  className="hidden"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                />
+                Choose File
+              </label>
+              {fileName && (
+                <span className="ml-3 text-sm text-gray-600 truncate max-w-xs">
+                  {fileName}
+                </span>
+              )}
+            </div>
+          </label>
         </div>
 
         <div className="flex justify-end space-x-3">
           <button
-            onClick={onClose}
+            onClick={() => {
+              setFile(null);
+              setFileName('');
+              setFileInputKey(Date.now());
+              onClose();
+            }}
             className="px-4 py-2 font-sfpro text-[14px] font-[400] text-gray-600 hover:text-gray-800"
             disabled={uploading}
           >
@@ -284,7 +316,6 @@ const DocumentUploadModal = ({ isOpen, onClose, onUpload, docType, facilityId })
   );
 };
 
-// Mock EditFacilityDetailsModal component
 const EditFacilityDetailsModal = ({ facility, onClose, onSave }) => {
   if (!facility) return null;
   
@@ -327,7 +358,6 @@ export default function FacilityDetails({
   const [showPDFModal, setShowPDFModal] = useState(false);
   const [currentPDF, setCurrentPDF] = useState({ url: "", title: "" });
 
-  // Mock facility data for demo
   const mockFacility = facility || {
     id: "b8d97949-160a-40f4-9c57-0325e006b27b",
     address: "123 Solar Street, Green City",
@@ -357,7 +387,6 @@ export default function FacilityDetails({
     });
   };
 
-  // Fetch documents with proper error handling
   const fetchDocuments = async () => {
     if (!mockFacility?.id) return;
 
@@ -386,8 +415,6 @@ export default function FacilityDetails({
     } catch (error) {
       console.error("Error fetching documents:", error);
       toast.error(error.response?.data?.message || "Failed to fetch documents");
-      
-      // Set empty documents state on error so UI still renders
       setDocuments({});
     } finally {
       setLoading(false);
@@ -398,7 +425,6 @@ export default function FacilityDetails({
     fetchDocuments();
   }, [mockFacility?.id]);
 
-  // Get status color
   const getStatusColor = (status) => {
     switch (status) {
       case "APPROVED":
@@ -416,7 +442,6 @@ export default function FacilityDetails({
     }
   };
 
-  // Fixed document list preparation using correct field mappings
   const getDocumentList = () => {
     const docList = [];
     
@@ -439,7 +464,7 @@ export default function FacilityDetails({
   const visibleDocs = showAllDocs ? documentList : documentList.slice(0, 3);
 
   const handleDocumentUpload = () => {
-    fetchDocuments(); // Refresh documents after upload
+    fetchDocuments();
   };
 
   const handleUploadClick = (docType) => {
@@ -460,7 +485,6 @@ export default function FacilityDetails({
         </div>
       )}
 
-      {/* Compact Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center">
           <button
@@ -499,10 +523,7 @@ export default function FacilityDetails({
         </div>
       </div>
 
-      {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
-        {/* Facility Details */}
         <div className="border border-[#039994] rounded-lg p-4" style={{ backgroundColor: "#069B960D" }}>
           <h3 className="font-sfpro text-[16px] font-[600] leading-[100%] tracking-[-0.05em] text-[#039994] mb-3">
             Facility Information
@@ -528,7 +549,6 @@ export default function FacilityDetails({
           </div>
         </div>
 
-        {/* Documentation Section */}
         <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
           <h3 className="font-sfpro text-[16px] font-[600] leading-[100%] tracking-[-0.05em] text-[#039994] mb-2">
             Documentation
@@ -545,7 +565,6 @@ export default function FacilityDetails({
                   </span>
                 </div>
                 
-                {/* Show rejection reason if document is rejected */}
                 {doc.status === "REJECTED" && doc.rejectionReason && (
                   <div className="bg-red-50 border border-red-200 rounded-md p-2 flex items-start gap-2">
                     <FiAlertTriangle className="text-red-500 mt-0.5 flex-shrink-0" size={14} />
@@ -587,10 +606,7 @@ export default function FacilityDetails({
         </div>
       </div>
 
-      {/* Energy Production & Stats */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-        
-        {/* Energy Production Chart */}
         <div className="lg:col-span-2 bg-white border border-gray-200 rounded-lg p-4">
           <div className="flex items-center justify-between mb-4">
             <h4 className="font-sfpro text-[16px] font-[600] leading-[100%] tracking-[-0.05em] text-[#039994]">
@@ -615,7 +631,6 @@ export default function FacilityDetails({
           </div>
         </div>
 
-        {/* Stats Cards */}
         <div className="flex flex-col space-y-4">
           <div className="border border-[#039994] rounded-lg p-4 flex flex-col items-center">
             <p className="font-sfpro text-[12px] font-[400] text-gray-500 mb-1">Total RECs Generated</p>
@@ -640,7 +655,6 @@ export default function FacilityDetails({
         </div>
       </div>
 
-      {/* Modals */}
       {showEditModal && (
         <EditFacilityDetailsModal
           facility={mockFacility}
