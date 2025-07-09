@@ -19,7 +19,7 @@ export default function ResidentialFacilityTabs({
     checkButtonStatus();
   }, []);
 
-  const checkButtonStatus = () => {
+  const checkButtonStatus = async () => {
     try {
       const loginResponse = localStorage.getItem("loginResponse");
       
@@ -38,64 +38,50 @@ export default function ResidentialFacilityTabs({
         return;
       }
 
-      // Check if agreement has been signed
-      const agreements = user.agreements;
-      const hasSignedAgreement = agreements && 
-        agreements.termsAccepted === true && 
-        agreements.signature;
+      const userId = user.id;
+      const authToken = localStorage.getItem("authToken");
 
-      if (!hasSignedAgreement) {
+      if (!userId || !authToken) {
         setIsButtonDisabled(true);
-        setDisabledReason("Please complete and sign the agreement first");
+        setDisabledReason("User ID or auth token not found");
         return;
       }
 
-      // Check if utility auth is not empty
-      const utilityAuth = user.utilityAuth;
-      const utilityAuthEmail = user.utilityAuthEmail;
-      
-      const hasUtilityAuth = utilityAuth && 
-        Array.isArray(utilityAuth) && 
-        utilityAuth.length > 0 &&
-        utilityAuthEmail &&
-        Array.isArray(utilityAuthEmail) &&
-        utilityAuthEmail.length > 0;
-
-      if (!hasUtilityAuth) {
-        setIsButtonDisabled(true);
-        setDisabledReason("Please set up utility authorization first");
-        return;
-      }
-
-      // Check if any utility auth has invalid status (UPDATE_ERROR or DECLINE)
-      const hasInvalidStatus = utilityAuth.some(auth => {
-        if (!auth || !auth.status) return false;
-        return auth.status === "UPDATE_ERROR" || auth.status === "DECLINE";
+      const response = await fetch(`https://services.dcarbon.solutions/api/auth/user-meters/${userId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        }
       });
 
-      if (hasInvalidStatus) {
-        // Check for specific error statuses for better error messages
-        const hasUpdateError = utilityAuth.some(auth => 
-          auth && auth.status === "UPDATE_ERROR"
-        );
-        const hasDecline = utilityAuth.some(auth => 
-          auth && auth.status === "DECLINE"
-        );
-        
-        if (hasUpdateError) {
-          setIsButtonDisabled(true);
-          setDisabledReason("Utility authorization update error - please resolve");
-          return;
-        }
-        
-        if (hasDecline) {
-          setIsButtonDisabled(true);
-          setDisabledReason("Utility authorization declined - please re-authorize");
-          return;
-        }
+      if (!response.ok) {
+        setIsButtonDisabled(true);
+        setDisabledReason("Failed to fetch user meters");
+        return;
       }
 
-      // All checks passed
+      const meterData = await response.json();
+
+      if (meterData.status !== "success") {
+        setIsButtonDisabled(true);
+        setDisabledReason("Failed to fetch meters");
+        return;
+      }
+
+      const hasValidMeters = meterData.data && meterData.data.some(item => 
+        item.meters && 
+        item.meters.meters && 
+        Array.isArray(item.meters.meters) && 
+        item.meters.meters.length > 0
+      );
+
+      if (!hasValidMeters) {
+        setIsButtonDisabled(true);
+        setDisabledReason("No valid meters found");
+        return;
+      }
+
       setIsButtonDisabled(false);
       setDisabledReason("");
 
@@ -115,7 +101,6 @@ export default function ResidentialFacilityTabs({
 
   const handleCloseModal = () => {
     setShowAddFacilityModal(false);
-    // Call the parent's onAddFacility if needed for refresh
     if (onAddFacility) {
       onAddFacility();
     }
@@ -150,15 +135,6 @@ export default function ResidentialFacilityTabs({
 
         {/* Right side: Filter + Add Facility */}
         <div className="flex items-center space-x-2">
-          {/* Filter Button (commented out as in original) */}
-          {/* <button
-            onClick={onFilter}
-            className="flex items-center space-x-1 border border-gray-300 px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"
-          >
-            <FiFilter />
-            <span>Filter by</span>
-          </button> */}
-          
           {/* Add Residential Facility Button */}
           <div className="relative group">
             <button

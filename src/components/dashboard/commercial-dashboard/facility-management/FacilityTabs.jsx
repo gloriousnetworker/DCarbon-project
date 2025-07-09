@@ -15,7 +15,7 @@ export default function CommercialFacilityTabs({
     checkButtonStatus();
   }, []);
 
-  const checkButtonStatus = () => {
+  const checkButtonStatus = async () => {
     try {
       const loginResponse = localStorage.getItem("loginResponse");
       
@@ -41,53 +41,47 @@ export default function CommercialFacilityTabs({
         return;
       }
 
-      if (userData.registrationStep !== 5) {
+      const userId = userData.id;
+      const authToken = localStorage.getItem("authToken");
+
+      if (!userId || !authToken) {
         setIsButtonDisabled(true);
-        setDisableReason("Registration not complete");
+        setDisableReason("User ID or auth token not found");
         return;
       }
 
-      const utilityAuth = userData.utilityAuth;
-      if (!utilityAuth || !Array.isArray(utilityAuth) || utilityAuth.length === 0) {
-        setIsButtonDisabled(true);
-        setDisableReason("Utility authorization required");
-        return;
-      }
-
-      const hasValidUtilityAuth = utilityAuth.some(auth => {
-        if (!auth || !auth.status || auth.status.trim() === "") {
-          return false;
+      const response = await fetch(`https://services.dcarbon.solutions/api/auth/user-meters/${userId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
         }
-        
-        if (auth.status === "UPDATE_ERROR" || auth.status === "DECLINE") {
-          return false;
-        }
-        
-        return true;
       });
 
-      if (!hasValidUtilityAuth) {
-        const hasUpdateError = utilityAuth.some(auth => 
-          auth && auth.status === "UPDATE_ERROR"
-        );
-        const hasDecline = utilityAuth.some(auth => 
-          auth && auth.status === "DECLINE"
-        );
-        
-        if (hasUpdateError) {
-          setIsButtonDisabled(true);
-          setDisableReason("Utility authorization update error - please resolve");
-          return;
-        }
-        
-        if (hasDecline) {
-          setIsButtonDisabled(true);
-          setDisableReason("Utility authorization declined - please re-authorize");
-          return;
-        }
-        
+      if (!response.ok) {
         setIsButtonDisabled(true);
-        setDisableReason("Valid utility authorization required");
+        setDisableReason("Failed to fetch user meters");
+        return;
+      }
+
+      const meterData = await response.json();
+
+      if (meterData.status !== "success") {
+        setIsButtonDisabled(true);
+        setDisableReason("Failed to fetch meters");
+        return;
+      }
+
+      const hasValidMeters = meterData.data && meterData.data.some(item => 
+        item.meters && 
+        item.meters.meters && 
+        Array.isArray(item.meters.meters) && 
+        item.meters.meters.length > 0
+      );
+
+      if (!hasValidMeters) {
+        setIsButtonDisabled(true);
+        setDisableReason("No valid meters found");
         return;
       }
 
