@@ -593,7 +593,7 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
                     ) : (
                       currentMeters.map(meter => (
                         <option key={meter.uid} value={meter.uid}>
-                          {meter.uid} - {meter.base.service_tariff}
+                          {meter.base.meter_numbers[0]} - {meter.base.billing_address}
                         </option>
                       ))
                     )}
