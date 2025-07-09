@@ -316,33 +316,6 @@ const DocumentUploadModal = ({ isOpen, onClose, onUpload, docType, facilityId })
   );
 };
 
-const EditFacilityDetailsModal = ({ facility, onClose, onSave }) => {
-  if (!facility) return null;
-  
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-96">
-        <h3 className="font-sfpro text-[18px] font-[600] mb-4">Edit Facility</h3>
-        <p className="text-gray-600 mb-4">Edit functionality would go here...</p>
-        <div className="flex justify-end space-x-3">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-gray-600 hover:text-gray-800"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onClose}
-            className={buttonPrimary}
-          >
-            Save
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 export default function FacilityDetails({ 
   facility, 
   onBack, 
@@ -655,13 +628,12 @@ export default function FacilityDetails({
         </div>
       </div>
 
-      {showEditModal && (
-        <EditFacilityDetailsModal
-          facility={mockFacility}
-          onClose={() => setShowEditModal(false)}
-          onSave={onFacilityUpdated}
-        />
-      )}
+      <PDFViewerModal
+        isOpen={showPDFModal}
+        onClose={() => setShowPDFModal(false)}
+        url={currentPDF.url}
+        title={currentPDF.title}
+      />
 
       <DocumentUploadModal
         isOpen={showUploadModal}
@@ -669,13 +641,6 @@ export default function FacilityDetails({
         onUpload={handleDocumentUpload}
         docType={uploadDocType}
         facilityId={mockFacility.id}
-      />
-
-      <PDFViewerModal
-        isOpen={showPDFModal}
-        onClose={() => setShowPDFModal(false)}
-        url={currentPDF.url}
-        title={currentPDF.title}
       />
     </div>
   );

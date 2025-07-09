@@ -2,20 +2,19 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { FiX } from "react-icons/fi";
-import {
-  labelClass,
-  buttonPrimary,
-  spinnerOverlay,
-  spinner,
-  inputClass,
-  selectClass,
-  uploadHeading,
-  uploadFieldWrapper,
-  uploadInputLabel,
-  uploadIconContainer,
-  uploadButtonStyle,
-  uploadNoteStyle
-} from "./styles";
+
+const labelClass = "block text-sm font-medium text-gray-700 mb-1";
+const buttonPrimary = "bg-[#039994] text-white px-4 py-2 rounded-md hover:bg-[#028580] transition-colors";
+const spinnerOverlay = "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50";
+const spinner = "animate-spin rounded-full h-8 w-8 border-b-2 border-white";
+const inputClass = "w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] focus:border-transparent";
+const selectClass = "px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] focus:border-transparent";
+const uploadHeading = "block text-sm font-medium text-gray-700 mb-1";
+const uploadFieldWrapper = "flex items-center gap-2 mb-1";
+const uploadInputLabel = "flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-600 truncate relative cursor-pointer";
+const uploadIconContainer = "absolute right-3 top-1/2 transform -translate-y-1/2";
+const uploadButtonStyle = "px-3 py-2 rounded-md text-sm text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed";
+const uploadNoteStyle = "text-xs text-gray-500";
 
 export default function EditFacilityDetailsModal({ facility, onClose, onSave }) {
   const [formData, setFormData] = useState({
@@ -37,7 +36,6 @@ export default function EditFacilityDetailsModal({ facility, onClose, onSave }) 
     fetchUtilityProviders();
   }, []);
 
-  // Reset form to initial state
   const resetForm = () => {
     setFormData({
       utilityProvider: facility?.utilityProvider || "",
@@ -141,16 +139,10 @@ export default function EditFacilityDetailsModal({ facility, onClose, onSave }) 
 
       if (data.status === "success") {
         toast.success("Facility updated successfully");
-        
-        // Check if onSave is a function before calling it
         if (typeof onSave === 'function') {
           onSave(data.data);
         }
-        
-        // Reset form after successful submission
         resetForm();
-        
-        // Close modal
         if (typeof onClose === 'function') {
           onClose();
         }
@@ -160,13 +152,10 @@ export default function EditFacilityDetailsModal({ facility, onClose, onSave }) 
     } catch (err) {
       console.error("Error updating facility:", err);
       toast.error(err.response?.data?.message || "Failed to update facility");
-      
-      // Reset form even on error to clear any temporary states
       setLoading(false);
     }
   };
 
-  // Handle modal close with form reset
   const handleClose = () => {
     resetForm();
     if (typeof onClose === 'function') {
@@ -309,69 +298,66 @@ export default function EditFacilityDetailsModal({ facility, onClose, onSave }) 
                         className="h-5 w-5 animate-spin text-white"
                         viewBox="0 0 24 24"
                       >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
                         <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                        ></path>
+                          fill="none"
+                          d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 17h-2v-2h2v2zm1.414-3.414l-1.414 1.414-1.414-1.414 1.414-1.414 1.414 1.414zm3.536-3.536l-1.414 1.414-1.414-1.414 1.414-1.414 1.414 1.414zM19 12h-2v-2h2v2zm-3.536-5.536l-1.414 1.414L13.636 6l1.414-1.414L16.464 6zM12 4h2v2h-2V4zM8.464 6l1.414-1.414L11.292 6l-1.414 1.414L8.464 6zM6 12H4v-2h2v2zm3.536 5.536l1.414-1.414L11.292 18l-1.414 1.414L9.464 18z"
+                        />
                       </svg>
                     ) : uploadSuccess ? (
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         className="h-5 w-5 text-white"
-                        fill="none"
                         viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth={2}
                       >
                         <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M5 13l4 4L19 7"
+                          fill="none"
+                          d="M12 2a10 10 0 100 20 10 10 0 000-20zm5.707 7.293l-6.364 6.364-3.536-3.536L8.293 11l2.121 2.121L16.586 9l1.414 1.414z"
                         />
                       </svg>
                     ) : (
-                      'Upload'
+                      "Upload Agreement"
                     )}
                   </button>
                 </div>
                 <p className={uploadNoteStyle}>
-                  Required for loan, PPA, and lease agreements
+                  Upload a PDF or image file (max 5MB). This is required for non-cash finance types.
                 </p>
               </div>
             )}
+            <div className="flex justify-end space-x-2">
+              <button
+                type="button"
+                onClick={handleClose}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={loading || uploading}
+                className={`${buttonPrimary} ${loading || uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                {loading ? (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 animate-spin text-white"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      fill="none"
+                      d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 17h-2v-2h2v2zm1.414-3.414l-1.414 1.414-1.414-1.414 1.414-1.414 1.414 1.414zm3.536-3.536l-1.414 1.414-1.414-1.414 1.414-1.414 1.414 1.414zM19 12h-2v-2h2v2zm-3.536-5.536l-1.414 1.414L13.636 6l1.414-1.414L16.464 6zM12 4h2v2h-2V4zM8.464 6l1.414-1.414L11.292 6l-1.414 1.414L8.464 6zM6 12H4v-2h2v2zm3.536 5.536l1.414-1.414L11.292 18l-1.414 1.414L9.464 18z"
+                    />
+                  </svg>
+                ) : "Save Changes"}
+              </button>
+            </div>
           </form>
         </div>
-
-        <div className="p-4 border-t border-gray-200 bg-gray-50">
-          <div className="flex justify-end space-x-3">
-            <button
-              type="button"
-              onClick={handleClose}
-              disabled={loading}
-              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100 disabled:opacity-50 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              onClick={handleSubmit}
-              className={`${buttonPrimary} bg-[#039994] hover:bg-[#02857f] text-white px-4 py-2 rounded-md disabled:opacity-50 transition-colors`}
-            >
-              {loading ? "Saving..." : "Save Changes"}
-            </button>
+        {uploading && (
+          <div className={spinnerOverlay}>
+            <div className={spinner}></div>
           </div>
-        </div>
-
+        )}
         {loading && (
           <div className={spinnerOverlay}>
             <div className={spinner}></div>

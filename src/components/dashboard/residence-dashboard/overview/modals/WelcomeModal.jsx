@@ -17,7 +17,7 @@ export default function WelcomeModal({ isOpen, onClose, userData }) {
   };
 
   const handleWelcomeModalClose = () => {
-    window.location.reload();
+    onClose();
   };
 
   const handleFinanceModalClose = () => {
