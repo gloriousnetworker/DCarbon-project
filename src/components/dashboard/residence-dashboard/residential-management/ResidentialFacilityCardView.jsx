@@ -4,7 +4,6 @@ import { FiChevronRight, FiEdit2, FiTrash2 } from "react-icons/fi";
 import toast from "react-hot-toast";
 import FilterModal from "./FilterModal";
 import FacilityDetails from "./ResidentialFacilityDetails";
-import { pageTitle } from "./styles";
 import ConfirmationModal from "./ConfirmationModal";
 
 export default function FacilityCardView() {
@@ -38,12 +37,15 @@ export default function FacilityCardView() {
         { headers: { Authorization: `Bearer ${authToken}` } }
       );
       if (data.status === "success") {
-        setFacilities(data.data.facilities);
+        const formattedFacilities = data.data.facilities.map(facility => ({
+          ...facility,
+          meterId: facility.meterId.split('_')[0] || facility.meterId
+        }));
+        setFacilities(formattedFacilities);
       } else {
         throw new Error(data.message);
       }
     } catch (err) {
-      console.error(err);
       toast.error(err.message || "Failed to load facilities");
     } finally {
       setLoading(false);
@@ -90,7 +92,6 @@ export default function FacilityCardView() {
         throw new Error(data.message);
       }
     } catch (err) {
-      console.error(err);
       toast.error(err.message || "Failed to delete facility");
     } finally {
       setIsDeleting(false);
@@ -99,42 +100,20 @@ export default function FacilityCardView() {
 
   const filteredFacilities = facilities
     .filter(f => {
-      if (
-        filters.name &&
-        !f.address.toLowerCase().includes(filters.name.toLowerCase())
-      )
-        return false;
-      if (filters.utility !== "All" && f.utilityProvider !== filters.utility)
-        return false;
-      if (
-        filters.meterId &&
-        !f.meterId.toLowerCase().includes(filters.meterId.toLowerCase())
-      )
-        return false;
-      if (
-        filters.status !== "All" &&
-        f.status.toLowerCase() !== filters.status.toLowerCase()
-      )
-        return false;
+      if (filters.name && !f.address.toLowerCase().includes(filters.name.toLowerCase())) return false;
+      if (filters.utility !== "All" && f.utilityProvider !== filters.utility) return false;
+      if (filters.meterId && !f.meterId.toLowerCase().includes(filters.meterId.toLowerCase())) return false;
+      if (filters.status !== "All" && f.status.toLowerCase() !== filters.status.toLowerCase()) return false;
       if (filters.createdDate) {
         const d = new Date(f.createdAt).toISOString().slice(0, 10);
         if (d !== filters.createdDate) return false;
       }
-      if (
-        filters.financeType !== "All" &&
-        f.financeType.toLowerCase() !== filters.financeType.toLowerCase()
-      )
-        return false;
-      if (
-        filters.installer !== "All" &&
-        f.installer.toLowerCase() !== filters.installer.toLowerCase()
-      )
-        return false;
+      if (filters.financeType !== "All" && f.financeType.toLowerCase() !== filters.financeType.toLowerCase()) return false;
+      if (filters.installer !== "All" && f.installer.toLowerCase() !== filters.installer.toLowerCase()) return false;
       return true;
     })
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-  // If a facility is selected, render the details view:
   if (selectedFacility) {
     return (
       <div className="p-2">
@@ -158,7 +137,6 @@ export default function FacilityCardView() {
               setSelectedFacility(null);
               fetchFacilities();
             } catch (err) {
-              console.error(err);
               toast.error(err.message || "Failed to delete facility");
             }
           }}
@@ -170,7 +148,7 @@ export default function FacilityCardView() {
   return (
     <div className="p-2">
       <div className="flex justify-between items-center mb-4">
-        <h2 className={pageTitle} style={{ color: "#039994" }}>
+        <h2 className="text-xl font-bold" style={{ color: "#039994" }}>
           Residential Facilities
         </h2>
         <button

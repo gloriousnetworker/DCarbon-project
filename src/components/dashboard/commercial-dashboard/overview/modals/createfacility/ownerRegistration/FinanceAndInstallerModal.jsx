@@ -2,14 +2,6 @@ import React, { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import axios from "axios";
 import InviteOperatorModal from "./InviteOperatorModal";
-import {
-  buttonPrimary,
-  spinnerOverlay,
-  spinner,
-  labelClass,
-  inputClass,
-  termsTextContainer
-} from '../../styles.js';
 
 export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const [loading, setLoading] = useState(false);
@@ -22,6 +14,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const [requestedFinanceTypeName, setRequestedFinanceTypeName] = useState('');
   const [showInviteOperatorModal, setShowInviteOperatorModal] = useState(false);
   const [file, setFile] = useState(null);
+  const [facilityNickname, setFacilityNickname] = useState('');
 
   const [formData, setFormData] = useState({
     financeType: "",
@@ -170,12 +163,43 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const createCommercialFacility = async () => {
+    const userId = localStorage.getItem('userId');
+    const token = localStorage.getItem('authToken');
+    if (!userId || !token) throw new Error('Authentication required');
+
+    const selectedFinanceType = financeTypes.find(type => type.name === formData.financeType);
+    const selectedInstaller = installers.find(installer => installer.name === (showCustomInstaller ? formData.customInstaller : formData.installer));
+
+    const payload = {
+      nickname: facilityNickname || 'New Commercial Facility',
+      address: '',
+      utilityProvider: '',
+      meterIds: [],
+      commercialRole: 'both',
+      entityType: 'company',
+      facilityTypeNamingCode: 1,
+      utilityProviderNamingCode: '',
+      installerNamingCode: selectedInstaller?.namingCode || '',
+      financeNamingCode: selectedFinanceType?.namingCode || ''
+    };
+
+    const response = await axios.post(
+      `https://services.dcarbon.solutions/api/facility/create-new-facility/${userId}`,
+      payload,
+      { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } }
+    );
+
+    return response.data;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.financeType) return toast.error('Please select a finance type');
     if (showFinanceCompany && !formData.financeCompany) return toast.error('Please select a finance company');
     if (showUploadField && !uploadSuccess) return toast.error('Please upload the financial agreement');
     if (showCustomInstaller && !formData.customInstaller) return toast.error('Please enter your installer name');
+    if (!facilityNickname) return toast.error('Please enter a facility nickname');
 
     setLoading(true);
     const toastId = toast.loading('Saving your information...');
@@ -201,7 +225,9 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
         { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } }
       );
 
-      toast.success('Financial information saved successfully!', { id: toastId });
+      await createCommercialFacility();
+
+      toast.success('Financial information saved and commercial facility created successfully!', { id: toastId });
 
       if (showUploadField && uploadSuccess) {
         const uploadToastId = toast.loading('Uploading financial agreement...');
@@ -253,13 +279,13 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   return (
     <>
       {loading && (
-        <div className={spinnerOverlay}>
-          <div className={spinner}></div>
+        <div className="fixed inset-0 z-[60] bg-black bg-opacity-30 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#039994]"></div>
         </div>
       )}
 
       {showRequestModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
           <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
             <h3 className="text-lg font-semibold mb-4">Request Finance Type</h3>
             <div className="mb-4">
@@ -298,7 +324,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
       )}
 
       {!showInviteOperatorModal && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black bg-opacity-50 p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
           <div className="relative w-full max-w-lg bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
             <div className="relative p-6 pb-4">
               {onBack && (
@@ -338,7 +364,21 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
             <div className="flex-1 overflow-y-auto px-6 pb-6">
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className={`${labelClass} text-sm flex items-center`}>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 text-sm flex items-center">
+                    Facility Nickname <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={facilityNickname}
+                    onChange={(e) => setFacilityNickname(e.target.value)}
+                    placeholder="Enter facility nickname"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] text-sm bg-[#F0F0F0]"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 text-sm flex items-center">
                     Finance type <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
@@ -346,7 +386,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                       name="financeType"
                       value={formData.financeType}
                       onChange={handleInputChange}
-                      className={`${inputClass} text-sm bg-[#F0F0F0] appearance-none pr-10`}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] text-sm bg-[#F0F0F0] appearance-none pr-10"
                       required
                       disabled={loadingFinanceTypes}
                     >
@@ -372,7 +412,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
 
                 {showFinanceCompany && (
                   <div>
-                    <label className={`${labelClass} text-sm flex items-center`}>
+                    <label className="block text-sm font-medium text-gray-700 mb-1 text-sm flex items-center">
                       Finance company <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
@@ -380,7 +420,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                         name="financeCompany"
                         value={formData.financeCompany}
                         onChange={handleInputChange}
-                        className={`${inputClass} text-sm bg-[#F0F0F0] appearance-none pr-10`}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] text-sm bg-[#F0F0F0] appearance-none pr-10"
                         required
                       >
                         <option value="">Choose company</option>
@@ -401,7 +441,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
 
                 {showUploadField && (
                   <div>
-                    <label className={`${labelClass} text-sm flex items-center`}>
+                    <label className="block text-sm font-medium text-gray-700 mb-1 text-sm flex items-center">
                       Upload Finance Agreement <span className="text-red-500">*</span>
                     </label>
                     <div className="flex items-center gap-2">
@@ -428,7 +468,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                 )}
 
                 <div>
-                  <label className={`${labelClass} text-sm flex items-center`}>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 text-sm flex items-center">
                     Select installer <span className="text-gray-500 text-xs">(optional)</span>
                   </label>
                   <div className="relative">
@@ -436,7 +476,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                       name="installer"
                       value={formData.installer}
                       onChange={handleInputChange}
-                      className={`${inputClass} text-sm bg-[#F0F0F0] appearance-none pr-10`}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] text-sm bg-[#F0F0F0] appearance-none pr-10"
                       disabled={loadingInstallers}
                     >
                       <option value="">{loadingInstallers ? 'Loading...' : 'Choose installer'}</option>
@@ -456,7 +496,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
 
                 {showCustomInstaller && (
                   <div>
-                    <label className={`${labelClass} text-sm flex items-center`}>
+                    <label className="block text-sm font-medium text-gray-700 mb-1 text-sm flex items-center">
                       Installer Name <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -465,7 +505,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                       value={formData.customInstaller}
                       onChange={handleInputChange}
                       placeholder="Enter your installer name"
-                      className={`${inputClass} text-sm bg-[#F0F0F0]`}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] text-sm bg-[#F0F0F0]"
                       required
                     />
                   </div>
@@ -473,7 +513,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className={`${labelClass} text-sm flex items-center`}>
+                    <label className="block text-sm font-medium text-gray-700 mb-1 text-sm flex items-center">
                       System Size <span className="text-gray-500 text-xs">(optional)</span>
                     </label>
                     <input
@@ -482,12 +522,12 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                       value={formData.systemSize}
                       onChange={handleInputChange}
                       placeholder="Input system size"
-                      className={`${inputClass} text-sm bg-[#F0F0F0] placeholder-[#626060]`}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] text-sm bg-[#F0F0F0] placeholder-[#626060]"
                     />
                   </div>
 
                   <div>
-                    <label className={`${labelClass} text-sm flex items-center`}>
+                    <label className="block text-sm font-medium text-gray-700 mb-1 text-sm flex items-center">
                       COD <span className="text-gray-500 text-xs">(optional)</span>
                     </label>
                     <input
@@ -496,7 +536,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                       value={formData.cod}
                       onChange={handleInputChange}
                       placeholder="Input COD"
-                      className={`${inputClass} text-sm bg-[#F0F0F0] placeholder-[#626060]`}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] text-sm bg-[#F0F0F0] placeholder-[#626060]"
                     />
                   </div>
                 </div>
@@ -505,7 +545,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                   <button
                     type="submit"
                     disabled={loading}
-                    className={`${buttonPrimary} flex items-center justify-center disabled:opacity-50 text-sm`}
+                    className="w-full px-4 py-3 bg-[#039994] text-white rounded-md hover:bg-[#028882] focus:outline-none focus:ring-2 focus:ring-[#039994] font-semibold flex items-center justify-center disabled:opacity-50 text-sm"
                   >
                     {loading ? (
                       <>
@@ -518,7 +558,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                   </button>
                 </div>
 
-                <div className={`${termsTextContainer} text-sm text-center`}>
+                <div className="text-center text-sm text-gray-500 text-sm text-center">
                   <span>Terms and Conditions</span>
                   <span className="mx-2">•</span>
                   <span>Privacy Policy</span>

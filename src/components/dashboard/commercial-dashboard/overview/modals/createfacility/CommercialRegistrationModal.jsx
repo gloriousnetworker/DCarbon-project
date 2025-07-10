@@ -9,13 +9,15 @@ import AddCommercialFacilityModal from "./ownerAndOperatorRegistration/AddCommer
 import UtilityAuthorizationModal from "./ownerAndOperatorRegistration/UtilityAuthorizationModal";
 import InviteOperatorModal from "./ownerRegistration/InviteOperatorModal";
 
-export default function CommercialRegistrationModal({ isOpen, onClose }) {
+export default function CommercialRegistrationModal({ isOpen, onClose, currentStep }) {
   const [selectedRole, setSelectedRole] = useState('Owner');
   const [currentModal, setCurrentModal] = useState(null);
   const [commercialData, setCommercialData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [currentStage, setCurrentStage] = useState(1);
+  const [nextStage, setNextStage] = useState(2);
   const [showInviteOperatorModal, setShowInviteOperatorModal] = useState(false);
+  const [hasRoleChanged, setHasRoleChanged] = useState(false);
 
   const checkStage2Completion = async (userId, authToken) => {
     try {
@@ -31,7 +33,42 @@ export default function CommercialRegistrationModal({ isOpen, onClose }) {
       const result = await response.json();
       return result.status === 'success' && result.data?.commercialUser?.ownerAddress;
     } catch (error) {
-      console.error('Error checking stage 2:', error);
+      return false;
+    }
+  };
+
+  const checkStage3Completion = async (userId, authToken) => {
+    try {
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/user/agreement/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        }
+      );
+      const result = await response.json();
+      return result.status === 'success' && result.data?.termsAccepted;
+    } catch (error) {
+      return false;
+    }
+  };
+
+  const checkStage4Completion = async (userId, authToken) => {
+    try {
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/user/financial-info/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        }
+      );
+      const result = await response.json();
+      return result.status === 'success' && result.data?.financialInfo;
+    } catch (error) {
       return false;
     }
   };
@@ -48,9 +85,8 @@ export default function CommercialRegistrationModal({ isOpen, onClose }) {
         }
       );
       const result = await response.json();
-      return result.status === 'success' && result.data?.meters?.length > 0;
+      return result.status === 'success' && result.data?.length > 0 && result.data.some(item => item.meters?.meters?.length > 0);
     } catch (error) {
-      console.error('Error checking stage 5:', error);
       return false;
     }
   };
@@ -65,37 +101,25 @@ export default function CommercialRegistrationModal({ isOpen, onClose }) {
 
       const stageChecks = [
         { stage: 2, check: () => checkStage2Completion(userId, authToken) },
-        { stage: 3, url: `https://services.dcarbon.solutions/api/user/accept-user-agreement-terms/${userId}`, method: 'PUT' },
-        { stage: 4, url: `https://services.dcarbon.solutions/api/user/update-financial-agreement/${userId}`, method: 'PUT' },
+        { stage: 3, check: () => checkStage3Completion(userId, authToken) },
+        { stage: 4, check: () => checkStage4Completion(userId, authToken) },
         { stage: 5, check: () => checkStage5Completion(userId, authToken) }
       ];
 
       let highestCompletedStage = 1;
 
-      for (const { stage, url, method, check } of stageChecks) {
-        try {
-          let isCompleted = false;
-          if (check) {
-            isCompleted = await check();
-          } else {
-            const response = await fetch(url, {
-              method,
-              headers: {
-                'Authorization': `Bearer ${authToken}`
-              }
-            });
-            const result = await response.json();
-            isCompleted = response.ok && result.status === 'success';
-          }
-          if (isCompleted) {
-            highestCompletedStage = stage;
-          }
-        } catch (error) {
-          console.error(`Error checking stage ${stage}:`, error);
+      for (const { stage, check } of stageChecks) {
+        const isCompleted = await check();
+        if (isCompleted) {
+          highestCompletedStage = stage;
         }
       }
 
-      setCurrentStage(highestCompletedStage + 1);
+      const newStage = highestCompletedStage === 5 ? 5 : highestCompletedStage;
+      const newNextStage = highestCompletedStage === 5 ? 5 : highestCompletedStage + 1;
+      
+      setCurrentStage(newStage);
+      setNextStage(newNextStage);
     } catch (error) {
       console.error('Error checking user progress:', error);
     }
@@ -140,51 +164,52 @@ export default function CommercialRegistrationModal({ isOpen, onClose }) {
     }
   }, [isOpen]);
 
+  useEffect(() => {
+    if (commercialData?.commercialUser?.commercialRole) {
+      const currentRole = commercialData.commercialUser.commercialRole === 'owner' ? 'Owner' : 'Owner & Operator';
+      if (selectedRole !== currentRole) {
+        setHasRoleChanged(true);
+      } else {
+        setHasRoleChanged(false);
+      }
+    }
+  }, [selectedRole, commercialData]);
+
   const handleNext = () => {
+    if (hasRoleChanged) {
+      onClose();
+      window.location.reload();
+      return;
+    }
+
     if (selectedRole === 'Owner') {
-      handleOwnerFlow(currentStage);
+      handleOwnerFlow();
     } else {
-      handleOwnerOperatorFlow(currentStage);
+      handleOwnerOperatorFlow();
     }
   };
 
-  const handleOwnerFlow = (step) => {
-    switch(step) {
-      case 1:
-      case 2:
-        setCurrentModal('ownerDetails');
-        break;
-      case 3:
-        setCurrentModal('ownerTerms');
-        break;
-      case 4:
-        setCurrentModal('utilityNotice');
-        break;
-      case 5:
-        setCurrentModal('addFacility');
-        break;
-      default:
-        setCurrentModal('ownerDetails');
+  const handleOwnerFlow = () => {
+    if (nextStage === 2) {
+      setCurrentModal('ownerDetails');
+    } else if (nextStage === 3) {
+      setCurrentModal('ownerTerms');
+    } else if (nextStage === 4) {
+      setCurrentModal('finance');
+    } else if (nextStage === 5) {
+      setCurrentModal('utilityNotice');
     }
   };
 
-  const handleOwnerOperatorFlow = (step) => {
-    switch(step) {
-      case 1:
-      case 2:
-        setCurrentModal('ownerOperatorDetails');
-        break;
-      case 3:
-        setCurrentModal('ownerOperatorTerms');
-        break;
-      case 4:
-        setCurrentModal('utilityAuthorization');
-        break;
-      case 5:
-        setCurrentModal('addFacility');
-        break;
-      default:
-        setCurrentModal('ownerOperatorDetails');
+  const handleOwnerOperatorFlow = () => {
+    if (nextStage === 2) {
+      setCurrentModal('ownerOperatorDetails');
+    } else if (nextStage === 3) {
+      setCurrentModal('ownerOperatorTerms');
+    } else if (nextStage === 4) {
+      setCurrentModal('operatorFinance');
+    } else if (nextStage === 5) {
+      setCurrentModal('utilityAuthorization');
     }
   };
 
@@ -273,12 +298,12 @@ export default function CommercialRegistrationModal({ isOpen, onClose }) {
                   Owner's Utility Authorization
                 </h2>
                 <p className="font-sfpro text-[14px] leading-[150%] text-gray-700 mb-6">
-  🎉 Finance information completed! You're one step away from generating your DCarbon facility.
-  <br /><br />
-  Next step: Invite your operator to complete the authorization process. Once they're done, you'll be able to add facilities.
-  <br /><br />
-  Already invited your operator? You can close this and wait for them to complete their part.
-</p>
+                  🎉 Finance information completed! You're one step away from generating your DCarbon facility.
+                  <br /><br />
+                  Next step: Invite your operator to complete the authorization process. Once they're done, you'll be able to add facilities.
+                  <br /><br />
+                  Already invited your operator? You can close this and wait for them to complete their part.
+                </p>
 
                 <div className="flex gap-3">
                   <button

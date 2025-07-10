@@ -13,9 +13,8 @@ const DashboardNavbar = ({
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotificationDot, setShowNotificationDot] = useState(false);
   const [currentStage, setCurrentStage] = useState(1);
+  const [nextStage, setNextStage] = useState(2);
   const [showRegistrationModal, setShowRegistrationModal] = useState(false);
-  const [progressWidth, setProgressWidth] = useState("20%");
-  const [progressColor, setProgressColor] = useState("bg-blue-500");
   const [notificationCheckInterval, setNotificationCheckInterval] = useState(null);
 
   const fetchNotifications = async () => {
@@ -44,22 +43,12 @@ const DashboardNavbar = ({
           const unreadCount = unreadNotifications.length;
           setUnreadCount(unreadCount);
           setShowNotificationDot(unreadCount > 0);
-          
           localStorage.setItem('notifications', JSON.stringify(result.data));
         }
       }
     } catch (error) {
       console.error('Error fetching notifications:', error);
     }
-  };
-
-  const updateRegistrationStep = (step) => {
-    const displayStep = step > 5 ? 5 : step;
-    setCurrentStage(displayStep);
-    const newWidth = `${(displayStep / 5) * 100}%`;
-    setProgressWidth(newWidth);
-    const colors = ["bg-blue-500", "bg-purple-500", "bg-yellow-500", "bg-orange-500", "bg-green-500"];
-    setProgressColor(colors[displayStep - 1] || "bg-[#039994]");
   };
 
   const checkStage2Completion = async (userId, authToken) => {
@@ -70,6 +59,32 @@ const DashboardNavbar = ({
       });
       const result = await response.json();
       return result.status === 'success' && result.data?.commercialUser?.ownerAddress;
+    } catch (error) {
+      return false;
+    }
+  };
+
+  const checkStage3Completion = async (userId, authToken) => {
+    try {
+      const response = await fetch(`https://services.dcarbon.solutions/api/user/agreement/${userId}`, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${authToken}` }
+      });
+      const result = await response.json();
+      return result.status === 'success' && result.data?.termsAccepted;
+    } catch (error) {
+      return false;
+    }
+  };
+
+  const checkStage4Completion = async (userId, authToken) => {
+    try {
+      const response = await fetch(`https://services.dcarbon.solutions/api/user/financial-info/${userId}`, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${authToken}` }
+      });
+      const result = await response.json();
+      return result.status === 'success' && result.data?.financialInfo;
     } catch (error) {
       return false;
     }
@@ -97,27 +112,27 @@ const DashboardNavbar = ({
 
       const stageChecks = [
         { stage: 2, check: () => checkStage2Completion(userId, authToken) },
-        { stage: 3, url: `https://services.dcarbon.solutions/api/user/accept-user-agreement-terms/${userId}`, method: 'PUT' },
-        { stage: 4, url: `https://services.dcarbon.solutions/api/user/update-financial-agreement/${userId}`, method: 'PUT' },
+        { stage: 3, check: () => checkStage3Completion(userId, authToken) },
+        { stage: 4, check: () => checkStage4Completion(userId, authToken) },
         { stage: 5, check: () => checkStage5Completion(userId, authToken) }
       ];
 
       let highestCompletedStage = 1;
-      for (const { stage, url, method, check } of stageChecks) {
-        try {
-          let isCompleted = false;
-          if (check) {
-            isCompleted = await check();
-          } else {
-            const response = await fetch(url, { method, headers: { 'Authorization': `Bearer ${authToken}` } });
-            const result = await response.json();
-            isCompleted = response.ok && result.status === 'success';
-          }
-          if (isCompleted) highestCompletedStage = stage;
-        } catch (error) {}
+      for (const { stage, check } of stageChecks) {
+        const isCompleted = await check();
+        if (isCompleted) {
+          highestCompletedStage = stage;
+        }
       }
-      updateRegistrationStep(highestCompletedStage === 5 ? 5 : highestCompletedStage + 1);
-    } catch (error) {}
+
+      const newStage = highestCompletedStage === 5 ? 5 : highestCompletedStage;
+      const newNextStage = highestCompletedStage === 5 ? 5 : highestCompletedStage + 1;
+      
+      setCurrentStage(newStage);
+      setNextStage(newNextStage);
+    } catch (error) {
+      console.error('Error checking user progress:', error);
+    }
   };
 
   const flashNotificationDot = () => {
@@ -173,12 +188,29 @@ const DashboardNavbar = ({
   const getTooltipText = () => {
     const texts = [
       "Account creation completed",
-      "Complete commercial registration with owner details and address",
-      "Accept terms and conditions",
-      "Submit financial information",
-      "Utility meters connected - Registration complete!"
+      "Owner details and address completed",
+      "Terms and conditions signed",
+      "Financial information submitted",
+      "Utility meters connected"
     ];
-    return texts[currentStage - 1] || `Complete registration step ${currentStage} of 5`;
+    return texts[currentStage - 1] || `Stage ${currentStage} completed`;
+  };
+
+  const getProgressBarSegments = () => {
+    const segments = [];
+    for (let i = 1; i <= 5; i++) {
+      segments.push(
+        <div
+          key={i}
+          className={`h-2 flex-1 mx-[1px] rounded-sm ${
+            i < currentStage ? "bg-[#039994]" : 
+            i === currentStage ? "bg-[#039994]" : 
+            i === nextStage ? "border border-[#039994] bg-white" : "bg-gray-200"
+          }`}
+        />
+      );
+    }
+    return segments;
   };
 
   return (
@@ -215,11 +247,8 @@ const DashboardNavbar = ({
                 onClick={handleRegistrationClick}
                 className="cursor-pointer px-4 py-2 bg-gray-100 rounded-md flex items-center hover:bg-gray-200 transition-colors"
               >
-                <div className="w-32 h-2 bg-gray-200 rounded-full mr-3 transition-all duration-500">
-                  <div
-                    className={`h-2 rounded-full ${progressColor} transition-all duration-500`}
-                    style={{ width: progressWidth }}
-                  ></div>
+                <div className="w-32 h-2 flex mr-3">
+                  {getProgressBarSegments()}
                 </div>
                 <span className="text-xs font-medium">
                   Step {currentStage} of 5

@@ -8,7 +8,7 @@ const RecentRecSales = dynamic(() => import("./RecentRecSales"), { ssr: false })
 const WelcomeModal = dynamic(() => import("./modals/WelcomeModal"), { ssr: false });
 const AddUtilityProvider = dynamic(() => import("./modals/AddUtilityProvider"), { ssr: false });
 
-const ProgressTracker = ({ currentStage }) => {
+const ProgressTracker = ({ currentStage, nextStage }) => {
   const stages = [
     { id: 1, name: "Sign Up", tooltip: "Account creation completed" },
     { id: 2, name: "Commercial Registration", tooltip: "Owner details and address completed" },
@@ -33,14 +33,16 @@ const ProgressTracker = ({ currentStage }) => {
             <div key={stage.id} className="flex flex-col items-center group relative">
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                  stage.id === currentDisplayStage ? "bg-[#039994] text-white" : stage.id < currentDisplayStage ? "bg-[#039994] text-white" : "bg-gray-200 text-gray-600"
+                  stage.id < currentDisplayStage ? "bg-[#039994] text-white" : 
+                  stage.id === currentDisplayStage ? "bg-[#039994] text-white" : 
+                  stage.id === nextStage ? "border-2 border-[#039994] bg-white text-gray-600" : "bg-gray-200 text-gray-600"
                 }`}
               >
                 {stage.id}
               </div>
               <span
                 className={`text-xs mt-1 text-center ${
-                  stage.id === currentDisplayStage ? "text-[#039994] font-medium" : stage.id < currentDisplayStage ? "text-[#039994] font-medium" : "text-gray-500"
+                  stage.id <= currentDisplayStage ? "text-[#039994] font-medium" : "text-gray-500"
                 }`}
               >
                 {stage.name}
@@ -76,6 +78,7 @@ export default function DashboardOverview() {
   const [isFirstTimeUser, setIsFirstTimeUser] = useState(false);
   const [isCheckingCommercialStatus, setIsCheckingCommercialStatus] = useState(false);
   const [currentStage, setCurrentStage] = useState(1);
+  const [nextStage, setNextStage] = useState(2);
 
   const checkStage2Completion = async (userId, authToken) => {
     try {
@@ -91,7 +94,42 @@ export default function DashboardOverview() {
       const result = await response.json();
       return result.status === 'success' && result.data?.commercialUser?.ownerAddress;
     } catch (error) {
-      console.error('Error checking stage 2:', error);
+      return false;
+    }
+  };
+
+  const checkStage3Completion = async (userId, authToken) => {
+    try {
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/user/agreement/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        }
+      );
+      const result = await response.json();
+      return result.status === 'success' && result.data?.termsAccepted;
+    } catch (error) {
+      return false;
+    }
+  };
+
+  const checkStage4Completion = async (userId, authToken) => {
+    try {
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/user/financial-info/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        }
+      );
+      const result = await response.json();
+      return result.status === 'success' && result.data?.financialInfo;
+    } catch (error) {
       return false;
     }
   };
@@ -110,7 +148,6 @@ export default function DashboardOverview() {
       const result = await response.json();
       return result.status === 'success' && result.data?.length > 0 && result.data.some(item => item.meters?.meters?.length > 0);
     } catch (error) {
-      console.error('Error checking stage 5:', error);
       return false;
     }
   };
@@ -125,38 +162,25 @@ export default function DashboardOverview() {
 
       const stageChecks = [
         { stage: 2, check: () => checkStage2Completion(userId, authToken) },
-        { stage: 3, url: `https://services.dcarbon.solutions/api/user/accept-user-agreement-terms/${userId}`, method: 'PUT' },
-        { stage: 4, url: `https://services.dcarbon.solutions/api/user/update-financial-agreement/${userId}`, method: 'PUT' },
+        { stage: 3, check: () => checkStage3Completion(userId, authToken) },
+        { stage: 4, check: () => checkStage4Completion(userId, authToken) },
         { stage: 5, check: () => checkStage5Completion(userId, authToken) }
       ];
 
       let highestCompletedStage = 1;
 
-      for (const { stage, url, method, check } of stageChecks) {
-        try {
-          let isCompleted = false;
-          if (check) {
-            isCompleted = await check();
-          } else {
-            const response = await fetch(url, {
-              method,
-              headers: {
-                'Authorization': `Bearer ${authToken}`
-              }
-            });
-            const result = await response.json();
-            isCompleted = response.ok && result.status === 'success';
-          }
-          if (isCompleted) {
-            highestCompletedStage = stage;
-          }
-        } catch (error) {
-          console.error(`Error checking stage ${stage}:`, error);
+      for (const { stage, check } of stageChecks) {
+        const isCompleted = await check();
+        if (isCompleted) {
+          highestCompletedStage = stage;
         }
       }
 
-      const newStage = highestCompletedStage === 5 ? 5 : highestCompletedStage + 1;
+      const newStage = highestCompletedStage === 5 ? 5 : highestCompletedStage;
+      const newNextStage = highestCompletedStage === 5 ? 5 : highestCompletedStage + 1;
+      
       setCurrentStage(newStage);
+      setNextStage(newNextStage);
     } catch (error) {
       console.error('Error checking user progress:', error);
     }
@@ -257,7 +281,7 @@ export default function DashboardOverview() {
         </div>
       </div>
 
-      <ProgressTracker currentStage={currentStage} />
+      <ProgressTracker currentStage={currentStage} nextStage={nextStage} />
       <QuickActions />
 
       <hr className="border-gray-300" />
