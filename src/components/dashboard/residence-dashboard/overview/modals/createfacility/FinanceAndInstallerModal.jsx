@@ -56,6 +56,19 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const showFinanceCompany = !isCashType && formData.financeType !== '';
   const showCustomInstaller = formData.installer === 'others';
 
+  const generateUniqueMeterId = () => {
+    const timestamp = Date.now();
+    const random = Math.floor(Math.random() * 1000000);
+    return `METER_${timestamp}_${random}`;
+  };
+
+  const generateUniqueFacilityName = () => {
+    const timestamp = Date.now();
+    const random = Math.floor(Math.random() * 1000);
+    const nickname = facilityNickname.trim() || 'Residential';
+    return `${nickname}_${timestamp}_${random}`;
+  };
+
   useEffect(() => {
     if (isOpen) {
       fetchFinanceTypes();
@@ -133,15 +146,19 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     const selectedInstaller = installers.find(installer => installer.name === (showCustomInstaller ? formData.customInstaller : formData.installer));
     const selectedUtilityProvider = utilityProviders.find(provider => provider.name === formData.utilityProvider);
 
+    const uniqueMeterId = generateUniqueMeterId();
+    const uniqueFacilityName = generateUniqueFacilityName();
+
     const payload = {
+      facilityName: uniqueFacilityName,
       utilityProvider: formData.utilityProvider || "N/A",
       installer: showCustomInstaller ? formData.customInstaller : formData.installer || "N/A",
       financeType: formData.financeType || "N/A",
       financeCompany: formData.financeCompany || "N/A",
       financeAgreement: file ? file.name : "N/A",
-      address: "N/A",
-      meterId: "N/A",
-      zipCode: "N/A",
+      address: "To be updated",
+      meterId: uniqueMeterId,
+      zipCode: "To be updated",
       systemCapacity: systemCapacity ? Number(systemCapacity) : 0,
       facilityTypeNamingCode: 2,
       utilityProviderNamingCode: selectedUtilityProvider?.namingCode || "1",
@@ -155,6 +172,40 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
       { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } }
     );
     return response.data;
+  };
+
+  const updateFinanceInfo = async () => {
+    const userId = localStorage.getItem('userId');
+    const token = localStorage.getItem('authToken');
+    const finalInstaller = showCustomInstaller ? formData.customInstaller : formData.installer;
+
+    const payload = {
+      financialType: formData.financeType,
+      ...(showFinanceCompany && { financeCompany: formData.financeCompany }),
+      ...(finalInstaller && { installer: finalInstaller }),
+      ...(systemCapacity && { systemSize: systemCapacity })
+    };
+
+    await axios.put(
+      `https://services.dcarbon.solutions/api/user/financial-info/${userId}`,
+      payload,
+      { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } }
+    );
+  };
+
+  const uploadFinancialAgreement = async () => {
+    if (!file || !uploadSuccess) return;
+
+    const userId = localStorage.getItem('userId');
+    const token = localStorage.getItem('authToken');
+    const formData = new FormData();
+    formData.append('financialAgreement', file);
+
+    await axios.put(
+      `https://services.dcarbon.solutions/api/user/update-financial-agreement/${userId}`,
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data', 'Authorization': `Bearer ${token}` } }
+    );
   };
 
   const handleRequestFinanceType = async () => {
@@ -198,9 +249,15 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     if (!file) return;
     setUploading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setUploadSuccess(true);
-      toast.success('Financial agreement uploaded successfully!');
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64data = reader.result;
+        localStorage.setItem('tempFinancialAgreement', base64data);
+        setUploadSuccess(true);
+        toast.success('Financial agreement uploaded successfully!');
+      };
+      reader.onerror = () => toast.error('Error reading file');
+      reader.readAsDataURL(file);
     } catch (err) {
       toast.error(err.message || 'Upload failed');
     } finally {
@@ -241,26 +298,54 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     if (showUploadField && !uploadSuccess) return toast.error('Please upload the financial agreement');
     if (showCustomInstaller && !formData.customInstaller) return toast.error('Please enter your installer name');
     if (!formData.utilityProvider) return toast.error('Please select a utility provider');
-    if (!formData.installer) return toast.error('Please select an installer');
+    if (!formData.installer && !showCustomInstaller) return toast.error('Please select an installer');
 
     setLoading(true);
     const toastId = toast.loading('Creating residential facility...');
 
     try {
+      await updateFinanceInfo();
       const response = await createResidentialFacility();
+      
+      if (showUploadField && uploadSuccess) {
+        await uploadFinancialAgreement();
+      }
+
       toast.success(`Residential facility created successfully: ${response.data.facilityName}`, { id: toastId });
       setCurrentStep(4);
       setShowAgreementModal(true);
     } catch (err) {
-      toast.error(err.response?.data?.message || err.message || 'Failed to create facility', { id: toastId });
+      if (err.response?.data?.message?.includes('Meter ID is already registered')) {
+        toast.error('Facility creation failed due to duplicate meter ID. Please try again.', { id: toastId });
+        setTimeout(() => {
+          handleSubmit(e);
+        }, 1000);
+      } else {
+        toast.error(err.response?.data?.message || err.message || 'Failed to create facility', { id: toastId });
+      }
     } finally {
       setLoading(false);
     }
   };
 
   const handleCloseModal = () => {
+    setFormData({
+      financeType: "",
+      financeCompany: "",
+      installer: "",
+      customInstaller: "",
+      utilityProvider: "",
+      facilityTypeNamingCode: 2,
+      utilityProviderNamingCode: "",
+      installerNamingCode: "",
+      financeNamingCode: ""
+    });
+    setFacilityNickname('');
+    setSystemCapacity('');
+    setFile(null);
+    setUploadSuccess(false);
+    setCurrentStep(1);
     onClose();
-    window.location.reload();
   };
 
   if (!isOpen) return null;
