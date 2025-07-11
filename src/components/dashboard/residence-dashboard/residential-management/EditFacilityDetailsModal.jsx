@@ -1,368 +1,328 @@
 import React, { useState, useEffect } from "react";
+import { FiX } from "react-icons/fi";
 import axios from "axios";
 import toast from "react-hot-toast";
-import { FiX } from "react-icons/fi";
+import Loader from "@/components/loader/Loader.jsx";
+import {
+  labelClass,
+  inputClass,
+  selectClass,
+  spinnerOverlay,
+  buttonPrimary,
+  uploadNoteStyle
+} from "./styles";
 
-const labelClass = "block text-sm font-medium text-gray-700 mb-1";
-const buttonPrimary = "bg-[#039994] text-white px-4 py-2 rounded-md hover:bg-[#028580] transition-colors";
-const spinnerOverlay = "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50";
-const spinner = "animate-spin rounded-full h-8 w-8 border-b-2 border-white";
-const inputClass = "w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] focus:border-transparent";
-const selectClass = "px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] focus:border-transparent";
-const uploadHeading = "block text-sm font-medium text-gray-700 mb-1";
-const uploadFieldWrapper = "flex items-center gap-2 mb-1";
-const uploadInputLabel = "flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-600 truncate relative cursor-pointer";
-const uploadIconContainer = "absolute right-3 top-1/2 transform -translate-y-1/2";
-const uploadButtonStyle = "px-3 py-2 rounded-md text-sm text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed";
-const uploadNoteStyle = "text-xs text-gray-500";
-
-export default function EditFacilityDetailsModal({ facility, onClose, onSave }) {
+export default function EditResidentialFacilityModal({ facility, onClose = () => {}, onSave = () => {}, isOpen = false }) {
   const [formData, setFormData] = useState({
-    utilityProvider: facility?.utilityProvider || "",
-    installer: facility?.installer || "",
-    financeType: facility?.financeType || "",
-    financeCompany: facility?.financeCompany || "",
-    financeAgreement: facility?.financeAgreement || null
+    installer: facility.installer || "",
+    systemCapacity: facility.systemCapacity || "",
+    zipCode: facility.zipCode || "",
+    meterId: facility.meterId || "",
+    utilityProvider: facility.utilityProvider || "",
+    address: facility.address || "",
+    financeType: facility.financeType || "",
+    financeCompany: facility.financeCompany || ""
   });
 
   const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [uploadSuccess, setUploadSuccess] = useState(false);
-  const [file, setFile] = useState(null);
   const [utilityProviders, setUtilityProviders] = useState([]);
   const [utilityProvidersLoading, setUtilityProvidersLoading] = useState(false);
+  const [userMeterData, setUserMeterData] = useState([]);
+  const [userMetersLoading, setUserMetersLoading] = useState(false);
+  const [selectedMeter, setSelectedMeter] = useState(null);
+  const [isSameLocation, setIsSameLocation] = useState(null);
+  const [selectedUtilityAuthEmail, setSelectedUtilityAuthEmail] = useState("");
+  const [meterAgreementAccepted, setMeterAgreementAccepted] = useState(false);
+  const [acceptingAgreement, setAcceptingAgreement] = useState(false);
+  const [originalMeterId, setOriginalMeterId] = useState(facility.meterId || "");
+  const [financeTypes, setFinanceTypes] = useState([]);
+  const [financeCompanies, setFinanceCompanies] = useState([]);
+  const [installers, setInstallers] = useState([]);
+  const [loadingFinanceTypes, setLoadingFinanceTypes] = useState(false);
+  const [loadingInstallers, setLoadingInstallers] = useState(false);
 
   useEffect(() => {
-    fetchUtilityProviders();
-  }, []);
-
-  const resetForm = () => {
-    setFormData({
-      utilityProvider: facility?.utilityProvider || "",
-      installer: facility?.installer || "",
-      financeType: facility?.financeType || "",
-      financeCompany: facility?.financeCompany || "",
-      financeAgreement: facility?.financeAgreement || null
-    });
-    setFile(null);
-    setUploadSuccess(false);
-    setLoading(false);
-    setUploading(false);
-  };
+    if (isOpen) {
+      fetchUtilityProviders();
+      fetchUserMeters();
+      fetchFinanceTypes();
+      fetchInstallers();
+    }
+  }, [isOpen]);
 
   const fetchUtilityProviders = async () => {
     const authToken = localStorage.getItem("authToken");
     if (!authToken) return;
-
     setUtilityProvidersLoading(true);
     try {
-      const response = await axios.get(
-        "https://services.dcarbon.solutions/api/auth/utility-providers",
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${authToken}`
-          }
-        }
-      );
-
-      if (response.data.status === "success") {
-        setUtilityProviders(response.data.data);
-      }
+      const response = await axios.get("https://services.dcarbon.solutions/api/auth/utility-providers", { headers: { Authorization: `Bearer ${authToken}` } });
+      if (response.data.status === "success") setUtilityProviders(response.data.data);
     } catch (error) {
-      console.error("Error fetching utility providers:", error);
       toast.error("Failed to load utility providers");
     } finally {
       setUtilityProvidersLoading(false);
     }
   };
 
+  const fetchFinanceTypes = async () => {
+    setLoadingFinanceTypes(true);
+    try {
+      const token = localStorage.getItem("authToken");
+      const response = await axios.get("https://services.dcarbon.solutions/api/user/financial-types", { headers: { Authorization: `Bearer ${token}` } });
+      if (response.data.status === "success") {
+        const approvedTypes = response.data.data.types.filter(type => type.status === "APPROVED" || type.name.toLowerCase() === "cash");
+        setFinanceTypes(approvedTypes);
+        setFinanceCompanies(["Company 1", "Company 2", "Company 3", "Other"]);
+      }
+    } catch (error) {
+      toast.error("Failed to load finance types");
+    } finally {
+      setLoadingFinanceTypes(false);
+    }
+  };
+
+  const fetchInstallers = async () => {
+    setLoadingInstallers(true);
+    try {
+      const token = localStorage.getItem("authToken");
+      const response = await axios.get("https://services.dcarbon.solutions/api/user/partner/get-all-installer", { headers: { Authorization: `Bearer ${token}` } });
+      if (response.data.status === "success") setInstallers(response.data.data.installers || []);
+    } catch (error) {
+      toast.error("Failed to load installers");
+    } finally {
+      setLoadingInstallers(false);
+    }
+  };
+
+  const fetchUserMeters = async () => {
+    const userId = localStorage.getItem("userId");
+    const authToken = localStorage.getItem("authToken");
+    if (!userId || !authToken) return;
+    setUserMetersLoading(true);
+    try {
+      const response = await axios.get(`https://services.dcarbon.solutions/api/auth/user-meters/${userId}`, { headers: { Authorization: `Bearer ${authToken}` } });
+      if (response.data.status === "success") {
+        setUserMeterData(response.data.data);
+        const firstWithMeters = response.data.data.find(item => item.meters?.meters?.length > 0);
+        if (firstWithMeters) setSelectedUtilityAuthEmail(firstWithMeters.utilityAuthEmail);
+      }
+    } catch (error) {
+      toast.error("Failed to load meter information");
+    } finally {
+      setUserMetersLoading(false);
+    }
+  };
+
+  const getCurrentMeters = () => {
+    if (!selectedUtilityAuthEmail) return [];
+    const selectedData = userMeterData.find(item => item.utilityAuthEmail === selectedUtilityAuthEmail);
+    if (!selectedData || !selectedData.meters?.meters) return [];
+    return selectedData.meters.meters.filter(meter => meter.base.service_class === "electric");
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    if (name === "meterId") {
+      const currentMeters = getCurrentMeters();
+      const meter = currentMeters.find(m => m.uid === value);
+      setSelectedMeter(meter || null);
+      setIsSameLocation(null);
+      setMeterAgreementAccepted(false);
+    }
   };
 
-  const handleFileChange = (e) => {
-    const selectedFile = e.target.files[0];
-    setFile(selectedFile);
-    setUploadSuccess(false);
+  const handleUtilityAuthEmailChange = (e) => {
+    const email = e.target.value;
+    setSelectedUtilityAuthEmail(email);
+    setFormData(prev => ({ ...prev, meterId: "" }));
+    setSelectedMeter(null);
+    setIsSameLocation(null);
+    setMeterAgreementAccepted(false);
   };
 
-  const handleUpload = async () => {
-    if (!file) return;
-    setUploading(true);
-    
+  const handleLocationChoice = (choice) => {
+    setIsSameLocation(choice);
+    if (choice && selectedMeter) setFormData(prev => ({ ...prev, address: selectedMeter.base.service_address }));
+    else setFormData(prev => ({ ...prev, address: facility.address || "" }));
+  };
+
+  const handleAcceptMeterAgreement = async () => {
+    const userId = localStorage.getItem("userId");
+    const authToken = localStorage.getItem("authToken");
+    if (!userId || !authToken) {
+      toast.error("Authentication required");
+      return;
+    }
+    setAcceptingAgreement(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setFormData(prev => ({
-        ...prev,
-        financeAgreement: file.name
-      }));
-      
-      toast.success('Financial agreement uploaded successfully!');
-      setUploadSuccess(true);
-    } catch (err) {
-      toast.error(err.message || 'Upload failed');
+      const response = await axios.put(`https://services.dcarbon.solutions/api/user/accept-user-agreement-terms/${userId}`, {}, { headers: { Authorization: `Bearer ${authToken}` } });
+      if (response.data.status === "success") {
+        setMeterAgreementAccepted(true);
+        toast.success("Meter agreement accepted successfully");
+      }
+    } catch (error) {
+      toast.error("Failed to accept meter agreement");
     } finally {
-      setUploading(false);
+      setAcceptingAgreement(false);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    
     try {
       const authToken = localStorage.getItem("authToken");
-      
       const updateData = {
-        utilityProvider: formData.utilityProvider,
         installer: formData.installer,
+        systemCapacity: Number(formData.systemCapacity),
+        zipCode: formData.zipCode,
+        meterId: formData.meterId,
+        utilityProvider: formData.utilityProvider,
+        address: formData.address,
         financeType: formData.financeType,
-        ...(formData.financeType !== "cash" && {
-          financeCompany: formData.financeCompany,
-          financeAgreement: formData.financeAgreement
-        })
+        financeCompany: formData.financeType !== "Cash" ? formData.financeCompany : ""
       };
-
-      const { data } = await axios.put(
-        `https://services.dcarbon.solutions/api/residential-facility/update-facility/${facility?.id}`,
-        updateData,
-        { 
-          headers: { 
-            Authorization: `Bearer ${authToken}`,
-            "Content-Type": "application/json"
-          } 
-        }
-      );
-
+      const { data } = await axios.put(`https://services.dcarbon.solutions/api/residential-facility/update-facility/${facility.id}`, updateData, { headers: { Authorization: `Bearer ${authToken}` } });
       if (data.status === "success") {
         toast.success("Facility updated successfully");
-        if (typeof onSave === 'function') {
-          onSave(data.data);
-        }
-        resetForm();
-        if (typeof onClose === 'function') {
-          onClose();
-        }
-      } else {
-        throw new Error(data.message || "Failed to update facility");
-      }
+        onSave(data.data);
+        onClose();
+      } else throw new Error(data.message || "Failed to update facility");
     } catch (err) {
-      console.error("Error updating facility:", err);
       toast.error(err.response?.data?.message || "Failed to update facility");
+    } finally {
       setLoading(false);
     }
   };
 
-  const handleClose = () => {
-    resetForm();
-    if (typeof onClose === 'function') {
-      onClose();
-    }
+  const handleBackdropClick = (e) => {
+    if (e.target === e.currentTarget) onClose();
   };
 
+  const utilityAuthEmailsWithMeters = userMeterData.filter(item => item.meters?.meters?.length > 0);
+  const currentMeters = getCurrentMeters();
+
+  if (!isOpen) return null;
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg w-full max-w-md flex flex-col max-h-[90vh] overflow-hidden">
-        <div className="flex justify-between items-center p-6 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-800">Edit Facility Details</h3>
-          <button 
-            onClick={handleClose} 
-            className="text-gray-500 hover:text-gray-700 transition-colors"
-          >
-            <FiX size={24} />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" onClick={handleBackdropClick}>
+      <div className="relative bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        {loading && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-white bg-opacity-70 rounded-lg">
+            <div className="h-12 w-12 border-4 border-t-4 border-gray-300 border-t-[#039994] rounded-full animate-spin"></div>
+          </div>
+        )}
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <h2 className="text-xl font-semibold">Edit Facility Details</h2>
+          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-full" disabled={loading}>
+            <FiX size={20} className="text-gray-400" />
           </button>
         </div>
-        
-        <div className="overflow-y-auto p-6 flex-1">
+        <div className="p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className={labelClass}>Utility Provider</label>
-              <select
-                name="utilityProvider"
-                value={formData.utilityProvider}
-                onChange={handleChange}
-                className={selectClass}
-                required
-                disabled={utilityProvidersLoading}
-              >
-                <option value="">Select utility provider</option>
-                {utilityProvidersLoading ? (
-                  <option value="" disabled>Loading providers...</option>
-                ) : (
-                  utilityProviders.map(provider => (
-                    <option key={provider.id} value={provider.name}>
-                      {provider.name}
-                    </option>
-                  ))
-                )}
-              </select>
-            </div>
-
-            <div>
-              <label className={labelClass}>Installer</label>
-              <input
-                type="text"
-                name="installer"
-                value={formData.installer}
-                onChange={handleChange}
-                className={inputClass}
-                required
-              />
-            </div>
-
-            <div>
-              <label className={labelClass}>Finance Type</label>
-              <select
-                name="financeType"
-                value={formData.financeType}
-                onChange={handleChange}
-                className={selectClass}
-                required
-              >
-                <option value="">Select finance type</option>
-                <option value="cash">Cash</option>
-                <option value="loan">Loan</option>
-                <option value="lease">Lease</option>
-                <option value="ppa">PPA</option>
-              </select>
-            </div>
-
-            {formData.financeType && formData.financeType !== "cash" && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className={labelClass}>Finance Company</label>
-                <input
-                  type="text"
-                  name="financeCompany"
-                  value={formData.financeCompany}
-                  onChange={handleChange}
-                  className={inputClass}
-                  required
-                  placeholder="Enter finance company"
-                />
+                <label className={labelClass}>Utility Provider <span className="text-red-500">*</span></label>
+                <input type="text" name="utilityProvider" value={formData.utilityProvider} className={`${inputClass} bg-gray-100 cursor-not-allowed`} readOnly disabled />
               </div>
-            )}
-
-            {formData.financeType && formData.financeType !== "cash" && (
               <div>
-                <label className={uploadHeading}>
-                  Finance Agreement
-                  {!formData.financeAgreement && <span className="text-red-500">*</span>}
-                </label>
-                {formData.financeAgreement ? (
-                  <div className="p-2 bg-gray-50 rounded border border-gray-200 text-sm">
-                    <p className="font-medium">Current file: {formData.financeAgreement}</p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Upload a new file below if you need to update it
-                    </p>
-                  </div>
-                ) : null}
-                <div className={uploadFieldWrapper}>
-                  <label className={uploadInputLabel}>
-                    {file ? file.name : 'Choose file...'}
-                    <input
-                      type="file"
-                      className="absolute inset-0 opacity-0 cursor-pointer"
-                      onChange={handleFileChange}
-                    />
-                    <span className={uploadIconContainer}>
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-4 w-4 ml-1 text-gray-400"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth={2}
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M8.5 12.5l7-7a2.121 2.121 0 013 3L10 17a4 4 0 01-5.657-5.657l7-7"
-                        />
-                      </svg>
-                    </span>
-                  </label>
-                  <button
-                    type="button"
-                    onClick={handleUpload}
-                    disabled={!file || uploading || uploadSuccess}
-                    className={`${uploadButtonStyle} ${
-                      !file || uploading || uploadSuccess ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#039994]'
-                    }`}
-                  >
-                    {uploading ? (
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5 animate-spin text-white"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          fill="none"
-                          d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 17h-2v-2h2v2zm1.414-3.414l-1.414 1.414-1.414-1.414 1.414-1.414 1.414 1.414zm3.536-3.536l-1.414 1.414-1.414-1.414 1.414-1.414 1.414 1.414zM19 12h-2v-2h2v2zm-3.536-5.536l-1.414 1.414L13.636 6l1.414-1.414L16.464 6zM12 4h2v2h-2V4zM8.464 6l1.414-1.414L11.292 6l-1.414 1.414L8.464 6zM6 12H4v-2h2v2zm3.536 5.536l1.414-1.414L11.292 18l-1.414 1.414L9.464 18z"
-                        />
-                      </svg>
-                    ) : uploadSuccess ? (
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5 text-white"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          fill="none"
-                          d="M12 2a10 10 0 100 20 10 10 0 000-20zm5.707 7.293l-6.364 6.364-3.536-3.536L8.293 11l2.121 2.121L16.586 9l1.414 1.414z"
-                        />
-                      </svg>
-                    ) : (
-                      "Upload Agreement"
-                    )}
-                  </button>
+                <label className={labelClass}>Utility Account <span className="text-red-500">*</span></label>
+                <select value={selectedUtilityAuthEmail} onChange={handleUtilityAuthEmailChange} className={selectClass} required disabled={loading || userMetersLoading}>
+                  <option value="">Select utility account</option>
+                  {userMetersLoading ? <option value="" disabled>Loading accounts...</option> : utilityAuthEmailsWithMeters.length === 0 ? <option value="" disabled>No utility accounts found</option> : utilityAuthEmailsWithMeters.map(item => (
+                    <option key={item.id} value={item.utilityAuthEmail}>{item.utilityAuthEmail}</option>
+                  ))}
+                </select>
+                <p className={uploadNoteStyle}>Select the utility account containing your meters</p>
+              </div>
+              {selectedUtilityAuthEmail && (
+                <div>
+                  <label className={labelClass}>Meter ID <span className="text-red-500">*</span></label>
+                  <select name="meterId" value={formData.meterId} onChange={handleChange} className={selectClass} required disabled={loading || currentMeters.length === 0}>
+                    <option value="">Select meter</option>
+                    {currentMeters.length === 0 ? <option value="" disabled>No electric meters found for this account</option> : currentMeters.map(meter => (
+                      <option key={meter.uid} value={meter.uid}>{meter.base.meter_numbers[0]} - {meter.base.service_tariff}</option>
+                    ))}
+                  </select>
+                  <p className={uploadNoteStyle}>Only electric meters are shown</p>
                 </div>
-                <p className={uploadNoteStyle}>
-                  Upload a PDF or image file (max 5MB). This is required for non-cash finance types.
-                </p>
+              )}
+              {selectedMeter && (
+                <div className="md:col-span-2">
+                  <div className="mb-3 p-3 bg-gray-50 rounded-md border border-gray-200">
+                    <p className="font-medium mb-2">Service Address: {selectedMeter.base.service_address}</p>
+                    <p className="font-medium mb-2">Is this the same location for the solar installation? <span className="text-red-500">*</span></p>
+                    <div className="flex gap-2">
+                      <button type="button" className={`px-3 py-1 rounded-md border text-sm ${isSameLocation === true ? 'bg-green-100 border-green-500 text-green-700' : 'border-gray-300 hover:bg-gray-50'}`} onClick={() => handleLocationChoice(true)} disabled={loading}>Yes</button>
+                      <button type="button" className={`px-3 py-1 rounded-md border text-sm ${isSameLocation === false ? 'bg-blue-100 border-blue-500 text-blue-700' : 'border-gray-300 hover:bg-gray-50'}`} onClick={() => handleLocationChoice(false)} disabled={loading}>No</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div className="md:col-span-2">
+                <label className={labelClass}>Address <span className="text-red-500">*</span></label>
+                {selectedMeter && isSameLocation === true ? (
+                  <textarea name="address" value={formData.address} rows={3} className={`${inputClass} bg-gray-100`} disabled={true} />
+                ) : (
+                  <textarea name="address" value={formData.address} onChange={handleChange} rows={3} className={inputClass} disabled={loading} required />
+                )}
+              </div>
+              <div>
+                <label className={labelClass}>Zip Code <span className="text-red-500">*</span></label>
+                <input type="text" name="zipCode" value={formData.zipCode} onChange={handleChange} className={inputClass} required disabled={loading} />
+              </div>
+              <div>
+                <label className={labelClass}>System Capacity (kW) <span className="text-red-500">*</span></label>
+                <input type="number" name="systemCapacity" value={formData.systemCapacity} onChange={handleChange} className={inputClass} min="0" step="0.1" required disabled={loading} />
+              </div>
+              <div>
+                <label className={labelClass}>Installer <span className="text-red-500">*</span></label>
+                <select name="installer" value={formData.installer} onChange={handleChange} className={selectClass} required disabled={loading || loadingInstallers}>
+                  <option value="">Select installer</option>
+                  {loadingInstallers ? <option value="" disabled>Loading installers...</option> : installers.map(installer => (
+                    <option key={installer.id} value={installer.name}>{installer.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className={labelClass}>Finance Type <span className="text-red-500">*</span></label>
+                <select name="financeType" value={formData.financeType} onChange={handleChange} className={selectClass} required disabled={loading || loadingFinanceTypes}>
+                  <option value="">Select finance type</option>
+                  {loadingFinanceTypes ? <option value="" disabled>Loading finance types...</option> : financeTypes.map(type => (
+                    <option key={type.id} value={type.name}>{type.name}</option>
+                  ))}
+                </select>
+              </div>
+              {formData.financeType && formData.financeType !== "Cash" && (
+                <div>
+                  <label className={labelClass}>Finance Company <span className="text-red-500">*</span></label>
+                  <select name="financeCompany" value={formData.financeCompany} onChange={handleChange} className={selectClass} required disabled={loading}>
+                    <option value="">Select finance company</option>
+                    {financeCompanies.map((company, index) => (
+                      <option key={index} value={company}>{company}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+            {formData.meterId !== originalMeterId && !meterAgreementAccepted && (
+              <div className="md:col-span-2 mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+                <p className="font-medium mb-2">By clicking "Accept Meter Agreement", you agree that the selected meter can be used for this facility.</p>
+                <button type="button" onClick={handleAcceptMeterAgreement} className={`w-full py-2 rounded-md text-white font-medium ${meterAgreementAccepted ? 'bg-green-600' : 'bg-[#039994] hover:bg-[#02857f]'}`} disabled={meterAgreementAccepted || acceptingAgreement || loading}>
+                  {acceptingAgreement ? 'Processing...' : meterAgreementAccepted ? 'Meter Agreement Accepted' : 'Accept Meter Agreement'}
+                </button>
               </div>
             )}
-            <div className="flex justify-end space-x-2">
-              <button
-                type="button"
-                onClick={handleClose}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={loading || uploading}
-                className={`${buttonPrimary} ${loading || uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                {loading ? (
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 animate-spin text-white"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      fill="none"
-                      d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 17h-2v-2h2v2zm1.414-3.414l-1.414 1.414-1.414-1.414 1.414-1.414 1.414 1.414zm3.536-3.536l-1.414 1.414-1.414-1.414 1.414-1.414 1.414 1.414zM19 12h-2v-2h2v2zm-3.536-5.536l-1.414 1.414L13.636 6l1.414-1.414L16.464 6zM12 4h2v2h-2V4zM8.464 6l1.414-1.414L11.292 6l-1.414 1.414L8.464 6zM6 12H4v-2h2v2zm3.536 5.536l1.414-1.414L11.292 18l-1.414 1.414L9.464 18z"
-                    />
-                  </svg>
-                ) : "Save Changes"}
+            <div className="flex justify-end space-x-3 pt-6">
+              <button type="button" onClick={onClose} disabled={loading} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300">Cancel</button>
+              <button type="submit" disabled={loading || (formData.meterId !== originalMeterId && !meterAgreementAccepted)} className={`${buttonPrimary} flex items-center space-x-2 ${loading || (formData.meterId !== originalMeterId && !meterAgreementAccepted) ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                {loading && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>}
+                <span>Save Changes</span>
               </button>
             </div>
           </form>
         </div>
-        {uploading && (
-          <div className={spinnerOverlay}>
-            <div className={spinner}></div>
-          </div>
-        )}
-        {loading && (
-          <div className={spinnerOverlay}>
-            <div className={spinner}></div>
-          </div>
-        )}
       </div>
     </div>
   );
