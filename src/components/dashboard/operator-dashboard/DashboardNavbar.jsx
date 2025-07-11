@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { FaBars, FaSearch, FaBell, FaHeadset } from "react-icons/fa";
 import CommercialRegistrationModal from "./overview/modals/createfacility/CommercialRegistrationModal";
+import AddUtilityProvider from "./overview/modals/AddUtilityProvider";
 
 const DashboardNavbar = ({
   toggleSidebar,
@@ -14,16 +15,10 @@ const DashboardNavbar = ({
   const [showNotificationDot, setShowNotificationDot] = useState(false);
   const [isOperator, setIsOperator] = useState(false);
   const [currentStage, setCurrentStage] = useState(1);
+  const [nextStage, setNextStage] = useState(2);
   const [showRegistrationModal, setShowRegistrationModal] = useState(false);
-  const [meterCheckInterval, setMeterCheckInterval] = useState(null);
+  const [showUtilityModal, setShowUtilityModal] = useState(false);
   const [notificationCheckInterval, setNotificationCheckInterval] = useState(null);
-
-  const stages = [
-    { id: 1, name: "Registration", tooltip: "Commercial registration completed" },
-    { id: 2, name: "Referral", tooltip: "Owner referral code verified" },
-    { id: 3, name: "Agreement", tooltip: "Terms and conditions signed" },
-    { id: 4, name: "Meters", tooltip: "Utility meters connected" }
-  ];
 
   const fetchNotifications = async () => {
     try {
@@ -51,7 +46,6 @@ const DashboardNavbar = ({
           const unreadCount = unreadNotifications.length;
           setUnreadCount(unreadCount);
           setShowNotificationDot(unreadCount > 0);
-          
           localStorage.setItem('notifications', JSON.stringify(result.data));
         }
       }
@@ -61,149 +55,109 @@ const DashboardNavbar = ({
   };
 
   const checkStage1Completion = async (userId, authToken) => {
-    const response = await fetch(
-      `https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`,
-      {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${authToken}`
+    try {
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
         }
-      }
-    );
-    const result = await response.json();
-    return result.status === 'success' && result.data?.commercialUser?.ownerFullName;
+      );
+      const result = await response.json();
+      return result.status === 'success' && result.data?.commercialUser?.ownerFullName;
+    } catch (error) {
+      return false;
+    }
   };
 
   const checkStage2Completion = async (userId, authToken) => {
-    const response = await fetch(
-      `https://services.dcarbon.solutions/api/user/referral/by-user-id/${userId}`,
-      {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${authToken}`
+    try {
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/user/referral/by-user-id/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
         }
-      }
-    );
-    const result = await response.json();
-    return result.status === 'success' && result.data?.referral?.inviterId;
+      );
+      const result = await response.json();
+      return result.status === 'success' && result.data?.referral?.inviterId;
+    } catch (error) {
+      return false;
+    }
   };
 
   const checkStage3Completion = async (userId, authToken) => {
-    const response = await fetch(
-      `https://services.dcarbon.solutions/api/user/accept-user-agreement-terms/${userId}`,
-      {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${authToken}`
+    try {
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/user/agreement/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
         }
-      }
-    );
-    const result = await response.json();
-    return result.status === 'success';
+      );
+      const result = await response.json();
+      return result.status === 'success' && result.data?.termsAccepted;
+    } catch (error) {
+      return false;
+    }
   };
 
   const checkStage4Completion = async (userId, authToken) => {
-    const response = await fetch(
-      `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`,
-      {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${authToken}`
+    try {
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
         }
-      }
-    );
-    const result = await response.json();
-    return result.status === 'success' && 
-           result.data?.length > 0 && 
-           result.data.some(item => item.meters?.meters?.length > 0);
+      );
+      const result = await response.json();
+      return result.status === 'success' && result.data?.length > 0 && 
+             result.data.some(item => item.meters?.meters?.length > 0);
+    } catch (error) {
+      return false;
+    }
   };
 
   const checkUserProgress = async () => {
-    const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
-    const userId = loginResponse?.data?.user?.id;
-    const authToken = loginResponse?.data?.token;
+    try {
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const userId = loginResponse?.data?.user?.id;
+      const authToken = loginResponse?.data?.token;
+      if (!userId || !authToken) return;
 
-    if (!userId || !authToken) return;
+      const stageChecks = [
+        { stage: 1, check: () => checkStage1Completion(userId, authToken) },
+        { stage: 2, check: () => checkStage2Completion(userId, authToken) },
+        { stage: 3, check: () => checkStage3Completion(userId, authToken) },
+        { stage: 4, check: () => checkStage4Completion(userId, authToken) }
+      ];
 
-    const stage1 = await checkStage1Completion(userId, authToken);
-    if (!stage1) {
-      setCurrentStage(1);
-      return;
-    }
-
-    const stage2 = await checkStage2Completion(userId, authToken);
-    if (!stage2) {
-      setCurrentStage(2);
-      return;
-    }
-
-    const stage3 = await checkStage3Completion(userId, authToken);
-    if (!stage3) {
-      setCurrentStage(3);
-      return;
-    }
-
-    const stage4 = await checkStage4Completion(userId, authToken);
-    if (stage4) {
-      setCurrentStage(4);
-      if (meterCheckInterval) {
-        clearInterval(meterCheckInterval);
-        setMeterCheckInterval(null);
+      let highestCompletedStage = 1;
+      for (const { stage, check } of stageChecks) {
+        const isCompleted = await check();
+        if (isCompleted) {
+          highestCompletedStage = stage;
+        }
       }
-    } else {
-      setCurrentStage(3);
-      if (!meterCheckInterval) {
-        const interval = setInterval(async () => {
-          const hasMeters = await checkStage4Completion(userId, authToken);
-          if (hasMeters) {
-            setCurrentStage(4);
-            clearInterval(interval);
-            setMeterCheckInterval(null);
-          }
-        }, 5000);
-        setMeterCheckInterval(interval);
-      }
+
+      const newStage = highestCompletedStage === 4 ? 4 : highestCompletedStage;
+      const newNextStage = highestCompletedStage === 4 ? 4 : highestCompletedStage + 1;
+      
+      setCurrentStage(newStage);
+      setNextStage(newNextStage);
+    } catch (error) {
+      console.error('Error checking user progress:', error);
     }
   };
-
-  useEffect(() => {
-    const storedUser = localStorage.getItem("loginResponse");
-    if (storedUser) {
-      const userData = JSON.parse(storedUser);
-      setIsOperator(userData.data?.user?.isPartnerOperator || false);
-    }
-
-    fetchNotifications();
-    checkUserProgress();
-
-    const notificationInterval = setInterval(fetchNotifications, 30000);
-    setNotificationCheckInterval(notificationInterval);
-
-    const handleStorageChange = (e) => {
-      if (e.key === "notifications") {
-        const notifications = JSON.parse(e.newValue || '[]');
-        const unread = notifications.filter((n) => !n.isRead).length;
-        setUnreadCount(unread);
-        setShowNotificationDot(unread > 0);
-        if (unread > unreadCount) flashNotificationDot();
-      }
-      if (e.key === "loginResponse") {
-        const userData = JSON.parse(e.newValue);
-        setIsOperator(userData.data?.user?.isPartnerOperator || false);
-      }
-    };
-
-    window.addEventListener("storage", handleStorageChange);
-    return () => {
-      window.removeEventListener("storage", handleStorageChange);
-      if (meterCheckInterval) {
-        clearInterval(meterCheckInterval);
-      }
-      if (notificationCheckInterval) {
-        clearInterval(notificationCheckInterval);
-      }
-    };
-  }, []);
 
   const flashNotificationDot = () => {
     let flashCount = 0;
@@ -218,24 +172,86 @@ const DashboardNavbar = ({
     }, 300);
   };
 
-  const getProgressWidth = () => {
-    const currentDisplayStage = currentStage > 4 ? 4 : currentStage;
-    return `${(currentDisplayStage / stages.length) * 100}%`;
-  };
+  useEffect(() => {
+    const storedUser = localStorage.getItem("loginResponse");
+    if (storedUser) {
+      const userData = JSON.parse(storedUser);
+      setIsOperator(userData.data?.user?.isPartnerOperator || false);
+    }
 
-  const getTooltipText = () => {
-    const currentDisplayStage = currentStage > 4 ? 4 : currentStage;
-    const stage = stages.find(s => s.id === currentDisplayStage);
-    return stage ? stage.tooltip : "Onboarding in progress";
-  };
+    fetchNotifications();
+    checkUserProgress();
+
+    const notificationInterval = setInterval(fetchNotifications, 30000);
+    setNotificationCheckInterval(notificationInterval);
+    const progressInterval = setInterval(checkUserProgress, 15000);
+
+    const handleStorageChange = (e) => {
+      if (e.key === "notifications") {
+        const notifications = JSON.parse(e.newValue || '[]');
+        const unread = notifications.filter((n) => !n.isRead).length;
+        setUnreadCount(unread);
+        setShowNotificationDot(unread > 0);
+        if (unread > unreadCount) {
+          flashNotificationDot();
+        }
+      } else if (e.key === "loginResponse") {
+        const userData = JSON.parse(e.newValue);
+        setIsOperator(userData.data?.user?.isPartnerOperator || false);
+        checkUserProgress();
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      if (notificationCheckInterval) {
+        clearInterval(notificationCheckInterval);
+      }
+      clearInterval(progressInterval);
+    };
+  }, []);
 
   const handleProgressClick = () => {
-    setShowRegistrationModal(true);
+    if (currentStage === 3) {
+      setShowUtilityModal(true);
+    } else {
+      setShowRegistrationModal(true);
+    }
   };
 
   const handleModalClose = () => {
     setShowRegistrationModal(false);
+    setShowUtilityModal(false);
     checkUserProgress();
+  };
+
+  const getTooltipText = () => {
+    const texts = [
+      "Commercial registration completed",
+      "Owner referral code verified",
+      "Terms and conditions signed",
+      "Utility meters connected"
+    ];
+    return texts[currentStage - 1] || `Stage ${currentStage} completed`;
+  };
+
+  const getProgressBarSegments = () => {
+    const segments = [];
+    for (let i = 1; i <= 4; i++) {
+      segments.push(
+        <div
+          key={i}
+          className={`h-2 flex-1 mx-[1px] rounded-sm ${
+            i < currentStage ? "bg-[#039994]" : 
+            i === currentStage ? "bg-[#039994]" : 
+            i === nextStage ? "border border-[#039994] bg-white" : "bg-gray-200"
+          }`}
+        />
+      );
+    }
+    return segments;
   };
 
   return (
@@ -273,18 +289,15 @@ const DashboardNavbar = ({
 
           <div className="flex items-center space-x-6">
             <div className="relative group">
-              <div 
-                className="cursor-pointer px-4 py-2 bg-gray-100 rounded-md flex items-center hover:bg-gray-200 transition-colors"
+              <div
                 onClick={handleProgressClick}
+                className="cursor-pointer px-4 py-2 bg-gray-100 rounded-md flex items-center hover:bg-gray-200 transition-colors"
               >
-                <div className="w-32 h-2 bg-gray-200 rounded-full mr-3">
-                  <div
-                    className="h-2 rounded-full bg-[#039994]"
-                    style={{ width: getProgressWidth() }}
-                  ></div>
+                <div className="w-32 h-2 flex mr-3">
+                  {getProgressBarSegments()}
                 </div>
                 <span className="text-xs font-medium">
-                  Stage {currentStage > 4 ? 4 : currentStage} of {stages.length}
+                  Step {currentStage} of 4
                 </span>
               </div>
               <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 transform hidden group-hover:block">
@@ -323,11 +336,20 @@ const DashboardNavbar = ({
         </div>
       </header>
 
-      <CommercialRegistrationModal
-        isOpen={showRegistrationModal}
-        onClose={handleModalClose}
-        onBack={handleModalClose}
-      />
+      {showRegistrationModal && (
+        <CommercialRegistrationModal
+          isOpen={showRegistrationModal}
+          onClose={handleModalClose}
+          onBack={handleModalClose}
+        />
+      )}
+
+      {showUtilityModal && (
+        <AddUtilityProvider
+          isOpen={showUtilityModal}
+          onClose={handleModalClose}
+        />
+      )}
     </>
   );
 };

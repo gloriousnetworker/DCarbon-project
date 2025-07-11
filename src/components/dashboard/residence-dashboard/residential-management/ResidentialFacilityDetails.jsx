@@ -468,7 +468,7 @@ export default function FacilityDetails({
             <span className="font-sfpro text-[14px] font-[400]">Back</span>
           </button>
           <h2 className="font-sfpro text-[20px] font-[600] leading-[100%] tracking-[-0.05em] text-[#039994]">
-            {mockFacility.address || "Residential Facility"}
+            {mockFacility.facilityName || mockFacility.address || "Residential Facility"}
           </h2>
         </div>
         

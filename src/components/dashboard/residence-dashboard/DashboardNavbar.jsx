@@ -15,19 +15,12 @@ const DashboardNavbar = ({
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotificationDot, setShowNotificationDot] = useState(false);
   const [currentStage, setCurrentStage] = useState(1);
+  const [nextStage, setNextStage] = useState(2);
   const [showFinanceModal, setShowFinanceModal] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [showUtilityModal, setShowUtilityModal] = useState(false);
   const [showResidenceModal, setShowResidenceModal] = useState(false);
-  const [meterCheckInterval, setMeterCheckInterval] = useState(null);
   const [notificationCheckInterval, setNotificationCheckInterval] = useState(null);
-
-  const stages = [
-    { id: 1, name: "Financial Info", tooltip: "Complete financial information" },
-    { id: 2, name: "Agreements", tooltip: "Sign terms and conditions" },
-    { id: 3, name: "Utility Auth", tooltip: "Authorize utility access" },
-    { id: 4, name: "Add Facility", tooltip: "Create your residence facility" }
-  ];
 
   const fetchNotifications = async () => {
     try {
@@ -63,6 +56,42 @@ const DashboardNavbar = ({
     }
   };
 
+  const checkStage2Completion = async (userId, authToken) => {
+    try {
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/user/financial-info/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        }
+      );
+      const result = await response.json();
+      return result.status === 'success' && result.data?.financialInfo;
+    } catch (error) {
+      return false;
+    }
+  };
+
+  const checkStage3Completion = async (userId, authToken) => {
+    try {
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/user/agreement/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        }
+      );
+      const result = await response.json();
+      return result.status === 'success' && result.data?.termsAccepted;
+    } catch (error) {
+      return false;
+    }
+  };
+
   const checkStage4Completion = async (userId, authToken) => {
     try {
       const response = await fetch(
@@ -86,60 +115,31 @@ const DashboardNavbar = ({
       const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
       const userId = loginResponse?.data?.user?.id;
       const authToken = loginResponse?.data?.token;
-
       if (!userId || !authToken) return;
 
-      const hasMeters = await checkStage4Completion(userId, authToken);
-      if (hasMeters) {
-        setCurrentStage(4);
-        if (meterCheckInterval) {
-          clearInterval(meterCheckInterval);
-          setMeterCheckInterval(null);
-        }
-      } else {
-        setCurrentStage(1);
-        if (!meterCheckInterval) {
-          const interval = setInterval(async () => {
-            const hasMeters = await checkStage4Completion(userId, authToken);
-            if (hasMeters) {
-              setCurrentStage(4);
-              clearInterval(interval);
-              setMeterCheckInterval(null);
-            }
-          }, 5000);
-          setMeterCheckInterval(interval);
+      const stageChecks = [
+        { stage: 2, check: () => checkStage2Completion(userId, authToken) },
+        { stage: 3, check: () => checkStage3Completion(userId, authToken) },
+        { stage: 4, check: () => checkStage4Completion(userId, authToken) }
+      ];
+
+      let highestCompletedStage = 1;
+      for (const { stage, check } of stageChecks) {
+        const isCompleted = await check();
+        if (isCompleted) {
+          highestCompletedStage = stage;
         }
       }
+
+      const newStage = highestCompletedStage === 4 ? 4 : highestCompletedStage;
+      const newNextStage = highestCompletedStage === 4 ? 4 : highestCompletedStage + 1;
+      
+      setCurrentStage(newStage);
+      setNextStage(newNextStage);
     } catch (error) {
       console.error('Error checking user progress:', error);
     }
   };
-
-  useEffect(() => {
-    fetchNotifications();
-    checkUserProgress();
-
-    const notificationInterval = setInterval(fetchNotifications, 30000);
-    setNotificationCheckInterval(notificationInterval);
-
-    const handleStorageChange = (e) => {
-      if (e.key === "notifications") {
-        const notifications = JSON.parse(e.newValue || '[]');
-        const unread = notifications.filter((n) => !n.isRead).length;
-        setUnreadCount(unread);
-        setShowNotificationDot(unread > 0);
-        if (unread > unreadCount) flashNotificationDot();
-      }
-    };
-
-    window.addEventListener("storage", handleStorageChange);
-    
-    return () => {
-      window.removeEventListener("storage", handleStorageChange);
-      if (meterCheckInterval) clearInterval(meterCheckInterval);
-      if (notificationCheckInterval) clearInterval(notificationCheckInterval);
-    };
-  }, []);
 
   const flashNotificationDot = () => {
     let flashCount = 0;
@@ -154,16 +154,38 @@ const DashboardNavbar = ({
     }, 300);
   };
 
-  const getProgressWidth = () => {
-    const currentDisplayStage = currentStage > 4 ? 4 : currentStage;
-    return `${(currentDisplayStage / stages.length) * 100}%`;
-  };
+  useEffect(() => {
+    fetchNotifications();
+    checkUserProgress();
 
-  const getTooltipText = () => {
-    const currentDisplayStage = currentStage > 4 ? 4 : currentStage;
-    const stage = stages.find(s => s.id === currentDisplayStage);
-    return stage ? stage.tooltip : "Onboarding in progress";
-  };
+    const notificationInterval = setInterval(fetchNotifications, 30000);
+    setNotificationCheckInterval(notificationInterval);
+    const progressInterval = setInterval(checkUserProgress, 15000);
+
+    const handleStorageChange = (e) => {
+      if (e.key === "notifications") {
+        const notifications = JSON.parse(e.newValue || '[]');
+        const unread = notifications.filter((n) => !n.isRead).length;
+        setUnreadCount(unread);
+        setShowNotificationDot(unread > 0);
+        if (unread > unreadCount) {
+          flashNotificationDot();
+        }
+      } else if (e.key === "loginResponse") {
+        checkUserProgress();
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      if (notificationCheckInterval) {
+        clearInterval(notificationCheckInterval);
+      }
+      clearInterval(progressInterval);
+    };
+  }, []);
 
   const handleProgressClick = () => {
     if (currentStage === 1) setShowFinanceModal(true);
@@ -178,6 +200,33 @@ const DashboardNavbar = ({
     setShowUtilityModal(false);
     setShowResidenceModal(false);
     checkUserProgress();
+  };
+
+  const getTooltipText = () => {
+    const texts = [
+      "Dashboard access completed",
+      "Financial information completed",
+      "Terms and conditions signed",
+      "Utility authorization completed"
+    ];
+    return texts[currentStage - 1] || `Stage ${currentStage} completed`;
+  };
+
+  const getProgressBarSegments = () => {
+    const segments = [];
+    for (let i = 1; i <= 4; i++) {
+      segments.push(
+        <div
+          key={i}
+          className={`h-2 flex-1 mx-[1px] rounded-sm ${
+            i < currentStage ? "bg-[#039994]" : 
+            i === currentStage ? "bg-[#039994]" : 
+            i === nextStage ? "border border-[#039994] bg-white" : "bg-gray-200"
+          }`}
+        />
+      );
+    }
+    return segments;
   };
 
   return (
@@ -210,18 +259,15 @@ const DashboardNavbar = ({
 
           <div className="flex items-center space-x-6">
             <div className="relative group">
-              <div 
-                className="cursor-pointer px-4 py-2 bg-gray-100 rounded-md flex items-center hover:bg-gray-200 transition-colors"
+              <div
                 onClick={handleProgressClick}
+                className="cursor-pointer px-4 py-2 bg-gray-100 rounded-md flex items-center hover:bg-gray-200 transition-colors"
               >
-                <div className="w-32 h-2 bg-gray-200 rounded-full mr-3">
-                  <div
-                    className="h-2 rounded-full bg-[#039994]"
-                    style={{ width: getProgressWidth() }}
-                  ></div>
+                <div className="w-32 h-2 flex mr-3">
+                  {getProgressBarSegments()}
                 </div>
                 <span className="text-xs font-medium">
-                  Stage {currentStage > 4 ? 4 : currentStage} of {stages.length}
+                  Step {currentStage} of 4
                 </span>
               </div>
               <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 transform hidden group-hover:block">

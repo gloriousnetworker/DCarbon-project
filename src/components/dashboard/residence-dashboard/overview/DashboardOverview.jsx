@@ -90,6 +90,43 @@ export default function DashboardOverview() {
   });
   const [currentStage, setCurrentStage] = useState(1);
   const [completedStages, setCompletedStages] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const checkStage2Completion = async (userId, authToken) => {
+    try {
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/user/financial-info/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        }
+      );
+      const result = await response.json();
+      return result.status === 'success' && result.data?.financialInfo;
+    } catch (error) {
+      return false;
+    }
+  };
+
+  const checkStage3Completion = async (userId, authToken) => {
+    try {
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/user/agreement/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        }
+      );
+      const result = await response.json();
+      return result.status === 'success' && result.data?.termsAccepted;
+    } catch (error) {
+      return false;
+    }
+  };
 
   const checkStage4Completion = async (userId, authToken) => {
     try {
@@ -111,6 +148,7 @@ export default function DashboardOverview() {
 
   const checkUserProgress = async () => {
     try {
+      setIsLoading(true);
       const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
       const userId = loginResponse?.data?.user?.id;
       const authToken = loginResponse?.data?.token;
@@ -118,21 +156,32 @@ export default function DashboardOverview() {
       if (!userId || !authToken) return;
 
       const newCompletedStages = [1];
-      let currentStage = 2;
+      let highestCompletedStage = 1;
+
+      const stage2Completed = await checkStage2Completion(userId, authToken);
+      if (stage2Completed) {
+        newCompletedStages.push(2);
+        highestCompletedStage = 2;
+      }
+
+      const stage3Completed = await checkStage3Completion(userId, authToken);
+      if (stage3Completed) {
+        newCompletedStages.push(3);
+        highestCompletedStage = 3;
+      }
 
       const stage4Completed = await checkStage4Completion(userId, authToken);
       if (stage4Completed) {
-        newCompletedStages.push(2, 3, 4);
-        currentStage = 4;
-      } else {
-        newCompletedStages.push(2, 3);
-        currentStage = 4;
+        newCompletedStages.push(4);
+        highestCompletedStage = 4;
       }
 
       setCompletedStages(newCompletedStages);
-      setCurrentStage(currentStage);
+      setCurrentStage(highestCompletedStage < 4 ? highestCompletedStage + 1 : 4);
     } catch (error) {
       console.error('Error checking user progress:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -190,6 +239,16 @@ export default function DashboardOverview() {
 
     loadUserData();
   }, []);
+
+  if (isLoading) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="flex items-center justify-center">
+          <div className="w-12 h-12 border-4 border-gray-300 border-t-[#039994] rounded-full animate-spin"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full min-h-screen space-y-8 p-4">

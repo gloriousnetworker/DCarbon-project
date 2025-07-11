@@ -9,20 +9,27 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [loadingFinanceTypes, setLoadingFinanceTypes] = useState(false);
   const [loadingInstallers, setLoadingInstallers] = useState(false);
+  const [loadingUtilityProviders, setLoadingUtilityProviders] = useState(false);
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [requestingFinanceType, setRequestingFinanceType] = useState(false);
   const [requestedFinanceTypeName, setRequestedFinanceTypeName] = useState('');
   const [showInviteOperatorModal, setShowInviteOperatorModal] = useState(false);
   const [file, setFile] = useState(null);
   const [facilityNickname, setFacilityNickname] = useState('');
+  const [utilityProviders, setUtilityProviders] = useState([]);
 
   const [formData, setFormData] = useState({
     financeType: "",
     financeCompany: "",
     installer: "",
     customInstaller: "",
+    utilityProvider: "",
     systemSize: "",
-    cod: ""
+    cod: "",
+    facilityTypeNamingCode: 1,
+    utilityProviderNamingCode: "",
+    installerNamingCode: "",
+    financeNamingCode: ""
   });
 
   const [financeTypes, setFinanceTypes] = useState([]);
@@ -37,8 +44,30 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     if (isOpen) {
       fetchFinanceTypes();
       fetchInstallers();
+      fetchUtilityProviders();
     }
   }, [isOpen]);
+
+  const fetchUtilityProviders = async () => {
+    setLoadingUtilityProviders(true);
+    try {
+      const token = localStorage.getItem('authToken');
+      if (!token) throw new Error('Authentication required');
+
+      const response = await axios.get(
+        'https://services.dcarbon.solutions/api/auth/utility-providers',
+        { headers: { 'Authorization': `Bearer ${token}` } }
+      );
+
+      if (response.data.status === 'success') {
+        setUtilityProviders(response.data.data);
+      }
+    } catch (err) {
+      toast.error('Failed to load utility providers');
+    } finally {
+      setLoadingUtilityProviders(false);
+    }
+  };
 
   const fetchFinanceTypes = async () => {
     setLoadingFinanceTypes(true);
@@ -100,10 +129,9 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
 
     setRequestingFinanceType(true);
     try {
-      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
-      const userId = loginResponse?.data?.user?.id;
-      const token = loginResponse?.data?.token;
-
+      const userId = localStorage.getItem('userId');
+      const token = localStorage.getItem('authToken');
+      
       if (!userId || !token) throw new Error('Authentication required');
 
       const response = await axios.post(
@@ -161,6 +189,30 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    
+    if (name === "financeType") {
+      const selectedFinanceType = financeTypes.find(type => type.name === value);
+      setFormData(prev => ({
+        ...prev,
+        financeNamingCode: selectedFinanceType?.namingCode || ""
+      }));
+    }
+    
+    if (name === "installer") {
+      const selectedInstaller = installers.find(installer => installer.name === value);
+      setFormData(prev => ({
+        ...prev,
+        installerNamingCode: selectedInstaller?.namingCode || ""
+      }));
+    }
+    
+    if (name === "utilityProvider") {
+      const selectedUtilityProvider = utilityProviders.find(provider => provider.name === value);
+      setFormData(prev => ({
+        ...prev,
+        utilityProviderNamingCode: selectedUtilityProvider?.namingCode || ""
+      }));
+    }
   };
 
   const createCommercialFacility = async () => {
@@ -170,16 +222,17 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
 
     const selectedFinanceType = financeTypes.find(type => type.name === formData.financeType);
     const selectedInstaller = installers.find(installer => installer.name === (showCustomInstaller ? formData.customInstaller : formData.installer));
+    const selectedUtilityProvider = utilityProviders.find(provider => provider.name === formData.utilityProvider);
 
     const payload = {
       nickname: facilityNickname || 'New Commercial Facility',
       address: '',
-      utilityProvider: '',
+      utilityProvider: formData.utilityProvider,
       meterIds: [],
       commercialRole: 'both',
       entityType: 'company',
       facilityTypeNamingCode: 1,
-      utilityProviderNamingCode: '',
+      utilityProviderNamingCode: selectedUtilityProvider?.namingCode || '',
       installerNamingCode: selectedInstaller?.namingCode || '',
       financeNamingCode: selectedFinanceType?.namingCode || ''
     };
@@ -195,7 +248,10 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
     if (!formData.financeType) return toast.error('Please select a finance type');
+    if (!formData.utilityProvider) return toast.error('Please select a utility provider');
+    if (!formData.installer) return toast.error('Please select an installer');
     if (showFinanceCompany && !formData.financeCompany) return toast.error('Please select a finance company');
     if (showUploadField && !uploadSuccess) return toast.error('Please upload the financial agreement');
     if (showCustomInstaller && !formData.customInstaller) return toast.error('Please enter your installer name');
@@ -225,9 +281,9 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
         { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } }
       );
 
-      await createCommercialFacility();
+      const facilityResponse = await createCommercialFacility();
 
-      toast.success('Financial information saved and commercial facility created successfully!', { id: toastId });
+      toast.success(`Financial information saved and commercial facility created successfully!`, { id: toastId });
 
       if (showUploadField && uploadSuccess) {
         const uploadToastId = toast.loading('Uploading financial agreement...');
@@ -379,6 +435,32 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1 text-sm flex items-center">
+                    Utility Provider <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <select
+                      name="utilityProvider"
+                      value={formData.utilityProvider}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] text-sm bg-[#F0F0F0] appearance-none pr-10"
+                      required
+                      disabled={loadingUtilityProviders}
+                    >
+                      <option value="">{loadingUtilityProviders ? 'Loading...' : 'Choose provider'}</option>
+                      {utilityProviders.map((provider) => (
+                        <option key={provider.id} value={provider.name}>{provider.name}</option>
+                      ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 text-sm flex items-center">
                     Finance type <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
@@ -469,7 +551,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1 text-sm flex items-center">
-                    Select installer <span className="text-gray-500 text-xs">(optional)</span>
+                    Select installer <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <select
@@ -477,6 +559,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                       value={formData.installer}
                       onChange={handleInputChange}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] text-sm bg-[#F0F0F0] appearance-none pr-10"
+                      required
                       disabled={loadingInstallers}
                     >
                       <option value="">{loadingInstallers ? 'Loading...' : 'Choose installer'}</option>
@@ -569,7 +652,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
         </div>
       )}
 
-      {showInviteOperatorModal && (
+     {showInviteOperatorModal && (
         <InviteOperatorModal
           isOpen={showInviteOperatorModal}
           onClose={handleInviteOperatorModalClose}
