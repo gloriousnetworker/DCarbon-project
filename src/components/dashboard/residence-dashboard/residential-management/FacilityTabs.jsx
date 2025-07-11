@@ -1,49 +1,29 @@
-// ===== RESIDENTIAL FACILITY TABS COMPONENT =====
 import React, { useState, useEffect } from "react";
-import { FiGrid, FiList, FiFilter } from "react-icons/fi";
+import { FiGrid, FiList } from "react-icons/fi";
 import AddResidentialFacilityModal from "../overview/modals/AddResidenceModal";
 import { buttonPrimary } from "./styles";
 
 export default function ResidentialFacilityTabs({
   viewMode,
   setViewMode,
-  onAddFacility,
-  onFilter,
-  isOpen
+  onAddFacility
 }) {
   const [showAddFacilityModal, setShowAddFacilityModal] = useState(false);
-  const [isButtonDisabled, setIsButtonDisabled] = useState(false);
-  const [disabledReason, setDisabledReason] = useState("");
+  const [isButtonDisabled, setIsButtonDisabled] = useState(true);
+  const [disabledReason, setDisabledReason] = useState("Checking meters...");
 
   useEffect(() => {
-    checkButtonStatus();
+    checkMeters();
   }, []);
 
-  const checkButtonStatus = async () => {
+  const checkMeters = async () => {
     try {
-      const loginResponse = localStorage.getItem("loginResponse");
-      
-      if (!loginResponse) {
-        setIsButtonDisabled(true);
-        setDisabledReason("Please log in to continue");
-        return;
-      }
-
-      const parsedResponse = JSON.parse(loginResponse);
-      const user = parsedResponse?.data?.user;
-
-      if (!user) {
-        setIsButtonDisabled(true);
-        setDisabledReason("User information not found");
-        return;
-      }
-
-      const userId = user.id;
       const authToken = localStorage.getItem("authToken");
+      const userId = localStorage.getItem("userId");
 
       if (!userId || !authToken) {
         setIsButtonDisabled(true);
-        setDisabledReason("User ID or auth token not found");
+        setDisabledReason("Authentication required");
         return;
       }
 
@@ -57,7 +37,7 @@ export default function ResidentialFacilityTabs({
 
       if (!response.ok) {
         setIsButtonDisabled(true);
-        setDisabledReason("Failed to fetch user meters");
+        setDisabledReason("Failed to fetch meters");
         return;
       }
 
@@ -65,38 +45,32 @@ export default function ResidentialFacilityTabs({
 
       if (meterData.status !== "success") {
         setIsButtonDisabled(true);
-        setDisabledReason("Failed to fetch meters");
+        setDisabledReason("No meters found");
         return;
       }
 
-      const hasValidMeters = meterData.data && meterData.data.some(item => 
-        item.meters && 
-        item.meters.meters && 
-        Array.isArray(item.meters.meters) && 
-        item.meters.meters.length > 0
+      const hasValidMeters = meterData.data?.some(item => 
+        item.meters?.meters?.length > 0
       );
 
-      if (!hasValidMeters) {
+      if (hasValidMeters) {
+        setIsButtonDisabled(false);
+        setDisabledReason("");
+      } else {
         setIsButtonDisabled(true);
         setDisabledReason("No valid meters found");
-        return;
       }
 
-      setIsButtonDisabled(false);
-      setDisabledReason("");
-
     } catch (error) {
-      console.error("Error checking button status:", error);
       setIsButtonDisabled(true);
-      setDisabledReason("Error verifying account status");
+      setDisabledReason("Error checking meters");
     }
   };
 
   const handleAddFacilityClick = () => {
-    if (isButtonDisabled) {
-      return;
+    if (!isButtonDisabled) {
+      setShowAddFacilityModal(true);
     }
-    setShowAddFacilityModal(true);
   };
 
   const handleCloseModal = () => {
@@ -109,9 +83,7 @@ export default function ResidentialFacilityTabs({
   return (
     <>
       <div className="flex items-center justify-between">
-        {/* Left side: two icons (Grid / List) */}
         <div className="flex items-center space-x-4">
-          {/* Grid Icon */}
           <button
             onClick={() => setViewMode("cards")}
             className={`
@@ -121,7 +93,6 @@ export default function ResidentialFacilityTabs({
           >
             <FiGrid size={18} />
           </button>
-          {/* List Icon */}
           <button
             onClick={() => setViewMode("table")}
             className={`
@@ -133,9 +104,7 @@ export default function ResidentialFacilityTabs({
           </button>
         </div>
 
-        {/* Right side: Filter + Add Facility */}
         <div className="flex items-center space-x-2">
-          {/* Add Residential Facility Button */}
           <div className="relative group">
             <button
               onClick={handleAddFacilityClick}
@@ -153,7 +122,6 @@ export default function ResidentialFacilityTabs({
               + Add Residential Facility
             </button>
             
-            {/* Tooltip for disabled state */}
             {isButtonDisabled && disabledReason && (
               <div className="absolute bottom-full right-0 mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
                 {disabledReason}
@@ -164,7 +132,6 @@ export default function ResidentialFacilityTabs({
         </div>
       </div>
 
-      {/* Add Residential Facility Modal */}
       <AddResidentialFacilityModal
         isOpen={showAddFacilityModal}
         onClose={handleCloseModal}
