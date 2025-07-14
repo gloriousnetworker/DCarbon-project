@@ -20,6 +20,7 @@ import {
 function RegisterCardContent() {
   const [loading, setLoading] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
+  const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
   const [userCategory, setUserCategory] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [error, setError] = useState('');
@@ -31,6 +32,7 @@ function RegisterCardContent() {
   const [email, setEmail] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [hoveredButton, setHoveredButton] = useState(null);
   const [isOperatorType, setIsOperatorType] = useState(false);
 
@@ -72,9 +74,14 @@ function RegisterCardContent() {
       !lastName.trim() ||
       !email.trim() ||
       !phoneNumber.trim() ||
-      !password
+      !password ||
+      !confirmPassword
     ) {
       setError('Please fill out all fields.');
+      return false;
+    }
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.');
       return false;
     }
     const emailRegex = /\S+@\S+\.\S+/;
@@ -121,12 +128,6 @@ function RegisterCardContent() {
       const baseUrl = 'https://services.dcarbon.solutions';
       let url = `${baseUrl}/api/user/register`;
 
-      // if (urlReferralCode.trim() && userCategory !== 'Partner') {
-      //   url += `?referralCode=${urlReferralCode.trim()}`;
-      // } else if (userCategory === 'Partner') {
-      //   url += '?referralCode=PARTNER';
-      // }
-
       const response = await axios.post(url, payload, { 
         headers: { 'Content-Type': 'application/json' } 
       });
@@ -146,6 +147,7 @@ function RegisterCardContent() {
   };
 
   const togglePasswordVisibility = () => setPasswordVisible((prev) => !prev);
+  const toggleConfirmPasswordVisibility = () => setConfirmPasswordVisible((prev) => !prev);
   
   const handleUserCategory = (category) => {
     if (isOperatorType && category !== 'Operator') {
@@ -165,13 +167,18 @@ function RegisterCardContent() {
   const isReferralReadOnly = () => !!urlReferralCode;
 
   const getButtonTooltip = (category) => {
-    if (category === 'Operator' && hoveredButton === 'Operator') {
-      return 'You were invited by a Commercial Owner to be their Operator. Click here to register as an Operator.';
+    switch(category) {
+      case 'Residential':
+        return 'I have a solar system on my home';
+      case 'Commercial':
+        return 'I have a solar system on my C&I facility(ies)';
+      case 'Partner':
+        return 'I am a Solar Contractor/EPC/Developer/TPO/Finance/Sales Agent';
+      case 'Operator':
+        return 'I pay the utility bills on a facility with a Solar System';
+      default:
+        return '';
     }
-    if (category === 'Partner' && hoveredButton === 'Partner') {
-      return 'Register as a Partner to refer customers and earn commissions';
-    }
-    return '';
   };
 
   const isCategoryDisabled = (category) => {
@@ -431,6 +438,39 @@ function RegisterCardContent() {
               </p>
             </div>
 
+            <div>
+              <label htmlFor="confirmPassword" className={labelClass}>
+                Confirm Password <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <input
+                  type={confirmPasswordVisible ? 'text' : 'password'}
+                  id="confirmPassword"
+                  className={`${inputClass} ${grayPlaceholder} pr-10`}
+                  placeholder="|**"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={toggleConfirmPasswordVisibility}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-black"
+                >
+                  {confirmPasswordVisible ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M4.03 3.97a.75.75 0 011.06 0l10 10a.75.75 0 11-1.06 1.06l-1.042-1.042A8.74 8.74 0 0110 15c-3.272 0-6.06-1.906-7.76-4.701a.945.945 0 010-1.006 10.45 10.45 0 013.12-3.263L4.03 5.03a.75.75 0 010-1.06zm12.24 7.79c.291-.424.546-.874.76-1.339a.945.945 0 000-1.006C16.06 6.905 13.272 5 10 5c-.638 0-1.26.07-1.856.202l7.127 7.127z" clipRule="evenodd" />
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.294 5 12 5c4.706 0 8.268 2.943 9.542 7-1.274 4.057-4.836 7-9.542 7-4.706 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+            </div>
+
             {error && <p className="text-red-500 text-[14px] font-sfpro">{error}</p>}
 
             <button type="submit" className={buttonPrimary}>
@@ -447,7 +487,7 @@ function RegisterCardContent() {
 
           <p className={termsTextContainer}>
             By clicking on 'Create Account', you agree to our{' '}
-            <a href="/terms" className="text-[#039994] underline">Terms and Conditions</a>{' '}
+            <a href="/terms-and-conditions" className="text-[#039994] underline">Terms and Conditions</a>{' '}
             &amp;{' '}
             <a href="/privacy" className="text-[#039994] underline">Privacy Policy</a>
           </p>
