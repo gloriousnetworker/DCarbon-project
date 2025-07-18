@@ -154,7 +154,6 @@ export default function QuickActions() {
           <div className="bg-white rounded-2xl p-6 space-y-6 shadow min-h-[260px]">
             <div className="flex justify-between items-center">
               <div className="flex items-center">
-                <span className="block w-2 h-2 bg-black rounded-full mr-2"></span>
                 <span className={labelClass}>Current Points Balance</span>
               </div>
               <span className="text-[#1E1E1E] font-bold">{currentPoints}pts</span>
@@ -163,7 +162,6 @@ export default function QuickActions() {
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <div className="flex items-center">
-                  <span className="block w-2 h-2 bg-black rounded-full mr-2"></span>
                   <span className={labelClass}>Redemption progress</span>
                 </div>
                 <span className="text-[#039994] font-semibold">{redemption.done}/{redemption.total}pts</span>
@@ -176,7 +174,6 @@ export default function QuickActions() {
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <div className="flex items-center">
-                  <span className="block w-2 h-2 bg-black rounded-full mr-2"></span>
                   <span className={labelClass}>Referral bonus progress</span>
                 </div>
                 <span className="text-[#1E1E1E] font-semibold">{referral.done}/{referral.total}pts</span>

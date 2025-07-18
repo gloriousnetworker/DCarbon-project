@@ -116,7 +116,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
         { headers: { 'Authorization': `Bearer ${token}` } }
       );
       if (response.data.status === 'success') {
-        const approvedTypes = response.data.data.types.filter(type => 
+        const approvedTypes = response.data.data.types.filter(type =>
           type.status === 'APPROVED' || type.name.toLowerCase() === 'cash'
         );
         const uniqueTypes = approvedTypes.reduce((acc, current) => {
@@ -319,7 +319,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     try {
       await updateFinanceInfo();
       const response = await createResidentialFacility();
-      
+
       if (showUploadField && uploadSuccess) {
         await uploadFinancialAgreement();
       }
@@ -421,7 +421,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                   className={backArrow}
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M19 12H5M12 19L5 12L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M19 12H5M12 19L5 12L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </button>
               )}
@@ -432,7 +432,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                 type="button"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </button>
 
@@ -444,7 +444,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
 
               <div className={progressContainer}>
                 <div className={progressBarWrapper}>
-                  <div className={progressBarActive} style={{ width: `${(currentStep/totalSteps)*100}%` }}></div>
+                  <div className={progressBarActive} style={{ width: `${(currentStep / totalSteps) * 100}%` }}></div>
                 </div>
                 <span className={progressStepText}>{currentStep}/{totalSteps}</span>
               </div>
@@ -630,7 +630,11 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                     min="0"
                     step="0.1"
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Tip: Match the value on your <strong>utilities Permission to Operate (PTO)</strong> solar approval letter.
+                  </p>
                 </div>
+
 
                 <div className="pt-6">
                   <button
@@ -661,7 +665,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
       )}
 
       {showAgreementModal && (
-        <ResidenceTermsAndAgreementModal 
+        <ResidenceTermsAndAgreementModal
           isOpen={showAgreementModal}
           onClose={() => {
             setShowAgreementModal(false);

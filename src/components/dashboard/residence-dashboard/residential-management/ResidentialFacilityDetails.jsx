@@ -494,8 +494,8 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated, o
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="border border-[#039994] rounded-lg p-4 bg-[#069B960D]">
-          <h3 className="text-[#039994] mb-3">Facility Information</h3>
+        <div className="border border-[#039994] rounded-lg p-4 bg-[#069B960D] h-fit">
+          <h3 className="text-[#039994] mb-3">Solar Home Details</h3>
           <div className="grid grid-cols-2 gap-y-2 gap-x-4">
             {[
               ["Facility ID", mockFacility.id],
@@ -568,25 +568,13 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated, o
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+      <div className="mt-6">
         <div className="border border-[#039994] rounded-lg p-4 flex flex-col items-center">
-          <p className="text-gray-500 text-sm mb-1">Total RECs Generated</p>
+          <p className="text-gray-500 text-sm mb-1">Total TRECs Generated</p>
           <p className="text-[#039994] text-2xl font-bold">{mockFacility.totalRecs || 0}</p>
           <p className="text-gray-500 text-xs mt-1">
-            Last calculated: {formatDate(mockFacility.lastRecCalculation)}
+            Cumulative since installation
           </p>
-        </div>
-        <div className="border border-[#039994] rounded-lg p-4">
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <span className="font-medium text-sm">System Capacity:</span>
-              <span className="text-sm">{mockFacility.systemCapacity || "N/A"}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="font-medium text-sm">DGG ID:</span>
-              <span className="text-sm">{mockFacility.dggId || "N/A"}</span>
-            </div>
-          </div>
         </div>
       </div>
 

@@ -26,7 +26,7 @@ export default function RequestRedemption({ onClose, onSubmit }) {
         </button>
 
         {/* Title */}
-        <h2 className={`${styles.pageTitle} text-left mb-6`}>Request Redemption</h2>
+        <h2 className={`${styles.pageTitle} text-left mb-6`}>Points Transactions</h2>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Points to Redeem */}

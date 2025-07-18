@@ -45,7 +45,7 @@ export default function RedemptionTransactions() {
     <div className={`${styles.mainContainer} px-6 py-8`}>
       {/* Heading + buttons */}
       <div className={`${styles.headingContainer} w-full max-w-5xl flex items-center justify-between`}>
-        <h1 className={styles.pageTitle}>Redemption Transaction</h1>
+        <h1 className={styles.pageTitle}>Points Transactions</h1>
 
         <div className="flex items-center space-x-4">
           <button
@@ -74,7 +74,7 @@ export default function RedemptionTransactions() {
               <th className="pb-2">S/N</th>
               <th className="pb-2">Resident ID</th>
               <th className="pb-2">Payment ID</th>
-              <th className="pb-2">Point Redeemed</th>
+              <th className="pb-2">Points Value</th>
               <th className="pb-2">Price/Point</th>
               <th className="pb-2">Total Amount</th>
               <th className="pb-2">Date</th>

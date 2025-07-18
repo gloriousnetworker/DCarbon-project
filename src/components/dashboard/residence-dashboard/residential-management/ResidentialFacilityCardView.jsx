@@ -321,7 +321,7 @@ export default function FacilityCardView() {
     <div className="p-2">      
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold" style={{ color: "#039994" }}>
-          Residential Facilities
+          Solar System Management
         </h2>
         <button
           onClick={() => setShowFilterModal(true)}

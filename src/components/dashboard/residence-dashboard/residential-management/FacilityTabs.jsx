@@ -119,7 +119,7 @@ export default function ResidentialFacilityTabs({
               `}
               title={isButtonDisabled ? disabledReason : "Add a new residential facility"}
             >
-              + Add Residential Facility
+              + Add New Solar Home
             </button>
             
             {isButtonDisabled && disabledReason && (

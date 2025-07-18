@@ -12,7 +12,7 @@ import {
   uploadNoteStyle
 } from "./styles";
 
-export default function EditResidentialFacilityModal({ facility, onClose = () => {}, onSave = () => {}, isOpen = false }) {
+export default function EditResidentialFacilityModal({ facility, onClose = () => { }, onSave = () => { }, isOpen = false }) {
   const [formData, setFormData] = useState({
     installer: facility.installer || "",
     systemCapacity: facility.systemCapacity || "",
@@ -314,13 +314,27 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
                 </button>
               </div>
             )}
-            <div className="flex justify-end space-x-3 pt-6">
-              <button type="button" onClick={onClose} disabled={loading} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300">Cancel</button>
-              <button type="submit" disabled={loading || (formData.meterId !== originalMeterId && !meterAgreementAccepted)} className={`${buttonPrimary} flex items-center space-x-2 ${loading || (formData.meterId !== originalMeterId && !meterAgreementAccepted) ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                {loading && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>}
+            <div className="flex justify-end gap-4 pt-6">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={loading}
+                className="w-32 px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={loading || (formData.meterId !== originalMeterId && !meterAgreementAccepted)}
+                className={`w-32 px-4 py-2 rounded-md flex items-center justify-center gap-2 ${loading || (formData.meterId !== originalMeterId && !meterAgreementAccepted) ? 'bg-[#039994] opacity-50 cursor-not-allowed' : 'bg-[#039994] hover:bg-[#027d7b]'} text-white`}
+              >
+                {loading && (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                )}
                 <span>Save Changes</span>
               </button>
             </div>
+
           </form>
         </div>
       </div>

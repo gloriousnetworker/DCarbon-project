@@ -98,7 +98,7 @@ export default function FacilityTableView({ onSelectFacility }) {
   return (
     <div className={mainContainer}>
       <div className={headingContainer}>
-        <h2 className={pageTitle}>Residential Facilities</h2>
+        <h2 className={pageTitle}>Solar System Management</h2>
         <button
           onClick={() => setShowFilter(true)}
           className="absolute right-4 top-0 flex items-center bg-[#039994] text-white px-3 py-1 rounded hover:bg-[#02857f] text-sm"

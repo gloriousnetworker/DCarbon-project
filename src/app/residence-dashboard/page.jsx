@@ -37,7 +37,7 @@ export default function UserDashboard() {
     pendingActions: 'Pending Actions',
     myAccount: 'My Account',
     notifications: 'Notification',
-    helpCenter: 'Help Centre (FAQs)',
+    helpCenter: 'FAQs',
     contactSupport: 'Contact Support',
     logout: 'Log Out',
   };

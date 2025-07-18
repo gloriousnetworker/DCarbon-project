@@ -156,23 +156,24 @@ const DashboardSidebar = ({
           <span>Overview</span>
         </button>
         <button
-          onClick={() => onSectionChange("transaction")}
-          className={`${menuItemBase} ${
-            isActive("transaction") ? menuItemActive : menuItemInactive
-          }`}
-        >
-          <FiZap className={iconBase} color={isActive("transaction") ? "#FFFFFF" : "#039994"} />
-          <span>Transaction</span>
-        </button>
-        <button
           onClick={() => onSectionChange("residentialManagement")}
           className={`${menuItemBase} ${
             isActive("residentialManagement") ? menuItemActive : menuItemInactive
           }`}
         >
-          <FiTrendingUp className={iconBase} color={isActive("residentialManagement") ? "#FFFFFF" : "#039994"} />
-          <span>Residential Management</span>
+          <FiZap className={iconBase} color={isActive("residentialManagement") ? "#FFFFFF" : "#039994"} />
+          <span>Solar System Management</span>
         </button>
+        <button
+          onClick={() => onSectionChange("transaction")}
+          className={`${menuItemBase} ${
+            isActive("transaction") ? menuItemActive : menuItemInactive
+          }`}
+        >
+          <FiTrendingUp className={iconBase} color={isActive("transaction") ? "#FFFFFF" : "#039994"} />
+          <span>Points Transactions</span>
+        </button>
+        
       </nav>
 
       <hr className={sidebarDivider} />
@@ -225,7 +226,7 @@ const DashboardSidebar = ({
           }`}
         >
           <FiHelpCircle className={iconBase} color={isActive("helpCenter") ? "#FFFFFF" : "#039994"} />
-          <span>Help Centre (FAQs)</span>
+          <span>FAQs</span>
         </button>
         <button
           onClick={() => onSectionChange("contactSupport")}
