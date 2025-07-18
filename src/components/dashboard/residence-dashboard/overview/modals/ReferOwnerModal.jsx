@@ -236,7 +236,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
               value={formData.message}
               onChange={handleChange}
               className={`${inputClass} text-xs h-16 resize-none`}
-              placeholder="Add a custom message (optional)"
+              placeholder="Add a personal note"
             />
           </div>
 

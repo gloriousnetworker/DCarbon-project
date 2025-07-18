@@ -77,8 +77,8 @@ export default function QuickActions() {
 
   return (
     <div className="w-full py-4 px-4">
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <div className="col-span-1">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        <div className="col-span-1 lg:col-span-3">
           <h2 className={pageTitle}>Quick Action</h2>
           <div className="grid grid-cols-2 gap-4">
             <div
@@ -91,9 +91,9 @@ export default function QuickActions() {
               }}
               title={getActionTooltip()}
             >
-              <img src="/vectors/MapPinPlus.png" alt="Add a Residence" className="h-6 w-6 mb-2" />
+              <img src="/vectors/MapPinPlus.png" alt="Add New Solar Home" className="h-6 w-6 mb-2" />
               <hr className="border-white mb-2" />
-              <p className="text-white text-sm font-bold line-clamp-2">Add a Residence</p>
+              <p className="text-white text-sm font-bold line-clamp-2">Add New Solar Home</p>
               {isActionDisabled() && (
                 <div className="mt-1 text-white text-xs">{getActionStatusText()}</div>
               )}
@@ -109,9 +109,9 @@ export default function QuickActions() {
               }}
               title={getActionTooltip()}
             >
-              <img src="/vectors/Files.png" alt="Upload/Manage Documents" className="h-6 w-6 mb-2" />
+              <img src="/vectors/Files.png" alt="Upload Documents" className="h-6 w-6 mb-2" />
               <hr className="border-[#CCC] mb-2" />
-              <p className="text-[#1E1E1E] text-sm font-bold line-clamp-2">Upload/Manage Documents</p>
+              <p className="text-[#1E1E1E] text-sm font-bold line-clamp-2">Upload Documents</p>
               {isActionDisabled() && <div className="mt-1 text-[#1E1E1E] text-xs">{getActionStatusText()}</div>}
             </div>
 
@@ -125,9 +125,9 @@ export default function QuickActions() {
               }}
               title={getActionTooltip()}
             >
-              <img src="/vectors/HandCoins.png" alt="Request Redemption" className="h-6 w-6 mb-2" />
+              <img src="/vectors/HandCoins.png" alt="Redeem Points" className="h-6 w-6 mb-2" />
               <hr className="border-white mb-2" />
-              <p className="text-white text-sm font-bold line-clamp-2">Request Redemption</p>
+              <p className="text-white text-sm font-bold line-clamp-2">Redeem Points</p>
               {isActionDisabled() && <div className="mt-1 text-white text-xs">{getActionStatusText()}</div>}
             </div>
 
@@ -141,17 +141,17 @@ export default function QuickActions() {
               }}
               title={getActionTooltip()}
             >
-              <img src="/vectors/Share.png" alt="Refer a Solar Panel Owner" className="h-6 w-6 mb-2" />
+              <img src="/vectors/Share.png" alt="Earn Bonus Points" className="h-6 w-6 mb-2" />
               <hr className="border-white mb-2" />
-              <p className="text-white text-sm font-bold line-clamp-2">Refer a Solar Panel Owner</p>
+              <p className="text-white text-sm font-bold line-clamp-2">Earn Bonus Points</p>
               {isActionDisabled() && <div className="mt-1 text-white text-xs">{getActionStatusText()}</div>}
             </div>
           </div>
         </div>
 
-        <div className="col-span-1 lg:col-span-3">
+        <div className="col-span-1 lg:col-span-2">
           <h2 className={pageTitle}>Rewards</h2>
-          <div className="bg-white rounded-2xl p-6 space-y-6 shadow min-h-[280px]">
+          <div className="bg-white rounded-2xl p-6 space-y-6 shadow min-h-[260px]">
             <div className="flex justify-between items-center">
               <div className="flex items-center">
                 <span className="block w-2 h-2 bg-black rounded-full mr-2"></span>

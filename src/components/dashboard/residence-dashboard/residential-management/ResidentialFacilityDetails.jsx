@@ -8,7 +8,8 @@ import {
   FiDownload,
   FiUpload,
   FiX,
-  FiAlertTriangle
+  FiAlertTriangle,
+  FiChevronLeft
 } from "react-icons/fi";
 import axios from "axios";
 import toast from "react-hot-toast";
@@ -21,92 +22,79 @@ const spinner = "animate-spin rounded-full h-8 w-8 border-b-2 border-white";
 const uploadButtonStyle = "bg-[#039994] text-white px-4 py-2 rounded-md hover:bg-[#028580] transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
 const inputClass = "w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] focus:border-transparent";
 const selectClass = "px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] focus:border-transparent";
-const backArrow = "flex items-center text-[#039994] hover:underline";
 
 const DOCUMENT_TYPES = {
-  recAgreement: { 
-    name: "REC Agreement", 
-    endpoint: "rec-agreement",
-    urlField: "recAgreementUrl",
-    statusField: "recAgreementStatus",
-    rejectionField: "recAgreementRejectionReason"
+  wregisAssignment: { 
+    name: "WREGIS Assignment of Registration Rights", 
+    endpoint: "wregis-assignment",
+    urlField: "wregisAssignmentUrl",
+    statusField: "wregisAssignmentStatus",
+    rejectionField: "wregisAssignmentRejectionReason",
+    mandatory: true
   },
-  infoReleaseAuth: { 
-    name: "Info Release Auth", 
-    endpoint: "info-release",
-    urlField: "infoReleaseAuthUrl",
-    statusField: "infoReleaseAuthStatus",
-    rejectionField: "infoReleaseAuthRejectionReason"
+  financeAgreement: { 
+    name: "Finance Agreement/PPA", 
+    endpoint: "finance-agreement",
+    urlField: "financeAgreementUrl",
+    statusField: "financeAgreementStatus",
+    rejectionField: "financeAgreementRejectionReason",
+    mandatory: false
   },
   solarInstallationContract: { 
     name: "Solar Installation Contract", 
     endpoint: "installation-contract",
     urlField: "solarInstallationContractUrl",
     statusField: "solarInstallationStatus",
-    rejectionField: "solarInstallationRejectionReason"
+    rejectionField: "solarInstallationRejectionReason",
+    mandatory: true
   },
-  interconnectionAgreement: { 
-    name: "Interconnection Agreement", 
-    endpoint: "interconnection",
-    urlField: "interconnectionAgreementUrl",
-    statusField: "interconnectionStatus",
-    rejectionField: "interconnectionRejectionReason"
+  nemAgreement: { 
+    name: "NEM Agreement", 
+    endpoint: "nem-agreement",
+    urlField: "nemAgreementUrl",
+    statusField: "nemAgreementStatus",
+    rejectionField: "nemAgreementRejectionReason",
+    mandatory: true
   },
-  singleLineDiagram: { 
-    name: "Single Line Diagram", 
-    endpoint: "single-line",
-    urlField: "singleLineDiagramUrl",
-    statusField: "singleLineDiagramStatus",
-    rejectionField: "singleLineDiagramRejectionReason"
-  },
-  systemSpecs: { 
-    name: "System Specs", 
-    endpoint: "system-specs",
-    urlField: "systemSpecsUrl",
-    statusField: "systemSpecsStatus",
-    rejectionField: "systemSpecsRejectionReason"
-  },
-  ptoLetter: { 
-    name: "PTO Letter", 
+  utilityPtoLetter: { 
+    name: "Utility PTO Email/Letter", 
     endpoint: "pto-letter",
     urlField: "ptoLetterUrl",
     statusField: "ptoLetterStatus",
-    rejectionField: "ptoLetterRejectionReason"
+    rejectionField: "ptoLetterRejectionReason",
+    mandatory: true
+  },
+  installationSitePlan: { 
+    name: "Installation Site Plan", 
+    endpoint: "site-plan",
+    urlField: "sitePlanUrl",
+    statusField: "sitePlanStatus",
+    rejectionField: "sitePlanRejectionReason",
+    mandatory: true
+  },
+  panelInverterDataSheet: { 
+    name: "Panel/Inverter Data Sheet", 
+    endpoint: "panel-inverter-datasheet",
+    urlField: "panelInverterDatasheetUrl",
+    statusField: "panelInverterDatasheetStatus",
+    rejectionField: "panelInverterDatasheetRejectionReason",
+    mandatory: false
+  },
+  revenueMeterDataSheet: { 
+    name: "Revenue Meter Data Sheet", 
+    endpoint: "revenue-meter-data",
+    urlField: "revenueMeterDataUrl",
+    statusField: "revenueMeterDataStatus",
+    rejectionField: "revenueMeterDataRejectionReason",
+    mandatory: false
   },
   utilityMeterPhoto: { 
-    name: "Utility Meter Photo", 
+    name: "Utility/Revenue Meter Photo w/Serial ID", 
     endpoint: "meter-photo",
     urlField: "utilityMeterPhotoUrl",
     statusField: "utilityMeterPhotoStatus",
-    rejectionField: "utilityMeterPhotoRejectionReason"
-  },
-  utilityAccessAuth: { 
-    name: "Utility Access Auth", 
-    endpoint: "utility-auth",
-    urlField: "utilityAccessAuthUrl",
-    statusField: "utilityAccessAuthStatus",
-    rejectionField: "utilityAccessAuthRejectionReason"
-  },
-  utilityAccountInfo: { 
-    name: "Utility Account Info", 
-    endpoint: "utility-account-info",
-    urlField: "utilityAccountInfoUrl",
-    statusField: "utilityAccountInfoStatus",
-    rejectionField: "utilityAccountInfoRejectionReason"
-  },
-  ownershipDeclaration: { 
-    name: "Ownership Declaration", 
-    endpoint: "ownership-decl",
-    urlField: "ownershipDeclarationUrl",
-    statusField: "ownershipDeclarationStatus",
-    rejectionField: "ownershipDeclarationRejectionReason"
-  },
-  alternateLocation: { 
-    name: "Alternate Location", 
-    endpoint: "alternate-location",
-    urlField: "alternateLocationUrl",
-    statusField: "alternateLocationStatus",
-    rejectionField: "alternateLocationRejectionReason"
+    rejectionField: "utilityMeterPhotoRejectionReason",
+    mandatory: true
   }
 };
 
@@ -317,6 +305,7 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated, o
   const [showAllDocs, setShowAllDocs] = useState(false);
   const [showPDFModal, setShowPDFModal] = useState(false);
   const [currentPDF, setCurrentPDF] = useState({ url: "", title: "" });
+  const [financeType, setFinanceType] = useState("Cash");
 
   const mockFacility = facility || {
     id: "b151ec59-42f7-444d-a017-5fbae1a1b126",
@@ -381,8 +370,33 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated, o
     }
   };
 
+  const fetchFinanceType = async () => {
+    const userId = localStorage.getItem("userId");
+    const authToken = localStorage.getItem("authToken");
+    
+    if (!userId || !authToken) return;
+
+    try {
+      const response = await axios.get(
+        `https://services.dcarbon.solutions/api/user/financial-info/${userId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`
+          }
+        }
+      );
+
+      if (response.data.status === "success" && response.data.data.financialInfo) {
+        setFinanceType(response.data.data.financialInfo.financialType);
+      }
+    } catch (error) {
+      console.error("Error fetching finance type:", error);
+    }
+  };
+
   useEffect(() => {
     fetchDocuments();
+    fetchFinanceType();
   }, [mockFacility?.id]);
 
   const getStatusColor = (status) => {
@@ -400,13 +414,18 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated, o
     const docList = [];
     Object.keys(DOCUMENT_TYPES).forEach(key => {
       const docType = DOCUMENT_TYPES[key];
-      docList.push({
-        type: key,
-        name: docType.name,
-        url: documents?.[docType.urlField] || null,
-        status: documents?.[docType.statusField] || "REQUIRED",
-        rejectionReason: documents?.[docType.rejectionField] || null
-      });
+      const isFinanceAgreementOptional = key === 'financeAgreement' && financeType === 'Cash';
+      
+      if (!isFinanceAgreementOptional || !docType.mandatory) {
+        docList.push({
+          type: key,
+          name: docType.name,
+          url: documents?.[docType.urlField] || null,
+          status: documents?.[docType.statusField] || "REQUIRED",
+          rejectionReason: documents?.[docType.rejectionField] || null,
+          mandatory: docType.mandatory && !isFinanceAgreementOptional
+        });
+      }
     });
     return docList;
   };
@@ -414,8 +433,8 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated, o
   const documentList = getDocumentList();
   const visibleDocs = showAllDocs ? documentList : documentList.slice(0, 3);
 
-  const handleDocumentUpload = () => {
-    fetchDocuments();
+  const handleDocumentUpload = (updatedDocs) => {
+    setDocuments(updatedDocs);
   };
 
   const handleUploadClick = (docType) => {
@@ -445,9 +464,8 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated, o
 
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center">
-          <button onClick={onBack} className={backArrow}>
-            <FiArrowLeft className="mr-1" size={18} />
-            <span>Back</span>
+          <button onClick={onBack} className="text-[#039994] hover:text-[#028580] mr-2">
+            <FiChevronLeft size={24} />
           </button>
           <h2 className="text-xl font-semibold text-[#039994]">
             {mockFacility.facilityName || mockFacility.address || "Residential Facility"}
@@ -550,47 +568,23 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated, o
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-        <div className="lg:col-span-2 bg-white border border-gray-200 rounded-lg p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h4 className="text-[#039994]">Energy Production</h4>
-            <div className="flex items-center space-x-2">
-              <select className={`${selectClass} text-sm py-1 px-2`}>
-                <option>Yearly</option>
-                <option>Monthly</option>
-              </select>
-              <select className={`${selectClass} text-sm py-1 px-2`}>
-                <option>2025</option>
-                <option>2024</option>
-              </select>
-            </div>
-          </div>
-          <div className="flex items-center justify-center bg-gray-50 h-40 rounded-md">
-            <div className="text-gray-500 text-center">
-              <FiFileText size={48} className="mx-auto mb-2 opacity-50" />
-              <p>Energy Production Chart</p>
-            </div>
-          </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        <div className="border border-[#039994] rounded-lg p-4 flex flex-col items-center">
+          <p className="text-gray-500 text-sm mb-1">Total RECs Generated</p>
+          <p className="text-[#039994] text-2xl font-bold">{mockFacility.totalRecs || 0}</p>
+          <p className="text-gray-500 text-xs mt-1">
+            Last calculated: {formatDate(mockFacility.lastRecCalculation)}
+          </p>
         </div>
-
-        <div className="flex flex-col space-y-4">
-          <div className="border border-[#039994] rounded-lg p-4 flex flex-col items-center">
-            <p className="text-gray-500 text-sm mb-1">Total RECs Generated</p>
-            <p className="text-[#039994] text-2xl font-bold">{mockFacility.totalRecs || 0}</p>
-            <p className="text-gray-500 text-xs mt-1">
-              Last calculated: {formatDate(mockFacility.lastRecCalculation)}
-            </p>
-          </div>
-          <div className="border border-[#039994] rounded-lg p-4">
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="font-medium text-sm">System Capacity:</span>
-                <span className="text-sm">{mockFacility.systemCapacity || "N/A"}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-medium text-sm">DGG ID:</span>
-                <span className="text-sm">{mockFacility.dggId || "N/A"}</span>
-              </div>
+        <div className="border border-[#039994] rounded-lg p-4">
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <span className="font-medium text-sm">System Capacity:</span>
+              <span className="text-sm">{mockFacility.systemCapacity || "N/A"}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="font-medium text-sm">DGG ID:</span>
+              <span className="text-sm">{mockFacility.dggId || "N/A"}</span>
             </div>
           </div>
         </div>

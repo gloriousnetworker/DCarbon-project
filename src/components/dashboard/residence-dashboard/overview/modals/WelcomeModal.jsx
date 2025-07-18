@@ -64,7 +64,7 @@ export default function WelcomeModal({ isOpen, onClose, userData }) {
                 </h3>
                 
                 <p className="font-[400] text-[16px] leading-[140%] tracking-[-0.02em] text-white font-sfpro mb-8 opacity-90">
-                  Kindly create your first residential facility to begin using DCarbon's services and managing your facility.
+                  Let’s begin by setting up your first Solar Home and certifying your solar generator.
                 </p>
                 
                 <button
@@ -78,7 +78,7 @@ export default function WelcomeModal({ isOpen, onClose, userData }) {
                       Creating...
                     </div>
                   ) : (
-                    "Create Residential Facility"
+                    "Start Generator Certification"
                   )}
                 </button>
 

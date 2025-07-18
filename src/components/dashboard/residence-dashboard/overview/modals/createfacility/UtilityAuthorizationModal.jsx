@@ -5,14 +5,6 @@ import AddResidentialFacilityModal from './AddResidentialFacilityModal';
 export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
   const [loading, setLoading] = useState(false);
   const [hasAuthorizedUtility, setHasAuthorizedUtility] = useState(false);
-  const [utilityProviders, setUtilityProviders] = useState([]);
-  const [selectedProvider, setSelectedProvider] = useState('');
-  const [showProviderRequest, setShowProviderRequest] = useState(false);
-  const [newProviderData, setNewProviderData] = useState({
-    name: '',
-    website: '',
-    documentation: 'NA'
-  });
   const [utilityAuthEmail, setUtilityAuthEmail] = useState('');
   const [showIframe, setShowIframe] = useState(false);
   const [iframeUrl, setIframeUrl] = useState('');
@@ -23,7 +15,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
   const [showFacilityModal, setShowFacilityModal] = useState(false);
   const [showAllFacilities, setShowAllFacilities] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
-  const [totalSteps] = useState(5);
+  const [totalSteps] = useState(3);
   const [meterFetchInterval, setMeterFetchInterval] = useState(null);
   const [userMetersData, setUserMetersData] = useState([]);
   const [hasValidMeters, setHasValidMeters] = useState(false);
@@ -32,9 +24,6 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
   const baseUrl = 'https://services.dcarbon.solutions';
 
   useEffect(() => {
-    if (isOpen && !hasAuthorizedUtility) {
-      fetchUtilityProviders();
-    }
     if (isOpen && hasAuthorizedUtility) {
       fetchAuthorizedUtilities();
       checkUserMeters();
@@ -87,23 +76,6 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
       setUserMetersData([]);
       setHasValidMeters(false);
       setUtilityStatus('');
-    }
-  };
-
-  const fetchUtilityProviders = async () => {
-    try {
-      const response = await fetch(`${baseUrl}/api/auth/utility-providers`, {
-        headers: {
-          'Authorization': `Bearer ${getAuthToken()}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      const data = await response.json();
-      if (data.status === 'success') {
-        setUtilityProviders(data.data);
-      }
-    } catch (error) {
-      toast.error('Failed to fetch utility providers');
     }
   };
 
@@ -177,41 +149,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
       setSelectedFacilities([]);
       setHasValidMeters(false);
     } else {
-      setSelectedProvider('');
       checkUserMeters();
-    }
-  };
-
-  const handleProviderRequest = async () => {
-    if (!newProviderData.name || !newProviderData.website) {
-      toast.error('Please fill in provider name and website');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const response = await fetch(`${baseUrl}/api/admin/utility-providers`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${getAuthToken()}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(newProviderData)
-      });
-      const data = await response.json();
-      
-      if (data.status === 'success') {
-        toast.success('Utility provider request submitted successfully');
-        setShowProviderRequest(false);
-        setNewProviderData({ name: '', website: '', documentation: 'NA' });
-        await fetchUtilityProviders();
-      } else {
-        toast.error('Failed to submit provider request');
-      }
-    } catch (error) {
-      toast.error('Failed to submit provider request');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -276,7 +214,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
         if (data.data && data.data.meters && data.data.meters.meters) {
           setVerifiedFacilities(data.data.meters.meters);
           setHasValidMeters(true);
-          setCurrentStep(4);
+          setCurrentStep(3);
         } else {
           const selectedUtility = userMetersData.find(u => u.id === selectedUtilityAuth);
           if (selectedUtility) {
@@ -321,7 +259,6 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setShowFacilityModal(true);
-    setCurrentStep(5);
   };
 
   const handleFacilityModalClose = () => {
@@ -358,12 +295,12 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
               </svg>
             </button>
           </div>
-          <div className="p-4 bg-yellow-50 border-b border-yellow-200">
-            <p className="text-sm text-yellow-700">
-              <strong>Step 3:</strong> Enter the email of your DCarbon account you are authorizing for, then choose your utility provider.
+          <div className="p-4 bg-blue-50 border-b border-blue-200">
+            <p className="text-sm text-blue-700">
+              <strong>Step 1:</strong> Enter the email of your DCarbon account you are authorizing for.
             </p>
-            <p className="text-sm text-yellow-700 mt-1">
-              <strong>Step 4:</strong> Enter your Utility Account credentials and authorize access when prompted.
+            <p className="text-sm text-blue-700 mt-1">
+              <strong>Step 2:</strong> Enter the credentials (username and password) you use to login to your utility billing portal. This data is secure and not stored on our servers per utility regulations.
             </p>
           </div>
           <iframe
@@ -451,7 +388,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-4">
-                  Is your DCarbon account able to fetch meters from Utility API?
+                  Have you already connected your utility account to DCarbon previously?
                 </label>
                 <div className="flex items-center space-x-6">
                   <label className="flex items-center">
@@ -585,103 +522,35 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
                   )}
                 </div>
               ) : (
-                <>
-                  <div className="space-y-4">
-                    <div className="bg-blue-50 p-3 rounded-lg">
-                      <p className="text-sm text-blue-700">
-                        <strong>Step 1:</strong> Select your Utility Provider from the list below.
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Utility Provider
-                      </label>
-                      <select
-                        value={selectedProvider}
-                        onChange={(e) => setSelectedProvider(e.target.value)}
-                        className="block w-full px-3 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#039994] focus:border-[#039994]"
-                      >
-                        <option value="">Select Provider</option>
-                        {utilityProviders.map((provider) => (
-                          <option key={provider.id} value={provider.id}>
-                            {provider.name}
-                          </option>
-                        ))}
-                      </select>
-                      
+                <div className="space-y-4">
+                  <div className="bg-blue-50 p-3 rounded-lg">
+                    <p className="text-sm text-blue-700">
+                      <strong>Step 1:</strong> Enter the email used in signing up with DCarbon to connect and fetch meters from Utility API.
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      DCarbon Email
+                    </label>
+                    <div className="flex space-x-2">
+                      <input
+                        type="email"
+                        value={utilityAuthEmail}
+                        onChange={(e) => setUtilityAuthEmail(e.target.value)}
+                        placeholder="Email address"
+                        className="flex-1 block w-full px-3 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#039994] focus:border-[#039994]"
+                      />
                       <button
                         type="button"
-                        onClick={() => setShowProviderRequest(!showProviderRequest)}
-                        className="text-[#039994] text-sm font-medium hover:underline mt-2"
+                        onClick={handleVerifyEmail}
+                        disabled={loading || !utilityAuthEmail}
+                        className="px-4 py-2 bg-[#039994] text-white text-sm font-medium rounded-lg hover:bg-[#02857f] transition-colors disabled:opacity-50"
                       >
-                        Utility Provider not listed?
+                        Authorize
                       </button>
-
-                      {showProviderRequest && (
-                        <div className="mt-4 p-4 border border-gray-200 rounded-lg space-y-3">
-                          <h4 className="text-sm font-medium text-gray-700">Request New Provider</h4>
-                          <input
-                            type="text"
-                            placeholder="Provider Name"
-                            value={newProviderData.name}
-                            onChange={(e) => setNewProviderData({...newProviderData, name: e.target.value})}
-                            className="block w-full px-3 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#039994] focus:border-[#039994]"
-                          />
-                          <input
-                            type="url"
-                            placeholder="Website URL"
-                            value={newProviderData.website}
-                            onChange={(e) => setNewProviderData({...newProviderData, website: e.target.value})}
-                            className="block w-full px-3 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#039994] focus:border-[#039994]"
-                          />
-                          <input
-                            type="text"
-                            placeholder="Documentation (optional)"
-                            value={newProviderData.documentation}
-                            onChange={(e) => setNewProviderData({...newProviderData, documentation: e.target.value})}
-                            className="block w-full px-3 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#039994] focus:border-[#039994]"
-                          />
-                          <button
-                            type="button"
-                            onClick={handleProviderRequest}
-                            disabled={loading}
-                            className="w-full px-4 py-2 bg-[#039994] text-white text-sm font-medium rounded-lg hover:bg-[#02857f] transition-colors disabled:opacity-50"
-                          >
-                            {loading ? 'Submitting...' : 'Submit Request'}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="bg-blue-50 p-3 rounded-lg">
-                      <p className="text-sm text-blue-700">
-                        <strong>Step 2:</strong> Enter the email used in signing up with DCarbon to connect and fetch meters from Utility API.
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        DCarbon Email
-                      </label>
-                      <div className="flex space-x-2">
-                        <input
-                          type="email"
-                          value={utilityAuthEmail}
-                          onChange={(e) => setUtilityAuthEmail(e.target.value)}
-                          placeholder="Email address"
-                          className="flex-1 block w-full px-3 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#039994] focus:border-[#039994]"
-                        />
-                        <button
-                          type="button"
-                          onClick={handleVerifyEmail}
-                          disabled={loading || !utilityAuthEmail}
-                          className="px-4 py-2 bg-[#039994] text-white text-sm font-medium rounded-lg hover:bg-[#02857f] transition-colors disabled:opacity-50"
-                        >
-                          Authorize
-                        </button>
-                      </div>
                     </div>
                   </div>
-                </>
+                </div>
               )}
 
               <div className="pt-4 space-y-4">

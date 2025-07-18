@@ -178,6 +178,12 @@ export default function DashboardOverview() {
 
       setCompletedStages(newCompletedStages);
       setCurrentStage(highestCompletedStage < 4 ? highestCompletedStage + 1 : 4);
+
+      const hasVisitedBefore = localStorage.getItem("hasVisitedDashboard");
+      const hasCompletedStage2 = newCompletedStages.includes(2);
+      if (!hasVisitedBefore && !hasCompletedStage2) {
+        setShowWelcomeModal(true);
+      }
     } catch (error) {
       console.error('Error checking user progress:', error);
     } finally {
@@ -198,7 +204,6 @@ export default function DashboardOverview() {
   const handleCloseWelcomeModal = () => {
     setShowWelcomeModal(false);
     localStorage.setItem("hasVisitedDashboard", "true");
-    checkUserProgress();
   };
 
   const handleCloseFinanceModal = () => {
@@ -228,11 +233,6 @@ export default function DashboardOverview() {
         userFirstName: firstName,
         userId: userId
       });
-
-      const hasVisitedBefore = localStorage.getItem("hasVisitedDashboard");
-      if (!hasVisitedBefore) {
-        setShowWelcomeModal(true);
-      }
 
       await checkUserProgress();
     };
