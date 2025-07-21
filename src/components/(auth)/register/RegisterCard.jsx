@@ -173,7 +173,7 @@ function RegisterCardContent() {
       case 'Commercial':
         return 'I have a solar system on my C&I facility(ies)';
       case 'Partner':
-        return 'I am a Solar Contractor/EPC/Developer/TPO/Finance/Sales Agent';
+        return 'Solar Contractor/EPC/TPO/ Finance/Sales';
       case 'Operator':
         return 'I pay the utility bills on a facility with a Solar System';
       default:
@@ -393,7 +393,7 @@ function RegisterCardContent() {
                       {category}
                     </button>
                     {hoveredButton === category && !isCategoryDisabled(category) && (
-                      <div className="absolute z-10 w-full mt-1 p-2 text-xs bg-white border border-gray-200 rounded shadow-lg">
+                      <div className="absolute z-10 w-full mt-1 p-2 text-xs bg-white border border-gray-200 rounded shadow-lg text-center break-words">
                         {getButtonTooltip(category)}
                       </div>
                     )}

@@ -33,6 +33,8 @@ export default function LoginCard() {
 
       const { user, token, requiresTwoFactor, tempToken } = response.data.data;
 
+      localStorage.setItem('userEmail', user.email);
+
       if (requiresTwoFactor) {
         localStorage.setItem('tempToken', tempToken);
         localStorage.setItem('userId', user.id);
@@ -161,7 +163,7 @@ export default function LoginCard() {
                     fillRule="evenodd"
                     d="M4.03 3.97a.75.75 0 011.06 0l10 10a.75.75 0 11-1.06 1.06l-1.042-1.042A8.74 8.74 0 0110 15c-3.272 0-6.06-1.906-7.76-4.701a.945.945 0 010-1.006 10.45 10.45 0 013.12-3.263L4.03 5.03a.75.75 0 010-1.06zm12.24 7.79c.291-.424.546-.874.76-1.339a.945.945 0 000-1.006C16.06 6.905 13.272 5 10 5c-.638 0-1.26.07-1.856.202l7.127 7.127z"
                     clipRule="evenodd"
-                />
+                  />
                 </svg>
               ) : (
                 <svg

@@ -91,6 +91,7 @@ export default function DashboardOverview() {
   const [currentStage, setCurrentStage] = useState(1);
   const [completedStages, setCompletedStages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [showProgressTracker, setShowProgressTracker] = useState(true);
 
   const checkStage2Completion = async (userId, authToken) => {
     try {
@@ -178,6 +179,7 @@ export default function DashboardOverview() {
 
       setCompletedStages(newCompletedStages);
       setCurrentStage(highestCompletedStage < 4 ? highestCompletedStage + 1 : 4);
+      setShowProgressTracker(!stage4Completed);
 
       const hasVisitedBefore = localStorage.getItem("hasVisitedDashboard");
       const hasCompletedStage2 = newCompletedStages.includes(2);
@@ -260,11 +262,13 @@ export default function DashboardOverview() {
         </div>
       </div>
 
-      <ProgressTracker 
-        currentStage={currentStage} 
-        completedStages={completedStages} 
-        onStageClick={handleStageClick}
-      />
+      {showProgressTracker && (
+        <ProgressTracker 
+          currentStage={currentStage} 
+          completedStages={completedStages} 
+          onStageClick={handleStageClick}
+        />
+      )}
       <QuickActions />
 
       <hr className="border-gray-300" />

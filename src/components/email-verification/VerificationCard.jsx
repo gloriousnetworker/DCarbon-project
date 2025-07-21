@@ -9,10 +9,6 @@ import {
   mainContainer,
   headingContainer,
   pageTitle,
-  progressContainer,
-  progressBarWrapper,
-  progressBarActive,
-  progressStepText,
   inputClass,
   buttonPrimary,
   spinnerOverlay,
@@ -144,13 +140,6 @@ export default function EmailVerificationCard() {
           <h1 className={pageTitle}>
             Let's verify your email
           </h1>
-        </div>
-
-        <div className={progressContainer}>
-          <div className={progressBarWrapper}>
-            <div className={progressBarActive} />
-          </div>
-          <span className={progressStepText}>01/05</span>
         </div>
 
         <p className="text-center text-sm text-gray-600 mb-6 font-sfpro">

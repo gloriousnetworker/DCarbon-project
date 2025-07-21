@@ -175,6 +175,16 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
     }
   }, [selectedRole, commercialData]);
 
+  useEffect(() => {
+    if (isOpen && currentStep) {
+      if (selectedRole === 'Owner') {
+        handleOwnerFlow(currentStep);
+      } else {
+        handleOwnerOperatorFlow(currentStep);
+      }
+    }
+  }, [isOpen, currentStep, selectedRole]);
+
   const handleNext = () => {
     if (hasRoleChanged) {
       onClose();
@@ -183,32 +193,32 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
     }
 
     if (selectedRole === 'Owner') {
-      handleOwnerFlow();
+      handleOwnerFlow(nextStage);
     } else {
-      handleOwnerOperatorFlow();
+      handleOwnerOperatorFlow(nextStage);
     }
   };
 
-  const handleOwnerFlow = () => {
-    if (nextStage === 2) {
+  const handleOwnerFlow = (stage) => {
+    if (stage === 2) {
       setCurrentModal('ownerDetails');
-    } else if (nextStage === 3) {
+    } else if (stage === 3) {
       setCurrentModal('ownerTerms');
-    } else if (nextStage === 4) {
+    } else if (stage === 4) {
       setCurrentModal('finance');
-    } else if (nextStage === 5) {
+    } else if (stage === 5) {
       setCurrentModal('utilityNotice');
     }
   };
 
-  const handleOwnerOperatorFlow = () => {
-    if (nextStage === 2) {
+  const handleOwnerOperatorFlow = (stage) => {
+    if (stage === 2) {
       setCurrentModal('ownerOperatorDetails');
-    } else if (nextStage === 3) {
+    } else if (stage === 3) {
       setCurrentModal('ownerOperatorTerms');
-    } else if (nextStage === 4) {
+    } else if (stage === 4) {
       setCurrentModal('operatorFinance');
-    } else if (nextStage === 5) {
+    } else if (stage === 5) {
       setCurrentModal('utilityAuthorization');
     }
   };

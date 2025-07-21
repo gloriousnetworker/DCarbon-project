@@ -98,6 +98,73 @@ const DOCUMENT_TYPES = {
   }
 };
 
+const ProgressTracker = ({ currentStage, completedStages }) => {
+  const stages = [
+    { id: 1, name: "Dashboard Access", tooltip: "Welcome to your dashboard" },
+    { id: 2, name: "Financial Info", tooltip: "Complete financial information" },
+    { id: 3, name: "Agreements", tooltip: "Sign terms and conditions" },
+    { id: 4, name: "Utility Auth", tooltip: "Authorize utility access" },
+    { id: 5, name: "Documents", tooltip: "Upload and verify documents" }
+  ];
+
+  return (
+    <div className="w-full bg-white rounded-lg shadow-sm p-4 mb-6">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-lg font-semibold text-gray-800">Onboarding Progress</h2>
+        <span className="text-sm font-medium text-[#039994]">
+          Stage {currentStage} of {stages.length}
+        </span>
+      </div>
+      <div className="relative">
+        <div className="flex justify-between mb-2">
+          {stages.map((stage) => (
+            <div key={stage.id} className="flex flex-col items-center group relative">
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
+                  completedStages.includes(stage.id)
+                    ? "bg-[#039994] border-[#039994] text-white"
+                    : stage.id === currentStage
+                    ? "border-[#039994] text-[#039994]"
+                    : "border-gray-300 text-gray-400"
+                }`}
+              >
+                {stage.id}
+              </div>
+              <span
+                className={`text-xs mt-1 text-center ${
+                  completedStages.includes(stage.id) || stage.id === currentStage
+                    ? "text-[#039994] font-medium"
+                    : "text-gray-500"
+                }`}
+              >
+                {stage.name}
+              </span>
+              {completedStages.includes(stage.id) && (
+                <div className="absolute top-full mt-2 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  <div className="relative bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
+                    {stage.tooltip}
+                    <span className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-800 rotate-45"></span>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+        <div className="absolute top-4 left-0 right-0 flex justify-between px-4 -z-10">
+          {stages.slice(0, stages.length - 1).map((stage) => (
+            <div
+              key={stage.id}
+              className={`h-1 flex-1 mx-2 ${
+                completedStages.includes(stage.id + 1) ? "bg-[#039994]" : "bg-gray-200"
+              }`}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const PDFViewerModal = ({ isOpen, onClose, url, title }) => {
   if (!isOpen) return null;
 
@@ -306,6 +373,8 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated, o
   const [showPDFModal, setShowPDFModal] = useState(false);
   const [currentPDF, setCurrentPDF] = useState({ url: "", title: "" });
   const [financeType, setFinanceType] = useState("Cash");
+  const [currentStage, setCurrentStage] = useState(1);
+  const [completedStages, setCompletedStages] = useState([]);
 
   const mockFacility = facility || {
     id: "b151ec59-42f7-444d-a017-5fbae1a1b126",
@@ -322,6 +391,129 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated, o
     lastRecCalculation: "2025-06-01T10:00:00.000Z",
     systemCapacity: "10.5 kW",
     dggId: "DGG-789"
+  };
+
+  const checkStage2Completion = async (userId, authToken) => {
+    try {
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/user/financial-info/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        }
+      );
+      const result = await response.json();
+      return result.status === 'success' && result.data?.financialInfo;
+    } catch (error) {
+      return false;
+    }
+  };
+
+  const checkStage3Completion = async (userId, authToken) => {
+    try {
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/user/agreement/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        }
+      );
+      const result = await response.json();
+      return result.status === 'success' && result.data?.termsAccepted;
+    } catch (error) {
+      return false;
+    }
+  };
+
+  const checkStage4Completion = async (userId, authToken) => {
+    try {
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        }
+      );
+      const result = await response.json();
+      return result.status === 'success' && result.data?.length > 0;
+    } catch (error) {
+      return false;
+    }
+  };
+
+  const checkStage5Completion = async (facilityId, authToken) => {
+    try {
+      const response = await axios.get(
+        `https://services.dcarbon.solutions/api/residential-facility/residential-docs/${facilityId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`
+          }
+        }
+      );
+
+      if (response.data.status !== "success") return false;
+
+      const docData = response.data.data;
+      const requiredDocs = Object.keys(DOCUMENT_TYPES).filter(key => 
+        DOCUMENT_TYPES[key].mandatory && !(key === 'financeAgreement' && financeType === 'Cash')
+      );
+
+      return requiredDocs.every(key => {
+        const docType = DOCUMENT_TYPES[key];
+        return docData[docType.statusField] === "APPROVED";
+      });
+    } catch (error) {
+      return false;
+    }
+  };
+
+  const checkUserProgress = async () => {
+    try {
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const userId = loginResponse?.data?.user?.id;
+      const authToken = loginResponse?.data?.token;
+
+      if (!userId || !authToken) return;
+
+      const newCompletedStages = [1];
+      let highestCompletedStage = 1;
+
+      const stage2Completed = await checkStage2Completion(userId, authToken);
+      if (stage2Completed) {
+        newCompletedStages.push(2);
+        highestCompletedStage = 2;
+      }
+
+      const stage3Completed = await checkStage3Completion(userId, authToken);
+      if (stage3Completed) {
+        newCompletedStages.push(3);
+        highestCompletedStage = 3;
+      }
+
+      const stage4Completed = await checkStage4Completion(userId, authToken);
+      if (stage4Completed) {
+        newCompletedStages.push(4);
+        highestCompletedStage = 4;
+      }
+
+      const stage5Completed = await checkStage5Completion(mockFacility.id, authToken);
+      if (stage5Completed) {
+        newCompletedStages.push(5);
+        highestCompletedStage = 5;
+      }
+
+      setCompletedStages(newCompletedStages);
+      setCurrentStage(highestCompletedStage < 5 ? highestCompletedStage + 1 : 5);
+    } catch (error) {
+      console.error('Error checking user progress:', error);
+    }
   };
 
   const formatDate = (dateString) => {
@@ -397,6 +589,7 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated, o
   useEffect(() => {
     fetchDocuments();
     fetchFinanceType();
+    checkUserProgress();
   }, [mockFacility?.id]);
 
   const getStatusColor = (status) => {
@@ -435,6 +628,7 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated, o
 
   const handleDocumentUpload = (updatedDocs) => {
     setDocuments(updatedDocs);
+    checkUserProgress();
   };
 
   const handleUploadClick = (docType) => {
@@ -461,6 +655,11 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated, o
           <div className={spinner}></div>
         </div>
       )}
+
+      <ProgressTracker 
+        currentStage={currentStage} 
+        completedStages={completedStages} 
+      />
 
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center">

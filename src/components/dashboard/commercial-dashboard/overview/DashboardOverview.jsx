@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { toast } from 'react-hot-toast';
+import CommercialRegistrationModal from "./modals/createfacility/CommercialRegistrationModal";
 
 const QuickActions = dynamic(() => import("./QuickActions"), { ssr: false });
 const Graph = dynamic(() => import("./Graph"), { ssr: false });
@@ -8,7 +9,7 @@ const RecentRecSales = dynamic(() => import("./RecentRecSales"), { ssr: false })
 const WelcomeModal = dynamic(() => import("./modals/WelcomeModal"), { ssr: false });
 const AddUtilityProvider = dynamic(() => import("./modals/AddUtilityProvider"), { ssr: false });
 
-const ProgressTracker = ({ currentStage, nextStage }) => {
+const ProgressTracker = ({ currentStage, nextStage, onStageClick }) => {
   const stages = [
     { id: 1, name: "Sign Up", tooltip: "Account creation completed" },
     { id: 2, name: "Commercial Registration", tooltip: "Owner details and address completed" },
@@ -18,6 +19,12 @@ const ProgressTracker = ({ currentStage, nextStage }) => {
   ];
 
   const currentDisplayStage = currentStage > 5 ? 5 : currentStage;
+
+  const handleClick = (stageId) => {
+    if (stageId <= currentStage || stageId === nextStage) {
+      onStageClick(stageId);
+    }
+  };
 
   return (
     <div className="w-full bg-white rounded-lg shadow-sm p-4 mb-6">
@@ -30,13 +37,17 @@ const ProgressTracker = ({ currentStage, nextStage }) => {
       <div className="relative">
         <div className="flex justify-between mb-2">
           {stages.map((stage) => (
-            <div key={stage.id} className="flex flex-col items-center group relative">
+            <div 
+              key={stage.id} 
+              className="flex flex-col items-center group relative"
+              onClick={() => handleClick(stage.id)}
+            >
               <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                className={`w-8 h-8 rounded-full flex items-center justify-center cursor-pointer ${
                   stage.id < currentDisplayStage ? "bg-[#039994] text-white" : 
                   stage.id === currentDisplayStage ? "bg-[#039994] text-white" : 
                   stage.id === nextStage ? "border-2 border-[#039994] bg-white text-gray-600" : "bg-gray-200 text-gray-600"
-                }`}
+                } ${stage.id <= currentDisplayStage ? 'hover:bg-[#028a85]' : ''}`}
               >
                 {stage.id}
               </div>
@@ -71,6 +82,7 @@ const ProgressTracker = ({ currentStage, nextStage }) => {
 export default function DashboardOverview() {
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [showAddUtilityModal, setShowAddUtilityModal] = useState(false);
+  const [showRegistrationModal, setShowRegistrationModal] = useState(false);
   const [userData, setUserData] = useState({
     userFirstName: "",
     userId: ""
@@ -79,6 +91,7 @@ export default function DashboardOverview() {
   const [isCheckingCommercialStatus, setIsCheckingCommercialStatus] = useState(false);
   const [currentStage, setCurrentStage] = useState(1);
   const [nextStage, setNextStage] = useState(2);
+  const [clickedStage, setClickedStage] = useState(1);
 
   const checkStage2Completion = async (userId, authToken) => {
     try {
@@ -186,6 +199,16 @@ export default function DashboardOverview() {
     }
   };
 
+  const handleStageClick = (stageId) => {
+    setClickedStage(stageId);
+    setShowRegistrationModal(true);
+  };
+
+  const handleCloseRegistrationModal = () => {
+    setShowRegistrationModal(false);
+    checkUserProgress();
+  };
+
   useEffect(() => {
     const loadUserData = async () => {
       if (typeof window === 'undefined') return;
@@ -281,7 +304,11 @@ export default function DashboardOverview() {
         </div>
       </div>
 
-      <ProgressTracker currentStage={currentStage} nextStage={nextStage} />
+      <ProgressTracker 
+        currentStage={currentStage} 
+        nextStage={nextStage} 
+        onStageClick={handleStageClick}
+      />
       <QuickActions />
 
       <hr className="border-gray-300" />
@@ -304,6 +331,14 @@ export default function DashboardOverview() {
         <AddUtilityProvider 
           isOpen={showAddUtilityModal}
           onClose={handleCloseAddUtilityModal}
+        />
+      )}
+
+      {showRegistrationModal && (
+        <CommercialRegistrationModal
+          isOpen={showRegistrationModal}
+          onClose={handleCloseRegistrationModal}
+          currentStep={clickedStage}
         />
       )}
     </div>
