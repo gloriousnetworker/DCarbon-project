@@ -95,6 +95,14 @@ const DOCUMENT_TYPES = {
     statusField: "utilityMeterPhotoStatus",
     rejectionField: "utilityMeterPhotoRejectionReason",
     mandatory: true
+  },
+  singleLineDiagram: {
+    name: "Single Line Diagram",
+    endpoint: "single-line",
+    urlField: "singleLineDiagramUrl",
+    statusField: "singleLineDiagramStatus",
+    rejectionField: "singleLineDiagramRejectionReason",
+    mandatory: true
   }
 };
 
