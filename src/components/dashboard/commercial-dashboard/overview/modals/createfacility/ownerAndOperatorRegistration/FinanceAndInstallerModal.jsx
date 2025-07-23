@@ -395,6 +395,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
         }
       }
 
+      toast.dismiss(toastId);
       await initiateUtilityAuth();
     } catch (err) {
       toast.error(err.response?.data?.message || err.message || 'Operation failed', { id: toastId });
@@ -543,65 +544,63 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
               </div>
 
               <div>
-  <label className={styles.labelClass}>
-    Utility Provider <span className="text-red-500">*</span>
-  </label>
-  <div className="relative">
-    <select
-      name="utilityProvider"
-      value={formData.utilityProvider}
-      onChange={handleInputChange}
-      className={`${styles.selectClass} appearance-none`}
-      required
-      disabled={loadingUtilityProviders}
-    >
-      <option value="">{loadingUtilityProviders ? 'Loading...' : 'Choose provider'}</option>
-      {utilityProviders.map((provider) => (
-        <option key={provider.id} value={provider.name}>{provider.name}</option>
-      ))}
-    </select>
-    <div className={styles.uploadIconContainer}>
-      <svg className="w-5 h-5 text-gray-400 pointer-events-none absolute top-1/2 right-3 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/>
-      </svg>
-    </div>
-  </div>
-</div>
-
+                <label className={styles.labelClass}>
+                  Utility Provider <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <select
+                    name="utilityProvider"
+                    value={formData.utilityProvider}
+                    onChange={handleInputChange}
+                    className={`${styles.selectClass} appearance-none`}
+                    required
+                    disabled={loadingUtilityProviders}
+                  >
+                    <option value="">{loadingUtilityProviders ? 'Loading...' : 'Choose provider'}</option>
+                    {utilityProviders.map((provider) => (
+                      <option key={provider.id} value={provider.name}>{provider.name}</option>
+                    ))}
+                  </select>
+                  <div className={styles.uploadIconContainer}>
+                    <svg className="w-5 h-5 text-gray-400 pointer-events-none absolute top-1/2 right-3 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                  </div>
+                </div>
+              </div>
 
               <div>
-  <label className={styles.labelClass}>
-    Finance type <span className="text-red-500">*</span>
-  </label>
-  <div className="relative">
-    <select
-      name="financeType"
-      value={formData.financeType}
-      onChange={handleInputChange}
-      className={`${styles.selectClass} appearance-none`}
-      required
-      disabled={loadingFinanceTypes}
-    >
-      <option value="">{loadingFinanceTypes ? 'Loading...' : 'Choose type'}</option>
-      {financeTypes.map((type) => (
-        <option key={type.id} value={type.name}>{type.name}</option>
-      ))}
-    </select>
-    <div className={styles.uploadIconContainer}>
-      <svg className="w-5 h-5 text-gray-400 pointer-events-none absolute top-1/2 right-3 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/>
-      </svg>
-    </div>
-  </div>
-  <button
-    type="button"
-    onClick={() => setShowRequestModal(true)}
-    className="text-[#039994] text-xs hover:underline mt-1"
-  >
-    Finance Type not listed?
-  </button>
-</div>
-
+                <label className={styles.labelClass}>
+                  Finance type <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <select
+                    name="financeType"
+                    value={formData.financeType}
+                    onChange={handleInputChange}
+                    className={`${styles.selectClass} appearance-none`}
+                    required
+                    disabled={loadingFinanceTypes}
+                  >
+                    <option value="">{loadingFinanceTypes ? 'Loading...' : 'Choose type'}</option>
+                    {financeTypes.map((type) => (
+                      <option key={type.id} value={type.name}>{type.name}</option>
+                    ))}
+                  </select>
+                  <div className={styles.uploadIconContainer}>
+                    <svg className="w-5 h-5 text-gray-400 pointer-events-none absolute top-1/2 right-3 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowRequestModal(true)}
+                  className="text-[#039994] text-xs hover:underline mt-1"
+                >
+                  Finance Type not listed?
+                </button>
+              </div>
 
               {showFinanceCompany && (
                 <div>
@@ -661,33 +660,32 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
               )}
 
               <div>
-  <label className={styles.labelClass}>
-    Select installer <span className="text-red-500">*</span>
-  </label>
-  <div className="relative">
-    <select
-      name="installer"
-      value={formData.installer}
-      onChange={handleInputChange}
-      className={`${styles.selectClass} appearance-none`}
-      required
-      disabled={loadingInstallers}
-    >
-      <option value="">{loadingInstallers ? 'Loading...' : 'Choose installer'}</option>
-      {installers.map((installer) => (
-        <option key={installer.id} value={installer.name}>{installer.name}</option>
-      ))}
-      <option value="others">Others</option>
-      <option value="unknown">Don't know</option>
-    </select>
-    <div className={styles.uploadIconContainer}>
-      <svg className="w-5 h-5 text-gray-400 pointer-events-none absolute top-1/2 right-3 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/>
-      </svg>
-    </div>
-  </div>
-</div>
-
+                <label className={styles.labelClass}>
+                  Select installer <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <select
+                    name="installer"
+                    value={formData.installer}
+                    onChange={handleInputChange}
+                    className={`${styles.selectClass} appearance-none`}
+                    required
+                    disabled={loadingInstallers}
+                  >
+                    <option value="">{loadingInstallers ? 'Loading...' : 'Choose installer'}</option>
+                    {installers.map((installer) => (
+                      <option key={installer.id} value={installer.name}>{installer.name}</option>
+                    ))}
+                    <option value="others">Others</option>
+                    <option value="unknown">Don't know</option>
+                  </select>
+                  <div className={styles.uploadIconContainer}>
+                    <svg className="w-5 h-5 text-gray-400 pointer-events-none absolute top-1/2 right-3 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                  </div>
+                </div>
+              </div>
 
               {showCustomInstaller && (
                 <div>

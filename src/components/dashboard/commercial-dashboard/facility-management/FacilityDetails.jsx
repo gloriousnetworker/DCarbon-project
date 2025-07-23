@@ -4,7 +4,6 @@ import {
   FiEdit,
   FiFileText,
   FiEye,
-  FiDownload,
   FiTrash2,
   FiUpload,
   FiUsers,
@@ -12,26 +11,10 @@ import {
   FiAlertCircle,
   FiRefreshCw
 } from "react-icons/fi";
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer } from 'recharts';
 import { toast } from 'react-hot-toast';
 import InviteCollaboratorModal from "./InviteCollaboratorModal";
 import EditFacilityDetailsModal from "./EditFacilityDetailsModal";
-import { pageTitle, labelClass, inputClass } from "./styles";
-
-const energyData = [
-  { month: 'Jan', kwh: 45 },
-  { month: 'Feb', kwh: 30 },
-  { month: 'Mar', kwh: 85 },
-  { month: 'Apr', kwh: 25 },
-  { month: 'May', kwh: 180 },
-  { month: 'Jun', kwh: 90 },
-  { month: 'Jul', kwh: 20 },
-  { month: 'Aug', kwh: 35 },
-  { month: 'Sep', kwh: 60 },
-  { month: 'Oct', kwh: 120 },
-  { month: 'Nov', kwh: 85 },
-  { month: 'Dec', kwh: 95 }
-];
+import { pageTitle, labelClass } from "./styles";
 
 export default function FacilityDetails({ facility, onBack, onFacilityUpdated }) {
   const [showEditModal, setShowEditModal] = useState(false);
@@ -107,6 +90,38 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
     }));
   };
 
+  const deleteFacility = async () => {
+    const authToken = localStorage.getItem('authToken');
+    if (!authToken) {
+      toast.error('Authentication token not found. Please login again.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await fetch(`https://services.dcarbon.solutions/api/commercial-facility/${facilityData.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      });
+
+      const result = await response.json();
+
+      if (result.status === 'success') {
+        toast.success('Facility deleted successfully');
+        onBack();
+      } else {
+        toast.error(`Delete failed: ${result.message || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+      toast.error(`Delete failed: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const uploadDocument = async (docType, file) => {
     setUploadingDoc(docType);
     
@@ -121,21 +136,29 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
     const baseUrl = 'https://services.dcarbon.solutions';
     
     const endpoints = {
-      financeAgreement: `${baseUrl}/api/facility/update-facility-financial-agreement/${facilityId}`,
-      proofOfAddress: `${baseUrl}/api/facility/update-facility-proof-of-address/${facilityId}`,
-      infoReleaseAuth: `${baseUrl}/api/facility/update-info-release-auth/${facilityId}`,
       wregisAssignment: `${baseUrl}/api/facility/update-wregis-assignment/${facilityId}`,
-      multipleOwnerDecl: `${baseUrl}/api/facility/update-multiple-owner-decl/${facilityId}`,
-      sysOpDataAccess: `${baseUrl}/api/facility/update-sys-op-data-access/${facilityId}`
+      financeAgreement: `${baseUrl}/api/facility/update-facility-finance-agreement/${facilityId}`,
+      solarInstallationContract: `${baseUrl}/api/facility/update-commercial-solar-installation-contract/${facilityId}`,
+      utilityInterconnectionAgreement: `${baseUrl}/api/facility/update-commercial-interconnection-agreement/${facilityId}`,
+      utilityPTO: `${baseUrl}/api/facility/update-commercial-pto-letter/${facilityId}`,
+      singleLineDiagram: `${baseUrl}/api/facility/update-commercial-single-line-diagram/${facilityId}`,
+      installationSitePlan: `${baseUrl}/api/facility/update-facility-site-plan/${facilityId}`,
+      panelInverterDatasheet: `${baseUrl}/api/facility/update-facility-inverter-datasheet/${facilityId}`,
+      revenueMeterDatasheet: `${baseUrl}/api/facility/update-facility-revenue-meter-data/${facilityId}`,
+      utilityMeterPhoto: `${baseUrl}/api/facility/update-commercial-utility-meter-photo/${facilityId}`
     };
 
     const fieldNames = {
-      financeAgreement: 'financeAgreementUrl',
-      proofOfAddress: 'proofOfAddressUrl',
-      infoReleaseAuth: 'infoReleaseAuthUrl',
       wregisAssignment: 'wregisAssignmentUrl',
-      multipleOwnerDecl: 'multipleOwnerDeclUrl',
-      sysOpDataAccess: 'sysOpDataAccessUrl'
+      financeAgreement: 'financeAgreementUrl',
+      solarInstallationContract: 'solarInstallationContractUrl',
+      utilityInterconnectionAgreement: 'interconnectionAgreementUrl',
+      utilityPTO: 'ptoLetterUrl',
+      singleLineDiagram: 'singleLineDiagramUrl',
+      installationSitePlan: 'file',
+      panelInverterDatasheet: 'file',
+      revenueMeterDatasheet: 'file',
+      utilityMeterPhoto: 'utilityMeterPhotoUrl'
     };
 
     const formData = new FormData();
@@ -155,13 +178,19 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
       const result = await response.json();
 
       if (result.status === 'success') {
+        const updatedData = {
+          ...result.data,
+          panelInverterDatasheetUrl: result.data.inverterDatasheetUrl,
+          panelInverterDatasheetStatus: result.data.inverterDatasheetStatus
+        };
+        
         setFacilityData(prevData => ({
           ...prevData,
-          ...result.data
+          ...updatedData
         }));
       
         if (onFacilityUpdated) {
-          onFacilityUpdated(result.data);
+          onFacilityUpdated(updatedData);
         }
         
         toast.success('Document uploaded successfully!', { id: 'upload-toast' });
@@ -300,46 +329,74 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
 
   const allDocuments = [
     {
-      title: "Finance Agreement",
-      status: facilityData.financeAgreementStatus,
-      url: facilityData.financeAgreementUrl,
-      docType: "financeAgreement",
-      rejectionReason: facilityData.financeAgreementRejectionReason
-    },
-    {
-      title: "Proof of Address",
-      status: facilityData.proofOfAddressStatus,
-      url: facilityData.proofOfAddressUrl,
-      docType: "proofOfAddress",
-      rejectionReason: facilityData.proofOfAddressRejectionReason
-    },
-    {
-      title: "Info Release Authorization",
-      status: facilityData.infoReleaseAuthStatus,
-      url: facilityData.infoReleaseAuthUrl,
-      docType: "infoReleaseAuth",
-      rejectionReason: facilityData.infoReleaseAuthRejectionReason
-    },
-    {
-      title: "WREGIS Assignment",
+      title: "WREGIS Assignment of Registration Rights",
       status: facilityData.wregisAssignmentStatus,
       url: facilityData.wregisAssignmentUrl,
       docType: "wregisAssignment",
       rejectionReason: facilityData.wregisAssignmentRejectionReason
     },
     {
-      title: "Multiple Owner Declaration",
-      status: facilityData.multipleOwnerDeclStatus,
-      url: facilityData.multipleOwnerDeclUrl,
-      docType: "multipleOwnerDecl",
-      rejectionReason: facilityData.multipleOwnerDeclRejectionReason
+      title: "Finance Agreement/PPA",
+      status: facilityData.financeAgreementStatus,
+      url: facilityData.financeAgreementUrl,
+      docType: "financeAgreement",
+      rejectionReason: facilityData.financeAgreementRejectionReason
     },
     {
-      title: "System Operator Data Access",
-      status: facilityData.sysOpDataAccessStatus,
-      url: facilityData.sysOpDataAccessUrl,
-      docType: "sysOpDataAccess",
-      rejectionReason: facilityData.sysOpDataAccessRejectionReason
+      title: "Solar Installation Contract",
+      status: facilityData.solarInstallationContractStatus,
+      url: facilityData.solarInstallationContractUrl,
+      docType: "solarInstallationContract",
+      rejectionReason: facilityData.solarInstallationContractRejectionReason
+    },
+    {
+      title: "Utility Interconnection Agreement",
+      status: facilityData.interconnectionAgreementStatus,
+      url: facilityData.interconnectionAgreementUrl,
+      docType: "utilityInterconnectionAgreement",
+      rejectionReason: facilityData.interconnectionAgreementRejectionReason
+    },
+    {
+      title: "Utility PTO Email/Letter",
+      status: facilityData.ptoLetterStatus,
+      url: facilityData.ptoLetterUrl,
+      docType: "utilityPTO",
+      rejectionReason: facilityData.ptoLetterRejectionReason
+    },
+    {
+      title: "Single Line Diagram",
+      status: facilityData.singleLineDiagramStatus,
+      url: facilityData.singleLineDiagramUrl,
+      docType: "singleLineDiagram",
+      rejectionReason: facilityData.singleLineDiagramRejectionReason
+    },
+    {
+      title: "Installation Site Plan",
+      status: facilityData.sitePlanStatus,
+      url: facilityData.sitePlanUrl,
+      docType: "installationSitePlan",
+      rejectionReason: facilityData.sitePlanRejectionReason
+    },
+    {
+      title: "Panel/Inverter Data Sheet",
+      status: facilityData.panelInverterDatasheetStatus,
+      url: facilityData.panelInverterDatasheetUrl,
+      docType: "panelInverterDatasheet",
+      rejectionReason: facilityData.panelInverterDatasheetRejectionReason
+    },
+    {
+      title: "Revenue Meter Data Sheet",
+      status: facilityData.revenueMeterDataStatus,
+      url: facilityData.revenueMeterDataUrl,
+      docType: "revenueMeterDatasheet",
+      rejectionReason: facilityData.revenueMeterDataRejectionReason
+    },
+    {
+      title: "Utility/Revenue Meter Photo w/Serial ID",
+      status: facilityData.utilityMeterPhotoStatus,
+      url: facilityData.utilityMeterPhotoUrl,
+      docType: "utilityMeterPhoto",
+      rejectionReason: facilityData.utilityMeterPhotoRejectionReason
     }
   ];
 
@@ -361,6 +418,13 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
             {facilityData.facilityName}
           </h1>
           <div className="flex space-x-2">
+            <button
+              onClick={deleteFacility}
+              className="flex items-center space-x-1 bg-red-600 text-white px-3 py-1.5 rounded text-xs hover:bg-red-700 transition-colors"
+            >
+              <FiTrash2 size={12} />
+              <span>Delete Facility</span>
+            </button>
             {facilityData.commercialRole?.toLowerCase() === "owner" && (
               <button
                 onClick={() => setShowInviteModal(true)}
@@ -459,69 +523,25 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-          <div className="lg:col-span-3 bg-white border border-gray-200 rounded-lg p-4">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-sm font-semibold text-black">Energy Production</h3>
-              <div className="flex space-x-2">
-                <select className="border border-gray-300 rounded px-2 py-1 text-xs">
-                  <option>Yearly</option>
-                  <option>Monthly</option>
-                </select>
-                <select className="border border-gray-300 rounded px-2 py-1 text-xs">
-                  <option>2025</option>
-                  <option>2024</option>
-                </select>
-              </div>
-            </div>
-            <div className="h-48">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={energyData}>
-                  <XAxis 
-                    dataKey="month" 
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 10, fill: '#666' }}
-                  />
-                  <YAxis 
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 10, fill: '#666' }}
-                    label={{ value: 'kWh', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fontSize: '10px' } }}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="kwh" 
-                    stroke="#039994" 
-                    strokeWidth={2}
-                    dot={{ fill: '#039994', strokeWidth: 2, r: 4 }}
-                    activeDot={{ r: 6, fill: '#039994' }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+          <div className="bg-white border-2 border-[#039994] rounded-lg p-3 text-center">
+            <p className="text-black text-xs mb-1">RECs Generated</p>
+            <p className="text-lg font-bold text-[#039994]">{facilityData.recGenerated || facilityData.totalRecs || 0}</p>
+          </div>
+          
+          <div className="bg-white border-2 border-[#039994] rounded-lg p-3 text-center">
+            <p className="text-black text-xs mb-1">Total RECs sold</p>
+            <p className="text-lg font-bold text-[#039994]">{facilityData.recSold || 0}</p>
           </div>
 
-          <div className="grid grid-cols-1 gap-3">
-            <div className="bg-white border-2 border-[#039994] rounded-lg p-3 text-center">
-              <p className="text-black text-xs mb-1">RECs Generated</p>
-              <p className="text-lg font-bold text-[#039994]">{facilityData.recGenerated || facilityData.totalRecs || 0}</p>
-            </div>
-            
-            <div className="bg-white border-2 border-[#039994] rounded-lg p-3 text-center">
-              <p className="text-black text-xs mb-1">Total RECs sold</p>
-              <p className="text-lg font-bold text-[#039994]">{facilityData.recSold || 0}</p>
-            </div>
+          <div className="bg-white border-2 border-[#039994] rounded-lg p-3 text-center">
+            <p className="text-black text-xs mb-1">Earnings</p>
+            <p className="text-lg font-bold text-[#039994]">${facilityData.revenueEarned || '0.00'}</p>
+          </div>
 
-            <div className="bg-white border-2 border-[#039994] rounded-lg p-3 text-center">
-              <p className="text-black text-xs mb-1">Earnings</p>
-              <p className="text-lg font-bold text-[#039994]">${facilityData.revenueEarned || '0.00'}</p>
-            </div>
-
-            <div className="bg-white border-2 border-[#039994] rounded-lg p-3 text-center">
-              <p className="text-black text-xs mb-1">Energy Generated</p>
-              <p className="text-sm font-bold text-[#039994]">{facilityData.energyProduced || 0}MWh</p>
-              <p className="text-xs text-gray-500">May</p>
-            </div>
+          <div className="bg-white border-2 border-[#039994] rounded-lg p-3 text-center">
+            <p className="text-black text-xs mb-1">Energy Generated</p>
+            <p className="text-sm font-bold text-[#039994]">{facilityData.energyProduced || 0}MWh</p>
+            <p className="text-xs text-gray-500">May</p>
           </div>
         </div>
       </div>

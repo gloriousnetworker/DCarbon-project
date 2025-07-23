@@ -3,6 +3,36 @@ import { toast } from "react-hot-toast";
 import axios from "axios";
 import InviteOperatorModal from "./InviteOperatorModal";
 
+const styles = {
+  mainContainer: 'min-h-screen w-full flex flex-col items-center justify-center py-8 px-4 bg-white',
+  headingContainer: 'relative w-full flex flex-col items-center mb-2',
+  backArrow: 'absolute left-4 top-0 text-[#039994] cursor-pointer z-10',
+  pageTitle: 'mb-4 font-[600] text-[24px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro text-left',
+  progressContainer: 'w-full max-w-md flex items-center justify-between mb-6',
+  progressBarWrapper: 'flex-1 h-1 bg-gray-200 rounded-full mr-4',
+  progressBarActive: 'h-1 bg-[#039994] w-2/3 rounded-full',
+  progressStepText: 'text-sm font-medium text-gray-500 font-sfpro',
+  formWrapper: 'w-full max-w-md space-y-6',
+  labelClass: 'block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]',
+  selectClass: 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#626060]',
+  inputClass: 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]',
+  fileInputWrapper: 'relative flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-500 bg-gray-50 focus-within:outline-none focus-within:ring-2 focus-within:ring-[#039994] cursor-pointer font-sfpro',
+  noteText: 'mt-2 font-sfpro text-[12px] leading-[100%] tracking-[-0.05em] font-[300] italic text-[#1E1E1E]',
+  rowWrapper: 'flex space-x-4',
+  halfWidth: 'w-1/2',
+  grayPlaceholder: 'bg-[#E8E8E8]',
+  buttonPrimary: 'w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro',
+  spinnerOverlay: 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20',
+  spinner: 'h-12 w-12 border-4 border-t-4 border-gray-300 border-t-[#039994] rounded-full animate-spin',
+  termsTextContainer: 'mt-6 text-center font-sfpro text-[10px] font-[800] leading-[100%] tracking-[-0.05em] underline text-[#1E1E1E]',
+  uploadHeading: 'block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]',
+  uploadFieldWrapper: 'flex items-center space-x-3',
+  uploadInputLabel: 'relative flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-500 bg-gray-50 focus-within:outline-none focus-within:ring-2 focus-within:ring-[#039994] cursor-pointer font-sfpro',
+  uploadIconContainer: 'absolute right-3 top-1/2 -translate-y-1/2 text-gray-400',
+  uploadButtonStyle: 'px-4 py-2 bg-[#039994] text-white rounded-md hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro',
+  uploadNoteStyle: 'mt-2 font-sfpro text-[12px] leading-[100%] tracking-[-0.05em] font-[300] italic text-[#1E1E1E]'
+};
+
 export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -14,6 +44,8 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const [requestingFinanceType, setRequestingFinanceType] = useState(false);
   const [requestedFinanceTypeName, setRequestedFinanceTypeName] = useState('');
   const [showInviteOperatorModal, setShowInviteOperatorModal] = useState(false);
+  const [showIframe, setShowIframe] = useState(false);
+  const [iframeUrl, setIframeUrl] = useState("");
   const [file, setFile] = useState(null);
   const [facilityNickname, setFacilityNickname] = useState('');
   const [utilityProviders, setUtilityProviders] = useState([]);
@@ -246,6 +278,61 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     return response.data;
   };
 
+  const initiateUtilityAuth = async () => {
+    const userEmail = localStorage.getItem('userEmail');
+    const authToken = localStorage.getItem('authToken');
+    const userId = localStorage.getItem('userId');
+
+    if (!userEmail || !authToken || !userId) {
+      toast.error('Authentication required. Please log in again.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/auth/initiate-utility-auth/${userId}`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            utilityAuthEmail: userEmail
+          })
+        }
+      );
+
+      const data = await response.json();
+      
+      if (data.status === 'success') {
+        setIframeUrl('https://utilityapi.com/authorize/DCarbon_Solutions');
+        setShowIframe(true);
+      } else {
+        toast.error('Failed to initiate utility authorization');
+      }
+    } catch (error) {
+      toast.error('Failed to initiate utility authorization');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleIframeMessage = (event) => {
+    if (event.data && event.data.type === 'utility-auth-complete') {
+      setShowIframe(false);
+      setShowInviteOperatorModal(true);
+    }
+  };
+
+  useEffect(() => {
+    if (showIframe) {
+      window.addEventListener('message', handleIframeMessage);
+      return () => window.removeEventListener('message', handleIframeMessage);
+    }
+  }, [showIframe]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -281,9 +368,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
         { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } }
       );
 
-      const facilityResponse = await createCommercialFacility();
-
-      toast.success(`Financial information saved and commercial facility created successfully!`, { id: toastId });
+      await createCommercialFacility();
 
       if (showUploadField && uploadSuccess) {
         const uploadToastId = toast.loading('Uploading financial agreement...');
@@ -312,12 +397,18 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
         }
       }
 
-      setShowInviteOperatorModal(true);
+      toast.dismiss(toastId);
+      await initiateUtilityAuth();
     } catch (err) {
       toast.error(err.response?.data?.message || err.message || 'Operation failed', { id: toastId });
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCloseModal = () => {
+    onClose();
+    window.location.reload();
   };
 
   const handleInviteOperatorModalClose = () => {
@@ -332,11 +423,44 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
 
   if (!isOpen) return null;
 
+  if (showIframe) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+        <div className="relative w-full max-w-4xl h-[90vh] bg-white rounded-2xl overflow-hidden">
+          <div className="flex items-center justify-between p-4 border-b">
+            <h3 className="text-lg font-semibold text-[#039994]">Utility Authorization Portal</h3>
+            <button
+              onClick={handleCloseModal}
+              className="text-red-500 hover:text-red-700"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+          </div>
+          <div className="p-4 bg-yellow-50 border-b border-yellow-200">
+            <p className="text-sm text-yellow-700">
+              <strong>Step 1:</strong> Enter the email of your DCarbon account you are authorizing for, then choose your utility provider.
+            </p>
+            <p className="text-sm text-yellow-700 mt-1">
+              <strong>Step 2:</strong> Enter your Utility Account credentials and authorize access when prompted.
+            </p>
+          </div>
+          <iframe
+            src={iframeUrl}
+            className="w-full h-full"
+            title="Utility Authorization"
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       {loading && (
-        <div className="fixed inset-0 z-[60] bg-black bg-opacity-30 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#039994]"></div>
+        <div className={styles.spinnerOverlay}>
+          <div className={styles.spinner}></div>
         </div>
       )}
 
@@ -345,7 +469,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
           <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
             <h3 className="text-lg font-semibold mb-4">Request Finance Type</h3>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className={styles.labelClass}>
                 Finance Type Name
               </label>
               <input
@@ -353,7 +477,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                 value={requestedFinanceTypeName}
                 onChange={(e) => setRequestedFinanceTypeName(e.target.value)}
                 placeholder="Enter finance type name"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994]"
+                className={styles.inputClass}
               />
             </div>
             <div className="flex gap-3">
@@ -379,14 +503,14 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
         </div>
       )}
 
-      {!showInviteOperatorModal && (
+      {!showInviteOperatorModal && !showIframe && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
           <div className="relative w-full max-w-lg bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
             <div className="relative p-6 pb-4">
               {onBack && (
                 <button
                   onClick={onBack}
-                  className="absolute left-6 top-6 text-[#039994] hover:text-[#02857f]"
+                  className={styles.backArrow}
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M19 12H5M12 19L5 12L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -395,7 +519,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
               )}
 
               <button
-                onClick={() => { onClose(); window.location.reload(); }}
+                onClick={handleCloseModal}
                 className="absolute top-6 right-6 text-red-500 hover:text-red-700"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -403,38 +527,37 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                 </svg>
               </button>
 
-              <h2 className="font-[600] text-[20px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro mt-8 text-center">
+              <h2 className={styles.pageTitle}>
                 Finance & Installer information for Owner
               </h2>
               
-              <div className="flex items-center justify-center mt-4">
-                <div className="flex items-center">
-                  <div className="w-96 h-1 bg-gray-200 rounded-full mr-2">
-                    <div className="h-1 bg-[#039994] rounded-full" style={{ width: '80%' }}></div>
-                  </div>
-                  <span className="text-sm font-medium text-gray-500 font-sfpro">04/05</span>
+              <div className={styles.progressContainer}>
+                <div className={styles.progressBarWrapper}>
+                  <div className={styles.progressBarActive}></div>
                 </div>
+                <span className={styles.progressStepText}>04/05</span>
               </div>
             </div>
 
             <div className="flex-1 overflow-y-auto px-6 pb-6">
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className={styles.formWrapper}>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1 text-sm flex items-center">
+                  <label className={styles.labelClass}>
                     Facility Nickname <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     value={facilityNickname}
                     onChange={(e) => setFacilityNickname(e.target.value)}
-                    placeholder="Enter facility nickname"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] text-sm bg-[#F0F0F0]"
+                    placeholder="e.g. Nancy's Nest"
+                    className={`${styles.inputClass} ${styles.grayPlaceholder}`}
                     required
                   />
+                  <p className={styles.noteText}>Give your facility a nickname (e.g. "Nancy's Nest")</p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1 text-sm flex items-center">
+                  <label className={styles.labelClass}>
                     Utility Provider <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
@@ -442,7 +565,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                       name="utilityProvider"
                       value={formData.utilityProvider}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] text-sm bg-[#F0F0F0] appearance-none pr-10"
+                      className={`${styles.selectClass} appearance-none`}
                       required
                       disabled={loadingUtilityProviders}
                     >
@@ -451,8 +574,8 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                         <option key={provider.id} value={provider.name}>{provider.name}</option>
                       ))}
                     </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className={styles.uploadIconContainer}>
+                      <svg className="w-5 h-5 text-gray-400 pointer-events-none absolute top-1/2 right-3 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/>
                       </svg>
                     </div>
@@ -460,7 +583,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1 text-sm flex items-center">
+                  <label className={styles.labelClass}>
                     Finance type <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
@@ -468,7 +591,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                       name="financeType"
                       value={formData.financeType}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] text-sm bg-[#F0F0F0] appearance-none pr-10"
+                      className={`${styles.selectClass} appearance-none`}
                       required
                       disabled={loadingFinanceTypes}
                     >
@@ -477,8 +600,8 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                         <option key={type.id} value={type.name}>{type.name}</option>
                       ))}
                     </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className={styles.uploadIconContainer}>
+                      <svg className="w-5 h-5 text-gray-400 pointer-events-none absolute top-1/2 right-3 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/>
                       </svg>
                     </div>
@@ -494,7 +617,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
 
                 {showFinanceCompany && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1 text-sm flex items-center">
+                    <label className={styles.labelClass}>
                       Finance company <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
@@ -502,7 +625,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                         name="financeCompany"
                         value={formData.financeCompany}
                         onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] text-sm bg-[#F0F0F0] appearance-none pr-10"
+                        className={`${styles.selectClass} appearance-none`}
                         required
                       >
                         <option value="">Choose company</option>
@@ -512,8 +635,8 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                         <option value="others">Others</option>
                         <option value="n/a">N/A</option>
                       </select>
-                      <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                        <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className={styles.uploadIconContainer}>
+                        <svg className="w-5 h-5 text-gray-400 pointer-events-none absolute top-1/2 right-3 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/>
                         </svg>
                       </div>
@@ -523,14 +646,14 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
 
                 {showUploadField && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1 text-sm flex items-center">
+                    <label className={styles.uploadHeading}>
                       Upload Finance Agreement <span className="text-red-500">*</span>
                     </label>
-                    <div className="flex items-center gap-2">
+                    <div className={styles.uploadFieldWrapper}>
                       <input
                         type="file"
                         onChange={handleFileChange}
-                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-[#039994] file:text-white hover:file:bg-[#028882]"
+                        className={styles.uploadInputLabel}
                         accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                         required
                       />
@@ -538,19 +661,19 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                         type="button"
                         onClick={handleUpload}
                         disabled={!file || uploading || uploadSuccess}
-                        className={`px-3 py-2 rounded-md text-white text-sm ${!file || uploading || uploadSuccess ? 'bg-gray-400' : 'bg-[#039994] hover:bg-[#028882]'}`}
+                        className={styles.uploadButtonStyle}
                       >
                         {uploading ? 'Uploading...' : uploadSuccess ? '✓' : 'Upload'}
                       </button>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className={styles.uploadNoteStyle}>
                       Required for all finance types except Cash (PDF, JPEG, PNG, Word)
                     </p>
                   </div>
                 )}
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1 text-sm flex items-center">
+                  <label className={styles.labelClass}>
                     Select installer <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
@@ -558,7 +681,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                       name="installer"
                       value={formData.installer}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] text-sm bg-[#F0F0F0] appearance-none pr-10"
+                      className={`${styles.selectClass} appearance-none`}
                       required
                       disabled={loadingInstallers}
                     >
@@ -569,8 +692,8 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                       <option value="others">Others</option>
                       <option value="unknown">Don't know</option>
                     </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className={styles.uploadIconContainer}>
+                      <svg className="w-5 h-5 text-gray-400 pointer-events-none absolute top-1/2 right-3 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/>
                       </svg>
                     </div>
@@ -579,7 +702,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
 
                 {showCustomInstaller && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1 text-sm flex items-center">
+                    <label className={styles.labelClass}>
                       Installer Name <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -588,39 +711,41 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                       value={formData.customInstaller}
                       onChange={handleInputChange}
                       placeholder="Enter your installer name"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] text-sm bg-[#F0F0F0]"
+                      className={`${styles.inputClass} ${styles.grayPlaceholder}`}
                       required
                     />
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1 text-sm flex items-center">
-                      System Size <span className="text-gray-500 text-xs">(optional)</span>
+                <div className={styles.rowWrapper}>
+                  <div className={styles.halfWidth}>
+                    <label className={styles.labelClass}>
+                      System Size (kW) <span className="text-gray-500 text-xs">(optional)</span>
                     </label>
                     <input
                       type="text"
                       name="systemSize"
                       value={formData.systemSize}
                       onChange={handleInputChange}
-                      placeholder="Input system size"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] text-sm bg-[#F0F0F0] placeholder-[#626060]"
+                      placeholder="Input system size in kW"
+                      className={`${styles.inputClass} ${styles.grayPlaceholder}`}
                     />
+                    <p className={styles.noteText}>The system size should match your utility PTO authorization letter</p>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1 text-sm flex items-center">
-                      COD <span className="text-gray-500 text-xs">(optional)</span>
+                  <div className={styles.halfWidth}>
+                    <label className={styles.labelClass}>
+                      Commercial Operation Date (COD) <span className="text-gray-500 text-xs">(optional)</span>
                     </label>
                     <input
                       type="text"
                       name="cod"
                       value={formData.cod}
                       onChange={handleInputChange}
-                      placeholder="Input COD"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] text-sm bg-[#F0F0F0] placeholder-[#626060]"
+                      placeholder="MM/DD/YYYY"
+                      className={`${styles.inputClass} ${styles.grayPlaceholder}`}
                     />
+                    <p className={styles.noteText}>The COD should match your utility PTO authorization letter</p>
                   </div>
                 </div>
 
@@ -628,20 +753,20 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full px-4 py-3 bg-[#039994] text-white rounded-md hover:bg-[#028882] focus:outline-none focus:ring-2 focus:ring-[#039994] font-semibold flex items-center justify-center disabled:opacity-50 text-sm"
+                    className={`${styles.buttonPrimary} flex items-center justify-center`}
                   >
                     {loading ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                        Saving...
-                      </>
+                      <div className="flex items-center space-x-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span>Saving...</span>
+                      </div>
                     ) : (
                       'Next'
                     )}
                   </button>
                 </div>
 
-                <div className="text-center text-sm text-gray-500 text-sm text-center">
+                <div className={styles.termsTextContainer}>
                   <span>Terms and Conditions</span>
                   <span className="mx-2">•</span>
                   <span>Privacy Policy</span>
@@ -652,7 +777,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
         </div>
       )}
 
-     {showInviteOperatorModal && (
+      {showInviteOperatorModal && (
         <InviteOperatorModal
           isOpen={showInviteOperatorModal}
           onClose={handleInviteOperatorModalClose}
