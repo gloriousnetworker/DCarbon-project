@@ -379,10 +379,10 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
     },
     {
       title: "Panel/Inverter Data Sheet",
-      status: facilityData.panelInverterDatasheetStatus,
-      url: facilityData.panelInverterDatasheetUrl,
+      status: facilityData.inverterDatasheetStatus,
+      url: facilityData.inverterDatasheetUrl,
       docType: "panelInverterDatasheet",
-      rejectionReason: facilityData.panelInverterDatasheetRejectionReason
+      rejectionReason: facilityData.inverterDatasheetRejectionReason
     },
     {
       title: "Revenue Meter Data Sheet",
