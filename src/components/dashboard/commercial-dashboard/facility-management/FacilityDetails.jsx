@@ -137,7 +137,7 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
     
     const endpoints = {
       wregisAssignment: `${baseUrl}/api/facility/update-wregis-assignment/${facilityId}`,
-      financeAgreement: `${baseUrl}/api/facility/update-facility-finance-agreement/${facilityId}`,
+      financeAgreement: `${baseUrl}/api/facility/update-facility-financial-agreement/${facilityId}`,
       solarInstallationContract: `${baseUrl}/api/facility/update-commercial-solar-installation-contract/${facilityId}`,
       utilityInterconnectionAgreement: `${baseUrl}/api/facility/update-commercial-interconnection-agreement/${facilityId}`,
       utilityPTO: `${baseUrl}/api/facility/update-commercial-pto-letter/${facilityId}`,
@@ -150,7 +150,7 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
 
     const fieldNames = {
       wregisAssignment: 'wregisAssignmentUrl',
-      financeAgreement: 'financeAgreementUrl',
+      financeAgreement: 'financeAgreement',
       solarInstallationContract: 'solarInstallationContractUrl',
       utilityInterconnectionAgreement: 'interconnectionAgreementUrl',
       utilityPTO: 'ptoLetterUrl',
