@@ -150,7 +150,7 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
 
     const fieldNames = {
       wregisAssignment: 'wregisAssignmentUrl',
-      financeAgreement: 'financeAgreement',
+      financeAgreement: 'financeAgreementUrl',
       solarInstallationContract: 'solarInstallationContractUrl',
       utilityInterconnectionAgreement: 'interconnectionAgreementUrl',
       utilityPTO: 'ptoLetterUrl',
