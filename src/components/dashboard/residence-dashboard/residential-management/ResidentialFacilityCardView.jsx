@@ -221,22 +221,24 @@ export default function FacilityCardView() {
     }
   };
 
-  const filteredFacilities = facilities
-    .filter(f => {
-      if (filters.name && !f.facilityName.toLowerCase().includes(filters.name.toLowerCase()) && 
-          !f.address.toLowerCase().includes(filters.name.toLowerCase())) return false;
-      if (filters.utility !== "All" && f.utilityProvider !== filters.utility) return false;
-      if (filters.meterId && !f.meterId.toLowerCase().includes(filters.meterId.toLowerCase())) return false;
-      if (filters.status !== "All" && f.status.toLowerCase() !== filters.status.toLowerCase()) return false;
-      if (filters.createdDate) {
-        const d = new Date(f.createdAt).toISOString().slice(0, 10);
-        if (d !== filters.createdDate) return false;
-      }
-      if (filters.financeType !== "All" && f.financeType.toLowerCase() !== filters.financeType.toLowerCase()) return false;
-      if (filters.installer !== "All" && f.installer.toLowerCase() !== filters.installer.toLowerCase()) return false;
-      return true;
-    })
-    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+const filteredFacilities = facilities
+  .filter(f => {
+    if (filters.name && !f.facilityName.toLowerCase().includes(filters.name.toLowerCase()) && 
+        !f.address.toLowerCase().includes(filters.name.toLowerCase())) return false;
+    if (filters.utility !== "All" && f.utilityProvider !== filters.utility) return false;
+    if (filters.meterId && !f.meterId.toLowerCase().includes(filters.meterId.toLowerCase())) return false;
+    if (filters.status !== "All" && f.status.toLowerCase() !== filters.status.toLowerCase()) return false;
+    if (filters.createdDate) {
+      const [start, end] = filters.createdDate.split(',');
+      const facilityDate = new Date(f.createdAt).toISOString().slice(0, 10);
+      if (start && new Date(facilityDate) < new Date(start)) return false;
+      if (end && new Date(facilityDate) > new Date(end)) return false;
+    }
+    if (filters.financeType !== "All" && f.financeType.toLowerCase() !== filters.financeType.toLowerCase()) return false;
+    if (filters.installer !== "All" && f.installer.toLowerCase() !== filters.installer.toLowerCase()) return false;
+    return true;
+  })
+  .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
   if (selectedFacility) {
     return (

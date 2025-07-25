@@ -186,6 +186,20 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     return response.data;
   };
 
+  const uploadFinanceAgreementToFacility = async (facilityId) => {
+    if (!file) return;
+    
+    const token = localStorage.getItem('authToken');
+    const formData = new FormData();
+    formData.append('file', file);
+
+    await axios.put(
+      `https://services.dcarbon.solutions/api/residential-facility/residential-docs/finance-agreement/${facilityId}`,
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data', 'Authorization': `Bearer ${token}` } }
+    );
+  };
+
   const updateFinanceInfo = async () => {
     const userId = localStorage.getItem('userId');
     const token = localStorage.getItem('authToken');
@@ -202,21 +216,6 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
       `https://services.dcarbon.solutions/api/user/financial-info/${userId}`,
       payload,
       { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } }
-    );
-  };
-
-  const uploadFinancialAgreement = async () => {
-    if (!file || !uploadSuccess) return;
-
-    const userId = localStorage.getItem('userId');
-    const token = localStorage.getItem('authToken');
-    const formData = new FormData();
-    formData.append('financialAgreement', file);
-
-    await axios.put(
-      `https://services.dcarbon.solutions/api/user/update-financial-agreement/${userId}`,
-      formData,
-      { headers: { 'Content-Type': 'multipart/form-data', 'Authorization': `Bearer ${token}` } }
     );
   };
 
@@ -308,7 +307,6 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     if (!facilityNickname) return toast.error('Please enter a facility nickname');
     if (!formData.financeType) return toast.error('Please select a finance type');
     if (showFinanceCompany && !formData.financeCompany) return toast.error('Please select a finance company');
-    if (showUploadField && !uploadSuccess) return toast.error('Please upload the financial agreement');
     if (showCustomInstaller && !formData.customInstaller) return toast.error('Please enter your installer name');
     if (!formData.utilityProvider) return toast.error('Please select a utility provider');
     if (!formData.installer && !showCustomInstaller) return toast.error('Please select an installer');
@@ -320,8 +318,8 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
       await updateFinanceInfo();
       const response = await createResidentialFacility();
 
-      if (showUploadField && uploadSuccess) {
-        await uploadFinancialAgreement();
+      if (file && uploadSuccess) {
+        await uploadFinanceAgreementToFacility(response.data.id);
       }
 
       toast.success(`Residential facility created successfully: ${response.data.facilityName}`, { id: toastId });
@@ -542,7 +540,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                 {showUploadField && (
                   <div>
                     <label className={uploadHeading}>
-                      Upload Finance Agreement <span className="text-red-500">*</span>
+                      Upload Finance Agreement
                     </label>
                     <div className={`${uploadFieldWrapper} items-center`}>
                       <label className={`${uploadInputLabel} flex items-center h-10`}>
@@ -552,7 +550,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                             <path strokeLinecap="round" strokeLinejoin="round" d="M8.5 12.5l7-7a2.121 2.121 0 013 3L10 17a4 4 0 01-5.657-5.657l7-7" />
                           </svg>
                         </div>
-                        <input type="file" className="hidden" onChange={handleFileChange} accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" required />
+                        <input type="file" className="hidden" onChange={handleFileChange} accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" />
                       </label>
                       <button
                         type="button"
@@ -574,7 +572,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                         )}
                       </button>
                     </div>
-                    <p className={uploadNoteStyle}>Required for loan, PPA, and lease agreements</p>
+                    <p className={uploadNoteStyle}>Optional for loan, PPA, and lease agreements</p>
                   </div>
                 )}
 
@@ -634,7 +632,6 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                     Tip: Match the value on your <strong>utilities Permission to Operate (PTO)</strong> solar approval letter.
                   </p>
                 </div>
-
 
                 <div className="pt-6">
                   <button

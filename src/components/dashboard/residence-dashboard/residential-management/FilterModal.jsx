@@ -1,4 +1,3 @@
-// FilterModal.jsx
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { FiX } from "react-icons/fi";
@@ -10,7 +9,8 @@ export default function FilterModal({ onClose, onApplyFilter }) {
   const [utility, setUtility] = useState("All");
   const [meterId, setMeterId] = useState("");
   const [status, setStatus] = useState("All");
-  const [createdDate, setCreatedDate] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [financeType, setFinanceType] = useState("All");
   const [installer, setInstaller] = useState("All");
   const [installers, setInstallers] = useState([]);
@@ -19,16 +19,14 @@ export default function FilterModal({ onClose, onApplyFilter }) {
     const fetchData = async () => {
       const authToken = localStorage.getItem("authToken");
       try {
-        // Fetch utilities
         const utilitiesRes = await axios.get(
           "https://services.dcarbon.solutions/api/auth/utility-providers",
           { headers: { Authorization: `Bearer ${authToken}` } }
         );
         setUtilities(utilitiesRes.data.data || []);
 
-        // Fetch installers (you might need to replace this with actual endpoint)
         const installersRes = await axios.get(
-          "https://services.dcarbon.solutions/api/installers", // Replace with actual endpoint
+          "https://services.dcarbon.solutions/api/installers",
           { headers: { Authorization: `Bearer ${authToken}` } }
         );
         setInstallers(installersRes.data.data || []);
@@ -44,7 +42,8 @@ export default function FilterModal({ onClose, onApplyFilter }) {
     setUtility("All");
     setMeterId("");
     setStatus("All");
-    setCreatedDate("");
+    setStartDate("");
+    setEndDate("");
     setFinanceType("All");
     setInstaller("All");
   };
@@ -55,7 +54,7 @@ export default function FilterModal({ onClose, onApplyFilter }) {
       utility, 
       meterId, 
       status, 
-      createdDate,
+      createdDate: startDate && endDate ? `${startDate},${endDate}` : "",
       financeType,
       installer
     });
@@ -73,19 +72,17 @@ export default function FilterModal({ onClose, onApplyFilter }) {
           Filter Facilities
         </h2>
 
-        {/* Address (full width) */}
         <div className="mb-4">
-          <label className={labelClass}>By Address</label>
+          <label className={labelClass}>By Name or Address</label>
           <input
             type="text"
             value={name}
             onChange={e => setName(e.target.value)}
             className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none text-sm"
-            placeholder="Type facility address"
+            placeholder="Type facility name or address"
           />
         </div>
 
-        {/* Utility (full width) */}
         <div className="mb-4">
           <label className={labelClass}>By Utility</label>
           <select
@@ -100,18 +97,18 @@ export default function FilterModal({ onClose, onApplyFilter }) {
           </select>
         </div>
 
-        {/* Meter ID & Status */}
+        <div className="mb-4">
+          <label className={labelClass}>By Meter ID</label>
+          <input
+            type="text"
+            value={meterId}
+            onChange={e => setMeterId(e.target.value)}
+            className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none text-sm"
+            placeholder="Meter ID"
+          />
+        </div>
+
         <div className="grid grid-cols-2 gap-4 mb-4">
-          <div>
-            <label className={labelClass}>By Meter ID</label>
-            <input
-              type="text"
-              value={meterId}
-              onChange={e => setMeterId(e.target.value)}
-              className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none text-sm"
-              placeholder="Meter ID"
-            />
-          </div>
           <div>
             <label className={labelClass}>By Status</label>
             <select
@@ -121,14 +118,9 @@ export default function FilterModal({ onClose, onApplyFilter }) {
             >
               <option>All</option>
               <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
+              <option value="verified">Verified</option>
             </select>
           </div>
-        </div>
-
-        {/* Finance Type & Installer */}
-        <div className="grid grid-cols-2 gap-4 mb-4">
           <div>
             <label className={labelClass}>By Finance Type</label>
             <select
@@ -143,33 +135,43 @@ export default function FilterModal({ onClose, onApplyFilter }) {
               <option value="ppa">PPA</option>
             </select>
           </div>
+        </div>
+
+        <div className="mb-4">
+          <label className={labelClass}>By Installer</label>
+          <select
+            value={installer}
+            onChange={e => setInstaller(e.target.value)}
+            className={selectClass}
+          >
+            <option>All</option>
+            {installers.map(inst => (
+              <option key={inst.id} value={inst.name}>{inst.name}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 mb-4">
           <div>
-            <label className={labelClass}>By Installer</label>
-            <select
-              value={installer}
-              onChange={e => setInstaller(e.target.value)}
-              className={selectClass}
-            >
-              <option>All</option>
-              {installers.map(inst => (
-                <option key={inst.id} value={inst.name}>{inst.name}</option>
-              ))}
-            </select>
+            <label className={labelClass}>Start Date</label>
+            <input
+              type="date"
+              value={startDate}
+              onChange={e => setStartDate(e.target.value)}
+              className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none text-sm"
+            />
+          </div>
+          <div>
+            <label className={labelClass}>End Date</label>
+            <input
+              type="date"
+              value={endDate}
+              onChange={e => setEndDate(e.target.value)}
+              className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none text-sm"
+            />
           </div>
         </div>
 
-        {/* Created Date (full width) */}
-        <div className="mb-4">
-          <label className={labelClass}>By Creation Date</label>
-          <input
-            type="date"
-            value={createdDate}
-            onChange={e => setCreatedDate(e.target.value)}
-            className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none text-sm"
-          />
-        </div>
-
-        {/* Actions */}
         <div className="flex items-center justify-between mt-2">
           <button
             onClick={handleClear}
