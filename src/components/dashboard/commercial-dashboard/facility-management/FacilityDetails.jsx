@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   FiArrowLeft,
   FiEdit,
@@ -16,6 +16,77 @@ import InviteCollaboratorModal from "./InviteCollaboratorModal";
 import EditFacilityDetailsModal from "./EditFacilityDetailsModal";
 import { pageTitle, labelClass } from "./styles";
 
+const ProgressTracker = ({ currentStage, nextStage, onStageClick }) => {
+  const stages = [
+    { id: 1, name: "App Registration", tooltip: "Account creation completed" },
+    { id: 2, name: "Solar Install Details", tooltip: "Owner details and address completed" },
+    { id: 3, name: "DCarbon Service Agreements", tooltip: "Terms and conditions signed" },
+    { id: 4, name: "Utility Authorization", tooltip: "Financial information submitted" },
+    { id: 5, name: "Utility Meter Selection", tooltip: "Utility meters connected" },
+    { id: 6, name: "Solar Document Uploads", tooltip: "All required documents uploaded" }
+  ];
+
+  const currentDisplayStage = currentStage > 6 ? 6 : currentStage;
+
+  const handleClick = (stageId) => {
+    if (stageId <= currentStage || stageId === nextStage) {
+      onStageClick(stageId);
+    }
+  };
+
+  return (
+    <div className="w-full bg-white rounded-lg shadow-sm p-4 mb-4">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-lg font-semibold text-gray-800">Onboarding Progress</h2>
+        <span className="text-sm font-medium text-[#039994]">
+          Stage {currentDisplayStage} of {stages.length}
+        </span>
+      </div>
+      <div className="relative">
+        <div className="flex justify-between mb-2">
+          {stages.map((stage) => (
+            <div 
+              key={stage.id} 
+              className="flex flex-col items-center group relative"
+              onClick={() => handleClick(stage.id)}
+            >
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center cursor-pointer ${
+                  stage.id < currentDisplayStage ? "bg-[#039994] text-white" : 
+                  stage.id === currentDisplayStage ? "bg-[#039994] text-white" : 
+                  stage.id === nextStage ? "border-2 border-[#039994] bg-white text-gray-600" : "bg-gray-200 text-gray-600"
+                } ${stage.id <= currentDisplayStage ? 'hover:bg-[#028a85]' : ''}`}
+              >
+                {stage.id}
+              </div>
+              <span
+                className={`text-xs mt-1 text-center ${
+                  stage.id <= currentDisplayStage ? "text-[#039994] font-medium" : "text-gray-500"
+                }`}
+              >
+                {stage.name}
+              </span>
+              <div className="absolute top-full mt-2 hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap z-10">
+                {stage.tooltip}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="absolute top-4 left-0 right-0 flex justify-between px-4 -z-10">
+          {stages.slice(0, stages.length - 1).map((stage) => (
+            <div
+              key={stage.id}
+              className={`h-1 flex-1 mx-2 ${
+                stage.id < currentDisplayStage ? "bg-[#039994]" : "bg-gray-200"
+              }`}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function FacilityDetails({ facility, onBack, onFacilityUpdated }) {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -24,6 +95,99 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
   const [showAllDocs, setShowAllDocs] = useState(false);
   const [facilityData, setFacilityData] = useState(facility);
   const [expandedRejections, setExpandedRejections] = useState({});
+  const [currentStage, setCurrentStage] = useState(1);
+  const [nextStage, setNextStage] = useState(2);
+
+  useEffect(() => {
+    const checkUserProgress = async () => {
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const userId = loginResponse?.data?.user?.id;
+      const authToken = loginResponse?.data?.token;
+
+      if (!userId || !authToken) return;
+
+      const checkStage2 = async () => {
+        try {
+          const response = await fetch(
+            `https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`,
+            { headers: { 'Authorization': `Bearer ${authToken}` } }
+          );
+          const result = await response.json();
+          return result.status === 'success' && result.data?.commercialUser?.ownerAddress;
+        } catch (error) {
+          return false;
+        }
+      };
+
+      const checkStage3 = async () => {
+        try {
+          const response = await fetch(
+            `https://services.dcarbon.solutions/api/user/agreement/${userId}`,
+            { headers: { 'Authorization': `Bearer ${authToken}` } }
+          );
+          const result = await response.json();
+          return result.status === 'success' && result.data?.termsAccepted;
+        } catch (error) {
+          return false;
+        }
+      };
+
+      const checkStage4 = async () => {
+        try {
+          const response = await fetch(
+            `https://services.dcarbon.solutions/api/user/financial-info/${userId}`,
+            { headers: { 'Authorization': `Bearer ${authToken}` } }
+          );
+          const result = await response.json();
+          return result.status === 'success' && result.data?.financialInfo;
+        } catch (error) {
+          return false;
+        }
+      };
+
+      const checkStage5 = async () => {
+        try {
+          const response = await fetch(
+            `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`,
+            { headers: { 'Authorization': `Bearer ${authToken}` } }
+          );
+          const result = await response.json();
+          return result.status === 'success' && result.data?.length > 0 && result.data.some(item => item.meters?.meters?.length > 0);
+        } catch (error) {
+          return false;
+        }
+      };
+
+      const checkStage6 = () => {
+        return facilityData.status?.toLowerCase() === 'verified';
+      };
+
+      const stageChecks = [
+        { stage: 2, check: checkStage2 },
+        { stage: 3, check: checkStage3 },
+        { stage: 4, check: checkStage4 },
+        { stage: 5, check: checkStage5 },
+        { stage: 6, check: checkStage6 }
+      ];
+
+      let highestCompletedStage = 1;
+
+      for (const { stage, check } of stageChecks) {
+        const isCompleted = await check();
+        if (isCompleted) {
+          highestCompletedStage = stage;
+        }
+      }
+
+      const newStage = highestCompletedStage === 6 ? 6 : highestCompletedStage;
+      const newNextStage = highestCompletedStage === 6 ? 6 : highestCompletedStage + 1;
+      
+      setCurrentStage(newStage);
+      setNextStage(newNextStage);
+    };
+
+    checkUserProgress();
+  }, [facilityData.status]);
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
@@ -402,6 +566,12 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
 
   const visibleDocuments = showAllDocs ? allDocuments : allDocuments.slice(0, 3);
 
+  const handleStageClick = (stageId) => {
+    if (stageId === 6 && facilityData.status?.toLowerCase() !== 'verified') {
+      toast('Please complete all document uploads to verify your facility', { icon: 'ℹ️' });
+    }
+  };
+
   return (
     <div className="bg-white">
       <div className="p-4 border-b border-gray-200">
@@ -412,6 +582,12 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
           <FiArrowLeft className="mr-2" size={16} />
           <span className="font-medium text-sm">Facility Details</span>
         </button>
+
+        <ProgressTracker 
+          currentStage={currentStage} 
+          nextStage={nextStage} 
+          onStageClick={handleStageClick}
+        />
 
         <div className="flex justify-between items-center">
           <h1 className={pageTitle}>

@@ -11,11 +11,11 @@ const AddUtilityProvider = dynamic(() => import("./modals/AddUtilityProvider"), 
 
 const ProgressTracker = ({ currentStage, nextStage, onStageClick }) => {
   const stages = [
-    { id: 1, name: "Sign Up", tooltip: "Account creation completed" },
-    { id: 2, name: "Commercial Registration", tooltip: "Owner details and address completed" },
-    { id: 3, name: "Terms Acceptance", tooltip: "Terms and conditions signed" },
-    { id: 4, name: "Financial Agreement", tooltip: "Financial information submitted" },
-    { id: 5, name: "Utility Authorization", tooltip: "Utility meters connected" }
+    { id: 1, name: "App Registration", tooltip: "Account creation completed" },
+    { id: 2, name: "Solar Install Details", tooltip: "Owner details and address completed" },
+    { id: 3, name: "DCarbon Service Agreements", tooltip: "Terms and conditions signed" },
+    { id: 4, name: "Utility Authorization", tooltip: "Financial information submitted" },
+    { id: 5, name: "Utility Meter Selection", tooltip: "Utility meters connected" }
   ];
 
   const currentDisplayStage = currentStage > 5 ? 5 : currentStage;
@@ -92,6 +92,7 @@ export default function DashboardOverview() {
   const [currentStage, setCurrentStage] = useState(1);
   const [nextStage, setNextStage] = useState(2);
   const [clickedStage, setClickedStage] = useState(1);
+  const [showProgressTracker, setShowProgressTracker] = useState(true);
 
   const checkStage2Completion = async (userId, authToken) => {
     try {
@@ -194,6 +195,7 @@ export default function DashboardOverview() {
       
       setCurrentStage(newStage);
       setNextStage(newNextStage);
+      setShowProgressTracker(highestCompletedStage < 5);
     } catch (error) {
       console.error('Error checking user progress:', error);
     }
@@ -304,11 +306,13 @@ export default function DashboardOverview() {
         </div>
       </div>
 
-      <ProgressTracker 
-        currentStage={currentStage} 
-        nextStage={nextStage} 
-        onStageClick={handleStageClick}
-      />
+      {showProgressTracker && (
+        <ProgressTracker 
+          currentStage={currentStage} 
+          nextStage={nextStage} 
+          onStageClick={handleStageClick}
+        />
+      )}
       <QuickActions />
 
       <hr className="border-gray-300" />
