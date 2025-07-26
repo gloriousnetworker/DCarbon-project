@@ -5,7 +5,7 @@ import axios from "axios";
 const styles = {
   mainContainer: 'min-h-screen w-full flex flex-col items-center justify-center py-8 px-4 bg-white',
   headingContainer: 'relative w-full flex flex-col items-center mb-2',
-  backArrow: 'absolute left-4 top-0 text-[#039994] cursor-pointer z-10',
+  backArrow: 'absolute left-6 top-0 text-[#039994] cursor-pointer z-10',
   pageTitle: 'mb-4 font-[600] text-[24px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro text-left',
   progressContainer: 'w-full max-w-md flex items-center justify-between mb-6',
   progressBarWrapper: 'flex-1 h-1 bg-gray-200 rounded-full mr-4',
@@ -82,13 +82,10 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     setLoadingUtilityProviders(true);
     try {
       const token = localStorage.getItem('authToken');
-      if (!token) throw new Error('Authentication required');
-
       const response = await axios.get(
         'https://services.dcarbon.solutions/api/auth/utility-providers',
         { headers: { 'Authorization': `Bearer ${token}` } }
       );
-
       if (response.data.status === 'success') {
         setUtilityProviders(response.data.data);
       }
@@ -103,24 +100,19 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     setLoadingFinanceTypes(true);
     try {
       const token = localStorage.getItem('authToken');
-      if (!token) throw new Error('Authentication required');
-
       const response = await axios.get(
         'https://services.dcarbon.solutions/api/user/financial-types',
         { headers: { 'Authorization': `Bearer ${token}` } }
       );
-
       if (response.data.status === 'success') {
         const approvedTypes = response.data.data.types.filter(type => 
           type.status === 'APPROVED' || type.name.toLowerCase() === 'cash'
         );
-        
         const uniqueTypes = approvedTypes.reduce((acc, current) => {
           const x = acc.find(item => item.name.toLowerCase() === current.name.toLowerCase());
           if (!x) return acc.concat([current]);
           return acc;
         }, []);
-        
         setFinanceTypes(uniqueTypes);
       }
     } catch (err) {
@@ -134,13 +126,10 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     setLoadingInstallers(true);
     try {
       const token = localStorage.getItem('authToken');
-      if (!token) throw new Error('Authentication required');
-
       const response = await axios.get(
         'https://services.dcarbon.solutions/api/user/partner/get-all-installer',
         { headers: { 'Authorization': `Bearer ${token}` } }
       );
-
       if (response.data.status === 'success') {
         setInstallers(response.data.data.installers || []);
       }
@@ -151,105 +140,9 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     }
   };
 
-  const handleRequestFinanceType = async () => {
-    if (!requestedFinanceTypeName.trim()) {
-      toast.error('Please enter a finance type name');
-      return;
-    }
-
-    setRequestingFinanceType(true);
-    try {
-      const userId = localStorage.getItem('userId');
-      const token = localStorage.getItem('authToken');
-      
-      if (!userId || !token) throw new Error('Authentication required');
-
-      const response = await axios.post(
-        `https://services.dcarbon.solutions/api/user/request-financial-type/${userId}`,
-        { name: requestedFinanceTypeName.trim() },
-        { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } }
-      );
-
-      toast.success(response.data.message || 'Finance type request submitted successfully!');
-      setShowRequestModal(false);
-      setRequestedFinanceTypeName('');
-      await fetchFinanceTypes();
-    } catch (err) {
-      toast.error(err.response?.data?.message || err.message || 'Failed to submit request');
-    } finally {
-      setRequestingFinanceType(false);
-    }
-  };
-
-  const handleFileChange = (e) => {
-    const selectedFile = e.target.files[0];
-    if (!selectedFile) return;
-
-    const validTypes = ['application/pdf', 'image/jpeg', 'image/png', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-    if (!validTypes.includes(selectedFile.type)) {
-      toast.error('Invalid file type. Please upload PDF, JPEG, PNG, or Word documents.');
-      return;
-    }
-
-    setFile(selectedFile);
-    setUploadSuccess(false);
-    localStorage.removeItem('tempFinancialAgreement');
-  };
-
-  const handleUpload = async () => {
-    if (!file) return;
-    setUploading(true);
-    try {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64data = reader.result;
-        localStorage.setItem('tempFinancialAgreement', base64data);
-        toast.success('Financial agreement uploaded successfully!');
-        setUploadSuccess(true);
-      };
-      reader.onerror = () => toast.error('Error reading file');
-      reader.readAsDataURL(file);
-    } catch (err) {
-      toast.error(err.message || 'Upload failed');
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    
-    if (name === "financeType") {
-      const selectedFinanceType = financeTypes.find(type => type.name === value);
-      setFormData(prev => ({
-        ...prev,
-        financeNamingCode: selectedFinanceType?.namingCode || ""
-      }));
-    }
-    
-    if (name === "installer") {
-      const selectedInstaller = installers.find(installer => installer.name === value);
-      setFormData(prev => ({
-        ...prev,
-        installerNamingCode: selectedInstaller?.namingCode || ""
-      }));
-    }
-    
-    if (name === "utilityProvider") {
-      const selectedUtilityProvider = utilityProviders.find(provider => provider.name === value);
-      setFormData(prev => ({
-        ...prev,
-        utilityProviderNamingCode: selectedUtilityProvider?.namingCode || ""
-      }));
-    }
-  };
-
   const createFacility = async () => {
     const userId = localStorage.getItem('userId');
     const token = localStorage.getItem('authToken');
-    if (!userId || !token) throw new Error('Authentication required');
-
     const selectedFinanceType = financeTypes.find(type => type.name === formData.financeType);
     const selectedInstaller = installers.find(installer => installer.name === (showCustomInstaller ? formData.customInstaller : formData.installer));
     const selectedUtilityProvider = utilityProviders.find(provider => provider.name === formData.utilityProvider);
@@ -272,8 +165,124 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
       payload,
       { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } }
     );
-
     return response.data;
+  };
+
+  const uploadFinanceAgreementToFacility = async (facilityId) => {
+    if (!file) return;
+    
+    const token = localStorage.getItem('authToken');
+    const formData = new FormData();
+    formData.append('financeAgreementUrl', file);
+
+    await axios.put(
+      `https://services.dcarbon.solutions/api/facility/update-facility-financial-agreement/${facilityId}`,
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data', 'Authorization': `Bearer ${token}` } }
+    );
+  };
+
+  const updateFinanceInfo = async () => {
+    const userId = localStorage.getItem('userId');
+    const token = localStorage.getItem('authToken');
+    const finalInstaller = showCustomInstaller ? formData.customInstaller : formData.installer;
+
+    const payload = {
+      financialType: formData.financeType,
+      ...(showFinanceCompany && { financeCompany: formData.financeCompany }),
+      ...(finalInstaller && { installer: finalInstaller }),
+      ...(formData.systemSize && { systemSize: formData.systemSize }),
+      ...(formData.cod && { cod: formData.cod }),
+    };
+
+    await axios.put(
+      `https://services.dcarbon.solutions/api/user/financial-info/${userId}`,
+      payload,
+      { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } }
+    );
+  };
+
+  const handleRequestFinanceType = async () => {
+    if (!requestedFinanceTypeName.trim()) {
+      toast.error('Please enter a finance type name');
+      return;
+    }
+    setRequestingFinanceType(true);
+    try {
+      const userId = localStorage.getItem('userId');
+      const token = localStorage.getItem('authToken');
+      const response = await axios.post(
+        `https://services.dcarbon.solutions/api/user/request-financial-type/${userId}`,
+        { name: requestedFinanceTypeName.trim() },
+        { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } }
+      );
+      toast.success(response.data.message || 'Finance type request submitted successfully!');
+      setShowRequestModal(false);
+      setRequestedFinanceTypeName('');
+      await fetchFinanceTypes();
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to submit request');
+    } finally {
+      setRequestingFinanceType(false);
+    }
+  };
+
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files[0];
+    if (!selectedFile) return;
+    const validTypes = ['application/pdf', 'image/jpeg', 'image/png', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    if (!validTypes.includes(selectedFile.type)) {
+      toast.error('Invalid file type. Please upload PDF, JPEG, PNG, or Word documents.');
+      return;
+    }
+    setFile(selectedFile);
+    setUploadSuccess(false);
+  };
+
+  const handleUpload = async () => {
+    if (!file) return;
+    setUploading(true);
+    try {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64data = reader.result;
+        localStorage.setItem('tempFinancialAgreement', base64data);
+        setUploadSuccess(true);
+        toast.success('Financial agreement uploaded successfully!');
+      };
+      reader.onerror = () => toast.error('Error reading file');
+      reader.readAsDataURL(file);
+    } catch (err) {
+      toast.error(err.message || 'Upload failed');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (name === "financeType") {
+      const selectedFinanceType = financeTypes.find(type => type.name === value);
+      setFormData(prev => ({
+        ...prev,
+        financeNamingCode: selectedFinanceType?.namingCode || ""
+      }));
+    }
+    if (name === "installer") {
+      const selectedInstaller = installers.find(installer => installer.name === value);
+      setFormData(prev => ({
+        ...prev,
+        installerNamingCode: selectedInstaller?.namingCode || ""
+      }));
+    }
+    if (name === "utilityProvider") {
+      const selectedUtilityProvider = utilityProviders.find(provider => provider.name === value);
+      setFormData(prev => ({
+        ...prev,
+        utilityProviderNamingCode: selectedUtilityProvider?.namingCode || ""
+      }));
+    }
   };
 
   const initiateUtilityAuth = async () => {
@@ -281,30 +290,14 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     const authToken = localStorage.getItem('authToken');
     const userId = localStorage.getItem('userId');
 
-    if (!userEmail || !authToken || !userId) {
-      toast.error('Authentication required. Please log in again.');
-      return;
-    }
-
     setLoading(true);
     try {
-      const response = await fetch(
+      const response = await axios.post(
         `https://services.dcarbon.solutions/api/auth/initiate-utility-auth/${userId}`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${authToken}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            utilityAuthEmail: userEmail
-          })
-        }
+        { utilityAuthEmail: userEmail },
+        { headers: { 'Authorization': `Bearer ${authToken}` } }
       );
-
-      const data = await response.json();
-      
-      if (data.status === 'success') {
+      if (response.data.status === 'success') {
         setIframeUrl('https://utilityapi.com/authorize/DCarbon_Solutions');
         setShowIframe(true);
       } else {
@@ -334,65 +327,22 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
     if (!formData.financeType) return toast.error('Please select a finance type');
     if (!formData.utilityProvider) return toast.error('Please select a utility provider');
     if (!formData.installer) return toast.error('Please select an installer');
     if (showFinanceCompany && !formData.financeCompany) return toast.error('Please select a finance company');
-    if (showUploadField && !uploadSuccess) return toast.error('Please upload the financial agreement');
     if (showCustomInstaller && !formData.customInstaller) return toast.error('Please enter your installer name');
+    if (!facilityNickname) return toast.error('Please enter a facility nickname');
 
     setLoading(true);
     const toastId = toast.loading('Saving your information...');
 
     try {
-      const userId = localStorage.getItem('userId');
-      const token = localStorage.getItem('authToken');
-      if (!userId || !token) throw new Error('Authentication required');
+      await updateFinanceInfo();
+      const response = await createFacility();
 
-      const finalInstaller = showCustomInstaller ? formData.customInstaller : formData.installer;
-
-      const payload = {
-        financialType: formData.financeType,
-        ...(showFinanceCompany && { financeCompany: formData.financeCompany }),
-        ...(finalInstaller && { installer: finalInstaller }),
-        ...(formData.systemSize && { systemSize: formData.systemSize }),
-        ...(formData.cod && { cod: formData.cod }),
-      };
-
-      await axios.put(
-        `https://services.dcarbon.solutions/api/user/financial-info/${userId}`,
-        payload,
-        { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } }
-      );
-
-      await createFacility();
-
-      if (showUploadField && uploadSuccess) {
-        const uploadToastId = toast.loading('Uploading financial agreement...');
-        try {
-          const base64data = localStorage.getItem('tempFinancialAgreement');
-          if (!base64data) throw new Error('File data not found');
-          
-          const response = await fetch(base64data);
-          const blob = await response.blob();
-          const fileToUpload = new File([blob], file.name, { type: blob.type });
-
-          const formData = new FormData();
-          formData.append('financialAgreement', fileToUpload);
-
-          await axios.put(
-            `https://services.dcarbon.solutions/api/user/update-financial-agreement/${userId}`,
-            formData,
-            { headers: { 'Content-Type': 'multipart/form-data', 'Authorization': `Bearer ${token}` } }
-          );
-
-          toast.success('Financial agreement uploaded successfully!', { id: uploadToastId });
-          localStorage.removeItem('tempFinancialAgreement');
-        } catch (uploadErr) {
-          toast.error(uploadErr.response?.data?.message || uploadErr.message || 'File upload failed', { id: uploadToastId });
-          throw uploadErr;
-        }
+      if (file && uploadSuccess) {
+        await uploadFinanceAgreementToFacility(response.data.id);
       }
 
       toast.dismiss(toastId);
@@ -405,6 +355,22 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   };
 
   const handleCloseModal = () => {
+    setFormData({
+      financeType: "",
+      financeCompany: "",
+      installer: "",
+      customInstaller: "",
+      utilityProvider: "",
+      systemSize: "",
+      cod: "",
+      facilityTypeNamingCode: 1,
+      utilityProviderNamingCode: "",
+      installerNamingCode: "",
+      financeNamingCode: ""
+    });
+    setFacilityNickname('');
+    setFile(null);
+    setUploadSuccess(false);
     onClose();
     window.location.reload();
   };
@@ -499,9 +465,6 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                 onClick={onBack}
                 className={styles.backArrow}
               >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M19 12H5M12 19L5 12L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
               </button>
             )}
 
@@ -604,37 +567,39 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
 
               {showFinanceCompany && (
                 <div>
-                  <label className={styles.labelClass}>
-                    Finance company <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <select
-                      name="financeCompany"
-                      value={formData.financeCompany}
-                      onChange={handleInputChange}
-                      className={styles.selectClass}
-                      required
-                    >
-                      <option value="">Choose company</option>
-                      <option value="company1">Company 1</option>
-                      <option value="company2">Company 2</option>
-                      <option value="company3">Company 3</option>
-                      <option value="others">Others</option>
-                      <option value="n/a">N/A</option>
-                    </select>
-                    <div className={styles.uploadIconContainer}>
-                      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/>
-                      </svg>
-                    </div>
-                  </div>
-                </div>
+  <label className={styles.labelClass}>
+    Finance company <span className="text-red-500">*</span>
+  </label>
+  <div className="relative">
+    <select
+      name="financeCompany"
+      value={formData.financeCompany}
+      onChange={handleInputChange}
+      className={`${styles.selectClass} appearance-none pr-10`} 
+      required
+    >
+      <option value="">Choose company</option>
+      <option value="company1">Company 1</option>
+      <option value="company2">Company 2</option>
+      <option value="company3">Company 3</option>
+      <option value="others">Others</option>
+      <option value="n/a">N/A</option>
+    </select>
+
+    <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center">
+      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+      </svg>
+    </div>
+  </div>
+</div>
+
               )}
 
               {showUploadField && (
                 <div>
                   <label className={styles.uploadHeading}>
-                    Upload Finance Agreement <span className="text-red-500">*</span>
+                    Upload Finance Agreement
                   </label>
                   <div className={styles.uploadFieldWrapper}>
                     <input
@@ -642,7 +607,6 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                       onChange={handleFileChange}
                       className={styles.uploadInputLabel}
                       accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                      required
                     />
                     <button
                       type="button"
@@ -654,7 +618,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                     </button>
                   </div>
                   <p className={styles.uploadNoteStyle}>
-                    Required for all finance types except Cash (PDF, JPEG, PNG, Word)
+                    Optional for loan, PPA, and lease agreements
                   </p>
                 </div>
               )}
@@ -737,21 +701,22 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
               </div>
 
               <div className="pt-6">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className={styles.buttonPrimary}
-                >
-                  {loading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                      Saving...
-                    </>
-                  ) : (
-                    'Next'
-                  )}
-                </button>
-              </div>
+  <button
+    type="submit"
+    disabled={loading}
+    className={`${styles.buttonPrimary} flex items-center justify-center gap-2`}
+  >
+    {loading ? (
+      <>
+        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+        <span>Saving...</span>
+      </>
+    ) : (
+      'Next'
+    )}
+  </button>
+</div>
+
 
               <div className={styles.termsTextContainer}>
                 <span>Terms and Conditions</span>
