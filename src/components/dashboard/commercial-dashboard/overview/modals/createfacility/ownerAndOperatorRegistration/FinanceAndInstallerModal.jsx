@@ -105,7 +105,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
         { headers: { 'Authorization': `Bearer ${token}` } }
       );
       if (response.data.status === 'success') {
-        const approvedTypes = response.data.data.types.filter(type => 
+        const approvedTypes = response.data.data.types.filter(type =>
           type.status === 'APPROVED' || type.name.toLowerCase() === 'cash'
         );
         const uniqueTypes = approvedTypes.reduce((acc, current) => {
@@ -170,7 +170,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
 
   const uploadFinanceAgreementToFacility = async (facilityId) => {
     if (!file) return;
-    
+
     const token = localStorage.getItem('authToken');
     const formData = new FormData();
     formData.append('financeAgreementUrl', file);
@@ -388,7 +388,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
               className="text-red-500 hover:text-red-700"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </button>
           </div>
@@ -473,14 +473,14 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
               className="absolute top-6 right-6 text-red-500 hover:text-red-700"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </button>
 
             <h2 className={styles.pageTitle}>
               Finance & Installer information for Owner and Operator
             </h2>
-            
+
             <div className={styles.progressContainer}>
               <div className={styles.progressBarWrapper}>
                 <div className={styles.progressBarActive}></div>
@@ -526,7 +526,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                   </select>
                   <div className={styles.uploadIconContainer}>
                     <svg className="w-5 h-5 text-gray-400 pointer-events-none absolute top-1/2 right-3 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                     </svg>
                   </div>
                 </div>
@@ -552,7 +552,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                   </select>
                   <div className={styles.uploadIconContainer}>
                     <svg className="w-5 h-5 text-gray-400 pointer-events-none absolute top-1/2 right-3 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                     </svg>
                   </div>
                 </div>
@@ -567,32 +567,32 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
 
               {showFinanceCompany && (
                 <div>
-  <label className={styles.labelClass}>
-    Finance company <span className="text-red-500">*</span>
-  </label>
-  <div className="relative">
-    <select
-      name="financeCompany"
-      value={formData.financeCompany}
-      onChange={handleInputChange}
-      className={`${styles.selectClass} appearance-none pr-10`} 
-      required
-    >
-      <option value="">Choose company</option>
-      <option value="company1">Company 1</option>
-      <option value="company2">Company 2</option>
-      <option value="company3">Company 3</option>
-      <option value="others">Others</option>
-      <option value="n/a">N/A</option>
-    </select>
+                  <label className={styles.labelClass}>
+                    Finance company <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <select
+                      name="financeCompany"
+                      value={formData.financeCompany}
+                      onChange={handleInputChange}
+                      className={`${styles.selectClass} appearance-none pr-10`}
+                      required
+                    >
+                      <option value="">Choose company</option>
+                      <option value="company1">Company 1</option>
+                      <option value="company2">Company 2</option>
+                      <option value="company3">Company 3</option>
+                      <option value="others">Others</option>
+                      <option value="n/a">N/A</option>
+                    </select>
 
-    <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center">
-      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-      </svg>
-    </div>
-  </div>
-</div>
+                    <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center">
+                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
 
               )}
 
@@ -645,7 +645,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                   </select>
                   <div className={styles.uploadIconContainer}>
                     <svg className="w-5 h-5 text-gray-400 pointer-events-none absolute top-1/2 right-3 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                     </svg>
                   </div>
                 </div>
@@ -701,21 +701,21 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
               </div>
 
               <div className="pt-6">
-  <button
-    type="submit"
-    disabled={loading}
-    className={`${styles.buttonPrimary} flex items-center justify-center gap-2`}
-  >
-    {loading ? (
-      <>
-        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-        <span>Saving...</span>
-      </>
-    ) : (
-      'Next'
-    )}
-  </button>
-</div>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className={`${styles.buttonPrimary} flex items-center justify-center gap-2`}
+                >
+                  {loading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    'Next'
+                  )}
+                </button>
+              </div>
 
 
               <div className={styles.termsTextContainer}>
