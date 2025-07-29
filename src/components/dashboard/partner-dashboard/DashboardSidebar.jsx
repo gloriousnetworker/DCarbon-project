@@ -1,4 +1,3 @@
-// app/components/DashboardSidebar.js
 'use client';
 
 import React, { useState, useEffect } from "react";
@@ -30,7 +29,6 @@ const DashboardSidebar = ({
 
   const isActive = (section) => section === selectedSection;
 
-  // Style constants
   const sidebarContainer = 'bg-white w-64 min-h-screen flex flex-col border-r border-gray-200 overflow-y-auto hide-scrollbar';
   const sidebarSection = 'px-4 py-2';
   const sidebarDivider = 'my-2 border-gray-200 mx-4';

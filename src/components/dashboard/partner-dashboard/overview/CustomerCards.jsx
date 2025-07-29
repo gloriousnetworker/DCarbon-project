@@ -1,4 +1,3 @@
-// src/components/dashboard/partner-dashboard/overview/CustomerCards.jsx
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import SendReminderModal from "../overview/modals/SendReminderModal";
