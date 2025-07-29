@@ -10,22 +10,30 @@ export default function StepOneCard() {
   const [partnerName, setPartnerName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [email, setEmail] = useState('');
-  const [address, setAddress] = useState('');
+  const [address1, setAddress1] = useState('');
+  const [address2, setAddress2] = useState('');
+  const [city, setCity] = useState('');
+  const [state, setState] = useState('');
+  const [zipCode, setZipCode] = useState('');
   const [partnerType, setPartnerType] = useState('installer');
 
   const router = useRouter();
 
   const handleSubmit = async () => {
-    // Validate required fields
-    if (!partnerName || !phoneNumber || !email || !address || !partnerType) {
+    if (!partnerName || !phoneNumber || !email || !address1 || !city || !state || !zipCode || !partnerType) {
       toast.error('Please fill all required fields');
       return;
     }
 
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       toast.error('Please enter a valid email address');
+      return;
+    }
+
+    const phoneRegex = /^(\+\d{1,2}\s)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$/;
+    if (!phoneRegex.test(phoneNumber)) {
+      toast.error('Please enter a valid phone number');
       return;
     }
 
@@ -40,14 +48,13 @@ export default function StepOneCard() {
     setLoading(true);
 
     try {
-      // Map dropdown values to API expected values
-      const apiPartnerType = partnerType; // No need to map as we're now using correct values in the dropdown
+      const address = [address1, address2, city, state, zipCode].filter(Boolean).join(', ');
 
       const payload = {
         name: partnerName,
         email,
         phoneNumber,
-        partnerType: apiPartnerType,
+        partnerType,
         address,
       };
 
@@ -64,12 +71,9 @@ export default function StepOneCard() {
 
       if (response.data.status === 'success') {
         toast.success('Partner registration successful');
+        localStorage.setItem('partnerType', partnerType);
         
-        // Store partner type in localStorage for navbar to use
-        localStorage.setItem('partnerType', apiPartnerType);
-        
-        // Route based on partner type
-        switch(apiPartnerType) {
+        switch(partnerType) {
           case 'sales_agent':
             router.push('/register/partner-user-registration/sales-agent-agreement');
             break;
@@ -97,16 +101,13 @@ export default function StepOneCard() {
 
   return (
     <>
-      {/* Loader Overlay */}
       {loading && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20">
           <div className="h-12 w-12 border-4 border-t-4 border-gray-300 border-t-[#039994] rounded-full animate-spin"></div>
         </div>
       )}
 
-      {/* Full-Screen Background */}
       <div className="min-h-screen w-full flex flex-col items-center justify-center py-8 px-4 bg-white">
-        {/* Back Arrow */}
         <div className="relative w-full flex flex-col items-center mb-2">
           <div className="absolute left-4 top-0 text-[#039994] cursor-pointer z-10" onClick={() => router.back()}>
             <svg
@@ -122,12 +123,10 @@ export default function StepOneCard() {
           </div>
         </div>
 
-        {/* Heading */}
         <h1 className="mb-4 font-[600] text-[36px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro text-center">
           Partner Information
         </h1>
 
-        {/* Step Bar */}
         <div className="w-full max-w-md flex items-center justify-between mb-6">
           <div className="flex-1 h-1 bg-gray-200 rounded-full mr-4">
             <div className="h-1 bg-[#039994] w-1/2 rounded-full" />
@@ -135,9 +134,7 @@ export default function StepOneCard() {
           <span className="text-sm font-medium text-gray-500 font-sfpro">01/02</span>
         </div>
 
-        {/* Form Fields */}
         <div className="w-full max-w-md space-y-6">
-          {/* Partner Type Dropdown - Updated with correct values */}
           <div>
             <label className="block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]">
               Partner Type <span className="text-red-500">*</span>
@@ -154,22 +151,20 @@ export default function StepOneCard() {
             </select>
           </div>
 
-          {/* Partner Name */}
           <div>
             <label className="block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]">
-              Partner Name <span className="text-red-500">*</span>
+              Company Name <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               value={partnerName}
               onChange={(e) => setPartnerName(e.target.value)}
-              placeholder="Partner name"
+              placeholder="Company name"
               className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]"
               required
             />
           </div>
 
-          {/* Phone Number */}
           <div>
             <label className="block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]">
               Phone Number <span className="text-red-500">*</span>
@@ -178,13 +173,12 @@ export default function StepOneCard() {
               type="tel"
               value={phoneNumber}
               onChange={(e) => setPhoneNumber(e.target.value)}
-              placeholder="+91 234567890"
+              placeholder="(123) 456-7890"
               className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]"
               required
             />
           </div>
 
-          {/* Email Address */}
           <div>
             <label className="block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]">
               Email Address <span className="text-red-500">*</span>
@@ -199,23 +193,77 @@ export default function StepOneCard() {
             />
           </div>
 
-          {/* Address */}
           <div>
             <label className="block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]">
-              Address <span className="text-red-500">*</span>
+              Address 1 <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              placeholder="567 ELM STREET AUSTIN, TX, 24132 UNITED STATES."
+              value={address1}
+              onChange={(e) => setAddress1(e.target.value)}
+              placeholder="123 Main St"
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]">
+              Address 2
+            </label>
+            <input
+              type="text"
+              value={address2}
+              onChange={(e) => setAddress2(e.target.value)}
+              placeholder="Apt, suite, unit, etc."
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]"
+            />
+          </div>
+
+          <div className="flex space-x-4">
+            <div className="flex-1">
+              <label className="block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]">
+                City <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                placeholder="City"
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]"
+                required
+              />
+            </div>
+            <div className="flex-1">
+              <label className="block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]">
+                State <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={state}
+                onChange={(e) => setState(e.target.value)}
+                placeholder="State"
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]"
+                required
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]">
+              Zip Code <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={zipCode}
+              onChange={(e) => setZipCode(e.target.value)}
+              placeholder="12345"
               className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]"
               required
             />
           </div>
         </div>
 
-        {/* Next Button */}
         <div className="w-full max-w-md mt-6">
           <button
             onClick={handleSubmit}
@@ -226,7 +274,6 @@ export default function StepOneCard() {
           </button>
         </div>
 
-        {/* Terms and Conditions & Privacy Policy Links */}
         <div className="mt-6 text-center font-sfpro text-[10px] font-[800] leading-[100%] tracking-[-0.05em] underline text-[#1E1E1E]">
           By clicking on 'Next', you agree to our{' '}
           <a href="/terms" className="text-[#039994] hover:underline font-medium">

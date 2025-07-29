@@ -1,8 +1,9 @@
+// src/components/dashboard/partner-dashboard/overview/CustomerCards.jsx
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import SendReminderModal from "../overview/modals/SendReminderModal";
 
-export default function ThreeCardsDashboard() {
+export default function ThreeCardsDashboard({ onSectionChange }) {
   const [referralStats, setReferralStats] = useState({
     totalInvited: 0,
     totalPending: 0,
@@ -28,7 +29,6 @@ export default function ThreeCardsDashboard() {
 
   const [selectedEmail, setSelectedEmail] = useState("");
   const [showReminderModal, setShowReminderModal] = useState(false);
-  const [showAllPending, setShowAllPending] = useState(false);
 
   useEffect(() => {
     const storedUserId = localStorage.getItem("userId") || "8b14b23d-3082-4846-9216-2c2e9f1e96bf";
@@ -40,7 +40,6 @@ export default function ThreeCardsDashboard() {
         setLoadingPending(true);
         setLoadingWorkProgress(true);
         
-        // Fetch all endpoints in parallel
         const [statsResponse, pendingResponse, workProgressResponse] = await Promise.all([
           axios.get(
             `https://services.dcarbon.solutions/api/user/referral-statistics/${storedUserId}`,
@@ -60,21 +59,17 @@ export default function ThreeCardsDashboard() {
         const pendingData = pendingResponse.data.data?.pendingReferrals || [];
         const workProgressData = workProgressResponse.data.data || {};
 
-        // Get truly pending referrals (status = PENDING)
         const trulyPending = pendingData.filter(item => item.status === "PENDING");
 
-        // Update stats directly from backend
         setReferralStats({
           totalInvited: backendData.totalInvited || 0,
-          totalPending: trulyPending.length, // Use actual pending count from filtered list
+          totalPending: trulyPending.length,
           totalAccepted: backendData.totalAccepted || 0,
           totalExpired: backendData.totalExpired || 0
         });
 
-        // Set pending referrals
         setPendingReferrals(trulyPending);
 
-        // Set work progress data
         setWorkProgress({
           pendingRegistrations: workProgressData.pendingRegistrations || 0,
           incompleteDocumentation: workProgressData.incompleteDocumentation || 0,
@@ -95,7 +90,6 @@ export default function ThreeCardsDashboard() {
 
     fetchData();
 
-    // Refresh data every 5 minutes
     const refreshInterval = setInterval(fetchData, 300000);
     return () => clearInterval(refreshInterval);
   }, []);
@@ -119,13 +113,14 @@ export default function ThreeCardsDashboard() {
     setShowReminderModal(true);
   };
 
-  const toggleShowAllPending = () => {
-    setShowAllPending(!showAllPending);
+  const handleViewMoreClick = () => {
+    if (typeof onSectionChange === 'function') {
+      onSectionChange("customerManagement");
+    }
   };
 
   return (
     <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-4">
-      {/* Customer Range Card */}
       <div className="bg-white rounded-lg shadow p-4 flex flex-col">
         <div className="flex items-center space-x-2 mb-2">
           <img
@@ -136,7 +131,6 @@ export default function ThreeCardsDashboard() {
           <h3 className="text-[#1E1E1E] font-semibold text-sm">
             Customer Range
           </h3>
-          {/* Stars for milestones */}
           <div className="flex ml-auto space-x-1">
             {[...Array(getStarCount())].map((_, i) => (
               <span key={i} className="text-yellow-400">★</span>
@@ -184,7 +178,6 @@ export default function ThreeCardsDashboard() {
         )}
       </div>
 
-      {/* Pending Customer Registrations Card */}
       <div className="bg-white rounded-lg shadow p-4 flex flex-col">
         <div className="flex items-center space-x-2 mb-2">
           <img
@@ -207,7 +200,7 @@ export default function ThreeCardsDashboard() {
             <hr className="my-2 border-black" />
             <div className="overflow-y-auto max-h-52 pr-2">
               {pendingReferrals.length > 0 ? (
-                (showAllPending ? pendingReferrals : pendingReferrals.slice(0, 5)).map((item, idx) => (
+                pendingReferrals.slice(0, 5).map((item, idx) => (
                   <div
                     key={idx}
                     className="flex items-center justify-between mb-2 gap-2"
@@ -242,11 +235,11 @@ export default function ThreeCardsDashboard() {
                 <hr className="my-2 border-black" />
                 <div className="flex justify-end">
                   <button
-                    onClick={toggleShowAllPending}
+                    onClick={handleViewMoreClick}
                     className="text-white text-xs px-3 py-1 rounded"
                     style={{ backgroundColor: "#039994" }}
                   >
-                    {showAllPending ? "Show less" : "View more"}
+                    View more
                   </button>
                 </div>
               </>
@@ -255,7 +248,6 @@ export default function ThreeCardsDashboard() {
         )}
       </div>
 
-      {/* Work Progress Card */}
       <div className="bg-white rounded-lg shadow p-4 flex flex-col">
         <div className="flex items-center space-x-2 mb-2">
           <img
@@ -303,7 +295,6 @@ export default function ThreeCardsDashboard() {
         )}
       </div>
 
-      {/* Send Reminder Modal */}
       {showReminderModal && (
         <SendReminderModal
           isOpen={showReminderModal}

@@ -1,43 +1,58 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { FaDownload, FaPrint, FaTimes } from "react-icons/fa";
+import { FaDownload, FaTimes } from "react-icons/fa";
 import CustomerIDLoader from "../../../../../components/loader/CustomerIDLoader";
 import RegistrationSuccessfulModal from "../../../../../components/modals/partner-modals/RegistrationSuccessfulModal";
 import Loader from "../../../../../components/loader/Loader";
-import Agreement from "../../../../../components/partner/agreements/InstallerAgreement";
-import SignatureModal from "../../../../../components/modals/SignatureModal";
+import SignatureModal from "./SignatureModal";
 import toast from "react-hot-toast";
+import { jsPDF } from "jspdf";
 
-export default function AgreementFormPage() {
+export default function PartnerInstallerAgreement() {
+  const [isChecked, setIsChecked] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showLoader, setShowLoader] = useState(false);
   const [registrationModalOpen, setRegistrationModalOpen] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [showRedirectLoader, setShowRedirectLoader] = useState(false);
-
-  // Condition states: checkboxes and signature
-  const [allChecked, setAllChecked] = useState(false);
   const [showSignatureModal, setShowSignatureModal] = useState(false);
   const [signatureData, setSignatureData] = useState(null);
-  const [accepted, setAccepted] = useState(true);
-
+  const [scrolledToBottom, setScrolledToBottom] = useState(false);
+  const contentRef = useRef(null);
   const router = useRouter();
 
-  // Effect for main loader delay
+  useEffect(() => {
+    const handleScroll = () => {
+      if (contentRef.current) {
+        const { scrollTop, scrollHeight, clientHeight } = contentRef.current;
+        const isBottom = scrollTop + clientHeight >= scrollHeight - 10;
+        setScrolledToBottom(isBottom);
+      }
+    };
+
+    if (contentRef.current) {
+      contentRef.current.addEventListener("scroll", handleScroll);
+    }
+
+    return () => {
+      if (contentRef.current) {
+        contentRef.current.removeEventListener("scroll", handleScroll);
+      }
+    };
+  }, []);
+
   useEffect(() => {
     let timer;
     if (loading) {
       setShowLoader(true);
     } else {
-      // Minimum display time of 500ms for the loader
       timer = setTimeout(() => setShowLoader(false), 500);
     }
     return () => clearTimeout(timer);
   }, [loading]);
 
-  // Effect for redirect loader delay
   useEffect(() => {
     let timer;
     if (isRedirecting) {
@@ -48,7 +63,6 @@ export default function AgreementFormPage() {
     return () => clearTimeout(timer);
   }, [isRedirecting]);
 
-  // Function to call the accept user agreement endpoint
   const acceptUserAgreement = async () => {
     try {
       const userId = localStorage.getItem("userId");
@@ -76,18 +90,16 @@ export default function AgreementFormPage() {
         throw new Error("Failed to accept user agreement");
       }
 
-      const data = await response.json();
-      return data;
+      return await response.json();
     } catch (error) {
       console.error("Error accepting user agreement:", error);
       throw error;
     }
   };
 
-  // When Accept is clicked (and conditions met), show registration success modal and then redirect
   const handleSubmit = async () => {
-    if (!allChecked) {
-      toast.error("Please accept all agreements");
+    if (!isChecked) {
+      toast.error("Please accept the agreement first");
       return;
     }
     if (!signatureData) {
@@ -120,82 +132,203 @@ export default function AgreementFormPage() {
     toast.success("Signature saved successfully");
   };
 
+  const handleSignFirst = () => {
+    if (!isChecked) {
+      toast.error("Please accept the agreement first");
+      return;
+    }
+    setShowSignatureModal(true);
+  };
+
+  const handleDownload = () => {
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
+
+    doc.setFont('helvetica', 'normal');
+    
+    doc.setFontSize(14);
+    doc.setTextColor(3, 153, 148);
+    doc.setFont('helvetica', 'bold');
+    doc.text('PROGRAM PARTNER AGREEMENT', 105, 20, { align: 'center' });
+    
+    doc.setFontSize(10);
+    doc.setTextColor(0, 0, 0);
+    
+    const agreementText = [
+      "This Program Partner Agreement ('Agreement') is made between DCarbon Solutions ('Company')",
+      "and the undersigned Partner ('Partner').",
+      "",
+      "1. Partner Responsibilities: Partner agrees to install, maintain, and service renewable energy",
+      "systems in accordance with Company standards and specifications.",
+      "",
+      "2. Compensation: Company shall pay Partner according to the agreed-upon rate schedule for",
+      "completed installations that meet quality standards.",
+      "",
+      "3. Quality Standards: Partner agrees to maintain all installations to Company's quality",
+      "standards and specifications.",
+      "",
+      "4. Training: Partner agrees to participate in Company-provided training programs as required.",
+      "",
+      "5. Insurance: Partner agrees to maintain adequate liability insurance coverage for all",
+      "installation activities.",
+      "",
+      "6. Term: This Agreement shall commence on the date of execution and continue for 12 months,",
+      "automatically renewing for successive 12-month terms unless terminated.",
+      "",
+      "7. Termination: Either party may terminate this Agreement with 30 days written notice.",
+      "",
+      "8. Governing Law: This Agreement shall be governed by the laws of the state of Texas."
+    ];
+    
+    let yPosition = 30;
+    agreementText.forEach(line => {
+      if (yPosition > 270) {
+        doc.addPage();
+        yPosition = 20;
+      }
+      doc.text(line, 20, yPosition, { maxWidth: 170 });
+      yPosition += 7;
+    });
+
+    doc.addPage();
+    yPosition = 30;
+    
+    doc.setFontSize(12);
+    doc.setTextColor(3, 153, 148);
+    doc.text('ACKNOWLEDGEMENT AND SIGNATURE', 105, yPosition, { align: 'center' });
+    yPosition += 15;
+    
+    doc.setFontSize(10);
+    doc.setTextColor(0, 0, 0);
+    doc.text('By signing below, I acknowledge that I have read and agree to the Program Partner', 105, yPosition, { align: 'center' });
+    yPosition += 7;
+    doc.text('Agreement presented in this document.', 105, yPosition, { align: 'center' });
+    yPosition += 20;
+    
+    if (signatureData) {
+      const img = new Image();
+      img.src = signatureData;
+      doc.addImage(img, 'PNG', 40, yPosition, 40, 20);
+      yPosition += 25;
+    } else {
+      doc.line(40, yPosition, 80, yPosition);
+      doc.text('Partner Signature', 60, yPosition + 5, { align: 'center' });
+      yPosition += 10;
+    }
+    
+    doc.line(130, yPosition - 10, 170, yPosition - 10);
+    doc.text('Date', 150, yPosition - 5, { align: 'center' });
+    
+    doc.text('Printed Name: ___________________________', 40, yPosition + 10);
+    doc.text('Company Name: _________________________', 40, yPosition + 20);
+    doc.text('Partner ID: _______', 40, yPosition + 30);
+    
+    doc.save("DCarbon_Partner_Agreement.pdf");
+  };
+
   return (
     <>
-      {/* Full-screen Loader Overlay with delay */}
       {showLoader && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
           <CustomerIDLoader />
         </div>
       )}
 
-      {/* Full-Screen Background Container */}
-      <div className={mainContainer}>
-        {/* X (Close) Button */}
-        <button
-          onClick={() => router.back()}
-          className={backArrow}
-          aria-label="Close"
-        >
-          <FaTimes size={24} />
-        </button>
-
-        {/* Horizontal Rule */}
-        <hr className="mb-4 border-gray-300 w-full max-w-3xl" />
-
-        {/* Heading + Icons */}
-        <div className={headingContainer}>
-          <h1 className={pageTitle}>
-            Terms of Agreement for Partner Installer
-          </h1>
-          <div className="flex space-x-4">
-            <FaDownload className="cursor-pointer text-[#039994]" size={20} />
-            <FaPrint className="cursor-pointer text-[#039994]" size={20} />
-          </div>
-        </div>
-
-        {/* Horizontal Rule */}
-        <hr className="mb-4 border-gray-300 w-full max-w-3xl" />
-
-        {/* Scrollable Agreement Sections */}
-        <Agreement
-          onAllCheckedChange={setAllChecked}
-          signatureData={signatureData}
-          onOpenSignatureModal={() => setShowSignatureModal(true)}
-        />
-
-        {/* Accept / Decline Buttons */}
-        <div className="flex w-full max-w-3xl justify-between mt-6 space-x-4 px-2 fixed bottom-8">
-          <button
-            onClick={() => {
-              setAccepted(true);
-              handleSubmit();
-            }}
-            disabled={!(allChecked && signatureData)}
-            className={`
-              ${buttonPrimary}
-              ${!(allChecked && signatureData) ? "opacity-50 cursor-not-allowed" : ""}
-            `}
-          >
-            Accept
-          </button>
-
-          <button
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+        <div className="relative w-full max-w-2xl bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
+          <button 
             onClick={() => router.back()}
-            className="
-              w-full py-2 text-center rounded-md 
-              bg-transparent 
-              border border-[#039994] 
-              text-[#039994]
-              font-sfpro
-            "
+            className="absolute top-4 right-4 z-10 w-6 h-6 flex items-center justify-center text-red-500 hover:text-red-700"
           >
-            Decline
+            <FaTimes size={24} />
           </button>
+
+          <div className="border-b border-gray-300 mt-4"></div>
+
+          <div className="p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="font-[600] text-[20px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro">
+                Program Partner Agreement
+              </h2>
+              <button onClick={handleDownload} className="text-[#15104D] hover:opacity-80">
+                <FaDownload size={20} />
+              </button>
+            </div>
+
+            <div className="border-b border-gray-300 mb-4"></div>
+
+            <div className="flex items-start mb-4">
+              <input
+                type="checkbox"
+                checked={isChecked}
+                onChange={(e) => setIsChecked(e.target.checked)}
+                className="mt-1 w-4 h-4 text-[#039994] border-gray-300 rounded focus:ring-[#039994] accent-[#039994]"
+              />
+              <label className="ml-3 font-sfpro font-[400] text-[14px] leading-[150%] text-[#039994] cursor-pointer">
+                I agree to the Program Partner Agreement <span className="text-red-500">*</span>
+              </label>
+            </div>
+
+            <div
+              ref={contentRef}
+              className="agreement-content h-[300px] overflow-y-auto mb-6 font-sfpro text-[12px] leading-[150%] font-[400] text-[#1E1E1E] p-4 bg-gray-50 rounded-lg"
+            >
+              <h3 className="font-bold text-[#039994] mb-2">PROGRAM PARTNER AGREEMENT</h3>
+              <p className="mb-4">
+                This Program Partner Agreement ("Agreement") is made between DCarbon Solutions ("Company") and the undersigned Partner ("Partner").
+              </p>
+              <p className="mb-2"><strong>1. Partner Responsibilities:</strong> Partner agrees to install, maintain, and service renewable energy systems in accordance with Company standards and specifications.</p>
+              <p className="mb-2"><strong>2. Compensation:</strong> Company shall pay Partner according to the agreed-upon rate schedule for completed installations that meet quality standards.</p>
+              <p className="mb-2"><strong>3. Quality Standards:</strong> Partner agrees to maintain all installations to Company's quality standards and specifications.</p>
+              <p className="mb-2"><strong>4. Training:</strong> Partner agrees to participate in Company-provided training programs as required.</p>
+              <p className="mb-2"><strong>5. Insurance:</strong> Partner agrees to maintain adequate liability insurance coverage for all installation activities.</p>
+              <p className="mb-2"><strong>6. Term:</strong> This Agreement shall commence on the date of execution and continue for 12 months, automatically renewing for successive 12-month terms unless terminated.</p>
+              <p className="mb-2"><strong>7. Termination:</strong> Either party may terminate this Agreement with 30 days written notice.</p>
+              <p className="mb-4"><strong>8. Governing Law:</strong> This Agreement shall be governed by the laws of the state of Texas.</p>
+            </div>
+
+            <div className="mb-6">
+              <h3 className="block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]">
+                Signature <span className="text-red-500">*</span>
+              </h3>
+              {signatureData ? (
+                <div className="border border-gray-300 rounded p-4 mb-2 text-gray-700">
+                  <img src={signatureData} alt="Partner signature" className="max-w-full h-auto" />
+                </div>
+              ) : (
+                <div className="border border-dashed border-gray-300 rounded p-4 mb-2 text-gray-500 italic font-sfpro">
+                  No signature yet
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-between gap-4">
+              <button
+                onClick={handleSignFirst}
+                disabled={!isChecked || loading}
+                className={`flex-1 rounded-md text-white font-semibold py-3 focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] transition-colors ${
+                  isChecked && !loading
+                    ? "bg-[#039994] hover:bg-[#02857f]"
+                    : "bg-gray-400 cursor-not-allowed"
+                }`}
+              >
+                {loading ? "Processing..." : signatureData ? "Accept" : "Sign Agreement"}
+              </button>
+              <button
+                onClick={() => router.back()}
+                disabled={loading}
+                className="flex-1 rounded-md bg-white border border-[#039994] text-[#039994] font-semibold py-3 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Decline
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Registration Success Modal - Only modal we keep */}
       {registrationModalOpen && (
         <RegistrationSuccessfulModal
           closeModal={handleCloseRegistrationModal}
@@ -203,14 +336,12 @@ export default function AgreementFormPage() {
         />
       )}
 
-      {/* Loader before redirect with delay */}
       {showRedirectLoader && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
           <Loader />
         </div>
       )}
 
-      {/* Signature Modal */}
       <SignatureModal
         isOpen={showSignatureModal}
         onClose={() => setShowSignatureModal(false)}
@@ -219,10 +350,3 @@ export default function AgreementFormPage() {
     </>
   );
 }
-
-// Style constants
-const mainContainer = 'min-h-screen w-full flex flex-col items-center justify-center py-8 px-4 bg-white';
-const headingContainer = 'relative w-full flex flex-col items-center mb-2';
-const backArrow = 'absolute left-4 top-0 text-[#039994] cursor-pointer z-10';
-const pageTitle = 'mb-4 font-[600] text-[36px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro text-center';
-const buttonPrimary = 'w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro';
