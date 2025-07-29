@@ -3,8 +3,6 @@ import axios from 'axios';
 import { FiX } from 'react-icons/fi';
 import { FaSearch, FaCheck, FaTimes } from 'react-icons/fa';
 import { toast } from 'react-hot-toast';
-
-// Import your style exports from styles.js (adjust as needed)
 import {
   mainContainer,
   headingContainer,
@@ -32,7 +30,6 @@ const SendReminderModal = ({ isOpen, onClose }) => {
     processedEmails: 0
   });
 
-  // Reset form when modal opens/closes
   useEffect(() => {
     if (isOpen) {
       resetForm();
@@ -93,7 +90,6 @@ const SendReminderModal = ({ isOpen, onClose }) => {
       ? [singleEmail] 
       : bulkEmails.filter(Boolean);
 
-    // Validate emails
     if (emails.length === 0) {
       toast.error('Please enter at least one email address');
       return;
@@ -143,11 +139,8 @@ const SendReminderModal = ({ isOpen, onClose }) => {
         setEmailStatuses(emailStatuses);
         setSummary(summary);
         setShowResults(true);
-        
-        // Show detailed toasts for each email status
         showEmailStatusToasts(emailStatuses);
 
-        // Show summary toast
         if (summary.processedEmails > 0) {
           toast.success(
             `Successfully sent ${summary.processedEmails} reminder(s)`,
@@ -156,6 +149,7 @@ const SendReminderModal = ({ isOpen, onClose }) => {
               icon: <FaCheck className="text-green-500" />
             }
           );
+          window.location.reload();
         } else {
           toast.error(
             'No reminders sent - no valid referrals found',
@@ -360,6 +354,7 @@ const SendReminderModal = ({ isOpen, onClose }) => {
               onClick={() => {
                 resetForm();
                 onClose();
+                window.location.reload();
               }}
               className="w-full py-2 rounded-md text-white text-sm font-sfpro bg-[#039994] hover:bg-[#02857f]"
             >

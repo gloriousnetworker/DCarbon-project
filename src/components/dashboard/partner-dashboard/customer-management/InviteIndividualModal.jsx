@@ -14,9 +14,22 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
     message: ""
   });
   const [loading, setLoading] = useState(false);
+  const [phoneError, setPhoneError] = useState("");
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    
+    if (name === "phoneNumber") {
+      const phoneRegex = /^[0-9+]*$/;
+      if (!phoneRegex.test(value)) {
+        setPhoneError("Phone number can only contain numbers and +");
+      } else if (value.length > 15) {
+        setPhoneError("Phone number cannot exceed 15 characters");
+      } else {
+        setPhoneError("");
+      }
+    }
+    
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -32,10 +45,23 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
       role: "OWNER",
       message: ""
     });
+    setPhoneError("");
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (phoneError) {
+      toast.error("Please fix phone number errors before submitting");
+      return;
+    }
+
+    if (formData.phoneNumber && !/^\+?[0-9]{10,15}$/.test(formData.phoneNumber)) {
+      setPhoneError("Please enter a valid phone number (10-15 digits)");
+      toast.error("Please enter a valid phone number");
+      return;
+    }
+
     setLoading(true);
 
     const userId = localStorage.getItem("userId");
@@ -82,8 +108,9 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
 
       if (response.data.status === "success") {
         toast.success("Invitation sent successfully");
-        resetForm();      // Reset form after successful invite
+        resetForm();
         onClose();
+        window.location.reload();
       } else {
         throw new Error(response.data.message || "Failed to send invitation");
       }
@@ -104,7 +131,6 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20 overflow-y-auto">
       <div className="relative bg-white p-5 rounded-lg w-full max-w-md text-sm max-h-[90vh] overflow-y-auto">
-        {/* Close Button */}
         <button
           onClick={onClose}
           className="absolute right-3 top-3 text-gray-500 hover:text-gray-700 focus:outline-none"
@@ -125,16 +151,13 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
           </svg>
         </button>
 
-        {/* Loader Overlay */}
         {loading && (
           <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-80 z-10">
             <Loader size="large" />
           </div>
         )}
 
-        {/* Modal Content */}
         <div className="flex flex-col items-center">
-          {/* Vector Image */}
           <div className="flex justify-center mb-2">
             <img 
               src="/vectors/EmailVector.png" 
@@ -147,7 +170,6 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-2 mt-3">
-          {/* Name Input */}
           <div>
             <label className={`${labelClass} text-xs`}>Name <span className="text-red-500">*</span></label>
             <input
@@ -161,7 +183,6 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
             />
           </div>
 
-          {/* Email Input */}
           <div>
             <label className={`${labelClass} text-xs`}>Email Address <span className="text-red-500">*</span></label>
             <input
@@ -175,7 +196,6 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
             />
           </div>
 
-          {/* Phone Input */}
           <div>
             <label className={`${labelClass} text-xs`}>Phone Number</label>
             <input
@@ -183,12 +203,16 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
               name="phoneNumber"
               value={formData.phoneNumber}
               onChange={handleChange}
-              className={`${inputClass} text-xs`}
-              placeholder="Enter phone number"
+              className={`${inputClass} text-xs ${phoneError ? "border-red-500" : ""}`}
+              placeholder="Enter phone number (e.g. +1234567890)"
+              pattern="^\+?[0-9]{10,15}$"
+              maxLength={15}
             />
+            {phoneError && (
+              <p className="text-red-500 text-xs mt-1">{phoneError}</p>
+            )}
           </div>
 
-          {/* Customer Type */}
           <div>
             <label className={`${labelClass} text-xs`}>Customer Type <span className="text-red-500">*</span></label>
             <select
@@ -203,7 +227,6 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
             </select>
           </div>
 
-          {/* Role */}
           <div>
             <label className={`${labelClass} text-xs`}>Role <span className="text-red-500">*</span></label>
             {formData.customerType === "COMMERCIAL" ? (
@@ -228,7 +251,6 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
             )}
           </div>
 
-          {/* Message */}
           <div>
             <label className={`${labelClass} text-xs`}>Message</label>
             <textarea
@@ -240,7 +262,6 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
             />
           </div>
 
-          {/* Form Actions */}
           <div className="flex space-x-2 pt-2">
             <button
               type="button"
@@ -253,7 +274,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
             <button
               type="submit"
               className={`flex-1 ${buttonPrimary} flex items-center justify-center py-1 text-xs`}
-              disabled={loading}
+              disabled={loading || phoneError}
             >
               Invite
             </button>

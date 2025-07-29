@@ -73,14 +73,11 @@ const ContactInformation = ({ userData }) => {
             },
           }
         );
-        
-        if (agreementResponse.data?.data?.signature) {
+        if (agreementResponse.data.data?.signature) {
           setSignatureUrl(agreementResponse.data.data.signature);
         }
-
       } catch (error) {
         console.error("Error fetching data:", error);
-        toast.error("Failed to load user data");
       } finally {
         setLoading(false);
       }
@@ -124,59 +121,12 @@ const ContactInformation = ({ userData }) => {
     }
   };
 
-  const fetchSignatureAsBase64 = async (url) => {
-    try {
-      const userId = localStorage.getItem("userId");
-      const authToken = localStorage.getItem("authToken");
-      
-      const response = await axios.get(url, {
-        responseType: 'blob',
-        headers: {
-          'Authorization': `Bearer ${authToken}`,
-        },
-        timeout: 10000
-      });
-      
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(response.data);
-      });
-    } catch (error) {
-      throw new Error(`Failed to fetch signature: ${error.message}`);
-    }
-  };
-
-  const loadImageAsBase64Fallback = (url) => {
+  const loadImage = (url) => {
     return new Promise((resolve, reject) => {
       const img = new Image();
-      
-      const timeoutId = setTimeout(() => {
-        reject(new Error('Image load timeout'));
-      }, 5000);
-      
-      img.onload = () => {
-        clearTimeout(timeoutId);
-        try {
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
-          canvas.width = img.width;
-          canvas.height = img.height;
-          ctx.drawImage(img, 0, 0);
-          const dataURL = canvas.toDataURL('image/png');
-          resolve(dataURL);
-        } catch (error) {
-          reject(error);
-        }
-      };
-      
-      img.onerror = () => {
-        clearTimeout(timeoutId);
-        reject(new Error('Failed to load image'));
-      };
-      
-      img.crossOrigin = 'anonymous';
+      img.crossOrigin = 'Anonymous';
+      img.onload = () => resolve(img);
+      img.onerror = reject;
       img.src = url;
     });
   };
@@ -187,195 +137,165 @@ const ContactInformation = ({ userData }) => {
       return;
     }
 
-    try {
-      const doc = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4'
-      });
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
 
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(14);
-      doc.setTextColor(3, 153, 148);
-      doc.setFont('helvetica', 'bold');
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(14);
+    doc.setTextColor(3, 153, 148);
+    doc.setFont('helvetica', 'bold');
 
-      let agreementTitle = "";
-      let agreementText = [];
-      let fileName = "";
+    let agreementTitle = "";
+    let agreementText = [];
+    let fileName = "";
 
-      if (partnerType === "sales_agent") {
-        agreementTitle = "SALES AGENT AGREEMENT";
-        fileName = "DCarbon_Sales_Agent_Agreement.pdf";
-        agreementText = [
-          "This Sales Agent Agreement ('Agreement') is made between DCarbon Solutions ('Company')",
-          "and the undersigned Sales Agent ('Agent').",
-          "",
-          "1. Agent Responsibilities: Agent agrees to promote and sell renewable energy systems",
-          "in accordance with Company standards, specifications, and sales guidelines.",
-          "",
-          "2. Commission Structure: Company shall pay Agent according to the agreed-upon",
-          "commission schedule for completed sales that meet quality standards.",
-          "",
-          "3. Sales Standards: Agent agrees to maintain all sales activities to Company's quality",
-          "standards and ethical guidelines.",
-          "",
-          "4. Training: Agent agrees to participate in Company-provided training programs and",
-          "product education as required.",
-          "",
-          "5. Compliance: Agent agrees to comply with all applicable laws, regulations, and",
-          "industry standards in sales activities.",
-          "",
-          "6. Confidentiality: Agent agrees to maintain confidentiality of Company proprietary",
-          "information and customer data.",
-          "",
-          "7. Term: This Agreement shall commence on the date of execution and continue for",
-          "12 months, automatically renewing for successive 12-month terms unless terminated.",
-          "",
-          "8. Termination: Either party may terminate this Agreement with 30 days written notice.",
-          "",
-          "9. Governing Law: This Agreement shall be governed by the laws of the state of Texas."
-        ];
-      } else if (partnerType === "installer") {
-        agreementTitle = "PROGRAM PARTNER AGREEMENT";
-        fileName = "DCarbon_Partner_Agreement.pdf";
-        agreementText = [
-          "This Program Partner Agreement ('Agreement') is made between DCarbon Solutions ('Company')",
-          "and the undersigned Partner ('Partner').",
-          "",
-          "1. Partner Responsibilities: Partner agrees to install, maintain, and service renewable energy",
-          "systems in accordance with Company standards and specifications.",
-          "",
-          "2. Compensation: Company shall pay Partner according to the agreed-upon rate schedule for",
-          "completed installations that meet quality standards.",
-          "",
-          "3. Quality Standards: Partner agrees to maintain all installations to Company's quality",
-          "standards and specifications.",
-          "",
-          "4. Training: Partner agrees to participate in Company-provided training programs as required.",
-          "",
-          "5. Insurance: Partner agrees to maintain adequate liability insurance coverage for all",
-          "installation activities.",
-          "",
-          "6. Term: This Agreement shall commence on the date of execution and continue for 12 months,",
-          "automatically renewing for successive 12-month terms unless terminated.",
-          "",
-          "7. Termination: Either party may terminate this Agreement with 30 days written notice.",
-          "",
-          "8. Governing Law: This Agreement shall be governed by the laws of the state of Texas."
-        ];
-      } else if (partnerType === "finance_company") {
-        agreementTitle = "FINANCE COMPANY AGREEMENT";
-        fileName = "DCarbon_Finance_Agreement.pdf";
-        agreementText = [
-          "This Finance Company Agreement ('Agreement') is made between DCarbon Solutions ('Company')",
-          "and the undersigned Finance Partner ('Partner').",
-          "",
-          "1. Partner Responsibilities: Partner agrees to provide financing options for renewable energy",
-          "systems in accordance with Company standards and specifications.",
-          "",
-          "2. Compensation: Company shall pay Partner according to the agreed-upon fee structure for",
-          "completed financings that meet program requirements.",
-          "",
-          "3. Compliance: Partner agrees to maintain all financing activities in compliance with applicable",
-          "laws and regulations.",
-          "",
-          "4. Reporting: Partner agrees to provide regular reports on financing activities as required by Company.",
-          "",
-          "5. Insurance: Partner agrees to maintain adequate liability insurance coverage for all financing activities.",
-          "",
-          "6. Term: This Agreement shall commence on the date of execution and continue for 12 months,",
-          "automatically renewing for successive 12-month terms unless terminated.",
-          "",
-          "7. Termination: Either party may terminate this Agreement with 30 days written notice.",
-          "",
-          "8. Governing Law: This Agreement shall be governed by the laws of the state of Texas."
-        ];
-      } else {
-        toast.error("No valid partner type found");
-        return;
-      }
-
-      doc.text(agreementTitle, 105, 20, { align: 'center' });
-      doc.setFontSize(10);
-      doc.setTextColor(0, 0, 0);
-      
-      let yPosition = 30;
-      agreementText.forEach(line => {
-        if (yPosition > 270) {
-          doc.addPage();
-          yPosition = 20;
-        }
-        doc.text(line, 20, yPosition, { maxWidth: 170 });
-        yPosition += 7;
-      });
-
-      doc.addPage();
-      yPosition = 30;
-      doc.setFontSize(12);
-      doc.setTextColor(3, 153, 148);
-      doc.text('ACKNOWLEDGEMENT AND SIGNATURE', 105, yPosition, { align: 'center' });
-      yPosition += 15;
-      doc.setFontSize(10);
-      doc.setTextColor(0, 0, 0);
-      doc.text('By signing below, I acknowledge that I have read and agree to the agreement', 105, yPosition, { align: 'center' });
-      yPosition += 7;
-      doc.text('presented in this document.', 105, yPosition, { align: 'center' });
-      yPosition += 20;
-      
-      if (signatureUrl) {
-        try {
-          toast.loading("Adding signature to document...");
-          let signatureBase64;
-          
-          try {
-            signatureBase64 = await fetchSignatureAsBase64(signatureUrl);
-          } catch (fetchError) {
-            console.log('Fetch method failed, trying direct image load:', fetchError.message);
-            signatureBase64 = await loadImageAsBase64Fallback(signatureUrl);
-          }
-          
-          const imgWidth = 50;
-          const imgHeight = 25;
-          doc.addImage(signatureBase64, 'PNG', 40, yPosition, imgWidth, imgHeight);
-          
-          doc.setFontSize(8);
-          doc.text('Digitally Signed', 65, yPosition + imgHeight + 3, { align: 'center' });
-          
-          yPosition += imgHeight + 10;
-          toast.dismiss();
-        } catch (error) {
-          console.error('All signature loading methods failed:', error);
-          toast.dismiss();
-          
-          doc.line(40, yPosition, 90, yPosition);
-          doc.setFontSize(8);
-          doc.text('Signature', 65, yPosition + 5, { align: 'center' });
-          yPosition += 15;
-        }
-      } else {
-        doc.line(40, yPosition, 90, yPosition);
-        doc.setFontSize(8);
-        doc.text('Signature', 65, yPosition + 5, { align: 'center' });
-        yPosition += 15;
-      }
-      
-      const currentDate = new Date().toLocaleDateString();
-      doc.line(130, yPosition - 15, 170, yPosition - 15);
-      doc.setFontSize(8);
-      doc.text('Date', 150, yPosition - 10, { align: 'center' });
-      doc.text(currentDate, 150, yPosition - 5, { align: 'center' });
-      
-      doc.setFontSize(10);
-      doc.text(`Printed Name: ${firstName} ${lastName}`, 40, yPosition + 5);
-      doc.text('Company Name: DCarbon Solutions', 40, yPosition + 15);
-      
-      doc.save(fileName);
-      toast.success("Agreement downloaded successfully!");
-      
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      toast.error("Failed to generate agreement PDF");
+    if (partnerType === "sales_agent") {
+      agreementTitle = "SALES AGENT AGREEMENT";
+      fileName = "DCarbon_Sales_Agent_Agreement.pdf";
+      agreementText = [
+        "This Sales Agent Agreement ('Agreement') is made between DCarbon Solutions ('Company')",
+        "and the undersigned Sales Agent ('Agent').",
+        "",
+        "1. Agent Responsibilities: Agent agrees to promote and sell renewable energy systems",
+        "in accordance with Company standards, specifications, and sales guidelines.",
+        "",
+        "2. Commission Structure: Company shall pay Agent according to the agreed-upon",
+        "commission schedule for completed sales that meet quality standards.",
+        "",
+        "3. Sales Standards: Agent agrees to maintain all sales activities to Company's quality",
+        "standards and ethical guidelines.",
+        "",
+        "4. Training: Agent agrees to participate in Company-provided training programs and",
+        "product education as required.",
+        "",
+        "5. Compliance: Agent agrees to comply with all applicable laws, regulations, and",
+        "industry standards in sales activities.",
+        "",
+        "6. Confidentiality: Agent agrees to maintain confidentiality of Company proprietary",
+        "information and customer data.",
+        "",
+        "7. Term: This Agreement shall commence on the date of execution and continue for",
+        "12 months, automatically renewing for successive 12-month terms unless terminated.",
+        "",
+        "8. Termination: Either party may terminate this Agreement with 30 days written notice.",
+        "",
+        "9. Governing Law: This Agreement shall be governed by the laws of the state of Texas."
+      ];
+    } else if (partnerType === "installer") {
+      agreementTitle = "PROGRAM PARTNER AGREEMENT";
+      fileName = "DCarbon_Partner_Agreement.pdf";
+      agreementText = [
+        "This Program Partner Agreement ('Agreement') is made between DCarbon Solutions ('Company')",
+        "and the undersigned Partner ('Partner').",
+        "",
+        "1. Partner Responsibilities: Partner agrees to install, maintain, and service renewable energy",
+        "systems in accordance with Company standards and specifications.",
+        "",
+        "2. Compensation: Company shall pay Partner according to the agreed-upon rate schedule for",
+        "completed installations that meet quality standards.",
+        "",
+        "3. Quality Standards: Partner agrees to maintain all installations to Company's quality",
+        "standards and specifications.",
+        "",
+        "4. Training: Partner agrees to participate in Company-provided training programs as required.",
+        "",
+        "5. Insurance: Partner agrees to maintain adequate liability insurance coverage for all",
+        "installation activities.",
+        "",
+        "6. Term: This Agreement shall commence on the date of execution and continue for 12 months,",
+        "automatically renewing for successive 12-month terms unless terminated.",
+        "",
+        "7. Termination: Either party may terminate this Agreement with 30 days written notice.",
+        "",
+        "8. Governing Law: This Agreement shall be governed by the laws of the state of Texas."
+      ];
+    } else if (partnerType === "finance_company") {
+      agreementTitle = "FINANCE COMPANY AGREEMENT";
+      fileName = "DCarbon_Finance_Agreement.pdf";
+      agreementText = [
+        "This Finance Company Agreement ('Agreement') is made between DCarbon Solutions ('Company')",
+        "and the undersigned Finance Partner ('Partner').",
+        "",
+        "1. Partner Responsibilities: Partner agrees to provide financing options for renewable energy",
+        "systems in accordance with Company standards and specifications.",
+        "",
+        "2. Compensation: Company shall pay Partner according to the agreed-upon fee structure for",
+        "completed financings that meet program requirements.",
+        "",
+        "3. Compliance: Partner agrees to maintain all financing activities in compliance with applicable",
+        "laws and regulations.",
+        "",
+        "4. Reporting: Partner agrees to provide regular reports on financing activities as required by Company.",
+        "",
+        "5. Insurance: Partner agrees to maintain adequate liability insurance coverage for all financing activities.",
+        "",
+        "6. Term: This Agreement shall commence on the date of execution and continue for 12 months,",
+        "automatically renewing for successive 12-month terms unless terminated.",
+        "",
+        "7. Termination: Either party may terminate this Agreement with 30 days written notice.",
+        "",
+        "8. Governing Law: This Agreement shall be governed by the laws of the state of Texas."
+      ];
+    } else {
+      toast.error("No valid partner type found");
+      return;
     }
+
+    doc.text(agreementTitle, 105, 20, { align: 'center' });
+    doc.setFontSize(10);
+    doc.setTextColor(0, 0, 0);
+    
+    let yPosition = 30;
+    agreementText.forEach(line => {
+      if (yPosition > 270) {
+        doc.addPage();
+        yPosition = 20;
+      }
+      doc.text(line, 20, yPosition, { maxWidth: 170 });
+      yPosition += 7;
+    });
+
+    doc.addPage();
+    yPosition = 30;
+    doc.setFontSize(12);
+    doc.setTextColor(3, 153, 148);
+    doc.text('ACKNOWLEDGEMENT AND SIGNATURE', 105, yPosition, { align: 'center' });
+    yPosition += 15;
+    doc.setFontSize(10);
+    doc.setTextColor(0, 0, 0);
+    doc.text('By signing below, I acknowledge that I have read and agree to the agreement', 105, yPosition, { align: 'center' });
+    yPosition += 7;
+    doc.text('presented in this document.', 105, yPosition, { align: 'center' });
+    yPosition += 20;
+    
+    if (signatureUrl) {
+      try {
+        const img = await loadImage(signatureUrl);
+        const imgWidth = 40;
+        const imgHeight = 20;
+        doc.addImage(img, 'PNG', 40, yPosition, imgWidth, imgHeight);
+        yPosition += imgHeight + 5;
+      } catch (error) {
+        console.error('Error loading signature image:', error);
+        doc.line(40, yPosition, 80, yPosition);
+        doc.text('Signature', 60, yPosition + 5, { align: 'center' });
+        yPosition += 10;
+      }
+    } else {
+      doc.line(40, yPosition, 80, yPosition);
+      doc.text('Signature', 60, yPosition + 5, { align: 'center' });
+      yPosition += 10;
+    }
+    
+    doc.line(130, yPosition - 10, 170, yPosition - 10);
+    doc.text('Date', 150, yPosition - 5, { align: 'center' });
+    doc.text('Printed Name: ___________________________', 40, yPosition + 10);
+    doc.text('Company Name: _________________________', 40, yPosition + 20);
+    
+    doc.save(fileName);
   };
 
   if (loading) {

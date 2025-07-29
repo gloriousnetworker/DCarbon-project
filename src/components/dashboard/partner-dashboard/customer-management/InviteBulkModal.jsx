@@ -17,11 +17,27 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
   ]);
   const [loading, setLoading] = useState(false);
   const [csvLoading, setCsvLoading] = useState(false);
+  const [phoneErrors, setPhoneErrors] = useState([]);
   const fileInputRef = useRef(null);
 
   const handleChange = (index, e) => {
     const { name, value } = e.target;
     const newInvitees = [...invitees];
+    
+    if (name === "phoneNumber") {
+      const phoneRegex = /^[0-9+]*$/;
+      const newPhoneErrors = [...phoneErrors];
+      
+      if (!phoneRegex.test(value)) {
+        newPhoneErrors[index] = "Phone number can only contain numbers and +";
+      } else if (value.length > 15) {
+        newPhoneErrors[index] = "Phone number cannot exceed 15 characters";
+      } else {
+        newPhoneErrors[index] = "";
+      }
+      setPhoneErrors(newPhoneErrors);
+    }
+    
     newInvitees[index] = {
       ...newInvitees[index],
       [name]: value
@@ -41,6 +57,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
         message: ""
       }
     ]);
+    setPhoneErrors([...phoneErrors, ""]);
   };
 
   const removeInvitee = (index) => {
@@ -51,6 +68,10 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
     const newInvitees = [...invitees];
     newInvitees.splice(index, 1);
     setInvitees(newInvitees);
+    
+    const newPhoneErrors = [...phoneErrors];
+    newPhoneErrors.splice(index, 1);
+    setPhoneErrors(newPhoneErrors);
   };
 
   const resetForm = () => {
@@ -64,6 +85,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
         message: ""
       }
     ]);
+    setPhoneErrors([""]);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -73,7 +95,6 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Check if it's a CSV file
     if (file.type !== "text/csv" && !file.name.endsWith('.csv')) {
       toast.error("Please upload a valid CSV file");
       if (fileInputRef.current) {
@@ -89,9 +110,8 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
       try {
         const csvData = event.target.result;
         const rows = csvData.split('\n');
-        const headers = rows[0].split(',').map(header => header.trim().toLowerCase());
+        const headers = rows[0].split(',').map(header => header.trim().toLowerCase().replace(/\s+/g, ''));
         
-        // Check for required headers
         const requiredHeaders = ['email', 'name'];
         const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
         
@@ -99,10 +119,10 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
           throw new Error(`Missing required headers: ${missingHeaders.join(', ')}`);
         }
         
-        // Parse data rows
         const newInvitees = [];
+        const newPhoneErrors = [];
         for (let i = 1; i < rows.length; i++) {
-          if (!rows[i].trim()) continue; // Skip empty rows
+          if (!rows[i].trim()) continue;
           
           const values = rows[i].split(',').map(val => val.trim());
           if (values.length !== headers.length) {
@@ -110,7 +130,6 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
             continue;
           }
           
-          // Create invitee object from row data
           const invitee = {
             name: "",
             email: "",
@@ -122,12 +141,10 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
           
           headers.forEach((header, index) => {
             if (header === 'customertype') {
-              // Validate and normalize customer type
               const type = values[index].toUpperCase();
               invitee.customerType = type === 'COMMERCIAL' ? 'COMMERCIAL' : 'RESIDENTIAL';
             } 
             else if (header === 'role') {
-              // Validate and normalize role
               const role = values[index].toUpperCase();
               if (['OWNER', 'OPERATOR', 'BOTH'].includes(role)) {
                 invitee.role = role;
@@ -135,14 +152,18 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
                 invitee.role = invitee.customerType === 'COMMERCIAL' ? 'OWNER' : 'OWNER';
               }
             }
+            else if (header === 'phonenumber' || header === 'phone') {
+              const phoneValue = values[index].replace(/[^0-9+]/g, '');
+              invitee.phoneNumber = phoneValue;
+            }
             else if (Object.keys(invitee).includes(header)) {
               invitee[header] = values[index];
             }
           });
           
-          // Validate email presence
           if (invitee.email) {
             newInvitees.push(invitee);
+            newPhoneErrors.push("");
           }
         }
         
@@ -150,8 +171,8 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
           throw new Error("No valid invitees found in CSV file");
         }
         
-        // Set the new invitees from CSV
         setInvitees(newInvitees);
+        setPhoneErrors(newPhoneErrors);
         toast.success(`Successfully imported ${newInvitees.length} invitees from CSV`);
       } catch (error) {
         console.error("CSV Processing Error:", error);
@@ -183,6 +204,22 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    const hasPhoneErrors = phoneErrors.some(error => error);
+    if (hasPhoneErrors) {
+      toast.error("Please fix phone number errors before submitting");
+      return;
+    }
+
+    const invalidPhoneNumbers = invitees.filter(invitee => 
+      invitee.phoneNumber && !/^\+?[0-9]{10,15}$/.test(invitee.phoneNumber)
+    );
+    
+    if (invalidPhoneNumbers.length > 0) {
+      toast.error("Please enter valid phone numbers (10-15 digits)");
+      return;
+    }
+
     setLoading(true);
 
     const userId = localStorage.getItem("userId");
@@ -194,7 +231,6 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
       return;
     }
 
-    // Validate all invitees have email
     const invalidInvitees = invitees.filter(invitee => !invitee.email);
     if (invalidInvitees.length > 0) {
       toast.error(`Please enter email address for all invitees`);
@@ -202,7 +238,6 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
       return;
     }
 
-    // Format payload
     const formattedInvitees = invitees.map(({ name, email, phoneNumber, customerType, role, message }) => ({
       name,
       email,
@@ -232,6 +267,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
         toast.success(`Successfully sent ${invitees.length} invitation${invitees.length > 1 ? 's' : ''}`);
         resetForm();
         onClose();
+        window.location.reload();
       } else {
         throw new Error(response.data.message || "Failed to send invitations");
       }
@@ -252,7 +288,6 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20 overflow-y-auto">
       <div className="relative bg-white p-5 rounded-lg w-full max-w-2xl text-sm max-h-[90vh] overflow-y-auto">
-        {/* Close Button */}
         <button
           onClick={onClose}
           className="absolute right-3 top-3 text-gray-500 hover:text-gray-700 focus:outline-none"
@@ -273,16 +308,13 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
           </svg>
         </button>
 
-        {/* Loader Overlay */}
         {(loading || csvLoading) && (
           <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-80 z-10">
             <Loader size="large" />
           </div>
         )}
 
-        {/* Modal Content */}
         <div className="flex flex-col items-center">
-          {/* Vector Image */}
           <div className="flex justify-center mb-2">
             <img 
               src="/vectors/EmailVector.png" 
@@ -295,7 +327,6 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
           <p className="text-gray-500 text-xs mb-4">Send invitations to one or multiple customers at once</p>
         </div>
 
-        {/* CSV Upload Section */}
         <div className="mb-6 mt-2 bg-gray-50 p-4 rounded-lg border border-dashed border-gray-300">
           <div className="flex flex-col items-center justify-center text-center">
             <svg 
@@ -314,6 +345,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
             </svg>
             <p className="text-sm font-medium mb-1">Import invitees from CSV</p>
             <p className="text-xs text-gray-500 mb-3">CSV should include columns: name, email, phoneNumber, customerType, role, message</p>
+            <p className="text-xs text-gray-500 mb-3">Phone numbers should be in format: +1234567890 or 1234567890</p>
             
             <input
               type="file"
@@ -338,7 +370,6 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
         <form onSubmit={handleSubmit} className="space-y-4">
           {invitees.map((invitee, index) => (
             <div key={index} className="border rounded-lg p-3 relative">
-              {/* Header with Remove Button */}
               <div className="flex justify-between items-center mb-2 pb-2 border-b">
                 <h3 className="font-medium text-sm">Invitee #{index + 1}</h3>
                 {invitees.length > 1 && (
@@ -367,7 +398,6 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {/* Name Input */}
                 <div>
                   <label className={`${labelClass} text-xs`}>Name <span className="text-red-500">*</span></label>
                   <input
@@ -381,7 +411,6 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
                   />
                 </div>
 
-                {/* Email Input */}
                 <div>
                   <label className={`${labelClass} text-xs`}>Email Address <span className="text-red-500">*</span></label>
                   <input
@@ -395,7 +424,6 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
                   />
                 </div>
 
-                {/* Phone Input */}
                 <div>
                   <label className={`${labelClass} text-xs`}>Phone Number</label>
                   <input
@@ -403,12 +431,16 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
                     name="phoneNumber"
                     value={invitee.phoneNumber}
                     onChange={(e) => handleChange(index, e)}
-                    className={`${inputClass} text-xs`}
-                    placeholder="Enter phone number"
+                    className={`${inputClass} text-xs ${phoneErrors[index] ? "border-red-500" : ""}`}
+                    placeholder="Enter phone number (e.g. +1234567890)"
+                    pattern="^\+?[0-9]{10,15}$"
+                    maxLength={15}
                   />
+                  {phoneErrors[index] && (
+                    <p className="text-red-500 text-xs mt-1">{phoneErrors[index]}</p>
+                  )}
                 </div>
 
-                {/* Customer Type */}
                 <div>
                   <label className={`${labelClass} text-xs`}>Customer Type <span className="text-red-500">*</span></label>
                   <select
@@ -423,7 +455,6 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
                   </select>
                 </div>
 
-                {/* Role */}
                 <div>
                   <label className={`${labelClass} text-xs`}>Role <span className="text-red-500">*</span></label>
                   {invitee.customerType === "COMMERCIAL" ? (
@@ -448,7 +479,6 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
                   )}
                 </div>
 
-                {/* Message */}
                 <div className="md:col-span-2">
                   <label className={`${labelClass} text-xs`}>Message</label>
                   <textarea
@@ -463,7 +493,6 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
             </div>
           ))}
           
-          {/* Add More Button */}
           <div className="flex justify-center space-x-4">
             <button
               type="button"
@@ -488,7 +517,6 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
             </button>
           </div>
 
-          {/* Form Actions */}
           <div className="flex space-x-2 pt-2 mt-4">
             <button
               type="button"
@@ -501,14 +529,13 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
             <button
               type="submit"
               className={`flex-1 ${buttonPrimary} flex items-center justify-center py-2 text-xs`}
-              disabled={loading || csvLoading}
+              disabled={loading || csvLoading || phoneErrors.some(error => error)}
             >
               {invitees.length > 1 ? 'Send Invitations' : 'Send Invitation'}
             </button>
           </div>
         </form>
 
-        {/* CSV Template Info */}
         <div className="mt-4 pt-4 border-t text-xs text-gray-500 flex items-center justify-center">
           <svg 
             xmlns="http://www.w3.org/2000/svg" 
