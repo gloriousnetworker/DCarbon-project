@@ -14,6 +14,21 @@ const mainContainer = "bg-white";
 const headingContainer = "flex justify-between items-center mb-6";
 const pageTitle = "font-sfpro font-semibold";
 
+const STATUS_COLORS = {
+  INVITED: "#039994",
+  REGISTERED: "#1E1E1E",
+  PENDING: "#FFB200",
+  EXPIRED: "#FF0000",
+};
+
+const DOCUMENT_STATUS_COLORS = {
+  APPROVED: "#10B981",
+  PENDING: "#FFB200",
+  SUBMITTED: "#3B82F6",
+  REJECTED: "#EF4444",
+  DEFAULT: "#6B7280"
+};
+
 export default function PartnerCustomerReport() {
   const [tableData, setTableData] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -27,20 +42,18 @@ export default function PartnerCustomerReport() {
   const [loadingStats, setLoadingStats] = useState(true);
   const [loadingTable, setLoadingTable] = useState(true);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
-  
-  // Filter states
   const [filters, setFilters] = useState({
     status: '',
     customerType: '',
     dateRange: ''
   });
-
-  // Modal states
   const [isFilterOpen, setFilterOpen] = useState(false);
   const [isSendReminderOpen, setSendReminderOpen] = useState(false);
   const [isInviteDropdownOpen, setInviteDropdownOpen] = useState(false);
   const [isInviteIndividualOpen, setInviteIndividualOpen] = useState(false);
   const [isInviteBulkOpen, setInviteBulkOpen] = useState(false);
+  const [customerDetailsCache, setCustomerDetailsCache] = useState({});
+  const [commercialRolesCache, setCommercialRolesCache] = useState({});
 
   useEffect(() => {
     fetchTableData(1);
@@ -64,7 +77,6 @@ export default function PartnerCustomerReport() {
         limit: 10,
       };
       
-      // Add filters if selected
       if (filters.status) params.status = filters.status;
       if (filters.customerType) params.customerType = filters.customerType;
       if (filters.dateRange) {
@@ -163,13 +175,45 @@ export default function PartnerCustomerReport() {
     }
   };
 
-  // Apply filters
+  const fetchCustomerDetails = async (email) => {
+    try {
+      const authToken = localStorage.getItem('authToken');
+      const response = await axios.get(
+        `https://services.dcarbon.solutions/api/user/partner/details/${email}`,
+        { headers: { Authorization: `Bearer ${authToken}` } }
+      );
+
+      if (response.data.status === 'success') {
+        return response.data.data;
+      }
+      return null;
+    } catch (error) {
+      return null;
+    }
+  };
+
+  const fetchCommercialUserDetails = async (userId) => {
+    try {
+      const authToken = localStorage.getItem('authToken');
+      const response = await fetch(`https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${authToken}` }
+      });
+      const result = await response.json();
+      if (result.status === 'success') {
+        return result.data.commercialUser;
+      }
+      return null;
+    } catch (error) {
+      return null;
+    }
+  };
+
   const handleFilterApply = (newFilters) => {
     setFilters(newFilters);
     closeFilterModal();
   };
 
-  // Calculate total count for progress bar
   const getTotalCount = () => {
     return (
       statistics.totalInvited +
@@ -179,13 +223,11 @@ export default function PartnerCustomerReport() {
     );
   };
 
-  // Calculate percentage for each status
   const calculatePercentage = (count) => {
     const total = getTotalCount();
     return total > 0 ? (count / total) * 100 : 0;
   };
 
-  // Modal handlers
   const openFilterModal = () => setFilterOpen(true);
   const closeFilterModal = () => setFilterOpen(false);
   const openSendReminderModal = () => setSendReminderOpen(true);
@@ -195,19 +237,18 @@ export default function PartnerCustomerReport() {
   const openInviteBulkModal = () => setInviteBulkOpen(true);
   const closeInviteBulkModal = () => setInviteBulkOpen(false);
 
-  // Pagination
   const handlePrevious = () => {
     if (currentPage > 1) {
       fetchTableData(currentPage - 1);
     }
   };
+
   const handleNext = () => {
     if (currentPage < totalPages) {
       fetchTableData(currentPage + 1);
     }
   };
 
-  // Format date
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
@@ -218,80 +259,65 @@ export default function PartnerCustomerReport() {
     });
   };
 
-  // Status styling
   const getStatusStyle = (status) => {
-    switch (status?.toUpperCase()) {
-      case 'EXPIRED':
-      case 'TERMINATED':
-        return '#FF0000';
-      case 'INVITED':
-        return '#FFB200';
-      case 'ACTIVE':
-      case 'PENDING':
-        return '#00B4AE';
-      case 'REGISTERED':
-      case 'ACCEPTED':
-        return '#000000';
-      default:
-        return '#000000';
-    }
+    const upperStatus = status?.toUpperCase();
+    return STATUS_COLORS[upperStatus] || "#000000";
   };
 
-  const getDocumentStatus = (status) => {
-    switch (status?.toUpperCase()) {
-      case 'ACCEPTED':
-        return { status: 'Verified', icon: 'check' };
-      case 'PENDING':
-        return { status: 'Pending', icon: 'warning' };
-      default:
-        return { status: 'Not Submitted', icon: 'none' };
-    }
+  const getDocumentStatusStyle = (status) => {
+    const upperStatus = status?.toUpperCase();
+    return DOCUMENT_STATUS_COLORS[upperStatus] || DOCUMENT_STATUS_COLORS.DEFAULT;
   };
 
   const renderDocStatus = (status) => {
-    const docStatus = getDocumentStatus(status);
+    const statusText = status?.toUpperCase();
+    let displayText = 'NOT SUBMITTED';
     
-    if (docStatus.icon === 'check') {
-      return (
-        <div className="flex items-center">
-          <span
-            className="inline-block w-3 h-3 rounded-full mr-1"
-            style={{ backgroundColor: '#039994' }}
-          />
-          <span className="text-xs">Verified</span>
-        </div>
-      );
-    } else if (docStatus.icon === 'warning') {
-      return (
-        <div className="flex items-center">
-          <svg
-            className="inline-block w-3 h-3 mr-1"
-            viewBox="0 0 100 100"
-            fill="#FFB200"
-          >
-            <polygon points="50,15 90,85 10,85" />
-          </svg>
-          <span className="text-xs">Pending</span>
-        </div>
-      );
-    } else {
-      return (
-        <div className="flex items-center">
-          <svg
-            className="inline-block w-3 h-3 mr-1"
-            viewBox="0 0 100 100"
-            fill="#FF0000"
-          >
-            <polygon points="50,15 90,85 10,85" />
-          </svg>
-          <span className="text-xs">Not Submitted</span>
-        </div>
-      );
-    }
+    if (statusText === 'APPROVED') displayText = 'APPROVED';
+    else if (statusText === 'PENDING') displayText = 'PENDING';
+    else if (statusText === 'SUBMITTED') displayText = 'SUBMITTED';
+    else if (statusText === 'REJECTED') displayText = 'REJECTED';
+
+    return (
+      <span
+        className="text-white px-2 py-1 rounded-full text-xs"
+        style={{ backgroundColor: getDocumentStatusStyle(status) }}
+      >
+        {displayText}
+      </span>
+    );
   };
 
-  const handleRowClick = (customer) => {
-    setSelectedCustomer(customer);
+  const handleRowClick = async (customer) => {
+    const email = customer.inviteeEmail;
+    if (!email) {
+      setSelectedCustomer(customer);
+      return;
+    }
+
+    if (customerDetailsCache[email]) {
+      setSelectedCustomer({ ...customer, details: customerDetailsCache[email] });
+      return;
+    }
+
+    const details = await fetchCustomerDetails(email);
+    if (details) {
+      const updatedCache = { ...customerDetailsCache, [email]: details };
+      setCustomerDetailsCache(updatedCache);
+      setSelectedCustomer({ ...customer, details });
+
+      if (details.userType === 'COMMERCIAL' && !commercialRolesCache[details.id]) {
+        const commercialDetails = await fetchCommercialUserDetails(details.id);
+        if (commercialDetails) {
+          setCommercialRolesCache(prev => ({
+            ...prev,
+            [details.id]: commercialDetails.commercialRole
+          }));
+        }
+      }
+    } else {
+      setSelectedCustomer(customer);
+    }
   };
 
   const handleBackToList = () => {
@@ -302,7 +328,7 @@ export default function PartnerCustomerReport() {
     if (loadingTable) {
       return (
         <tr>
-          <td colSpan="7" className="py-4 text-center">
+          <td colSpan="8" className="py-4 text-center">
             Loading...
           </td>
         </tr>
@@ -312,7 +338,7 @@ export default function PartnerCustomerReport() {
     if (tableData.length === 0) {
       return (
         <tr>
-          <td colSpan="7" className="py-4 text-center">
+          <td colSpan="8" className="py-4 text-center">
             No records found
           </td>
         </tr>
@@ -323,8 +349,14 @@ export default function PartnerCustomerReport() {
       const sn = index + 1 + (currentPage - 1) * 10;
       const nameToShow = item.name || 'N/A';
       const email = item.inviteeEmail || 'N/A';
-      const role = item.role || 'N/A';
-      const customerType = item.customerType || 'N/A';
+      const cachedDetails = customerDetailsCache[email];
+      
+      const customerType = cachedDetails?.userType ? cachedDetails.userType.toUpperCase() : item.customerType?.toUpperCase() || 'N/A';
+      const role = cachedDetails ? 
+        (cachedDetails.userType === 'RESIDENTIAL' ? 'OWNER' : 
+         commercialRolesCache[cachedDetails.id]?.toUpperCase() || cachedDetails.role?.toUpperCase() || 'N/A') : 
+        (item.customerType === 'RESIDENTIAL' ? 'OWNER' : item.role?.toUpperCase() || 'N/A');
+      
       const dateCreated = formatDate(item.createdAt);
       const status = item.status || 'N/A';
 
@@ -337,8 +369,8 @@ export default function PartnerCustomerReport() {
           <td className="py-3 px-2 text-sm">{sn}</td>
           <td className="py-3 px-2 text-sm">{nameToShow}</td>
           <td className="py-3 px-2 text-sm">{email}</td>
-          <td className="py-3 px-2 text-sm">{role}</td>
-          <td className="py-3 px-2 text-sm">{customerType}</td>
+          <td className="py-3 px-2 text-sm font-medium">{role}</td>
+          <td className="py-3 px-2 text-sm font-medium">{customerType}</td>
           <td className="py-3 px-2 text-sm">{dateCreated}</td>
           <td className="py-3 px-2 text-sm">
             <span
@@ -348,7 +380,7 @@ export default function PartnerCustomerReport() {
               {status}
             </span>
           </td>
-          <td className="py-3 px-2 text-sm">{renderDocStatus(status)}</td>
+          <td className="py-3 px-2 text-sm">{renderDocStatus(item.documentStatus)}</td>
         </tr>
       );
     });
@@ -362,7 +394,6 @@ export default function PartnerCustomerReport() {
     <div className={`rounded-md shadow-md p-6 w-full ${mainContainer}`}>
       <h2 className={`${pageTitle} text-left mb-6 text-2xl text-[#039994]`}>Customer Management</h2>
       
-      {/* Header row */}
       <div className="w-full flex flex-col md:flex-row items-start md:items-center justify-between mb-4">
         <button
           onClick={openFilterModal}
@@ -428,72 +459,75 @@ export default function PartnerCustomerReport() {
         </div>
       </div>
 
-      {/* Progress Bar */}
       <div className="w-full h-2 bg-gray-200 rounded mb-4 relative overflow-hidden">
         {!loadingStats && (
           <>
             <div 
-              className="absolute h-full bg-[#FF0000]" 
-              style={{ width: `${calculatePercentage(statistics.totalExpired)}%` }}
+              className="absolute h-full" 
+              style={{ 
+                width: `${calculatePercentage(statistics.totalExpired)}%`,
+                backgroundColor: STATUS_COLORS.EXPIRED
+              }}
             />
             <div 
-              className="absolute h-full bg-[#FFB200]" 
+              className="absolute h-full" 
               style={{ 
                 width: `${calculatePercentage(statistics.totalInvited)}%`,
-                left: `${calculatePercentage(statistics.totalExpired)}%`
+                left: `${calculatePercentage(statistics.totalExpired)}%`,
+                backgroundColor: STATUS_COLORS.INVITED
               }}
             />
             <div 
-              className="absolute h-full bg-[#00B4AE]" 
+              className="absolute h-full" 
               style={{ 
                 width: `${calculatePercentage(statistics.totalPending)}%`,
-                left: `${calculatePercentage(statistics.totalExpired + statistics.totalInvited)}%`
+                left: `${calculatePercentage(statistics.totalExpired + statistics.totalInvited)}%`,
+                backgroundColor: STATUS_COLORS.PENDING
               }}
             />
             <div 
-              className="absolute h-full bg-[#000000]" 
+              className="absolute h-full" 
               style={{ 
                 width: `${calculatePercentage(statistics.totalAccepted)}%`,
-                left: `${calculatePercentage(statistics.totalExpired + statistics.totalInvited + statistics.totalPending)}%`
+                left: `${calculatePercentage(statistics.totalExpired + statistics.totalInvited + statistics.totalPending)}%`,
+                backgroundColor: STATUS_COLORS.REGISTERED
               }}
             />
           </>
         )}
       </div>
 
-      {/* Legend */}
       <div className="flex flex-wrap items-center justify-start gap-3 mb-4">
         <div className="flex items-center space-x-1">
           <span
             className="inline-block w-2 h-2 rounded-full"
-            style={{ backgroundColor: '#FF0000' }}
+            style={{ backgroundColor: STATUS_COLORS.EXPIRED }}
           />
-          <span className="text-xs">Terminated ({statistics.totalExpired})</span>
+          <span className="text-xs">Expired ({statistics.totalExpired})</span>
         </div>
         <div className="flex items-center space-x-1">
           <span
             className="inline-block w-2 h-2 rounded-full"
-            style={{ backgroundColor: '#FFB200' }}
+            style={{ backgroundColor: STATUS_COLORS.INVITED }}
           />
           <span className="text-xs">Invited ({statistics.totalInvited})</span>
         </div>
         <div className="flex items-center space-x-1">
           <span
             className="inline-block w-2 h-2 rounded-full"
-            style={{ backgroundColor: '#00B4AE' }}
+            style={{ backgroundColor: STATUS_COLORS.PENDING }}
           />
-          <span className="text-xs">Active ({statistics.totalPending})</span>
+          <span className="text-xs">Pending ({statistics.totalPending})</span>
         </div>
         <div className="flex items-center space-x-1">
           <span
             className="inline-block w-2 h-2 rounded-full"
-            style={{ backgroundColor: '#000000' }}
+            style={{ backgroundColor: STATUS_COLORS.REGISTERED }}
           />
           <span className="text-xs">Registered ({statistics.totalAccepted})</span>
         </div>
       </div>
 
-      {/* Table */}
       <div className="w-full overflow-x-auto mb-4">
         <table className="min-w-full border-collapse text-sm">
           <thead>
@@ -512,7 +546,6 @@ export default function PartnerCustomerReport() {
         </table>
       </div>
 
-      {/* Pagination */}
       <div className="flex items-center justify-between mt-4">
         <div className="text-sm text-gray-500">
           {tableData.length > 0 ? (
@@ -545,7 +578,6 @@ export default function PartnerCustomerReport() {
         </div>
       </div>
 
-      {/* Modals */}
       {isFilterOpen && (
         <FilterModal 
           isOpen={isFilterOpen} 

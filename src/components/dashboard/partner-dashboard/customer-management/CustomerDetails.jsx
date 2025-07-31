@@ -1,39 +1,18 @@
-import React, { useState, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { HiOutlineArrowLeft, HiOutlineEye, HiOutlinePaperClip } from 'react-icons/hi';
+import { HiOutlineArrowLeft, HiOutlineEye } from 'react-icons/hi';
+import { FiChevronRight, FiTrash2 } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
-import {
-  mainContainer,
-  headingContainer,
-  backArrow,
-  pageTitle,
-  progressContainer,
-  progressBarWrapper,
-  progressBarActive,
-  progressStepText,
-  uploadFieldWrapper,
-  uploadInputLabel,
-  uploadIconContainer,
-  buttonPrimary,
-} from './styles';
 
-const SendReminderModal = lazy(() => import('./CustomerDetailsReminder'));
-
-const documentationFields = [
-  { key: 'nemAgreement', label: 'NEM Agreement (NEM)', endpoint: 'nem-agreement', statusKey: 'nemAgreementStatus' },
-  { key: 'meterIdPhoto', label: 'Meter ID Photo', endpoint: 'meter-id', statusKey: 'meterIdStatus' },
-  { key: 'installerAgreement', label: 'Installer Agreement', endpoint: 'installer', statusKey: 'installerAgreementStatus' },
-  { key: 'singleLineDiagram', label: 'Single Line Diagram', endpoint: 'single-line', statusKey: 'singleLineDiagramStatus' },
-  { key: 'utilityPTOLetter', label: 'Utility PTO Letter', endpoint: 'utility-pto', statusKey: 'utilityPTOLetterStatus' },
-  { key: 'interconnectionAgreement', label: 'Interconnection Agreement', endpoint: 'interconnection', statusKey: 'interconnectionStatus' },
-];
-
-const statusStyles = {
-  Required: { bg: 'bg-[#FFB20017]', text: 'text-[#FFB200]' },
-  Submitted: { bg: 'bg-[#93939321]', text: 'text-[#939393]' },
-  Approved: { bg: 'bg-[#069B9621]', text: 'text-[#056C69]' },
-  Rejected: { bg: 'bg-[#FF000017]', text: 'text-[#FF0000]' },
-};
+const mainContainer = "w-full min-h-screen bg-white p-4 md:p-8";
+const headingContainer = "flex items-center mb-6";
+const backArrow = "mr-4 cursor-pointer text-[#039994]";
+const pageTitle = "text-2xl font-bold text-[#1E1E1E]";
+const progressContainer = "w-full max-w-3xl mb-4";
+const progressBarWrapper = "w-full h-2 bg-gray-200 rounded-full overflow-hidden";
+const progressBarActive = "h-full bg-[#039994] rounded-full";
+const progressStepText = "text-xs text-[#626060]";
+const buttonPrimary = "bg-[#039994] text-white rounded-md hover:bg-[#02827D] transition-colors";
 
 const progressSteps = [
   { label: 'Invitation sent', color: '#000000' },
@@ -48,9 +27,292 @@ export default function CustomerDetails({ customer, onBack }) {
   const [customerDetails, setCustomerDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [docs, setDocs] = useState({});
-  const [showModal, setShowModal] = useState(false);
   const [userNotFound, setUserNotFound] = useState(false);
+  const [facilities, setFacilities] = useState([]);
+  const [facilityProgress, setFacilityProgress] = useState({});
+  const [isLoadingProgress, setIsLoadingProgress] = useState(false);
+  const [commercialUserDetails, setCommercialUserDetails] = useState(null);
+
+  const fetchCommercialUserDetails = async (userId) => {
+    try {
+      const authToken = localStorage.getItem('authToken');
+      const response = await fetch(`https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${authToken}` }
+      });
+      const result = await response.json();
+      if (result.status === 'success') {
+        setCommercialUserDetails(result.data.commercialUser);
+      }
+    } catch (error) {
+      console.error('Error fetching commercial user details:', error);
+    }
+  };
+
+  const checkStage2CompletionCommercial = async (userId, authToken) => {
+    try {
+      const response = await fetch(`https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${authToken}` }
+      });
+      const result = await response.json();
+      return result.status === 'success' && result.data?.commercialUser?.ownerAddress;
+    } catch (error) {
+      return false;
+    }
+  };
+
+  const checkStage3CompletionCommercial = async (userId, authToken) => {
+    try {
+      const response = await fetch(`https://services.dcarbon.solutions/api/user/agreement/${userId}`, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${authToken}` }
+      });
+      const result = await response.json();
+      return result.status === 'success' && result.data?.termsAccepted;
+    } catch (error) {
+      return false;
+    }
+  };
+
+  const checkStage4CompletionCommercial = async (userId, authToken) => {
+    try {
+      const response = await fetch(`https://services.dcarbon.solutions/api/user/financial-info/${userId}`, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${authToken}` }
+      });
+      const result = await response.json();
+      return result.status === 'success' && result.data?.financialInfo;
+    } catch (error) {
+      return false;
+    }
+  };
+
+  const checkStage5CompletionCommercial = async (userId, authToken) => {
+    try {
+      const response = await fetch(`https://services.dcarbon.solutions/api/auth/user-meters/${userId}`, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${authToken}` }
+      });
+      const result = await response.json();
+      return result.status === 'success' && result.data?.length > 0 && result.data.some(item => item.meters?.meters?.length > 0);
+    } catch (error) {
+      return false;
+    }
+  };
+
+  const checkStage6CompletionCommercial = (facility) => {
+    return facility.status && facility.status.toLowerCase() === 'verified';
+  };
+
+  const checkStage2CompletionResidential = async (userId, authToken) => {
+    try {
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/user/financial-info/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        }
+      );
+      const result = await response.json();
+      return result.status === 'success' && result.data?.financialInfo;
+    } catch (error) {
+      return false;
+    }
+  };
+
+  const checkStage3CompletionResidential = async (userId, authToken) => {
+    try {
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/user/agreement/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        }
+      );
+      const result = await response.json();
+      return result.status === 'success' && result.data?.termsAccepted;
+    } catch (error) {
+      return false;
+    }
+  };
+
+  const checkStage4CompletionResidential = async (userId, authToken) => {
+    try {
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        }
+      );
+      const result = await response.json();
+      return result.status === 'success' && result.data?.length > 0;
+    } catch (error) {
+      return false;
+    }
+  };
+
+  const checkStage5CompletionResidential = (facility) => {
+    return facility.status && facility.status.toLowerCase() === 'verified';
+  };
+
+  const checkUserProgressCommercial = async () => {
+    try {
+      setIsLoadingProgress(true);
+      const authToken = localStorage.getItem('authToken');
+      const userId = customerDetails.id;
+      if (!userId || !authToken) return;
+
+      const newCompletedStages = [1];
+      let highestCompletedStage = 1;
+
+      const stage2Completed = await checkStage2CompletionCommercial(userId, authToken);
+      if (stage2Completed) {
+        newCompletedStages.push(2);
+        highestCompletedStage = 2;
+      }
+
+      const stage3Completed = await checkStage3CompletionCommercial(userId, authToken);
+      if (stage3Completed) {
+        newCompletedStages.push(3);
+        highestCompletedStage = 3;
+      }
+
+      const stage4Completed = await checkStage4CompletionCommercial(userId, authToken);
+      if (stage4Completed) {
+        newCompletedStages.push(4);
+        highestCompletedStage = 4;
+      }
+
+      const stage5Completed = await checkStage5CompletionCommercial(userId, authToken);
+      if (stage5Completed) {
+        newCompletedStages.push(5);
+        highestCompletedStage = 5;
+      }
+
+      const progressData = {};
+      facilities.forEach(facility => {
+        const facilityCompletedStages = [...newCompletedStages];
+        let facilityCurrentStage = highestCompletedStage;
+
+        const stage6Completed = checkStage6CompletionCommercial(facility);
+        if (stage6Completed) {
+          facilityCompletedStages.push(6);
+          facilityCurrentStage = 6;
+        } else if (facilityCurrentStage === 5) {
+          facilityCurrentStage = 6;
+        }
+
+        progressData[facility.id] = {
+          completedStages: facilityCompletedStages,
+          currentStage: facilityCurrentStage
+        };
+      });
+
+      setFacilityProgress(progressData);
+    } catch (error) {
+      console.error('Error checking user progress:', error);
+    } finally {
+      setIsLoadingProgress(false);
+    }
+  };
+
+  const checkUserProgressResidential = async () => {
+    try {
+      setIsLoadingProgress(true);
+      const authToken = localStorage.getItem('authToken');
+      const userId = customerDetails.id;
+
+      if (!userId || !authToken) return;
+
+      const newCompletedStages = [1];
+      let highestCompletedStage = 1;
+
+      const stage2Completed = await checkStage2CompletionResidential(userId, authToken);
+      if (stage2Completed) {
+        newCompletedStages.push(2);
+        highestCompletedStage = 2;
+      }
+
+      const stage3Completed = await checkStage3CompletionResidential(userId, authToken);
+      if (stage3Completed) {
+        newCompletedStages.push(3);
+        highestCompletedStage = 3;
+      }
+
+      const stage4Completed = await checkStage4CompletionResidential(userId, authToken);
+      if (stage4Completed) {
+        newCompletedStages.push(4);
+        highestCompletedStage = 4;
+      }
+
+      const progressData = {};
+      facilities.forEach(facility => {
+        const facilityCompletedStages = [...newCompletedStages];
+        let facilityCurrentStage = highestCompletedStage;
+
+        const stage5Completed = checkStage5CompletionResidential(facility);
+        if (stage5Completed) {
+          facilityCompletedStages.push(5);
+          facilityCurrentStage = 5;
+        } else if (facilityCurrentStage === 4) {
+          facilityCurrentStage = 5;
+        }
+
+        progressData[facility.id] = {
+          completedStages: facilityCompletedStages,
+          currentStage: facilityCurrentStage < 5 ? facilityCurrentStage + 1 : 5
+        };
+      });
+
+      setFacilityProgress(progressData);
+    } catch (error) {
+      console.error('Error checking user progress:', error);
+    } finally {
+      setIsLoadingProgress(false);
+    }
+  };
+
+  const fetchCommercialFacilities = async (userId) => {
+    const authToken = localStorage.getItem('authToken');
+    try {
+      const { data } = await axios.get(
+        `https://services.dcarbon.solutions/api/facility/get-user-facilities-by-userId/${userId}`,
+        { headers: { Authorization: `Bearer ${authToken}` } }
+      );
+      if (data.status === "success") {
+        setFacilities(data.data.facilities);
+      }
+    } catch (err) {
+      console.error('Failed to load commercial facilities');
+    }
+  };
+
+  const fetchResidentialFacilities = async (userId) => {
+    const authToken = localStorage.getItem('authToken');
+    try {
+      const { data } = await axios.get(
+        `https://services.dcarbon.solutions/api/residential-facility/get-user-facilities/${userId}`,
+        { headers: { Authorization: `Bearer ${authToken}` } }
+      );
+      if (data.status === "success") {
+        const formattedFacilities = data.data.facilities.map(facility => ({
+          ...facility,
+          meterId: facility.meterId.split('_')[0] || facility.meterId
+        }));
+        setFacilities(formattedFacilities);
+      }
+    } catch (err) {
+      console.error('Failed to load residential facilities');
+    }
+  };
 
   useEffect(() => {
     const fetchCustomerDetails = async () => {
@@ -67,33 +329,13 @@ export default function CustomerDetails({ customer, onBack }) {
 
         if (data.status === 'success') {
           setCustomerDetails(data.data);
-          const initialDocs = {};
           
-          documentationFields.forEach(f => {
-            const statusKey = f.statusKey;
-            const urlKey = f.key;
-            const rejectionKey = `${f.key}RejectionReason`;
-            
-            const status = data.data.documentation?.[statusKey]?.toUpperCase() || 'REQUIRED';
-            const url = data.data.documentation?.[urlKey] || null;
-            
-            let displayStatus;
-            switch(status) {
-              case 'APPROVED': displayStatus = 'Approved'; break;
-              case 'REJECTED': displayStatus = 'Rejected'; break;
-              case 'SUBMITTED': displayStatus = 'Submitted'; break;
-              default: displayStatus = 'Required';
-            }
-
-            initialDocs[f.key] = {
-              file: url ? url.split('/').pop() : null,
-              url,
-              status: displayStatus,
-              rejectionReason: data.data.documentation?.[rejectionKey] || null
-            };
-          });
-
-          setDocs(initialDocs);
+          if (data.data.userType.toLowerCase() === 'commercial') {
+            await fetchCommercialUserDetails(data.data.id);
+            await fetchCommercialFacilities(data.data.id);
+          } else if (data.data.userType.toLowerCase() === 'residential') {
+            await fetchResidentialFacilities(data.data.id);
+          }
         }
       } catch (err) {
         if (err.response?.status === 404) {
@@ -109,60 +351,72 @@ export default function CustomerDetails({ customer, onBack }) {
     fetchCustomerDetails();
   }, [customer]);
 
-  const handleFileChange = async (key, e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const userId = customerDetails.id;
-    const authToken = localStorage.getItem('authToken');
-    const formData = new FormData();
-    formData.append('file', file);
-
-    const field = documentationFields.find(f => f.key === key);
-    if (!field) return;
-
-    try {
-      const res = await axios.put(
-        `https://services.dcarbon.solutions/api/user/documentation/${field.endpoint}/${userId}`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
-
-      if (res.data.status === 'success') {
-        const updatedDoc = res.data.data;
-        const statusKey = field.statusKey;
-        const urlKey = key;
-        const rejectionKey = `${key}RejectionReason`;
-        
-        setDocs(prev => ({
-          ...prev,
-          [key]: {
-            file: file.name,
-            url: updatedDoc[urlKey],
-            status: 'Submitted',
-            rejectionReason: updatedDoc[rejectionKey] || null
-          }
-        }));
-
-        toast.success(res.data.message || 'Document uploaded successfully');
+  useEffect(() => {
+    if (facilities.length > 0 && customerDetails) {
+      if (customerDetails.userType.toLowerCase() === 'commercial') {
+        checkUserProgressCommercial();
+      } else if (customerDetails.userType.toLowerCase() === 'residential') {
+        checkUserProgressResidential();
       }
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Upload failed');
     }
+  }, [facilities, customerDetails]);
+
+  const formatDate = iso => {
+    const d = new Date(iso);
+    return d.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
   };
 
-  const handleView = (key) => {
-    const url = docs[key]?.url;
-    if (url) window.open(url, '_blank');
+  const formatMeterIds = meterIds => {
+    if (!meterIds || meterIds.length === 0) return "N/A";
+    return meterIds.map(id => id.split('_')[0] || id).join(', ');
   };
 
-  const handleSendReminder = () => {
-    setShowModal(true);
+  const getCircleProgressSegmentsCommercial = (facilityId) => {
+    const progress = facilityProgress[facilityId] || { completedStages: [1], currentStage: 2 };
+    const segments = [];
+    
+    for (let i = 1; i <= 6; i++) {
+      segments.push(
+        <div
+          key={i}
+          className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+            progress.completedStages.includes(i) ? "bg-[#039994] border-[#039994]" : 
+            i === progress.currentStage ? "border-[#039994] bg-white" : "border-gray-300 bg-white"
+          }`}
+        >
+          <div
+            className={`w-2 h-2 rounded-full ${
+              progress.completedStages.includes(i) ? "bg-white" : "bg-gray-300"
+            }`}
+          />
+        </div>
+      );
+    }
+    return segments;
+  };
+
+  const getProgressSegmentsResidential = (facilityId) => {
+    const progress = facilityProgress[facilityId] || { completedStages: [1], currentStage: 2 };
+    
+    return [1, 2, 3, 4, 5].map((stage) => (
+      <div key={stage} className="flex flex-col items-center">
+        <div
+          className={`w-5 h-5 rounded-full flex items-center justify-center border-2 text-xs ${
+            progress.completedStages.includes(stage)
+              ? "bg-[#039994] border-[#039994] text-white"
+              : stage === progress.currentStage
+              ? "border-[#039994] text-[#039994]"
+              : "border-gray-300 text-gray-400"
+          }`}
+        >
+          {stage}
+        </div>
+      </div>
+    ));
   };
 
   const progressPercent = 40;
@@ -190,12 +444,6 @@ export default function CustomerDetails({ customer, onBack }) {
           </p>
           <div className="flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4">
             <button 
-              onClick={handleSendReminder} 
-              className="bg-[#039994] text-white px-6 py-2 rounded-md hover:opacity-90 transition-opacity"
-            >
-              Send Registration Reminder
-            </button>
-            <button 
               onClick={onBack} 
               className="border border-[#039994] text-[#039994] px-6 py-2 rounded-md hover:bg-[#069B960D] transition-colors"
             >
@@ -203,15 +451,6 @@ export default function CustomerDetails({ customer, onBack }) {
             </button>
           </div>
         </div>
-        
-        {showModal && (
-          <Suspense fallback={<div>Loading…</div>}>
-            <SendReminderModal
-              email={customer.inviteeEmail || customer.email}
-              onClose={() => setShowModal(false)}
-            />
-          </Suspense>
-        )}
       </div>
     );
   }
@@ -241,22 +480,7 @@ export default function CustomerDetails({ customer, onBack }) {
           <HiOutlineArrowLeft size={24} />
         </div>
         <h1 className={pageTitle}>Customer Details</h1>
-        <button
-          onClick={() => setShowModal(true)}
-          className="absolute right-4 top-0 bg-black text-white px-4 py-2 rounded-md hover:opacity-90"
-        >
-          Send Reminder
-        </button>
       </div>
-
-      {showModal && (
-        <Suspense fallback={<div>Loading…</div>}>
-          <SendReminderModal
-            email={customerDetails.email}
-            onClose={() => setShowModal(false)}
-          />
-        </Suspense>
-      )}
 
       <div className={progressContainer}>
         <div className={progressBarWrapper}>
@@ -287,85 +511,146 @@ export default function CustomerDetails({ customer, onBack }) {
           <div className="text-[#1E1E1E]">{customerDetails.phoneNumber}</div>
           <div className="font-medium text-[#626060]">Customer Type</div>
           <div className="text-[#1E1E1E]">{customerDetails.userType}</div>
-          <div className="font-medium text-[#626060]">Utility Provider</div>
-          <div className="text-[#1E1E1E]">{customerDetails.utilityProvider || 'N/A'}</div>
-          <div className="font-medium text-[#626060]">Utility Auth Email</div>
-          <div className="text-[#1E1E1E]">
-            {customerDetails.utilityAuthEmail?.join(', ') || 'N/A'}
-          </div>
-          <div className="font-medium text-[#626060]">Meter ID</div>
-          <div className="text-[#1E1E1E]">{customerDetails.meterId || 'N/A'}</div>
-          <div className="font-medium text-[#626060]">Address</div>
-          <div className="text-[#1E1E1E]">{customerDetails.address || 'N/A'}</div>
-          <div className="font-medium text-[#626060]">Financial Info</div>
-          <div className="text-[#1E1E1E]">
-            {customerDetails.financialInfo ? JSON.stringify(customerDetails.financialInfo) : 'N/A'}
-          </div>
-          <div className="font-medium text-[#626060]">Date Registered</div>
-          <div className="text-[#1E1E1E]">
-            {new Date(customerDetails.createdAt).toLocaleDateString()}
-          </div>
+          
+          {customerDetails.userType.toLowerCase() === 'commercial' && commercialUserDetails && (
+            <>
+              <div className="font-medium text-[#626060]">Commercial Role</div>
+              <div className="text-[#1E1E1E] capitalize">{commercialUserDetails.commercialRole}</div>
+              
+              <div className="font-medium text-[#626060]">Entity Type</div>
+              <div className="text-[#1E1E1E] capitalize">{commercialUserDetails.entityType}</div>
+              
+              <div className="font-medium text-[#626060]">Owner Full Name</div>
+              <div className="text-[#1E1E1E]">{commercialUserDetails.ownerFullName}</div>
+              
+              <div className="font-medium text-[#626060]">Owner Address</div>
+              <div className="text-[#1E1E1E]">{commercialUserDetails.ownerAddress}</div>
+              
+              <div className="font-medium text-[#626060]">Company Name</div>
+              <div className="text-[#1E1E1E]">{commercialUserDetails.companyName || "N/A"}</div>
+              
+              <div className="font-medium text-[#626060]">Company Address</div>
+              <div className="text-[#1E1E1E]">{commercialUserDetails.companyAddress || "N/A"}</div>
+            </>
+          )}
         </div>
       </div>
 
-      <h2 className="mb-2 font-[600] text-[20px] text-[#039994]">Documentation</h2>
+      <h2 className="mb-2 font-[600] text-[20px] text-[#039994]">
+        {customerDetails.userType.toLowerCase() === 'commercial' ? 'My Facilities' : 'Solar System Management'}
+      </h2>
       <hr className="w-full max-w-3xl mb-6" />
 
-      <div className="w-full max-w-3xl grid grid-cols-3 gap-x-4 gap-y-4">
-        {documentationFields.map(f => {
-          const { file, status, rejectionReason } = docs[f.key] || {};
-          const st = statusStyles[status] || statusStyles.Required;
+      {isLoadingProgress ? (
+        <div className="flex justify-center items-center h-48">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#039994]" />
+        </div>
+      ) : facilities.length === 0 ? (
+        <div className="text-center py-6 text-sm text-gray-500">
+          No facilities found
+        </div>
+      ) : (
+        <div className="w-full max-w-3xl grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {facilities.map(facility => {
+            const progress = facilityProgress[facility.id] || { completedStages: [1], currentStage: 2 };
+            const isCommercial = customerDetails.userType.toLowerCase() === 'commercial';
+            
+            return (
+              <div
+                key={facility.id}
+                className="border border-[#039994] rounded-lg bg-white hover:shadow transition-shadow flex flex-col justify-between p-2"
+              >
+                <div>
+                  <h3 className="font-semibold text-base text-[#039994] mb-1">
+                    {facility.facilityName}
+                  </h3>
+                  <div className="grid grid-cols-2 gap-y-1 text-xs">
+                    {isCommercial ? (
+                      <>
+                        <span className="font-medium">Role:</span>
+                        <span className="capitalize">{facility.commercialRole}</span>
 
-          return (
-            <React.Fragment key={f.key}>
-              <div className="font-medium text-[#1E1E1E]">
-                {f.label}
-              </div>
+                        <span className="font-medium">Type:</span>
+                        <span className="capitalize">{facility.entityType}</span>
 
-              <div className={uploadFieldWrapper}>
-                <label className={`${uploadInputLabel} flex items-center justify-between border border-gray-300`}>
-                  <span className="truncate max-w-[180px]">
-                    {file || 'Upload Document'}
-                  </span>
-                  <div className={uploadIconContainer}>
-                    {file ? (
-                      <HiOutlineEye 
-                        size={18} 
-                        onClick={(e) => {
-                          e.preventDefault();
-                          handleView(f.key);
-                        }} 
-                        className="text-gray-600 hover:text-[#039994] cursor-pointer"
-                      />
+                        <span className="font-medium">Utility:</span>
+                        <span>{facility.utilityProvider}</span>
+
+                        <span className="font-medium">Meter ID:</span>
+                        <span>{formatMeterIds(facility.meterIds)}</span>
+
+                        <span className="font-medium">Status:</span>
+                        <span className="capitalize">{facility.status}</span>
+
+                        <span className="font-medium">Created:</span>
+                        <span>{formatDate(facility.createdAt)}</span>
+                      </>
                     ) : (
-                      <HiOutlinePaperClip 
-                        size={18} 
-                        className="text-gray-600"
-                      />
+                      <>
+                        <span className="font-medium">Address:</span>
+                        <span>{facility.address || "N/A"}</span>
+
+                        <span className="font-medium">Utility:</span>
+                        <span>{facility.utilityProvider || "N/A"}</span>
+
+                        <span className="font-medium">Installer:</span>
+                        <span>{facility.installer || "N/A"}</span>
+
+                        <span className="font-medium">Finance Type:</span>
+                        <span className="capitalize">{facility.financeType || "N/A"}</span>
+
+                        <span className="font-medium">Meter ID:</span>
+                        <span>{facility.meterId || "N/A"}</span>
+
+                        <span className="font-medium">Status:</span>
+                        <span className="capitalize">{facility.status || "N/A"}</span>
+
+                        <span className="font-medium">Created:</span>
+                        <span>{formatDate(facility.createdAt)}</span>
+                      </>
                     )}
                   </div>
-                  <input
-                    type="file"
-                    className="hidden"
-                    onChange={e => handleFileChange(f.key, e)}
-                  />
-                </label>
-              </div>
-
-              <div className="flex flex-col">
-                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${st.bg} ${st.text}`}>
-                  {status}
-                </span>
-                {rejectionReason && (
-                  <span className="text-xs text-red-500 mt-1">
-                    {rejectionReason}
+                  
+                  <div className="mt-3 pt-2 border-t border-gray-100">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-medium text-gray-600">
+                        {isCommercial ? 'Progress' : 'Onboarding Progress'}
+                      </span>
+                      <span className="text-xs font-medium text-[#039994]">
+                        {isCommercial ? `Step ${progress.currentStage} of 6` : `Stage ${progress.currentStage} of 5`}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      {isCommercial ? getCircleProgressSegmentsCommercial(facility.id) : getProgressSegmentsResidential(facility.id)}
+                    </div>
+                    {!isCommercial && (
+                      <div className="flex justify-between px-1 mt-1">
+                        {[1, 2, 3, 4].map((stage) => (
+                          <div
+                            key={stage}
+                            className={`h-0.5 flex-1 mx-1 ${
+                              progress.completedStages.includes(stage + 1) ? "bg-[#039994]" : "bg-gray-200"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div
+                  className="flex items-center justify-between mt-2 px-1 py-1"
+                  style={{ backgroundColor: "#069B9621" }}
+                >
+                  <span className="text-[#039994] text-xs font-medium">
+                    View details
                   </span>
-                )}
+                  <FiChevronRight size={16} className="text-[#039994]" />
+                </div>
               </div>
-            </React.Fragment>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
       <div className="w-full max-w-3xl flex justify-end mt-8">
         <button onClick={onBack} className={`${buttonPrimary} w-auto px-6`}>

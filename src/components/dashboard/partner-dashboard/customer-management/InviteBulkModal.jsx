@@ -20,6 +20,8 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
   const [phoneErrors, setPhoneErrors] = useState([]);
   const fileInputRef = useRef(null);
 
+  const MAX_INVITEES = 100;
+
   const handleChange = (index, e) => {
     const { name, value } = e.target;
     const newInvitees = [...invitees];
@@ -46,6 +48,10 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
   };
 
   const addInvitee = () => {
+    if (invitees.length >= MAX_INVITEES) {
+      toast.error(`Maximum ${MAX_INVITEES} invitees allowed per submission`);
+      return;
+    }
     setInvitees([
       ...invitees,
       {
@@ -91,6 +97,17 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
     }
   };
 
+  const downloadTemplate = () => {
+    const csvContent = "data:text/csv;charset=utf-8,name,email,phoneNumber,customerType,role,message\nJohn Doe,john@example.com,+1234567890,RESIDENTIAL,OWNER,Welcome to our platform";
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "customer_invite_template.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const handleCsvUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -123,6 +140,11 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
         const newPhoneErrors = [];
         for (let i = 1; i < rows.length; i++) {
           if (!rows[i].trim()) continue;
+          
+          if (newInvitees.length >= MAX_INVITEES) {
+            toast.warning(`Only the first ${MAX_INVITEES} invitees will be processed`);
+            break;
+          }
           
           const values = rows[i].split(',').map(val => val.trim());
           if (values.length !== headers.length) {
@@ -345,7 +367,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
             </svg>
             <p className="text-sm font-medium mb-1">Import invitees from CSV</p>
             <p className="text-xs text-gray-500 mb-3">CSV should include columns: name, email, phoneNumber, customerType, role, message</p>
-            <p className="text-xs text-gray-500 mb-3">Phone numbers should be in format: +1234567890 or 1234567890</p>
+            <p className="text-xs text-gray-500 mb-3">Maximum {MAX_INVITEES} invitees per upload</p>
             
             <input
               type="file"
@@ -356,14 +378,24 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
               disabled={loading || csvLoading}
             />
             
-            <button 
-              type="button"
-              onClick={triggerCsvUpload}
-              className="px-4 py-2 bg-white border border-gray-300 rounded-md text-xs font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              disabled={loading || csvLoading}
-            >
-              Upload CSV File
-            </button>
+            <div className="flex space-x-2">
+              <button 
+                type="button"
+                onClick={triggerCsvUpload}
+                className="px-4 py-2 bg-white border border-gray-300 rounded-md text-xs font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                disabled={loading || csvLoading}
+              >
+                Upload CSV File
+              </button>
+              <button 
+                type="button"
+                onClick={downloadTemplate}
+                className="px-4 py-2 bg-white border border-gray-300 rounded-md text-xs font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                disabled={loading || csvLoading}
+              >
+                Download Template
+              </button>
+            </div>
           </div>
         </div>
 
@@ -498,6 +530,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
               type="button"
               onClick={addInvitee}
               className="flex items-center text-blue-600 hover:text-blue-800 focus:outline-none text-xs font-medium"
+              disabled={invitees.length >= MAX_INVITEES}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
