@@ -5,9 +5,10 @@ import toast from "react-hot-toast";
 import { labelClass, inputClass, selectClass } from "./styles";
 import Loader from "@/components/loader/Loader.jsx";
 
-export default function EditFacilityDetailsModal({ facility, onClose, onSave }) {
+export default function EditFacilityDetailsModal({ facility, onClose = () => {}, onSave = () => {} }) {
   const [formData, setFormData] = useState({
     facilityName: facility.facilityName || "",
+    nickname: facility.nickname || "",
     address: facility.address || "",
     utilityProvider: facility.utilityProvider || "",
     meterId: Array.isArray(facility.meterIds) ? facility.meterIds[0] : facility.meterIds || "",
@@ -27,10 +28,18 @@ export default function EditFacilityDetailsModal({ facility, onClose, onSave }) 
   const [selectedMeter, setSelectedMeter] = useState(null);
   const [isSameLocation, setIsSameLocation] = useState(null);
   const [selectedUtilityAuthEmail, setSelectedUtilityAuthEmail] = useState("");
+  const [commercialUserLoading, setCommercialUserLoading] = useState(false);
+  const [multipleOwnersData, setMultipleOwnersData] = useState([]);
+  const [meterAgreementAccepted, setMeterAgreementAccepted] = useState(false);
+  const [acceptingAgreement, setAcceptingAgreement] = useState(false);
+  const [originalMeterId, setOriginalMeterId] = useState(
+    Array.isArray(facility.meterIds) ? facility.meterIds[0] : facility.meterIds || ""
+  );
 
   useEffect(() => {
     fetchUtilityProviders();
     fetchUserMeters();
+    fetchCommercialUser();
   }, []);
 
   useEffect(() => {
@@ -40,12 +49,48 @@ export default function EditFacilityDetailsModal({ facility, onClose, onSave }) 
           ...prev,
           address: selectedMeter.base.service_address
         }));
-      } else if (isSameLocation === false) {
-        // Keep the current address if user chooses different location
-        // Don't auto-clear it in edit mode
+      } else {
+        setFormData(prev => ({
+          ...prev,
+          address: facility.address || ""
+        }));
       }
     }
   }, [selectedMeter, isSameLocation]);
+
+  const fetchCommercialUser = async () => {
+    const userId = localStorage.getItem("userId");
+    const authToken = localStorage.getItem("authToken");
+    if (!userId || !authToken) return;
+
+    setCommercialUserLoading(true);
+    try {
+      const response = await axios.get(
+        `https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`
+          }
+        }
+      );
+
+      if (response.data.status === "success") {
+        setFormData(prev => ({
+          ...prev,
+          name: response.data.data.commercialUser.ownerFullName || ""
+        }));
+        
+        if (response.data.data.commercialUser.multipleUsers) {
+          setMultipleOwnersData(response.data.data.commercialUser.multipleUsers);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching commercial user:", error);
+    } finally {
+      setCommercialUserLoading(false);
+    }
+  };
 
   const fetchUtilityProviders = async () => {
     const authToken = localStorage.getItem("authToken");
@@ -133,6 +178,7 @@ export default function EditFacilityDetailsModal({ facility, onClose, onSave }) 
       const meter = currentMeters.find(m => m.uid === value);
       setSelectedMeter(meter || null);
       setIsSameLocation(null);
+      setMeterAgreementAccepted(false);
     }
   };
 
@@ -145,10 +191,45 @@ export default function EditFacilityDetailsModal({ facility, onClose, onSave }) 
     }));
     setSelectedMeter(null);
     setIsSameLocation(null);
+    setMeterAgreementAccepted(false);
   };
 
   const handleLocationChoice = (choice) => {
     setIsSameLocation(choice);
+  };
+
+  const handleAcceptMeterAgreement = async () => {
+    const userId = localStorage.getItem("userId");
+    const authToken = localStorage.getItem("authToken");
+
+    if (!userId || !authToken) {
+      toast.error("Authentication required");
+      return;
+    }
+
+    setAcceptingAgreement(true);
+    try {
+      const response = await axios.put(
+        `https://services.dcarbon.solutions/api/user/accept-user-agreement-terms/${userId}`,
+        {},
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`
+          }
+        }
+      );
+
+      if (response.data.status === "success") {
+        setMeterAgreementAccepted(true);
+        toast.success("Meter agreement accepted successfully");
+      }
+    } catch (error) {
+      console.error("Error accepting meter agreement:", error);
+      toast.error("Failed to accept meter agreement");
+    } finally {
+      setAcceptingAgreement(false);
+    }
   };
 
   const handleSave = async () => {
@@ -159,12 +240,17 @@ export default function EditFacilityDetailsModal({ facility, onClose, onSave }) 
       return;
     }
 
+    if (formData.meterId !== originalMeterId && !meterAgreementAccepted) {
+      toast.error("Please accept the meter agreement before saving");
+      return;
+    }
+
     try {
       setLoading(true);
       
-      // Prepare the data to send
       const processedData = {
         facilityName: formData.facilityName,
+        nickname: formData.nickname,
         address: formData.address,
         utilityProvider: formData.utilityProvider,
         meterId: formData.meterId,
@@ -191,14 +277,28 @@ export default function EditFacilityDetailsModal({ facility, onClose, onSave }) 
         toast.success("Facility updated successfully");
         onSave(response.data.data);
         onClose();
-      } else {
-        throw new Error(response.data.message || "Failed to update facility");
       }
     } catch (error) {
       console.error("Error updating facility:", error);
-      toast.error(error.response?.data?.message || "Failed to update facility");
+      toast.error("Failed to update facility");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleClose = (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (typeof onClose === 'function') {
+      onClose();
+    }
+  };
+
+  const handleBackdropClick = (e) => {
+    if (e.target === e.currentTarget) {
+      handleClose(e);
     }
   };
 
@@ -209,19 +309,19 @@ export default function EditFacilityDetailsModal({ facility, onClose, onSave }) 
   const currentMeters = getCurrentMeters();
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="relative bg-white rounded-lg shadow-xl w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" onClick={handleBackdropClick}>
+      <div className="relative bg-white rounded-lg shadow-xl w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         {loading && (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-white bg-opacity-70 rounded-lg">
             <Loader />
           </div>
         )}
 
-        {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-800">Edit Facility Details</h2>
           <button
-            onClick={onClose}
+            type="button"
+            onClick={handleClose}
             className="p-1 hover:bg-gray-100 rounded-full transition-colors"
             disabled={loading}
           >
@@ -229,10 +329,8 @@ export default function EditFacilityDetailsModal({ facility, onClose, onSave }) 
           </button>
         </div>
 
-        {/* Body */}
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Facility Name - Non-editable */}
             <div>
               <label className={`${labelClass} mb-2`}>
                 Facility Name
@@ -250,7 +348,20 @@ export default function EditFacilityDetailsModal({ facility, onClose, onSave }) 
               </p>
             </div>
 
-            {/* Owner/Operator Name */}
+            <div>
+              <label className={`${labelClass} mb-2`}>
+                Facility Nickname
+              </label>
+              <input
+                type="text"
+                name="nickname"
+                value={formData.nickname}
+                onChange={handleChange}
+                className={`${inputClass}`}
+                disabled={loading}
+              />
+            </div>
+
             <div>
               <label className={`${labelClass} mb-2`}>
                 Owner/Operator Name
@@ -261,11 +372,10 @@ export default function EditFacilityDetailsModal({ facility, onClose, onSave }) 
                 value={formData.name}
                 onChange={handleChange}
                 className={`${inputClass}`}
-                disabled={loading}
+                disabled={loading || commercialUserLoading}
               />
             </div>
 
-            {/* Utility Provider */}
             <div>
               <label className={`${labelClass} mb-2`}>
                 Utility Provider <span className="text-red-500">*</span>
@@ -291,7 +401,6 @@ export default function EditFacilityDetailsModal({ facility, onClose, onSave }) 
               </select>
             </div>
 
-            {/* Utility Username */}
             <div>
               <label className={`${labelClass} mb-2`}>
                 Utility Username
@@ -306,7 +415,6 @@ export default function EditFacilityDetailsModal({ facility, onClose, onSave }) 
               />
             </div>
 
-            {/* Utility Account */}
             <div>
               <label className={`${labelClass} mb-2`}>
                 Utility Account <span className="text-red-500">*</span>
@@ -336,7 +444,6 @@ export default function EditFacilityDetailsModal({ facility, onClose, onSave }) 
               </p>
             </div>
 
-            {/* Meter Selection */}
             {selectedUtilityAuthEmail && (
               <div>
                 <label className={`${labelClass} mb-2`}>
@@ -367,7 +474,6 @@ export default function EditFacilityDetailsModal({ facility, onClose, onSave }) 
               </div>
             )}
 
-            {/* Location Confirmation */}
             {selectedMeter && (
               <div className="md:col-span-2">
                 <div className="mb-3 p-3 bg-gray-50 rounded-md border border-gray-200">
@@ -401,7 +507,31 @@ export default function EditFacilityDetailsModal({ facility, onClose, onSave }) 
               </div>
             )}
 
-            {/* Installation Address */}
+            {selectedMeter && formData.meterId !== originalMeterId && (
+              <div className="md:col-span-2">
+                <div className="mb-3 p-3 bg-gray-50 rounded-md border border-gray-200">
+                  <p className="font-medium mb-2">
+                    By clicking "Accept Meter Agreement", you agree that the selected meter can be used for this commercial facility.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleAcceptMeterAgreement}
+                    className={`w-full py-2 rounded-md text-white font-medium ${
+                      meterAgreementAccepted ? 'bg-green-600' : 'bg-black hover:bg-gray-800'
+                    }`}
+                    disabled={meterAgreementAccepted || acceptingAgreement}
+                  >
+                    {acceptingAgreement ? 'Processing...' : meterAgreementAccepted ? 'Meter Agreement Accepted' : 'Accept Meter Agreement'}
+                  </button>
+                  {meterAgreementAccepted && (
+                    <p className="mt-2 text-green-600 text-sm text-center">
+                      Meter agreement accepted successfully
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div className="md:col-span-2">
               <label className={`${labelClass} mb-2`}>
                 Installation Address <span className="text-red-500">*</span>
@@ -438,7 +568,6 @@ export default function EditFacilityDetailsModal({ facility, onClose, onSave }) 
               )}
             </div>
 
-            {/* Website */}
             <div>
               <label className={`${labelClass} mb-2`}>
                 Website
@@ -454,23 +583,30 @@ export default function EditFacilityDetailsModal({ facility, onClose, onSave }) 
               />
             </div>
 
-            {/* Multiple Owners */}
             <div>
               <label className={`${labelClass} mb-2`}>
                 Multiple Owners
               </label>
-              <input
-                type="text"
+              <select
                 name="multipleOwners"
                 value={formData.multipleOwners}
                 onChange={handleChange}
-                placeholder="Enter multiple owners information"
-                className={`${inputClass}`}
-                disabled={loading}
-              />
+                className={`${selectClass}`}
+                disabled={loading || multipleOwnersData.length === 0}
+              >
+                <option value="">Select owner</option>
+                {multipleOwnersData.length === 0 ? (
+                  <option value="" disabled>No additional owners found</option>
+                ) : (
+                  multipleOwnersData.map((owner, index) => (
+                    <option key={index} value={owner.fullName}>
+                      {owner.fullName}
+                    </option>
+                  ))
+                )}
+              </select>
             </div>
 
-            {/* Commercial Role */}
             <div>
               <label className={`${labelClass} mb-2`}>
                 Commercial Role <span className="text-red-500">*</span>
@@ -489,7 +625,6 @@ export default function EditFacilityDetailsModal({ facility, onClose, onSave }) 
               </select>
             </div>
 
-            {/* Entity Type */}
             <div>
               <label className={`${labelClass} mb-2`}>
                 Entity Type <span className="text-red-500">*</span>
@@ -509,10 +644,10 @@ export default function EditFacilityDetailsModal({ facility, onClose, onSave }) 
           </div>
         </div>
 
-        {/* Footer */}
         <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200">
           <button
-            onClick={onClose}
+            type="button"
+            onClick={handleClose}
             disabled={loading}
             className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50"
           >
@@ -520,7 +655,7 @@ export default function EditFacilityDetailsModal({ facility, onClose, onSave }) 
           </button>
           <button
             onClick={handleSave}
-            disabled={loading}
+            disabled={loading || (formData.meterId !== originalMeterId && !meterAgreementAccepted)}
             className="px-6 py-2 bg-[#039994] text-white rounded-lg hover:bg-[#027a75] transition-colors disabled:opacity-50 flex items-center space-x-2"
           >
             {loading && (

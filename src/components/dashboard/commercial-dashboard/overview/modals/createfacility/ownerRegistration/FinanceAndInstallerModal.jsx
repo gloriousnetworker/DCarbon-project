@@ -44,8 +44,6 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const [requestingFinanceType, setRequestingFinanceType] = useState(false);
   const [requestedFinanceTypeName, setRequestedFinanceTypeName] = useState('');
   const [showInviteOperatorModal, setShowInviteOperatorModal] = useState(false);
-  const [showIframe, setShowIframe] = useState(false);
-  const [iframeUrl, setIframeUrl] = useState("");
   const [file, setFile] = useState(null);
   const [facilityNickname, setFacilityNickname] = useState('');
   const [utilityProviders, setUtilityProviders] = useState([]);
@@ -287,45 +285,6 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     }
   };
 
-  const initiateUtilityAuth = async () => {
-    const userEmail = localStorage.getItem('userEmail');
-    const authToken = localStorage.getItem('authToken');
-    const userId = localStorage.getItem('userId');
-
-    setLoading(true);
-    try {
-      const response = await axios.post(
-        `https://services.dcarbon.solutions/api/auth/initiate-utility-auth/${userId}`,
-        { utilityAuthEmail: userEmail },
-        { headers: { 'Authorization': `Bearer ${authToken}` } }
-      );
-      if (response.data.status === 'success') {
-        setIframeUrl('https://utilityapi.com/authorize/DCarbon_Solutions');
-        setShowIframe(true);
-      } else {
-        toast.error('Failed to initiate utility authorization');
-      }
-    } catch (error) {
-      toast.error('Failed to initiate utility authorization');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleIframeMessage = (event) => {
-    if (event.data && event.data.type === 'utility-auth-complete') {
-      setShowIframe(false);
-      setShowInviteOperatorModal(true);
-    }
-  };
-
-  useEffect(() => {
-    if (showIframe) {
-      window.addEventListener('message', handleIframeMessage);
-      return () => window.removeEventListener('message', handleIframeMessage);
-    }
-  }, [showIframe]);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.financeType) return toast.error('Please select a finance type');
@@ -347,7 +306,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
       }
 
       toast.dismiss(toastId);
-      await initiateUtilityAuth();
+      setShowInviteOperatorModal(true);
     } catch (err) {
       toast.error(err.response?.data?.message || err.message || 'Operation failed', { id: toastId });
     } finally {
@@ -387,39 +346,6 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   };
 
   if (!isOpen) return null;
-
-  if (showIframe) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-        <div className="relative w-full max-w-4xl h-[90vh] bg-white rounded-2xl overflow-hidden">
-          <div className="flex items-center justify-between p-4 border-b">
-            <h3 className="text-lg font-semibold text-[#039994]">Utility Authorization Portal</h3>
-            <button
-              onClick={handleCloseModal}
-              className="text-red-500 hover:text-red-700"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
-          </div>
-          <div className="p-4 bg-yellow-50 border-b border-yellow-200">
-            <p className="text-sm text-yellow-700">
-              <strong>Step 1:</strong> Enter the email of your DCarbon account you are authorizing for, then choose your utility provider.
-            </p>
-            <p className="text-sm text-yellow-700 mt-1">
-              <strong>Step 2:</strong> Enter your Utility Account credentials and authorize access when prompted.
-            </p>
-          </div>
-          <iframe
-            src={iframeUrl}
-            className="w-full h-full"
-            title="Utility Authorization"
-          />
-        </div>
-      </div>
-    );
-  }
 
   return (
     <>
@@ -468,7 +394,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
         </div>
       )}
 
-      {!showInviteOperatorModal && !showIframe && (
+      {!showInviteOperatorModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
           <div className="relative w-full max-w-lg bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
             <div className="relative p-6 pb-4">

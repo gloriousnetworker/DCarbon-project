@@ -1,10 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   FiArrowLeft,
   FiEdit,
   FiFileText,
   FiEye,
-  FiDownload,
   FiTrash2,
   FiUpload,
   FiUsers,
@@ -12,27 +11,81 @@ import {
   FiAlertCircle,
   FiRefreshCw
 } from "react-icons/fi";
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer } from 'recharts';
 import { toast } from 'react-hot-toast';
 import InviteCollaboratorModal from "./InviteCollaboratorModal";
 import EditFacilityDetailsModal from "./EditFacilityDetailsModal";
-import { pageTitle, labelClass, inputClass } from "./styles";
+import { pageTitle, labelClass } from "./styles";
 
-// Mock data for the energy production chart
-const energyData = [
-  { month: 'Jan', kwh: 45 },
-  { month: 'Feb', kwh: 30 },
-  { month: 'Mar', kwh: 85 },
-  { month: 'Apr', kwh: 25 },
-  { month: 'May', kwh: 180 },
-  { month: 'Jun', kwh: 90 },
-  { month: 'Jul', kwh: 20 },
-  { month: 'Aug', kwh: 35 },
-  { month: 'Sep', kwh: 60 },
-  { month: 'Oct', kwh: 120 },
-  { month: 'Nov', kwh: 85 },
-  { month: 'Dec', kwh: 95 }
-];
+const ProgressTracker = ({ currentStage, nextStage, onStageClick }) => {
+  const stages = [
+    { id: 1, name: "App Registration", tooltip: "Account creation completed" },
+    { id: 2, name: "Solar Install Details", tooltip: "Owner details and address completed" },
+    { id: 3, name: "DCarbon Service Agreements", tooltip: "Terms and conditions signed" },
+    { id: 4, name: "Utility Authorization", tooltip: "Financial information submitted" },
+    { id: 5, name: "Utility Meter Selection", tooltip: "Utility meters connected" },
+    { id: 6, name: "Solar Document Uploads", tooltip: "All required documents uploaded" }
+  ];
+
+  const currentDisplayStage = currentStage > 6 ? 6 : currentStage;
+
+  const handleClick = (stageId) => {
+    if (stageId <= currentStage || stageId === nextStage) {
+      onStageClick(stageId);
+    }
+  };
+
+  return (
+    <div className="w-full bg-white rounded-lg shadow-sm p-4 mb-4">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-lg font-semibold text-gray-800">Onboarding Progress</h2>
+        <span className="text-sm font-medium text-[#039994]">
+          Stage {currentDisplayStage} of {stages.length}
+        </span>
+      </div>
+      <div className="relative">
+        <div className="flex justify-between mb-2">
+          {stages.map((stage) => (
+            <div 
+              key={stage.id} 
+              className="flex flex-col items-center group relative"
+              onClick={() => handleClick(stage.id)}
+            >
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center cursor-pointer ${
+                  stage.id < currentDisplayStage ? "bg-[#039994] text-white" : 
+                  stage.id === currentDisplayStage ? "bg-[#039994] text-white" : 
+                  stage.id === nextStage ? "border-2 border-[#039994] bg-white text-gray-600" : "bg-gray-200 text-gray-600"
+                } ${stage.id <= currentDisplayStage ? 'hover:bg-[#028a85]' : ''}`}
+              >
+                {stage.id}
+              </div>
+              <span
+                className={`text-xs mt-1 text-center ${
+                  stage.id <= currentDisplayStage ? "text-[#039994] font-medium" : "text-gray-500"
+                }`}
+              >
+                {stage.name}
+              </span>
+              <div className="absolute top-full mt-2 hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap z-10">
+                {stage.tooltip}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="absolute top-4 left-0 right-0 flex justify-between px-4 -z-10">
+          {stages.slice(0, stages.length - 1).map((stage) => (
+            <div
+              key={stage.id}
+              className={`h-1 flex-1 mx-2 ${
+                stage.id < currentDisplayStage ? "bg-[#039994]" : "bg-gray-200"
+              }`}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default function FacilityDetails({ facility, onBack, onFacilityUpdated }) {
   const [showEditModal, setShowEditModal] = useState(false);
@@ -42,6 +95,99 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
   const [showAllDocs, setShowAllDocs] = useState(false);
   const [facilityData, setFacilityData] = useState(facility);
   const [expandedRejections, setExpandedRejections] = useState({});
+  const [currentStage, setCurrentStage] = useState(1);
+  const [nextStage, setNextStage] = useState(2);
+
+  useEffect(() => {
+    const checkUserProgress = async () => {
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const userId = loginResponse?.data?.user?.id;
+      const authToken = loginResponse?.data?.token;
+
+      if (!userId || !authToken) return;
+
+      const checkStage2 = async () => {
+        try {
+          const response = await fetch(
+            `https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`,
+            { headers: { 'Authorization': `Bearer ${authToken}` } }
+          );
+          const result = await response.json();
+          return result.status === 'success' && result.data?.commercialUser?.ownerAddress;
+        } catch (error) {
+          return false;
+        }
+      };
+
+      const checkStage3 = async () => {
+        try {
+          const response = await fetch(
+            `https://services.dcarbon.solutions/api/user/agreement/${userId}`,
+            { headers: { 'Authorization': `Bearer ${authToken}` } }
+          );
+          const result = await response.json();
+          return result.status === 'success' && result.data?.termsAccepted;
+        } catch (error) {
+          return false;
+        }
+      };
+
+      const checkStage4 = async () => {
+        try {
+          const response = await fetch(
+            `https://services.dcarbon.solutions/api/user/financial-info/${userId}`,
+            { headers: { 'Authorization': `Bearer ${authToken}` } }
+          );
+          const result = await response.json();
+          return result.status === 'success' && result.data?.financialInfo;
+        } catch (error) {
+          return false;
+        }
+      };
+
+      const checkStage5 = async () => {
+        try {
+          const response = await fetch(
+            `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`,
+            { headers: { 'Authorization': `Bearer ${authToken}` } }
+          );
+          const result = await response.json();
+          return result.status === 'success' && result.data?.length > 0 && result.data.some(item => item.meters?.meters?.length > 0);
+        } catch (error) {
+          return false;
+        }
+      };
+
+      const checkStage6 = () => {
+        return facilityData.status?.toLowerCase() === 'verified';
+      };
+
+      const stageChecks = [
+        { stage: 2, check: checkStage2 },
+        { stage: 3, check: checkStage3 },
+        { stage: 4, check: checkStage4 },
+        { stage: 5, check: checkStage5 },
+        { stage: 6, check: checkStage6 }
+      ];
+
+      let highestCompletedStage = 1;
+
+      for (const { stage, check } of stageChecks) {
+        const isCompleted = await check();
+        if (isCompleted) {
+          highestCompletedStage = stage;
+        }
+      }
+
+      const newStage = highestCompletedStage === 6 ? 6 : highestCompletedStage;
+      const newNextStage = highestCompletedStage === 6 ? 6 : highestCompletedStage + 1;
+      
+      setCurrentStage(newStage);
+      setNextStage(newNextStage);
+    };
+
+    checkUserProgress();
+  }, [facilityData.status]);
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
@@ -67,6 +213,8 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
         return "text-yellow-600";
       case "REJECTED":
         return "text-red-600";
+      case "REQUIRED":
+        return "text-orange-600";
       default:
         return "text-gray-600";
     }
@@ -81,6 +229,8 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
         return "bg-yellow-500";
       case "REJECTED":
         return "bg-red-500";
+      case "REQUIRED":
+        return "bg-orange-500";
       default:
         return "bg-gray-500";
     }
@@ -91,7 +241,6 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
     try {
       const urlParts = url.split('/');
       const fileName = urlParts[urlParts.length - 1];
-      // Decode URL-encoded characters and clean up the filename
       return decodeURIComponent(fileName).replace(/^\d+-/, '');
     } catch (error) {
       return 'Document';
@@ -103,6 +252,38 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
       ...prev,
       [docType]: !prev[docType]
     }));
+  };
+
+  const deleteFacility = async () => {
+    const authToken = localStorage.getItem('authToken');
+    if (!authToken) {
+      toast.error('Authentication token not found. Please login again.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await fetch(`https://services.dcarbon.solutions/api/commercial-facility/${facilityData.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      });
+
+      const result = await response.json();
+
+      if (result.status === 'success') {
+        toast.success('Facility deleted successfully');
+        onBack();
+      } else {
+        toast.error(`Delete failed: ${result.message || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+      toast.error(`Delete failed: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const uploadDocument = async (docType, file) => {
@@ -118,24 +299,30 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
     const facilityId = facilityData.id;
     const baseUrl = 'https://services.dcarbon.solutions';
     
-    // Define endpoints for different document types (corrected endpoints)
     const endpoints = {
-      financeAgreement: `${baseUrl}/api/facility/update-facility-financial-agreement/${facilityId}`,
-      proofOfAddress: `${baseUrl}/api/facility/update-facility-proof-of-address/${facilityId}`,
-      infoReleaseAuth: `${baseUrl}/api/facility/update-info-release-auth/${facilityId}`,
       wregisAssignment: `${baseUrl}/api/facility/update-wregis-assignment/${facilityId}`,
-      multipleOwnerDecl: `${baseUrl}/api/facility/update-multiple-owner-decl/${facilityId}`,
-      sysOpDataAccess: `${baseUrl}/api/facility/update-sys-op-data-access/${facilityId}`
+      financeAgreement: `${baseUrl}/api/facility/update-facility-financial-agreement/${facilityId}`,
+      solarInstallationContract: `${baseUrl}/api/facility/update-commercial-solar-installation-contract/${facilityId}`,
+      utilityInterconnectionAgreement: `${baseUrl}/api/facility/update-commercial-interconnection-agreement/${facilityId}`,
+      utilityPTO: `${baseUrl}/api/facility/update-commercial-pto-letter/${facilityId}`,
+      singleLineDiagram: `${baseUrl}/api/facility/update-commercial-single-line-diagram/${facilityId}`,
+      installationSitePlan: `${baseUrl}/api/facility/update-facility-site-plan/${facilityId}`,
+      panelInverterDatasheet: `${baseUrl}/api/facility/update-facility-inverter-datasheet/${facilityId}`,
+      revenueMeterDatasheet: `${baseUrl}/api/facility/update-facility-revenue-meter-data/${facilityId}`,
+      utilityMeterPhoto: `${baseUrl}/api/facility/update-commercial-utility-meter-photo/${facilityId}`
     };
 
-    // Define the correct field names for each document type
     const fieldNames = {
-      financeAgreement: 'financeAgreementUrl',
-      proofOfAddress: 'proofOfAddressUrl',
-      infoReleaseAuth: 'infoReleaseAuthUrl',
       wregisAssignment: 'wregisAssignmentUrl',
-      multipleOwnerDecl: 'multipleOwnerDeclUrl',
-      sysOpDataAccess: 'sysOpDataAccessUrl'
+      financeAgreement: 'financeAgreementUrl',
+      solarInstallationContract: 'solarInstallationContractUrl',
+      utilityInterconnectionAgreement: 'interconnectionAgreementUrl',
+      utilityPTO: 'ptoLetterUrl',
+      singleLineDiagram: 'singleLineDiagramUrl',
+      installationSitePlan: 'file',
+      panelInverterDatasheet: 'file',
+      revenueMeterDatasheet: 'file',
+      utilityMeterPhoto: 'utilityMeterPhotoUrl'
     };
 
     const formData = new FormData();
@@ -155,14 +342,19 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
       const result = await response.json();
 
       if (result.status === 'success') {
-        // Update the facility data with the new document info
+        const updatedData = {
+          ...result.data,
+          panelInverterDatasheetUrl: result.data.inverterDatasheetUrl,
+          panelInverterDatasheetStatus: result.data.inverterDatasheetStatus
+        };
+        
         setFacilityData(prevData => ({
           ...prevData,
-          ...result.data
+          ...updatedData
         }));
       
         if (onFacilityUpdated) {
-          onFacilityUpdated(result.data);
+          onFacilityUpdated(updatedData);
         }
         
         toast.success('Document uploaded successfully!', { id: 'upload-toast' });
@@ -184,7 +376,6 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
     input.onchange = (e) => {
       const file = e.target.files[0];
       if (file) {
-        // Check file size (limit to 10MB)
         if (file.size > 10 * 1024 * 1024) {
           toast.error('File size must be less than 10MB');
           return;
@@ -206,10 +397,10 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
     const isUploading = uploadingDoc === docType;
     const isRejected = status?.toUpperCase() === "REJECTED";
     const isExpanded = expandedRejections[docType];
+    const displayStatus = !url ? "REQUIRED" : status || "PENDING";
     
     return (
       <div className="mb-3">
-        {/* Document title and status */}
         <div className="flex justify-between items-center mb-2">
           <span className="text-black text-sm font-medium">{title}</span>
           <div className="flex items-center space-x-2">
@@ -222,13 +413,12 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
                 <FiAlertCircle className="text-red-500" size={14} />
               </button>
             )}
-            <span className={`px-2 py-1 rounded-full text-xs font-medium text-white ${getStatusBgColor(status)}`}>
-              {status || "NOT_UPLOADED"}
+            <span className={`px-2 py-1 rounded-full text-xs font-medium text-white ${getStatusBgColor(displayStatus)}`}>
+              {displayStatus}
             </span>
           </div>
         </div>
 
-        {/* Rejection reason (expandable) */}
         {isRejected && rejectionReason && isExpanded && (
           <div className="mb-2 p-2 bg-red-50 border border-red-200 rounded-md">
             <div className="flex items-start space-x-2">
@@ -241,7 +431,6 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
           </div>
         )}
         
-        {/* Document placeholder/upload area - reduced height */}
         <div 
           className={`bg-[#F0F0F0] rounded-lg p-3 cursor-pointer hover:bg-gray-200 transition-colors flex items-center justify-center h-12 ${
             isRejected ? 'border-2 border-red-200' : ''
@@ -292,7 +481,6 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
           )}
         </div>
 
-        {/* Re-upload prompt for rejected documents */}
         {isRejected && url && (
           <div className="mt-1 text-xs text-red-600 flex items-center space-x-1">
             <FiAlertCircle size={10} />
@@ -305,54 +493,87 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
 
   const allDocuments = [
     {
-      title: "Finance Agreement",
-      status: facilityData.financeAgreementStatus,
-      url: facilityData.financeAgreementUrl,
-      docType: "financeAgreement",
-      rejectionReason: facilityData.financeAgreementRejectionReason
-    },
-    {
-      title: "Proof of Address",
-      status: facilityData.proofOfAddressStatus,
-      url: facilityData.proofOfAddressUrl,
-      docType: "proofOfAddress",
-      rejectionReason: facilityData.proofOfAddressRejectionReason
-    },
-    {
-      title: "Info Release Authorization",
-      status: facilityData.infoReleaseAuthStatus,
-      url: facilityData.infoReleaseAuthUrl,
-      docType: "infoReleaseAuth",
-      rejectionReason: facilityData.infoReleaseAuthRejectionReason
-    },
-    {
-      title: "WREGIS Assignment",
+      title: "WREGIS Assignment of Registration Rights",
       status: facilityData.wregisAssignmentStatus,
       url: facilityData.wregisAssignmentUrl,
       docType: "wregisAssignment",
       rejectionReason: facilityData.wregisAssignmentRejectionReason
     },
     {
-      title: "Multiple Owner Declaration",
-      status: facilityData.multipleOwnerDeclStatus,
-      url: facilityData.multipleOwnerDeclUrl,
-      docType: "multipleOwnerDecl",
-      rejectionReason: facilityData.multipleOwnerDeclRejectionReason
+      title: "Finance Agreement/PPA",
+      status: facilityData.financeAgreementStatus,
+      url: facilityData.financeAgreementUrl,
+      docType: "financeAgreement",
+      rejectionReason: facilityData.financeAgreementRejectionReason
     },
     {
-      title: "System Operator Data Access",
-      status: facilityData.sysOpDataAccessStatus,
-      url: facilityData.sysOpDataAccessUrl,
-      docType: "sysOpDataAccess",
-      rejectionReason: facilityData.sysOpDataAccessRejectionReason
+      title: "Solar Installation Contract",
+      status: facilityData.solarInstallationContractStatus,
+      url: facilityData.solarInstallationContractUrl,
+      docType: "solarInstallationContract",
+      rejectionReason: facilityData.solarInstallationContractRejectionReason
+    },
+    {
+      title: "Utility Interconnection Agreement",
+      status: facilityData.interconnectionAgreementStatus,
+      url: facilityData.interconnectionAgreementUrl,
+      docType: "utilityInterconnectionAgreement",
+      rejectionReason: facilityData.interconnectionAgreementRejectionReason
+    },
+    {
+      title: "Utility PTO Email/Letter",
+      status: facilityData.ptoLetterStatus,
+      url: facilityData.ptoLetterUrl,
+      docType: "utilityPTO",
+      rejectionReason: facilityData.ptoLetterRejectionReason
+    },
+    {
+      title: "Single Line Diagram",
+      status: facilityData.singleLineDiagramStatus,
+      url: facilityData.singleLineDiagramUrl,
+      docType: "singleLineDiagram",
+      rejectionReason: facilityData.singleLineDiagramRejectionReason
+    },
+    {
+      title: "Installation Site Plan",
+      status: facilityData.sitePlanStatus,
+      url: facilityData.sitePlanUrl,
+      docType: "installationSitePlan",
+      rejectionReason: facilityData.sitePlanRejectionReason
+    },
+    {
+      title: "Panel/Inverter Data Sheet",
+      status: facilityData.inverterDatasheetStatus,
+      url: facilityData.inverterDatasheetUrl,
+      docType: "panelInverterDatasheet",
+      rejectionReason: facilityData.inverterDatasheetRejectionReason
+    },
+    {
+      title: "Revenue Meter Data Sheet",
+      status: facilityData.revenueMeterDataStatus,
+      url: facilityData.revenueMeterDataUrl,
+      docType: "revenueMeterDatasheet",
+      rejectionReason: facilityData.revenueMeterDataRejectionReason
+    },
+    {
+      title: "Utility/Revenue Meter Photo w/Serial ID",
+      status: facilityData.utilityMeterPhotoStatus,
+      url: facilityData.utilityMeterPhotoUrl,
+      docType: "utilityMeterPhoto",
+      rejectionReason: facilityData.utilityMeterPhotoRejectionReason
     }
   ];
 
   const visibleDocuments = showAllDocs ? allDocuments : allDocuments.slice(0, 3);
 
+  const handleStageClick = (stageId) => {
+    if (stageId === 6 && facilityData.status?.toLowerCase() !== 'verified') {
+      toast('Please complete all document uploads to verify your facility', { icon: 'ℹ️' });
+    }
+  };
+
   return (
     <div className="bg-white">
-      {/* Header */}
       <div className="p-4 border-b border-gray-200">
         <button
           onClick={onBack}
@@ -362,11 +583,24 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
           <span className="font-medium text-sm">Facility Details</span>
         </button>
 
+        <ProgressTracker 
+          currentStage={currentStage} 
+          nextStage={nextStage} 
+          onStageClick={handleStageClick}
+        />
+
         <div className="flex justify-between items-center">
           <h1 className={pageTitle}>
             {facilityData.facilityName}
           </h1>
           <div className="flex space-x-2">
+            <button
+              onClick={deleteFacility}
+              className="flex items-center space-x-1 bg-red-600 text-white px-3 py-1.5 rounded text-xs hover:bg-red-700 transition-colors"
+            >
+              <FiTrash2 size={12} />
+              <span>Delete Facility</span>
+            </button>
             {facilityData.commercialRole?.toLowerCase() === "owner" && (
               <button
                 onClick={() => setShowInviteModal(true)}
@@ -387,10 +621,8 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="p-4">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-          {/* Facility Information */}
           <div className="bg-white border border-gray-200 rounded-lg p-4">
             <div className="space-y-2">
               <div className="flex justify-between items-center">
@@ -438,7 +670,6 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
             </div>
           </div>
 
-          {/* Facility Documents */}
           <div className="bg-white border border-gray-200 rounded-lg p-4">
             <h3 className="text-sm font-semibold text-[#039994] mb-3">Facility Documents</h3>
             
@@ -467,76 +698,30 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
           </div>
         </div>
 
-        {/* Energy Production Section */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-          <div className="lg:col-span-3 bg-white border border-gray-200 rounded-lg p-4">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-sm font-semibold text-black">Energy Production</h3>
-              <div className="flex space-x-2">
-                <select className="border border-gray-300 rounded px-2 py-1 text-xs">
-                  <option>Yearly</option>
-                  <option>Monthly</option>
-                </select>
-                <select className="border border-gray-300 rounded px-2 py-1 text-xs">
-                  <option>2025</option>
-                  <option>2024</option>
-                </select>
-              </div>
-            </div>
-            <div className="h-48">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={energyData}>
-                  <XAxis 
-                    dataKey="month" 
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 10, fill: '#666' }}
-                  />
-                  <YAxis 
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 10, fill: '#666' }}
-                    label={{ value: 'kWh', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fontSize: '10px' } }}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="kwh" 
-                    stroke="#039994" 
-                    strokeWidth={2}
-                    dot={{ fill: '#039994', strokeWidth: 2, r: 4 }}
-                    activeDot={{ r: 6, fill: '#039994' }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+          <div className="bg-white border-2 border-[#039994] rounded-lg p-3 text-center">
+            <p className="text-black text-xs mb-1">RECs Generated</p>
+            <p className="text-lg font-bold text-[#039994]">{facilityData.recGenerated || facilityData.totalRecs || 0}</p>
+          </div>
+          
+          <div className="bg-white border-2 border-[#039994] rounded-lg p-3 text-center">
+            <p className="text-black text-xs mb-1">Total RECs sold</p>
+            <p className="text-lg font-bold text-[#039994]">{facilityData.recSold || 0}</p>
           </div>
 
-          <div className="grid grid-cols-1 gap-3">
-            <div className="bg-white border-2 border-[#039994] rounded-lg p-3 text-center">
-              <p className="text-black text-xs mb-1">RECs Generated</p>
-              <p className="text-lg font-bold text-[#039994]">{facilityData.recGenerated || facilityData.totalRecs || 0}</p>
-            </div>
-            
-            <div className="bg-white border-2 border-[#039994] rounded-lg p-3 text-center">
-              <p className="text-black text-xs mb-1">Total RECs sold</p>
-              <p className="text-lg font-bold text-[#039994]">{facilityData.recSold || 0}</p>
-            </div>
+          <div className="bg-white border-2 border-[#039994] rounded-lg p-3 text-center">
+            <p className="text-black text-xs mb-1">Earnings</p>
+            <p className="text-lg font-bold text-[#039994]">${facilityData.revenueEarned || '0.00'}</p>
+          </div>
 
-            <div className="bg-white border-2 border-[#039994] rounded-lg p-3 text-center">
-              <p className="text-black text-xs mb-1">Earnings</p>
-              <p className="text-lg font-bold text-[#039994]">${facilityData.revenueEarned || '0.00'}</p>
-            </div>
-
-            <div className="bg-white border-2 border-[#039994] rounded-lg p-3 text-center">
-              <p className="text-black text-xs mb-1">Energy Generated</p>
-              <p className="text-sm font-bold text-[#039994]">{facilityData.energyProduced || 0}MWh</p>
-              <p className="text-xs text-gray-500">May</p>
-            </div>
+          <div className="bg-white border-2 border-[#039994] rounded-lg p-3 text-center">
+            <p className="text-black text-xs mb-1">Energy Generated</p>
+            <p className="text-sm font-bold text-[#039994]">{facilityData.energyProduced || 0}MWh</p>
+            <p className="text-xs text-gray-500">May</p>
           </div>
         </div>
       </div>
 
-      {/* Modals */}
       {showInviteModal && (
         <InviteCollaboratorModal
           isOpen={showInviteModal}

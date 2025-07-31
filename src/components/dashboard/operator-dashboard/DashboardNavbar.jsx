@@ -1,9 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { FaBars, FaSearch, FaBell, FaHeadset } from "react-icons/fa";
+import { FaBars, FaSearch, FaBell, FaHeadset, FaUserPlus } from "react-icons/fa";
 import CommercialRegistrationModal from "./overview/modals/createfacility/CommercialRegistrationModal";
-import AddUtilityProvider from "./overview/modals/AddUtilityProvider";
 
 const DashboardNavbar = ({
   toggleSidebar,
@@ -14,10 +13,7 @@ const DashboardNavbar = ({
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotificationDot, setShowNotificationDot] = useState(false);
   const [isOperator, setIsOperator] = useState(false);
-  const [currentStage, setCurrentStage] = useState(1);
-  const [nextStage, setNextStage] = useState(2);
   const [showRegistrationModal, setShowRegistrationModal] = useState(false);
-  const [showUtilityModal, setShowUtilityModal] = useState(false);
   const [notificationCheckInterval, setNotificationCheckInterval] = useState(null);
 
   const fetchNotifications = async () => {
@@ -54,111 +50,6 @@ const DashboardNavbar = ({
     }
   };
 
-  const checkStage1Completion = async (userId, authToken) => {
-    try {
-      const response = await fetch(
-        `https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`
-          }
-        }
-      );
-      const result = await response.json();
-      return result.status === 'success' && result.data?.commercialUser?.ownerFullName;
-    } catch (error) {
-      return false;
-    }
-  };
-
-  const checkStage2Completion = async (userId, authToken) => {
-    try {
-      const response = await fetch(
-        `https://services.dcarbon.solutions/api/user/referral/by-user-id/${userId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`
-          }
-        }
-      );
-      const result = await response.json();
-      return result.status === 'success' && result.data?.referral?.inviterId;
-    } catch (error) {
-      return false;
-    }
-  };
-
-  const checkStage3Completion = async (userId, authToken) => {
-    try {
-      const response = await fetch(
-        `https://services.dcarbon.solutions/api/user/agreement/${userId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`
-          }
-        }
-      );
-      const result = await response.json();
-      return result.status === 'success' && result.data?.termsAccepted;
-    } catch (error) {
-      return false;
-    }
-  };
-
-  const checkStage4Completion = async (userId, authToken) => {
-    try {
-      const response = await fetch(
-        `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`
-          }
-        }
-      );
-      const result = await response.json();
-      return result.status === 'success' && result.data?.length > 0 && 
-             result.data.some(item => item.meters?.meters?.length > 0);
-    } catch (error) {
-      return false;
-    }
-  };
-
-  const checkUserProgress = async () => {
-    try {
-      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
-      const userId = loginResponse?.data?.user?.id;
-      const authToken = loginResponse?.data?.token;
-      if (!userId || !authToken) return;
-
-      const stageChecks = [
-        { stage: 1, check: () => checkStage1Completion(userId, authToken) },
-        { stage: 2, check: () => checkStage2Completion(userId, authToken) },
-        { stage: 3, check: () => checkStage3Completion(userId, authToken) },
-        { stage: 4, check: () => checkStage4Completion(userId, authToken) }
-      ];
-
-      let highestCompletedStage = 1;
-      for (const { stage, check } of stageChecks) {
-        const isCompleted = await check();
-        if (isCompleted) {
-          highestCompletedStage = stage;
-        }
-      }
-
-      const newStage = highestCompletedStage === 4 ? 4 : highestCompletedStage;
-      const newNextStage = highestCompletedStage === 4 ? 4 : highestCompletedStage + 1;
-      
-      setCurrentStage(newStage);
-      setNextStage(newNextStage);
-    } catch (error) {
-      console.error('Error checking user progress:', error);
-    }
-  };
-
   const flashNotificationDot = () => {
     let flashCount = 0;
     const maxFlashes = 3;
@@ -180,11 +71,9 @@ const DashboardNavbar = ({
     }
 
     fetchNotifications();
-    checkUserProgress();
 
     const notificationInterval = setInterval(fetchNotifications, 30000);
     setNotificationCheckInterval(notificationInterval);
-    const progressInterval = setInterval(checkUserProgress, 15000);
 
     const handleStorageChange = (e) => {
       if (e.key === "notifications") {
@@ -198,7 +87,6 @@ const DashboardNavbar = ({
       } else if (e.key === "loginResponse") {
         const userData = JSON.parse(e.newValue);
         setIsOperator(userData.data?.user?.isPartnerOperator || false);
-        checkUserProgress();
       }
     };
 
@@ -209,49 +97,11 @@ const DashboardNavbar = ({
       if (notificationCheckInterval) {
         clearInterval(notificationCheckInterval);
       }
-      clearInterval(progressInterval);
     };
   }, []);
 
-  const handleProgressClick = () => {
-    if (currentStage === 3) {
-      setShowUtilityModal(true);
-    } else {
-      setShowRegistrationModal(true);
-    }
-  };
-
   const handleModalClose = () => {
     setShowRegistrationModal(false);
-    setShowUtilityModal(false);
-    checkUserProgress();
-  };
-
-  const getTooltipText = () => {
-    const texts = [
-      "Commercial registration completed",
-      "Owner referral code verified",
-      "Terms and conditions signed",
-      "Utility meters connected"
-    ];
-    return texts[currentStage - 1] || `Stage ${currentStage} completed`;
-  };
-
-  const getProgressBarSegments = () => {
-    const segments = [];
-    for (let i = 1; i <= 4; i++) {
-      segments.push(
-        <div
-          key={i}
-          className={`h-2 flex-1 mx-[1px] rounded-sm ${
-            i < currentStage ? "bg-[#039994]" : 
-            i === currentStage ? "bg-[#039994]" : 
-            i === nextStage ? "border border-[#039994] bg-white" : "bg-gray-200"
-          }`}
-        />
-      );
-    }
-    return segments;
   };
 
   return (
@@ -289,20 +139,15 @@ const DashboardNavbar = ({
 
           <div className="flex items-center space-x-6">
             <div className="relative group">
-              <div
-                onClick={handleProgressClick}
-                className="cursor-pointer px-4 py-2 bg-gray-100 rounded-md flex items-center hover:bg-gray-200 transition-colors"
+              <button
+                onClick={() => setShowRegistrationModal(true)}
+                className="text-[#039994] hover:text-[#02857f] transition-colors"
               >
-                <div className="w-32 h-2 flex mr-3">
-                  {getProgressBarSegments()}
-                </div>
-                <span className="text-xs font-medium">
-                  Step {currentStage} of 4
-                </span>
-              </div>
+                <FaUserPlus size={20} />
+              </button>
               <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 transform hidden group-hover:block">
                 <div className="relative bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
-                  {getTooltipText()}
+                  Invite your Owner
                   <span className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-800 rotate-45"></span>
                 </div>
               </div>
@@ -341,13 +186,6 @@ const DashboardNavbar = ({
           isOpen={showRegistrationModal}
           onClose={handleModalClose}
           onBack={handleModalClose}
-        />
-      )}
-
-      {showUtilityModal && (
-        <AddUtilityProvider
-          isOpen={showUtilityModal}
-          onClose={handleModalClose}
         />
       )}
     </>
