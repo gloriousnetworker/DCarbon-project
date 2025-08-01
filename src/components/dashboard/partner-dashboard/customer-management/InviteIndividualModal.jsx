@@ -16,18 +16,32 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
   const [loading, setLoading] = useState(false);
   const [phoneError, setPhoneError] = useState("");
 
+  const formatPhoneNumber = (value) => {
+    const cleaned = value.replace(/\D/g, '');
+    const match = cleaned.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
+    if (match) {
+      return !match[2] ? match[1] : `+1 (${match[1]}) ${match[2]}${match[3] ? ` ${match[3]}` : ''}`;
+    }
+    return value;
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     
     if (name === "phoneNumber") {
-      const phoneRegex = /^[0-9+]*$/;
-      if (!phoneRegex.test(value)) {
-        setPhoneError("Phone number can only contain numbers and +");
-      } else if (value.length > 15) {
-        setPhoneError("Phone number cannot exceed 15 characters");
+      const cleanedValue = value.replace(/\D/g, '');
+      if (cleanedValue.length > 10) {
+        setPhoneError("Phone number must be 10 digits");
       } else {
         setPhoneError("");
       }
+      
+      const formattedValue = formatPhoneNumber(cleanedValue);
+      setFormData(prev => ({
+        ...prev,
+        [name]: formattedValue
+      }));
+      return;
     }
     
     setFormData(prev => ({
@@ -56,9 +70,10 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
       return;
     }
 
-    if (formData.phoneNumber && !/^\+?[0-9]{10,15}$/.test(formData.phoneNumber)) {
-      setPhoneError("Please enter a valid phone number (10-15 digits)");
-      toast.error("Please enter a valid phone number");
+    const cleanedPhone = formData.phoneNumber.replace(/\D/g, '');
+    if (cleanedPhone.length !== 10) {
+      setPhoneError("Phone number must be 10 digits");
+      toast.error("Please enter a valid 10-digit US phone number");
       return;
     }
 
@@ -86,7 +101,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
         {
           name,
           email,
-          phoneNumber,
+          phoneNumber: `+1${cleanedPhone}`,
           customerType,
           role,
           ...(message && { message })
@@ -197,16 +212,15 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
           </div>
 
           <div>
-            <label className={`${labelClass} text-xs`}>Phone Number</label>
+            <label className={`${labelClass} text-xs`}>Phone Number <span className="text-red-500">*</span></label>
             <input
               type="tel"
               name="phoneNumber"
               value={formData.phoneNumber}
               onChange={handleChange}
               className={`${inputClass} text-xs ${phoneError ? "border-red-500" : ""}`}
-              placeholder="Enter phone number (e.g. +1234567890)"
-              pattern="^\+?[0-9]{10,15}$"
-              maxLength={15}
+              placeholder="Enter US phone number (e.g. 619 788 7445)"
+              required
             />
             {phoneError && (
               <p className="text-red-500 text-xs mt-1">{phoneError}</p>
