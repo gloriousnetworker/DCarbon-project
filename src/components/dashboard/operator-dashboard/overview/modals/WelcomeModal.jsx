@@ -165,6 +165,33 @@ export default function WelcomeModal({ isOpen, onClose, userData }) {
       if (result.status === 'success' && result.statusCode === 200) {
         localStorage.setItem('referralResponse', JSON.stringify(result));
         localStorage.setItem('ownerReferralCode', referralCode);
+        localStorage.setItem('userId', result.data.inviterId);
+        localStorage.setItem('userRole', result.data.role);
+        localStorage.setItem('customerType', result.data.customerType);
+        localStorage.setItem('inviteeEmail', result.data.inviteeEmail);
+        localStorage.setItem('referralStatus', result.data.status);
+        localStorage.setItem('inviteeName', result.data.name);
+        localStorage.setItem('referralId', result.data.id);
+        localStorage.setItem('generatedReferralCode', result.data.referralCode);
+        
+        if (result.data.phoneNumber) {
+          localStorage.setItem('phoneNumber', result.data.phoneNumber);
+        }
+        
+        const updatedLoginResponse = {
+          ...loginResponse,
+          data: {
+            ...loginResponse.data,
+            user: {
+              ...loginResponse.data.user,
+              id: result.data.inviterId,
+              role: result.data.role,
+              customerType: result.data.customerType
+            }
+          }
+        };
+        
+        localStorage.setItem('loginResponse', JSON.stringify(updatedLoginResponse));
         toast.success(result.message);
         setCurrentStep('agreement');
       } else {

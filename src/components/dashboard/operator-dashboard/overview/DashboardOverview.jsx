@@ -91,6 +91,7 @@ export default function DashboardOverview() {
   const [completedStages, setCompletedStages] = useState([]);
   const [meterCheckInterval, setMeterCheckInterval] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [hideProgressTracker, setHideProgressTracker] = useState(false);
 
   const checkStage1Completion = async (userId, authToken) => {
     const response = await fetch(
@@ -106,18 +107,19 @@ export default function DashboardOverview() {
     return result.status === 'success' && result.data?.commercialUser?.ownerFullName;
   };
 
-  const checkStage2Completion = async (userId, authToken) => {
-    const response = await fetch(
-      `https://services.dcarbon.solutions/api/user/referral/by-user-id/${userId}`,
-      {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${authToken}`
-        }
+  const checkStage2Completion = () => {
+    const referralResponse = localStorage.getItem('referralResponse');
+    const ownerReferralCode = localStorage.getItem('ownerReferralCode');
+    
+    if (referralResponse && ownerReferralCode) {
+      try {
+        const parsedResponse = JSON.parse(referralResponse);
+        return parsedResponse.status === 'success' && parsedResponse.data?.inviterId;
+      } catch (error) {
+        return false;
       }
-    );
-    const result = await response.json();
-    return result.status === 'success' && result.data?.referral?.inviterId;
+    }
+    return false;
   };
 
   const checkStage3Completion = async (userId, authToken) => {
@@ -168,7 +170,7 @@ export default function DashboardOverview() {
         highestCompletedStage = 2;
       }
 
-      const stage2 = await checkStage2Completion(userId, authToken);
+      const stage2 = checkStage2Completion();
       if (stage2) {
         newCompletedStages.push(2);
         highestCompletedStage = 3;
@@ -183,23 +185,38 @@ export default function DashboardOverview() {
       const stage4 = await checkStage4Completion(userId, authToken);
       if (stage4) {
         newCompletedStages.push(4);
+        setHideProgressTracker(true);
         if (meterCheckInterval) {
           clearInterval(meterCheckInterval);
           setMeterCheckInterval(null);
         }
-      } else if (stage3) {
-        if (!meterCheckInterval) {
-          const interval = setInterval(async () => {
-            const hasMeters = await checkStage4Completion(userId, authToken);
-            if (hasMeters) {
-              setCompletedStages(prev => [...prev, 4]);
-              clearInterval(interval);
-              setMeterCheckInterval(null);
-            }
-          }, 5000);
-          setMeterCheckInterval(interval);
+      } else {
+        setHideProgressTracker(false);
+        if (stage3) {
+          if (!meterCheckInterval) {
+            const interval = setInterval(async () => {
+              const hasMeters = await checkStage4Completion(userId, authToken);
+              if (hasMeters) {
+                setCompletedStages(prev => [...prev, 4]);
+                setHideProgressTracker(true);
+                clearInterval(interval);
+                setMeterCheckInterval(null);
+              }
+            }, 5000);
+            setMeterCheckInterval(interval);
+          }
         }
       }
+
+      const storageListener = () => {
+        const newReferralCheck = checkStage2Completion();
+        if (newReferralCheck && !newCompletedStages.includes(2)) {
+          setHideProgressTracker(false);
+          checkUserProgress();
+        }
+      };
+
+      window.addEventListener('storage', storageListener);
 
       setCompletedStages(newCompletedStages);
       setCurrentStage(highestCompletedStage);
@@ -247,6 +264,7 @@ export default function DashboardOverview() {
   const handleCloseWelcomeModal = () => {
     setShowWelcomeModal(false);
     localStorage.setItem("hasVisitedDashboard", "true");
+    setHideProgressTracker(false);
     checkUserProgress();
   };
 
@@ -281,10 +299,20 @@ export default function DashboardOverview() {
 
     loadUserData();
 
+    const handleStorageChange = (e) => {
+      if (e.key === 'referralResponse' || e.key === 'ownerReferralCode') {
+        setHideProgressTracker(false);
+        checkUserProgress();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
     return () => {
       if (meterCheckInterval) {
         clearInterval(meterCheckInterval);
       }
+      window.removeEventListener('storage', handleStorageChange);
     };
   }, []);
 
@@ -308,11 +336,14 @@ export default function DashboardOverview() {
         </div>
       </div>
 
-      <ProgressTracker 
-        currentStage={currentStage} 
-        completedStages={completedStages} 
-        onStageClick={handleStageClick}
-      />
+      {!hideProgressTracker && (
+        <ProgressTracker 
+          currentStage={currentStage} 
+          completedStages={completedStages} 
+          onStageClick={handleStageClick}
+        />
+      )}
+      
       <QuickActions />
 
       <hr className="border-gray-300" />

@@ -181,13 +181,11 @@ const DashboardNavbar = ({
         </div>
       </header>
 
-      {showRegistrationModal && (
-        <CommercialRegistrationModal
-          isOpen={showRegistrationModal}
-          onClose={handleModalClose}
-          onBack={handleModalClose}
-        />
-      )}
+      <CommercialRegistrationModal
+        isOpen={showRegistrationModal}
+        onClose={handleModalClose}
+        onBack={handleModalClose}
+      />
     </>
   );
 };
