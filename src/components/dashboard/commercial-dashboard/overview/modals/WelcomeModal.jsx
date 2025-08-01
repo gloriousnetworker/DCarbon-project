@@ -105,7 +105,7 @@ export default function WelcomeModal({ isOpen, onClose, userData }) {
 
       const body = {
         entityType: formData.entityType,
-        commercialRole: formData.commercialRole,
+        commercialRole: 'owner',
         ownerFullName: formData.ownerFullName
       };
 
@@ -196,20 +196,6 @@ export default function WelcomeModal({ isOpen, onClose, userData }) {
                   >
                     <option value="individual">Individual</option>
                     <option value="company">Company</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className={styles.labelClass}>
-                    Commercial Role <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    value={formData.commercialRole}
-                    onChange={(e) => handleFormChange('commercialRole', e.target.value)}
-                    className={styles.selectClass}
-                    style={{ backgroundColor: '#F0F0F0' }}
-                  >
-                    <option value="owner">Owner</option>
                   </select>
                 </div>
 
