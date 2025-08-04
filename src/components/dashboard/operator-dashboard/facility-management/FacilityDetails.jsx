@@ -594,14 +594,7 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
             {facilityData.facilityName}
           </h1>
           <div className="flex space-x-2">
-            <button
-              onClick={deleteFacility}
-              className="flex items-center space-x-1 bg-red-600 text-white px-3 py-1.5 rounded text-xs hover:bg-red-700 transition-colors"
-            >
-              <FiTrash2 size={12} />
-              <span>Delete Facility</span>
-            </button>
-            {facilityData.commercialRole?.toLowerCase() === "owner" && (
+             {facilityData.commercialRole?.toLowerCase() === "owner" && (
               <button
                 onClick={() => setShowInviteModal(true)}
                 className="flex items-center space-x-1 bg-[#039994] text-white px-3 py-1.5 rounded text-xs hover:bg-[#027a75] transition-colors"
@@ -610,13 +603,6 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
                 <span>Invite Collaborator</span>
               </button>
             )}
-            <button
-              onClick={() => setShowEditModal(true)}
-              className="flex items-center space-x-1 bg-[#1E1E1E] text-white px-3 py-1.5 rounded text-xs hover:bg-black transition-colors"
-            >
-              <FiEdit size={12} />
-              <span>Edit Facility Details</span>
-            </button>
           </div>
         </div>
       </div>

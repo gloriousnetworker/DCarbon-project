@@ -201,7 +201,7 @@ const DashboardSidebar = ({
           }`}
         >
           <FiUser className={iconBase} color={isActive("myAccount") ? "#FFFFFF" : "#039994"} />
-          <span>My Account</span>
+          <span>Account</span>
         </button>
         <button
           onClick={() => onSectionChange("notifications")}

@@ -18,7 +18,8 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
     city: "",
     state: "",
     zipCode: "",
-    ownerWebsite: ""
+    ownerWebsite: "",
+    ownershipPercentage: "100"
   });
   const [additionalOwners, setAdditionalOwners] = useState([{
     fullName: "",
@@ -37,10 +38,14 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
   const [showRoleDropdown, setShowRoleDropdown] = useState(false);
   const [commercialRole, setCommercialRole] = useState('owner');
   const [originalCommercialRole, setOriginalCommercialRole] = useState('owner');
+  const [percentageError, setPercentageError] = useState('');
+  const [autoCalculate, setAutoCalculate] = useState(true);
+  const [hasFacilities, setHasFacilities] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       fetchUserData();
+      checkUserFacilities();
     }
   }, [isOpen]);
 
@@ -81,7 +86,8 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
           city: addressParts[2] || "",
           state: addressParts[3] || "",
           zipCode: addressParts[4] || "",
-          ownerWebsite: commercialUser.ownerWebsite || ""
+          ownerWebsite: commercialUser.ownerWebsite || "",
+          ownershipPercentage: commercialUser.ownershipPercentage || "100"
         });
 
         if (commercialUser.commercialRole) {
@@ -116,6 +122,36 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
     }
   };
 
+  const checkUserFacilities = async () => {
+    try {
+      const userId = localStorage.getItem('userId');
+      const authToken = localStorage.getItem('authToken');
+
+      if (!userId || !authToken) {
+        return;
+      }
+
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/facility/get-user-facilities-by-userId/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      const data = await response.json();
+
+      if (response.ok && data.data && data.data.facilities && data.data.facilities.length > 0) {
+        setHasFacilities(true);
+      }
+    } catch (error) {
+      console.error('Error checking user facilities:', error);
+    }
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setOwnerDetails(prev => ({
@@ -131,11 +167,26 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
       ...updatedOwners[index],
       [name]: value
     };
+
+    if (name === 'ownershipPercentage' && autoCalculate) {
+      const newValue = parseFloat(value) || 0;
+      const totalAdditional = updatedOwners.reduce((sum, owner, i) => {
+        if (i === index) return sum + newValue;
+        return sum + (parseFloat(owner.ownershipPercentage) || 0);
+      }, 0);
+
+      const primaryPercentage = Math.max(0, 100 - totalAdditional);
+      setOwnerDetails(prev => ({
+        ...prev,
+        ownershipPercentage: primaryPercentage.toString()
+      }));
+    }
+
     setAdditionalOwners(updatedOwners);
   };
 
   const addAdditionalOwner = () => {
-    setAdditionalOwners([...additionalOwners, {
+    const newOwner = {
       fullName: "",
       email: "",
       phoneNumber: "",
@@ -146,19 +197,105 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
       state: "",
       zipCode: "",
       ownerWebsite: ""
-    }]);
+    };
+
+    if (autoCalculate) {
+      const totalAdditional = additionalOwners.reduce((sum, owner) => {
+        return sum + (parseFloat(owner.ownershipPercentage) || 0);
+      }, 0);
+
+      const remaining = 100 - totalAdditional;
+      if (remaining > 0) {
+        newOwner.ownershipPercentage = (remaining / 2).toFixed(2);
+        const newPrimary = (remaining / 2).toFixed(2);
+        
+        setOwnerDetails(prev => ({
+          ...prev,
+          ownershipPercentage: newPrimary
+        }));
+
+        const updatedOwners = additionalOwners.map(owner => ({
+          ...owner,
+          ownershipPercentage: newPrimary
+        }));
+
+        setAdditionalOwners([...updatedOwners, newOwner]);
+        return;
+      }
+    }
+
+    setAdditionalOwners([...additionalOwners, newOwner]);
   };
 
   const removeAdditionalOwner = (index) => {
     if (additionalOwners.length > 1) {
+      const removedOwner = additionalOwners[index];
+      const removedPercentage = parseFloat(removedOwner.ownershipPercentage) || 0;
       const updatedOwners = additionalOwners.filter((_, i) => i !== index);
+
+      if (autoCalculate) {
+        setOwnerDetails(prev => ({
+          ...prev,
+          ownershipPercentage: (parseFloat(prev.ownershipPercentage) + removedPercentage).toString()
+        }));
+      }
+
       setAdditionalOwners(updatedOwners);
+    }
+  };
+
+  const validatePercentages = () => {
+    if (!isMultipleOwners) return true;
+
+    let total = parseFloat(ownerDetails.ownershipPercentage) || 0;
+    
+    additionalOwners.forEach(owner => {
+      total += parseFloat(owner.ownershipPercentage) || 0;
+    });
+
+    if (Math.abs(total - 100) > 0.01) {
+      setPercentageError('Ownership percentages must add up to 100%');
+      return false;
+    }
+
+    setPercentageError('');
+    return true;
+  };
+
+  const toggleAutoCalculate = () => {
+    setAutoCalculate(!autoCalculate);
+  };
+
+  const handleMultipleOwnersChange = (value) => {
+    setIsMultipleOwners(value);
+    if (!value) {
+      setOwnerDetails(prev => ({
+        ...prev,
+        ownershipPercentage: "100"
+      }));
+      setAdditionalOwners([{
+        fullName: "",
+        email: "",
+        phoneNumber: "",
+        ownershipPercentage: "",
+        address1: "",
+        address2: "",
+        city: "",
+        state: "",
+        zipCode: "",
+        ownerWebsite: ""
+      }]);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
+
+    if (isMultipleOwners && !validatePercentages()) {
+      setIsSubmitting(false);
+      return;
+    }
 
     try {
       const userId = localStorage.getItem('userId');
@@ -185,19 +322,23 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
         ownerWebsite: ownerDetails.ownerWebsite
       };
 
-      if (isMultipleOwners && additionalOwners.length > 0) {
-        payload.multipleUsers = additionalOwners.filter(owner => 
-          owner.fullName.trim() !== "" || owner.email.trim() !== ""
-        ).map(owner => ({
-          ...owner,
-          ownerAddress: [
-            owner.address1,
-            owner.address2,
-            owner.city,
-            owner.state,
-            owner.zipCode
-          ].filter(Boolean).join(', ')
-        }));
+      if (isMultipleOwners) {
+        payload.ownershipPercentage = ownerDetails.ownershipPercentage;
+        
+        if (additionalOwners.length > 0) {
+          payload.multipleUsers = additionalOwners.filter(owner => 
+            owner.fullName.trim() !== "" || owner.email.trim() !== ""
+          ).map(owner => ({
+            ...owner,
+            ownerAddress: [
+              owner.address1,
+              owner.address2,
+              owner.city,
+              owner.state,
+              owner.zipCode
+            ].filter(Boolean).join(', ')
+          }));
+        }
       }
 
       const response = await fetch(
@@ -265,12 +406,16 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
   };
 
   const toggleRoleDropdown = () => {
-    setShowRoleDropdown(!showRoleDropdown);
+    if (!hasFacilities) {
+      setShowRoleDropdown(!showRoleDropdown);
+    }
   };
 
   const handleRoleChange = (role) => {
-    setCommercialRole(role);
-    setShowRoleDropdown(false);
+    if (!hasFacilities) {
+      setCommercialRole(role);
+      setShowRoleDropdown(false);
+    }
   };
 
   if (showFinanceModal) {
@@ -359,19 +504,24 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
               </svg>
             </button>
 
-            <div className="flex justify-between items-center mb-2">
-              <h2 className={styles.pageTitle}>
-                Owner's Details
-              </h2>
-              <div className="relative">
-                <button
-                  onClick={toggleRoleDropdown}
-                  className="text-[#039994] text-sm font-medium underline hover:text-[#02857f]"
-                >
-                  Change Role
-                </button>
+            <h2 className={styles.pageTitle}>
+              Owner's Details
+            </h2>
+
+            {!hasFacilities && (
+              <div className="mt-2 mb-4 p-3 bg-blue-50 rounded-lg">
+                <p className="text-sm text-gray-700">
+                  Need to change your commercial role from Owner to both Owner and Operator?{' '}
+                  <button
+                    onClick={toggleRoleDropdown}
+                    className="text-[#039994] font-medium underline hover:text-[#02857f]"
+                  >
+                    Click here to switch your role
+                  </button>{' '}
+                  before proceeding.
+                </p>
                 {showRoleDropdown && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
+                  <div className="mt-2 w-full bg-white rounded-md shadow-lg z-10 border border-gray-200">
                     <div className="py-1">
                       <button
                         onClick={() => handleRoleChange('owner')}
@@ -389,7 +539,7 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
                   </div>
                 )}
               </div>
-            </div>
+            )}
 
             <div className={styles.progressContainer}>
               <div className={styles.progressBarWrapper}>
@@ -531,7 +681,7 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
                         type="radio"
                         name="multipleOwners"
                         checked={isMultipleOwners}
-                        onChange={() => setIsMultipleOwners(true)}
+                        onChange={() => handleMultipleOwnersChange(true)}
                         className="w-4 h-4 text-[#039994] border-gray-300 focus:ring-[#039994] accent-[#039994]"
                       />
                       <span className={`ml-2 ${styles.labelClass}`}>Yes</span>
@@ -541,7 +691,7 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
                         type="radio"
                         name="multipleOwners"
                         checked={!isMultipleOwners}
-                        onChange={() => setIsMultipleOwners(false)}
+                        onChange={() => handleMultipleOwnersChange(false)}
                         className="w-4 h-4 text-[#039994] border-gray-300 focus:ring-[#039994] accent-[#039994]"
                       />
                       <span className={`ml-2 ${styles.labelClass}`}>No</span>
@@ -551,183 +701,227 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
               </div>
 
               {isMultipleOwners && (
-                <div className="space-y-4">
-                  {additionalOwners.map((owner, index) => (
-                    <div key={index} className="border border-[#039994] rounded-lg p-4 relative">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="bg-[#039994] text-white px-3 py-1 rounded text-sm font-sfpro">
-                          {owner.fullName || `Owner ${index + 2}`}
-                        </div>
-                        <div className="flex space-x-2">
-                          <button
-                            type="button"
-                            className="text-[#039994] hover:text-[#02857f]"
-                          >
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="2"/>
-                              <path d="m18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2"/>
-                            </svg>
-                          </button>
-                          {additionalOwners.length > 1 && (
+                <>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <label className={styles.labelClass}>
+                        Primary Owner's Percentage <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="number"
+                        name="ownershipPercentage"
+                        value={ownerDetails.ownershipPercentage}
+                        onChange={handleInputChange}
+                        placeholder="Ownership percentage"
+                        className={`${styles.inputClass} ${styles.grayPlaceholder}`}
+                        required
+                        min="0"
+                        max="100"
+                        step="0.01"
+                      />
+                    </div>
+                    <div className="flex items-center mt-6 ml-4">
+                      <input
+                        type="checkbox"
+                        id="autoCalculate"
+                        checked={autoCalculate}
+                        onChange={toggleAutoCalculate}
+                        className="w-4 h-4 text-[#039994] border-gray-300 rounded focus:ring-[#039994]"
+                      />
+                      <label htmlFor="autoCalculate" className="ml-2 text-sm text-gray-700">
+                        Auto-calculate
+                      </label>
+                    </div>
+                  </div>
+
+                  {percentageError && (
+                    <div className="text-red-500 text-sm mt-1">
+                      {percentageError}
+                    </div>
+                  )}
+
+                  <div className="space-y-4">
+                    {additionalOwners.map((owner, index) => (
+                      <div key={index} className="border border-[#039994] rounded-lg p-4 relative">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="bg-[#039994] text-white px-3 py-1 rounded text-sm font-sfpro">
+                            {owner.fullName || `Owner ${index + 2}`}
+                          </div>
+                          <div className="flex space-x-2">
                             <button
                               type="button"
-                              onClick={() => removeAdditionalOwner(index)}
-                              className="text-red-500 hover:text-red-700"
+                              className="text-[#039994] hover:text-[#02857f]"
                             >
                               <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2"/>
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="2"/>
+                                <path d="m18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2"/>
                               </svg>
                             </button>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="space-y-3">
-                        <div className={styles.rowWrapper}>
-                          <div className={styles.halfWidth}>
-                            <input
-                              type="text"
-                              name="fullName"
-                              value={owner.fullName}
-                              onChange={(e) => handleAdditionalOwnerChange(index, e)}
-                              placeholder="Full name *"
-                              className={`${styles.inputClass} ${styles.grayPlaceholder}`}
-                              required
-                            />
-                          </div>
-                          <div className={styles.halfWidth}>
-                            <input
-                              type="text"
-                              name="ownershipPercentage"
-                              value={owner.ownershipPercentage}
-                              onChange={(e) => handleAdditionalOwnerChange(index, e)}
-                              placeholder="% ownership"
-                              className={`${styles.inputClass} ${styles.grayPlaceholder}`}
-                            />
+                            {additionalOwners.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => removeAdditionalOwner(index)}
+                                className="text-red-500 hover:text-red-700"
+                              >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2"/>
+                                </svg>
+                              </button>
+                            )}
                           </div>
                         </div>
 
-                        <div className={styles.rowWrapper}>
-                          <div className={styles.halfWidth}>
-                            <input
-                              type="email"
-                              name="email"
-                              value={owner.email}
-                              onChange={(e) => handleAdditionalOwnerChange(index, e)}
-                              placeholder="Email address *"
-                              className={`${styles.inputClass} ${styles.grayPlaceholder}`}
-                              required
-                            />
+                        <div className="space-y-3">
+                          <div className={styles.rowWrapper}>
+                            <div className={styles.halfWidth}>
+                              <input
+                                type="text"
+                                name="fullName"
+                                value={owner.fullName}
+                                onChange={(e) => handleAdditionalOwnerChange(index, e)}
+                                placeholder="Full name *"
+                                className={`${styles.inputClass} ${styles.grayPlaceholder}`}
+                                required
+                              />
+                            </div>
+                            <div className={styles.halfWidth}>
+                              <input
+                                type="number"
+                                name="ownershipPercentage"
+                                value={owner.ownershipPercentage}
+                                onChange={(e) => handleAdditionalOwnerChange(index, e)}
+                                placeholder="% ownership *"
+                                className={`${styles.inputClass} ${styles.grayPlaceholder}`}
+                                required
+                                min="0"
+                                max="100"
+                                step="0.01"
+                              />
+                            </div>
                           </div>
-                          <div className={styles.halfWidth}>
-                            <input
-                              type="tel"
-                              name="phoneNumber"
-                              value={owner.phoneNumber}
-                              onChange={(e) => handleAdditionalOwnerChange(index, e)}
-                              placeholder="Phone Number *"
-                              className={`${styles.inputClass} ${styles.grayPlaceholder}`}
-                              required
-                            />
+
+                          <div className={styles.rowWrapper}>
+                            <div className={styles.halfWidth}>
+                              <input
+                                type="email"
+                                name="email"
+                                value={owner.email}
+                                onChange={(e) => handleAdditionalOwnerChange(index, e)}
+                                placeholder="Email address *"
+                                className={`${styles.inputClass} ${styles.grayPlaceholder}`}
+                                required
+                              />
+                            </div>
+                            <div className={styles.halfWidth}>
+                              <input
+                                type="tel"
+                                name="phoneNumber"
+                                value={owner.phoneNumber}
+                                onChange={(e) => handleAdditionalOwnerChange(index, e)}
+                                placeholder="Phone Number *"
+                                className={`${styles.inputClass} ${styles.grayPlaceholder}`}
+                                required
+                              />
+                            </div>
                           </div>
-                        </div>
 
-                        <div>
-                          <label className={styles.labelClass}>
-                            Address 1
-                          </label>
-                          <input
-                            type="text"
-                            name="address1"
-                            value={owner.address1}
-                            onChange={(e) => handleAdditionalOwnerChange(index, e)}
-                            placeholder="Street address"
-                            className={`${styles.inputClass} ${styles.grayPlaceholder}`}
-                          />
-                        </div>
-
-                        <div>
-                          <label className={styles.labelClass}>
-                            Address 2
-                          </label>
-                          <input
-                            type="text"
-                            name="address2"
-                            value={owner.address2}
-                            onChange={(e) => handleAdditionalOwnerChange(index, e)}
-                            placeholder="Apt, suite, unit, etc."
-                            className={`${styles.inputClass} ${styles.grayPlaceholder}`}
-                          />
-                        </div>
-
-                        <div className={styles.rowWrapper}>
-                          <div className={styles.halfWidth}>
+                          <div>
                             <label className={styles.labelClass}>
-                              City
+                              Address 1
                             </label>
                             <input
                               type="text"
-                              name="city"
-                              value={owner.city}
+                              name="address1"
+                              value={owner.address1}
                               onChange={(e) => handleAdditionalOwnerChange(index, e)}
-                              placeholder="City"
+                              placeholder="Street address"
                               className={`${styles.inputClass} ${styles.grayPlaceholder}`}
                             />
                           </div>
-                          <div className={styles.halfWidth}>
+
+                          <div>
                             <label className={styles.labelClass}>
-                              State
+                              Address 2
                             </label>
                             <input
                               type="text"
-                              name="state"
-                              value={owner.state}
+                              name="address2"
+                              value={owner.address2}
                               onChange={(e) => handleAdditionalOwnerChange(index, e)}
-                              placeholder="State"
+                              placeholder="Apt, suite, unit, etc."
+                              className={`${styles.inputClass} ${styles.grayPlaceholder}`}
+                            />
+                          </div>
+
+                          <div className={styles.rowWrapper}>
+                            <div className={styles.halfWidth}>
+                              <label className={styles.labelClass}>
+                                City
+                              </label>
+                              <input
+                                type="text"
+                                name="city"
+                                value={owner.city}
+                                onChange={(e) => handleAdditionalOwnerChange(index, e)}
+                                placeholder="City"
+                                className={`${styles.inputClass} ${styles.grayPlaceholder}`}
+                              />
+                            </div>
+                            <div className={styles.halfWidth}>
+                              <label className={styles.labelClass}>
+                                State
+                              </label>
+                              <input
+                                type="text"
+                                name="state"
+                                value={owner.state}
+                                onChange={(e) => handleAdditionalOwnerChange(index, e)}
+                                placeholder="State"
+                                className={`${styles.inputClass} ${styles.grayPlaceholder}`}
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className={styles.labelClass}>
+                              Zip Code
+                            </label>
+                            <input
+                              type="text"
+                              name="zipCode"
+                              value={owner.zipCode}
+                              onChange={(e) => handleAdditionalOwnerChange(index, e)}
+                              placeholder="Zip code"
+                              className={`${styles.inputClass} ${styles.grayPlaceholder}`}
+                            />
+                          </div>
+
+                          <div>
+                            <label className={styles.labelClass}>
+                              Website
+                            </label>
+                            <input
+                              type="url"
+                              name="ownerWebsite"
+                              value={owner.ownerWebsite}
+                              onChange={(e) => handleAdditionalOwnerChange(index, e)}
+                              placeholder="Website"
                               className={`${styles.inputClass} ${styles.grayPlaceholder}`}
                             />
                           </div>
                         </div>
-
-                        <div>
-                          <label className={styles.labelClass}>
-                            Zip Code
-                          </label>
-                          <input
-                            type="text"
-                            name="zipCode"
-                            value={owner.zipCode}
-                            onChange={(e) => handleAdditionalOwnerChange(index, e)}
-                            placeholder="Zip code"
-                            className={`${styles.inputClass} ${styles.grayPlaceholder}`}
-                          />
-                        </div>
-
-                        <div>
-                          <label className={styles.labelClass}>
-                            Website
-                          </label>
-                          <input
-                            type="url"
-                            name="ownerWebsite"
-                            value={owner.ownerWebsite}
-                            onChange={(e) => handleAdditionalOwnerChange(index, e)}
-                            placeholder="Website"
-                            className={`${styles.inputClass} ${styles.grayPlaceholder}`}
-                          />
-                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
 
-                  <button
-                    type="button"
-                    onClick={addAdditionalOwner}
-                    className="w-full border-2 border-dashed border-[#039994] rounded-lg p-4 text-[#039994] hover:bg-gray-50 transition-colors font-sfpro text-sm"
-                  >
-                    + Add Another Owner
-                  </button>
-                </div>
+                    <button
+                      type="button"
+                      onClick={addAdditionalOwner}
+                      className="w-full border-2 border-dashed border-[#039994] rounded-lg p-4 text-[#039994] hover:bg-gray-50 transition-colors font-sfpro text-sm"
+                    >
+                      + Add Another Owner
+                    </button>
+                  </div>
+                </>
               )}
 
               <div className="pt-4">

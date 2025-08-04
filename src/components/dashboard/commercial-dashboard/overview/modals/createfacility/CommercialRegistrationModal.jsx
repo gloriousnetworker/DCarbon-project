@@ -17,7 +17,26 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
   const [currentStage, setCurrentStage] = useState(1);
   const [nextStage, setNextStage] = useState(2);
   const [showInviteOperatorModal, setShowInviteOperatorModal] = useState(false);
-  const [hasRoleChanged, setHasRoleChanged] = useState(false);
+  const [hasFacilities, setHasFacilities] = useState(false);
+
+  const checkUserFacilities = async (userId, authToken) => {
+    try {
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/facility/get-user-facilities-by-userId/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      const data = await response.json();
+      return data.data?.facilities?.length > 0;
+    } catch (error) {
+      return false;
+    }
+  };
 
   const checkStage2Completion = async (userId, authToken) => {
     try {
@@ -99,6 +118,9 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
 
       if (!userId || !authToken) return;
 
+      const hasFacilitiesResult = await checkUserFacilities(userId, authToken);
+      setHasFacilities(hasFacilitiesResult);
+
       const stageChecks = [
         { stage: 2, check: () => checkStage2Completion(userId, authToken) },
         { stage: 3, check: () => checkStage3Completion(userId, authToken) },
@@ -165,17 +187,6 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
   }, [isOpen]);
 
   useEffect(() => {
-    if (commercialData?.commercialUser?.commercialRole) {
-      const currentRole = commercialData.commercialUser.commercialRole === 'owner' ? 'Owner' : 'Owner & Operator';
-      if (selectedRole !== currentRole) {
-        setHasRoleChanged(true);
-      } else {
-        setHasRoleChanged(false);
-      }
-    }
-  }, [selectedRole, commercialData]);
-
-  useEffect(() => {
     if (isOpen && currentStep) {
       if (selectedRole === 'Owner') {
         handleOwnerFlow(currentStep);
@@ -186,12 +197,6 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
   }, [isOpen, currentStep, selectedRole]);
 
   const handleNext = () => {
-    if (hasRoleChanged) {
-      onClose();
-      window.location.reload();
-      return;
-    }
-
     if (selectedRole === 'Owner') {
       handleOwnerFlow(nextStage);
     } else {
@@ -240,7 +245,7 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
   };
 
   const isRoleSelectionDisabled = () => {
-    return commercialData?.commercialUser && (commercialData?.commercialUser?.ownerAddress || commercialData?.commercialUser?.commercialRole);
+    return commercialData?.commercialUser && (commercialData?.commercialUser?.ownerAddress || commercialData?.commercialUser?.commercialRole || hasFacilities);
   };
 
   const isNextButtonDisabled = () => {
@@ -252,14 +257,6 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
     const role = commercialData.commercialUser.commercialRole;
     if (role === 'both') return 'Owner & Operator';
     return role.charAt(0).toUpperCase() + role.slice(1);
-  };
-
-  const handleChangeRole = () => {
-    if (commercialData?.commercialUser?.commercialRole === 'both') {
-      setCurrentModal('ownerOperatorDetails');
-    } else {
-      setCurrentModal('ownerDetails');
-    }
   };
 
   const handleInviteOperator = () => {
@@ -390,14 +387,6 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
                         </p>
                       )}
                     </div>
-                    {commercialData?.commercialUser?.commercialRole && (
-                      <button
-                        onClick={handleChangeRole}
-                        className="mt-2 text-[#039994] text-xs font-medium underline hover:text-[#02857f]"
-                      >
-                        Change Role Details
-                      </button>
-                    )}
                   </div>
                 )}
 
@@ -406,66 +395,64 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
                     Commercial Role
                   </label>
                   
-                  <div className="mb-3">
-                    <label className={`flex items-start justify-between p-3 border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50 ${
-                      selectedRole === 'Owner' ? 'bg-white' : 'bg-[#F0F0F0]'
-                    } ${
-                      isRoleSelectionDisabled() ? 'opacity-50 cursor-not-allowed' : ''
-                    }`}>
-                      <div className="flex-1 pr-3">
-                        <div className="font-sfpro font-[600] text-[14px] leading-[100%] tracking-[-0.05em] text-[#1E1E1E] mb-1">
-                          Owner
-                        </div>
-                        {selectedRole === 'Owner' && (
-                          <div className="font-sfpro text-[12px] leading-[130%] tracking-[-0.02em] font-[400] text-[#626060]">
-                            {getRoleDescription('Owner')}
-                          </div>
-                        )}
+                  {hasFacilities ? (
+                    <div className="mb-6 p-3 bg-gray-50 rounded-md border border-gray-200">
+                      <div className="font-sfpro font-[600] text-[14px] text-gray-700">
+                        Current Role: <span className="capitalize">{getCurrentRoleDisplay()}</span>
                       </div>
-                      <input
-                        type="radio"
-                        name="commercialRole"
-                        value="Owner"
-                        checked={selectedRole === 'Owner'}
-                        onChange={(e) => !isRoleSelectionDisabled() && setSelectedRole(e.target.value)}
-                        className="mt-1 w-4 h-4 text-[#039994] border-gray-300 focus:ring-[#039994] flex-shrink-0"
-                        disabled={isRoleSelectionDisabled()}
-                      />
-                    </label>
-                  </div>
-
-                  <div className="mb-6">
-                    <label className={`flex items-start justify-between p-3 border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50 ${
-                      selectedRole === 'Owner & Operator' ? 'bg-white' : 'bg-[#F0F0F0]'
-                    } ${
-                      isRoleSelectionDisabled() ? 'opacity-50 cursor-not-allowed' : ''
-                    }`}>
-                      <div className="flex-1 pr-3">
-                        <div className="font-sfpro font-[600] text-[14px] leading-[100%] tracking-[-0.05em] text-[#1E1E1E] mb-1">
-                          Owner & Operator
-                        </div>
-                        {selectedRole === 'Owner & Operator' && (
-                          <div className="font-sfpro text-[12px] leading-[130%] tracking-[-0.02em] font-[400] text-[#626060]">
-                            {getRoleDescription('Owner & Operator')}
-                          </div>
-                        )}
-                      </div>
-                      <input
-                        type="radio"
-                        name="commercialRole"
-                        value="Owner & Operator"
-                        checked={selectedRole === 'Owner & Operator'}
-                        onChange={(e) => !isRoleSelectionDisabled() && setSelectedRole(e.target.value)}
-                        className="mt-1 w-4 h-4 text-[#039994] border-gray-300 focus:ring-[#039994] flex-shrink-0"
-                        disabled={isRoleSelectionDisabled()}
-                      />
-                    </label>
-                  </div>
-
-                  {!loading && isRoleSelectionDisabled() && (
-                    <div className="mb-4 p-2 bg-yellow-50 border border-yellow-200 rounded text-yellow-700 text-xs">
-                      Your commercial role is already set as {getCurrentRoleDisplay()} and can be changed with the Change Role Details link above.
                     </div>
+                  ) : (
+                    <>
+                      <div className="mb-3">
+                        <label className={`flex items-start justify-between p-3 border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50 ${
+                          selectedRole === 'Owner' ? 'bg-white' : 'bg-[#F0F0F0]'
+                        }`}>
+                          <div className="flex-1 pr-3">
+                            <div className="font-sfpro font-[600] text-[14px] leading-[100%] tracking-[-0.05em] text-[#1E1E1E] mb-1">
+                              Owner
+                            </div>
+                            {selectedRole === 'Owner' && (
+                              <div className="font-sfpro text-[12px] leading-[130%] tracking-[-0.02em] font-[400] text-[#626060]">
+                                {getRoleDescription('Owner')}
+                              </div>
+                            )}
+                          </div>
+                          <input
+                            type="radio"
+                            name="commercialRole"
+                            value="Owner"
+                            checked={selectedRole === 'Owner'}
+                            onChange={(e) => setSelectedRole(e.target.value)}
+                            className="mt-1 w-4 h-4 text-[#039994] border-gray-300 focus:ring-[#039994] flex-shrink-0"
+                          />
+                        </label>
+                      </div>
+
+                      <div className="mb-6">
+                        <label className={`flex items-start justify-between p-3 border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50 ${
+                          selectedRole === 'Owner & Operator' ? 'bg-white' : 'bg-[#F0F0F0]'
+                        }`}>
+                          <div className="flex-1 pr-3">
+                            <div className="font-sfpro font-[600] text-[14px] leading-[100%] tracking-[-0.05em] text-[#1E1E1E] mb-1">
+                              Owner & Operator
+                            </div>
+                            {selectedRole === 'Owner & Operator' && (
+                              <div className="font-sfpro text-[12px] leading-[130%] tracking-[-0.02em] font-[400] text-[#626060]">
+                                {getRoleDescription('Owner & Operator')}
+                              </div>
+                            )}
+                          </div>
+                          <input
+                            type="radio"
+                            name="commercialRole"
+                            value="Owner & Operator"
+                            checked={selectedRole === 'Owner & Operator'}
+                            onChange={(e) => setSelectedRole(e.target.value)}
+                            className="mt-1 w-4 h-4 text-[#039994] border-gray-300 focus:ring-[#039994] flex-shrink-0"
+                          />
+                        </label>
+                      </div>
+                    </>
                   )}
 
                   <button

@@ -115,7 +115,7 @@ const AccountPayableInformation = ({ stripeEnabled, setStripeEnabled }) => {
     <div className="border-b border-gray-200 pb-4 mb-4">
       <Toaster />
       <div className={sectionHeader} onClick={() => setIsOpen(!isOpen)}>
-        <h2 className={sectionTitle}>Account Payable Information</h2>
+        <h2 className={sectionTitle}>Operator's Information</h2>
         {isOpen ? (
           <FaChevronUp className="text-[#039994]" size={20} />
         ) : (
