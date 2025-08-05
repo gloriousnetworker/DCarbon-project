@@ -1,10 +1,44 @@
-// src/components/QuickActions.jsx
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import InviteCollaboratorModal from "./modals/InviteCollaboratorModal";
+import InviteInstallerModal from "./modals/InviteInstallerModal";
 
 export default function QuickActions() {
   const [modal, setModal] = useState("");
+  const [partnerType, setPartnerType] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPartnerType = async () => {
+      const userId = localStorage.getItem("userId");
+      const authToken = localStorage.getItem("authToken");
+
+      if (!userId || !authToken) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          `https://services.dcarbon.solutions/api/user/partner/user/${userId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${authToken}`
+            }
+          }
+        );
+        const data = await response.json();
+        if (data.data?.partnerType) {
+          setPartnerType(data.data.partnerType);
+        }
+      } catch (error) {
+        console.error("Error fetching partner type:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPartnerType();
+  }, []);
 
   const openModal = (type) => {
     setModal(type);
@@ -14,18 +48,18 @@ export default function QuickActions() {
     setModal("");
   };
 
+  if (loading) return null;
+
   return (
     <div className="w-full py-4 px-4">
-      {/* Cards Container */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {/* Card 1: Total Commission Earned */}
         <div
           className="p-4 min-h-[100px] rounded-2xl flex flex-col items-start justify-center"
           style={{ background: "#FFFFFF" }}
         >
           <div className="flex items-center mb-2">
             <img
-              src="/vectors/CashRegister.png" // Your image source here
+              src="/vectors/CashRegister.png"
               alt="Total Commission"
               className="h-6 w-6 object-contain mr-2"
             />
@@ -39,14 +73,13 @@ export default function QuickActions() {
           </p>
         </div>
 
-        {/* Card 2: Avg. Commission Rate */}
         <div
           className="p-4 min-h-[100px] rounded-2xl flex flex-col items-start justify-center"
           style={{ background: "#FFFFFF" }}
         >
           <div className="flex items-center mb-2">
             <img
-              src="/vectors/Percent.png" // Your image source here
+              src="/vectors/Percent.png"
               alt="Avg. Commission Rate"
               className="h-6 w-6 object-contain mr-2"
             />
@@ -60,7 +93,6 @@ export default function QuickActions() {
           </p>
         </div>
 
-        {/* Card 3: Invite New Customer */}
         <div
           className="p-4 min-h-[100px] rounded-2xl flex flex-col items-start justify-center cursor-pointer"
           style={{
@@ -79,11 +111,35 @@ export default function QuickActions() {
             Invite New Customer
           </p>
         </div>
+
+        {partnerType === "finance_company" && (
+          <div
+            className="p-4 min-h-[100px] rounded-2xl flex flex-col items-start justify-center cursor-pointer"
+            style={{
+              background:
+                "radial-gradient(60% 119.12% at 114.01% -10%, #00B4AE 0%, #004E4B 100%)",
+            }}
+            onClick={() => openModal("installer")}
+          >
+            <img
+              src="/vectors/Share.png"
+              alt="Share"
+              className="mb-2 h-8 w-8 object-contain"
+            />
+            <hr className="border-white w-full mb-2" />
+            <p className="text-white text-sm font-bold leading-tight">
+              Invite an Installer
+            </p>
+          </div>
+        )}
       </div>
 
-      {/* Render the Invite Collaborator Modal */}
       <InviteCollaboratorModal
         isOpen={modal === "invite"}
+        onClose={closeModal}
+      />
+      <InviteInstallerModal
+        isOpen={modal === "installer"}
         onClose={closeModal}
       />
     </div>
