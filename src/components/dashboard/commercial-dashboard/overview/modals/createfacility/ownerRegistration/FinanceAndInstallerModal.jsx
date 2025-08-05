@@ -47,6 +47,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const [file, setFile] = useState(null);
   const [facilityNickname, setFacilityNickname] = useState('');
   const [utilityProviders, setUtilityProviders] = useState([]);
+  const [commercialRole, setCommercialRole] = useState('owner');
 
   const [formData, setFormData] = useState({
     financeType: "",
@@ -70,8 +71,25 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const showFinanceCompany = !isCashType && formData.financeType !== '';
   const showCustomInstaller = formData.installer === 'others';
 
+  const fetchCommercialRole = async () => {
+    try {
+      const token = localStorage.getItem('authToken');
+      const userId = localStorage.getItem('userId');
+      const response = await axios.get(
+        `https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`,
+        { headers: { 'Authorization': `Bearer ${token}` } }
+      );
+      if (response.data.status === 'success') {
+        setCommercialRole(response.data.data.commercialUser.commercialRole);
+      }
+    } catch (error) {
+      console.error('Error fetching commercial role:', error);
+    }
+  };
+
   useEffect(() => {
     if (isOpen) {
+      fetchCommercialRole();
       fetchFinanceTypes();
       fetchInstallers();
       fetchUtilityProviders();
@@ -152,7 +170,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
       address: '',
       utilityProvider: formData.utilityProvider,
       meterIds: [],
-      commercialRole: 'both',
+      commercialRole,
       entityType: 'company',
       facilityTypeNamingCode: 1,
       utilityProviderNamingCode: selectedUtilityProvider?.namingCode || '',
@@ -416,7 +434,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
               </button>
 
               <h2 className={styles.pageTitle}>
-                Finance & Installer information for Owner
+                {commercialRole === 'both' ? "Finance & Installer information for Owner and Operator" : "Finance & Installer information for Owner"}
               </h2>
               
               <div className={styles.progressContainer}>

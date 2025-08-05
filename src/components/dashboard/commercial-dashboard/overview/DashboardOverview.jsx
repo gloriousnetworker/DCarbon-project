@@ -9,7 +9,7 @@ const RecentRecSales = dynamic(() => import("./RecentRecSales"), { ssr: false })
 const WelcomeModal = dynamic(() => import("./modals/WelcomeModal"), { ssr: false });
 const AddUtilityProvider = dynamic(() => import("./modals/AddUtilityProvider"), { ssr: false });
 
-const ProgressTracker = ({ currentStage, nextStage, onStageClick }) => {
+const ProgressTracker = ({ currentStage, nextStage, onStageClick, hasFacility }) => {
   const stages = [
     { id: 1, name: "App Registration", tooltip: "Account creation completed" },
     { id: 2, name: "Solar Install Details", tooltip: "Owner details and address completed" },
@@ -21,7 +21,7 @@ const ProgressTracker = ({ currentStage, nextStage, onStageClick }) => {
   const currentDisplayStage = currentStage > 5 ? 5 : currentStage;
 
   const handleClick = (stageId) => {
-    if (stageId <= currentStage || stageId === nextStage) {
+    if ((stageId <= currentStage || stageId === nextStage) && (!hasFacility || stageId === 5)) {
       onStageClick(stageId);
     }
   };
@@ -43,11 +43,11 @@ const ProgressTracker = ({ currentStage, nextStage, onStageClick }) => {
               onClick={() => handleClick(stage.id)}
             >
               <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center cursor-pointer ${
+                className={`w-8 h-8 rounded-full flex items-center justify-center ${
                   stage.id < currentDisplayStage ? "bg-[#039994] text-white" : 
                   stage.id === currentDisplayStage ? "bg-[#039994] text-white" : 
                   stage.id === nextStage ? "border-2 border-[#039994] bg-white text-gray-600" : "bg-gray-200 text-gray-600"
-                } ${stage.id <= currentDisplayStage ? 'hover:bg-[#028a85]' : ''}`}
+                } ${(stage.id <= currentDisplayStage && (!hasFacility || stage.id === 5)) ? 'hover:bg-[#028a85] cursor-pointer' : 'cursor-default'}`}
               >
                 {stage.id}
               </div>
@@ -93,6 +93,25 @@ export default function DashboardOverview() {
   const [nextStage, setNextStage] = useState(2);
   const [clickedStage, setClickedStage] = useState(1);
   const [showProgressTracker, setShowProgressTracker] = useState(true);
+  const [hasFacility, setHasFacility] = useState(false);
+
+  const checkUserFacilities = async (userId, authToken) => {
+    try {
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/facility/get-user-facilities-by-userId/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        }
+      );
+      const result = await response.json();
+      return result.status === 'success' && result.data?.facilities?.length > 0;
+    } catch (error) {
+      return false;
+    }
+  };
 
   const checkStage2Completion = async (userId, authToken) => {
     try {
@@ -173,6 +192,9 @@ export default function DashboardOverview() {
       const authToken = loginResponse?.data?.token;
 
       if (!userId || !authToken) return;
+
+      const facilityCheck = await checkUserFacilities(userId, authToken);
+      setHasFacility(facilityCheck);
 
       const stageChecks = [
         { stage: 2, check: () => checkStage2Completion(userId, authToken) },
@@ -311,6 +333,7 @@ export default function DashboardOverview() {
           currentStage={currentStage} 
           nextStage={nextStage} 
           onStageClick={handleStageClick}
+          hasFacility={hasFacility}
         />
       )}
       <QuickActions />

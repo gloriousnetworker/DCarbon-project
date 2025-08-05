@@ -18,6 +18,7 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
   const [nextStage, setNextStage] = useState(2);
   const [showInviteOperatorModal, setShowInviteOperatorModal] = useState(false);
   const [hasFacilities, setHasFacilities] = useState(false);
+  const [updatingRole, setUpdatingRole] = useState(false);
 
   const checkUserFacilities = async (userId, authToken) => {
     try {
@@ -147,6 +148,60 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
     }
   };
 
+  const updateCommercialRole = async () => {
+    try {
+      setUpdatingRole(true);
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const userId = loginResponse?.data?.user?.id;
+      const authToken = loginResponse?.data?.token;
+
+      if (!userId || !authToken) return;
+
+      const commercialUserResponse = await fetch(
+        `https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        }
+      );
+
+      const commercialUserData = await commercialUserResponse.json();
+      const entityType = commercialUserData.data?.commercialUser?.entityType || 'individual';
+
+      const payload = {
+        entityType,
+        commercialRole: selectedRole === 'Owner' ? 'owner' : 'both'
+      };
+
+      const updateResponse = await fetch(
+        `https://services.dcarbon.solutions/api/user/commercial-registration/${userId}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        }
+      );
+
+      const result = await updateResponse.json();
+      if (result.status === 'success') {
+        if (selectedRole === 'Owner') {
+          handleOwnerFlow(nextStage);
+        } else {
+          handleOwnerOperatorFlow(nextStage);
+        }
+      }
+    } catch (error) {
+      console.error('Error updating commercial role:', error);
+    } finally {
+      setUpdatingRole(false);
+    }
+  };
+
   useEffect(() => {
     if (isOpen) {
       const fetchCommercialData = async () => {
@@ -197,10 +252,21 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
   }, [isOpen, currentStep, selectedRole]);
 
   const handleNext = () => {
-    if (selectedRole === 'Owner') {
-      handleOwnerFlow(nextStage);
+    if (commercialData?.commercialUser?.commercialRole) {
+      const currentRole = commercialData.commercialUser.commercialRole;
+      const newRole = selectedRole === 'Owner' ? 'owner' : 'both';
+      
+      if (currentRole !== newRole) {
+        updateCommercialRole();
+      } else {
+        if (selectedRole === 'Owner') {
+          handleOwnerFlow(nextStage);
+        } else {
+          handleOwnerOperatorFlow(nextStage);
+        }
+      }
     } else {
-      handleOwnerOperatorFlow(nextStage);
+      updateCommercialRole();
     }
   };
 
@@ -457,14 +523,14 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
 
                   <button
                     onClick={handleNext}
-                    disabled={loading || isNextButtonDisabled()}
+                    disabled={loading || isNextButtonDisabled() || updatingRole}
                     className={`w-full rounded-md text-white font-semibold py-3 focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] ${
-                      loading || isNextButtonDisabled() 
+                      loading || isNextButtonDisabled() || updatingRole
                         ? 'bg-gray-400 cursor-not-allowed' 
                         : 'bg-[#039994] hover:bg-[#02857f]'
                     }`}
                   >
-                    {loading ? 'Loading...' : 'Next'}
+                    {loading ? 'Loading...' : updatingRole ? 'Updating...' : 'Next'}
                   </button>
 
                   <div className="mt-4 text-center font-sfpro text-[10px] font-[800] leading-[100%] tracking-[-0.05em] underline text-[#1E1E1E]">
