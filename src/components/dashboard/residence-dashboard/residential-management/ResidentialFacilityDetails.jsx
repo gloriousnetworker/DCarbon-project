@@ -14,6 +14,7 @@ import {
 import axios from "axios";
 import toast from "react-hot-toast";
 import EditResidentialFacilityModal from "./EditFacilityDetailsModal";
+import ResidentialDetailsGraph from "./ResidentialDetailsGraph";
 
 const labelClass = "block text-sm font-medium text-gray-700 mb-1";
 const buttonPrimary = "bg-[#039994] text-white px-4 py-2 rounded-md hover:bg-[#028580] transition-colors";
@@ -594,6 +595,46 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated, o
     }
   };
 
+  const downloadCSV = () => {
+    const headers = [
+      'Facility ID', 'Address', 'Utility Provider', 'Installer', 
+      'Meter ID', 'Zip Code', 'Status', 'Finance Type', 
+      'Finance Company', 'Date Created', 'System Capacity', 
+      'DGG ID', 'Total RECs', 'Last REC Calculation'
+    ];
+
+    const data = [
+      mockFacility.id || '',
+      mockFacility.address || '',
+      mockFacility.utilityProvider || '',
+      mockFacility.installer || '',
+      mockFacility.meterId || '',
+      mockFacility.zipCode || '',
+      mockFacility.status || '',
+      mockFacility.financeType || '',
+      mockFacility.financeCompany || '',
+      formatDate(mockFacility.createdAt) || '',
+      mockFacility.systemCapacity || '',
+      mockFacility.dggId || '',
+      mockFacility.totalRecs || 0,
+      formatDate(mockFacility.lastRecCalculation) || ''
+    ];
+
+    const csvContent = [
+      headers.join(','),
+      data.map(field => `"${field.toString().replace(/"/g, '""')}"`).join(',')
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${mockFacility.address || 'residential_facility'}_details.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   useEffect(() => {
     fetchDocuments();
     fetchFinanceType();
@@ -679,6 +720,13 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated, o
           </h2>
         </div>
         <div className="flex space-x-3">
+          <button
+            onClick={downloadCSV}
+            className="flex items-center gap-2 bg-[#1E1E1E] text-white px-3 py-1.5 rounded-md text-sm hover:bg-black"
+          >
+            <FiDownload size={14} />
+            <span>Download CSV</span>
+          </button>
           <button
             onClick={() => setShowEditModal(true)}
             className="flex items-center gap-2 bg-[#1E1E1E] text-white px-3 py-1.5 rounded-md text-sm hover:bg-black"
@@ -776,6 +824,10 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated, o
       </div>
 
       <div className="mt-6">
+        <ResidentialDetailsGraph facilityId={mockFacility.id} />
+      </div>
+
+      <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="border border-[#039994] rounded-lg p-4 flex flex-col items-center">
           <p className="text-gray-500 text-sm mb-1">Total TRECs Generated</p>
           <p className="text-[#039994] text-2xl font-bold">{mockFacility.totalRecs || 0}</p>
