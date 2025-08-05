@@ -9,7 +9,7 @@ export const backArrow =
   'absolute left-4 top-0 text-[#039994] cursor-pointer z-10';
 
 export const pageTitle =
-  'mb-4 font-[600] text-[36px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro text-center';
+  'mb-4 font-[600] text-[24px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro text-center';
 
 export const progressContainer =
   'w-full max-w-md flex items-center justify-between mb-6';
