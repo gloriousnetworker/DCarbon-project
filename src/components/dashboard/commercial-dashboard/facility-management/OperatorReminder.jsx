@@ -1,18 +1,70 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { pageTitle, labelClass, inputClass, selectClass, buttonPrimary } from "./styles";
 import Loader from "@/components/loader/Loader.jsx";
 
-export default function ReminderModal({ isOpen, onClose, operatorData }) {
+export default function ReminderModal({ isOpen, onClose }) {
+  const [operators, setOperators] = useState([]);
+  const [selectedOperator, setSelectedOperator] = useState("");
   const [formData, setFormData] = useState({
-    name: operatorData?.name || "",
-    email: operatorData?.email || "",
+    name: "",
+    email: "",
     customerType: "COMMERCIAL",
     role: "OPERATOR",
     message: ""
   });
   const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchOperatorData();
+    }
+  }, [isOpen]);
+
+  const fetchOperatorData = async () => {
+    const userId = localStorage.getItem("userId");
+    const authToken = localStorage.getItem("authToken");
+
+    if (!userId || !authToken) {
+      toast.error("Authentication required");
+      return;
+    }
+
+    setFetching(true);
+    try {
+      const response = await axios.get(
+        `https://services.dcarbon.solutions/api/user/get-operators/${userId}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`
+          }
+        }
+      );
+
+      if (response.data.status === "success" && response.data.data.length > 0) {
+        setOperators(response.data.data);
+        if (response.data.data.length === 1) {
+          handleOperatorSelect(response.data.data[0]);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching operator data:", error);
+    } finally {
+      setFetching(false);
+    }
+  };
+
+  const handleOperatorSelect = (operator) => {
+    setSelectedOperator(operator.inviteeEmail);
+    setFormData(prev => ({
+      ...prev,
+      name: operator.name || "",
+      email: operator.inviteeEmail || ""
+    }));
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -24,12 +76,13 @@ export default function ReminderModal({ isOpen, onClose, operatorData }) {
 
   const resetForm = () => {
     setFormData({
-      name: operatorData?.name || "",
-      email: operatorData?.email || "",
+      name: "",
+      email: "",
       customerType: "COMMERCIAL",
       role: "OPERATOR",
       message: ""
     });
+    setSelectedOperator("");
   };
 
   const handleSubmit = async (e) => {
@@ -48,7 +101,7 @@ export default function ReminderModal({ isOpen, onClose, operatorData }) {
     const { name, email, customerType, role, message } = formData;
 
     if (!email) {
-      toast.error("Please enter an email address");
+      toast.error("Please select an operator");
       setLoading(false);
       return;
     }
@@ -121,7 +174,7 @@ export default function ReminderModal({ isOpen, onClose, operatorData }) {
           </svg>
         </button>
 
-        {loading && (
+        {(loading || fetching) && (
           <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-80 z-10">
             <Loader size="large" />
           </div>
@@ -153,28 +206,44 @@ export default function ReminderModal({ isOpen, onClose, operatorData }) {
 
         <form onSubmit={handleSubmit} className="space-y-2 mt-3">
           <div>
-            <label className={`${labelClass} text-xs`}>Name <span className="text-red-500">*</span></label>
+            <label className={`${labelClass} text-xs`}>Select Operator</label>
+            <select
+              value={selectedOperator}
+              onChange={(e) => {
+                const operator = operators.find(op => op.inviteeEmail === e.target.value);
+                if (operator) handleOperatorSelect(operator);
+              }}
+              className={`${selectClass} text-xs`}
+              required
+            >
+              <option value="">Select an operator</option>
+              {operators.map((operator, index) => (
+                <option key={index} value={operator.inviteeEmail}>
+                  {operator.name} ({operator.inviteeEmail})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className={`${labelClass} text-xs`}>Name</label>
             <input
               type="text"
               name="name"
               value={formData.name}
-              onChange={handleChange}
-              className={`${inputClass} text-xs`}
-              placeholder="Enter operator's name"
-              required
+              readOnly
+              className={`${inputClass} bg-gray-100 text-xs cursor-not-allowed`}
             />
           </div>
 
           <div>
-            <label className={`${labelClass} text-xs`}>Email Address <span className="text-red-500">*</span></label>
+            <label className={`${labelClass} text-xs`}>Email Address</label>
             <input
               type="email"
               name="email"
               value={formData.email}
-              onChange={handleChange}
-              className={`${inputClass} text-xs`}
-              placeholder="Enter operator's email"
-              required
+              readOnly
+              className={`${inputClass} bg-gray-100 text-xs cursor-not-allowed`}
             />
           </div>
 
@@ -214,14 +283,14 @@ export default function ReminderModal({ isOpen, onClose, operatorData }) {
               type="button"
               onClick={onClose}
               className="flex-1 rounded-md border border-gray-300 text-gray-700 font-semibold py-1 text-xs hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300"
-              disabled={loading}
+              disabled={loading || fetching}
             >
               Cancel
             </button>
             <button
               type="submit"
               className={`flex-1 ${buttonPrimary} flex items-center justify-center py-1 text-xs`}
-              disabled={loading}
+              disabled={loading || fetching || !formData.email}
             >
               Resend Invite
             </button>
