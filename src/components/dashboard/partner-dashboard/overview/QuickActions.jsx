@@ -52,7 +52,7 @@ export default function QuickActions() {
 
   return (
     <div className="w-full py-4 px-4">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className={`grid grid-cols-1 sm:grid-cols-2 ${partnerType === "finance_company" ? "lg:grid-cols-4" : "lg:grid-cols-3"} gap-4`}>
         <div
           className="p-4 min-h-[100px] rounded-2xl flex flex-col items-start justify-center"
           style={{ background: "#FFFFFF" }}
@@ -96,8 +96,7 @@ export default function QuickActions() {
         <div
           className="p-4 min-h-[100px] rounded-2xl flex flex-col items-start justify-center cursor-pointer"
           style={{
-            background:
-              "radial-gradient(60% 119.12% at 114.01% -10%, #00B4AE 0%, #004E4B 100%)",
+            background: "radial-gradient(60% 119.12% at 114.01% -10%, #00B4AE 0%, #004E4B 100%)",
           }}
           onClick={() => openModal("invite")}
         >
@@ -116,8 +115,7 @@ export default function QuickActions() {
           <div
             className="p-4 min-h-[100px] rounded-2xl flex flex-col items-start justify-center cursor-pointer"
             style={{
-              background:
-                "radial-gradient(60% 119.12% at 114.01% -10%, #00B4AE 0%, #004E4B 100%)",
+              background: "radial-gradient(60% 119.12% at 114.01% -10%, #083281ff 0%, #024030ff 100%)",
             }}
             onClick={() => openModal("installer")}
           >

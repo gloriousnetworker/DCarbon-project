@@ -343,7 +343,7 @@ export default function FinanceCompanyAgreement() {
                   : "bg-gray-400 cursor-not-allowed"
               }`}
             >
-              {loading ? "Processing..." : hasSigned ? "Accept" : "Sign Agreement"}
+              {loading ? "Processing..." : hasSigned ? "Accepted" : "Accept Agreement"}
             </button>
             <button
               onClick={() => router.back()}
