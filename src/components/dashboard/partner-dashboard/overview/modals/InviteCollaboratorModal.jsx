@@ -49,10 +49,22 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
+    const newFormData = {
+      ...formData,
       [name]: value
-    }));
+    };
+
+    if (name === "customerType") {
+      if (value === "RESIDENTIAL") {
+        newFormData.role = "OWNER";
+      } else if (value === "COMMERCIAL") {
+        newFormData.role = "OWNER";
+      } else if (value === "PARTNER") {
+        newFormData.role = "SALES_AGENT";
+      }
+    }
+
+    setFormData(newFormData);
   };
 
   const handlePhoneChange = (e) => {
@@ -76,8 +88,8 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
       name: "",
       email: "",
       phoneNumber: "",
-      customerType: "RESIDENTIAL",
-      role: "OWNER",
+      customerType: isSalesAgent ? "PARTNER" : "RESIDENTIAL",
+      role: isSalesAgent ? "SALES_AGENT" : "OWNER",
       message: ""
     });
   };
@@ -114,7 +126,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
         {
           name,
           email,
-          phoneNumber,
+          phoneNumber: phoneNumber.replace(/\D/g, ''),
           customerType,
           role,
           ...(message && { message })
@@ -156,9 +168,15 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
   if (!isOpen || !userLoaded) return null;
 
   const partnerRoles = [
-    { value: "sales_agent", label: "Sales Agent" },
-    { value: "finance_company", label: "Finance Company" },
-    { value: "installer", label: "Installer" }
+    { value: "SALES_AGENT", label: "Sales Agent" },
+    { value: "FINANCE_COMPANY", label: "Finance Company" },
+    { value: "INSTALLER", label: "Installer" }
+  ];
+
+  const commercialRoles = [
+    { value: "OWNER", label: "Owner" },
+    { value: "OPERATOR", label: "Operator" },
+    { value: "BOTH", label: "Both" }
   ];
 
   return (
@@ -267,9 +285,11 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
                 className={`${selectClass} text-xs`}
                 required
               >
-                <option value="OWNER">Owner</option>
-                <option value="OPERATOR">Operator</option>
-                <option value="BOTH">Both</option>
+                {commercialRoles.map((role) => (
+                  <option key={role.value} value={role.value}>
+                    {role.label}
+                  </option>
+                ))}
               </select>
             ) : formData.customerType === "PARTNER" ? (
               <select
