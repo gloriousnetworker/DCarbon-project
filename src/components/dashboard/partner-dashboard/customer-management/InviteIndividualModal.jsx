@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { pageTitle, labelClass, inputClass, selectClass, buttonPrimary } from "./styles";
@@ -14,39 +14,72 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
     message: ""
   });
   const [loading, setLoading] = useState(false);
-  const [phoneError, setPhoneError] = useState("");
+  const [isSalesAgent, setIsSalesAgent] = useState(false);
+  const [userLoaded, setUserLoaded] = useState(false);
 
-  const formatPhoneNumber = (value) => {
-    const cleaned = value.replace(/\D/g, '');
-    const match = cleaned.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
-    if (match) {
-      return !match[2] ? match[1] : `+1 (${match[1]}) ${match[2]}${match[3] ? ` ${match[3]}` : ''}`;
-    }
-    return value;
-  };
+  useEffect(() => {
+    const checkUserRole = async () => {
+      const userId = localStorage.getItem("userId");
+      const authToken = localStorage.getItem("authToken");
+
+      if (!userId || !authToken) return;
+
+      try {
+        const response = await axios.get(
+          `https://services.dcarbon.solutions/api/user/partner/user/${userId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${authToken}`
+            }
+          }
+        );
+
+        if (response.data.data?.partnerType === "sales_agent") {
+          setIsSalesAgent(true);
+        }
+      } catch (error) {
+        console.error("Error checking user role:", error);
+      } finally {
+        setUserLoaded(true);
+      }
+    };
+
+    if (isOpen) checkUserRole();
+  }, [isOpen]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    
-    if (name === "phoneNumber") {
-      const cleanedValue = value.replace(/\D/g, '');
-      if (cleanedValue.length > 10) {
-        setPhoneError("Phone number must be 10 digits");
-      } else {
-        setPhoneError("");
+    const newFormData = {
+      ...formData,
+      [name]: value
+    };
+
+    if (name === "customerType") {
+      if (value === "RESIDENTIAL") {
+        newFormData.role = "OWNER";
+      } else if (value === "COMMERCIAL") {
+        newFormData.role = "OWNER";
+      } else if (value === "PARTNER") {
+        newFormData.role = "SALES_AGENT";
       }
-      
-      const formattedValue = formatPhoneNumber(cleanedValue);
-      setFormData(prev => ({
-        ...prev,
-        [name]: formattedValue
-      }));
-      return;
     }
-    
+
+    setFormData(newFormData);
+  };
+
+  const handlePhoneChange = (e) => {
+    const value = e.target.value.replace(/\D/g, '');
+    let formattedValue = value;
+
+    if (value.length > 3 && value.length <= 6) {
+      formattedValue = `(${value.slice(0, 3)}) ${value.slice(3)}`;
+    } else if (value.length > 6) {
+      formattedValue = `(${value.slice(0, 3)}) ${value.slice(3, 6)}-${value.slice(6, 10)}`;
+    }
+
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      phoneNumber: formattedValue
     }));
   };
 
@@ -55,28 +88,14 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
       name: "",
       email: "",
       phoneNumber: "",
-      customerType: "RESIDENTIAL",
-      role: "OWNER",
+      customerType: isSalesAgent ? "PARTNER" : "RESIDENTIAL",
+      role: isSalesAgent ? "SALES_AGENT" : "OWNER",
       message: ""
     });
-    setPhoneError("");
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (phoneError) {
-      toast.error("Please fix phone number errors before submitting");
-      return;
-    }
-
-    const cleanedPhone = formData.phoneNumber.replace(/\D/g, '');
-    if (cleanedPhone.length !== 10) {
-      setPhoneError("Phone number must be 10 digits");
-      toast.error("Please enter a valid 10-digit US phone number");
-      return;
-    }
-
     setLoading(true);
 
     const userId = localStorage.getItem("userId");
@@ -96,12 +115,18 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
       return;
     }
 
+    if (!phoneNumber) {
+      toast.error("Please enter a valid phone number");
+      setLoading(false);
+      return;
+    }
+
     const payload = {
       invitees: [
         {
           name,
           email,
-          phoneNumber: `+1${cleanedPhone}`,
+          phoneNumber: phoneNumber.replace(/\D/g, ''),
           customerType,
           role,
           ...(message && { message })
@@ -125,7 +150,6 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
         toast.success("Invitation sent successfully");
         resetForm();
         onClose();
-        window.location.reload();
       } else {
         throw new Error(response.data.message || "Failed to send invitation");
       }
@@ -141,7 +165,19 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || !userLoaded) return null;
+
+  const partnerRoles = [
+    { value: "SALES_AGENT", label: "Sales Agent" },
+    { value: "FINANCE_COMPANY", label: "Finance Company" },
+    { value: "INSTALLER", label: "Installer" }
+  ];
+
+  const commercialRoles = [
+    { value: "OWNER", label: "Owner" },
+    { value: "OPERATOR", label: "Operator" },
+    { value: "BOTH", label: "Both" }
+  ];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20 overflow-y-auto">
@@ -217,14 +253,11 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
               type="tel"
               name="phoneNumber"
               value={formData.phoneNumber}
-              onChange={handleChange}
-              className={`${inputClass} text-xs ${phoneError ? "border-red-500" : ""}`}
-              placeholder="Enter US phone number (e.g. 619 788 7445)"
+              onChange={handlePhoneChange}
+              className={`${inputClass} text-xs`}
+              placeholder="(555) 555-5555"
               required
             />
-            {phoneError && (
-              <p className="text-red-500 text-xs mt-1">{phoneError}</p>
-            )}
           </div>
 
           <div>
@@ -238,6 +271,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
             >
               <option value="RESIDENTIAL">Residential</option>
               <option value="COMMERCIAL">Commercial</option>
+              {isSalesAgent && <option value="PARTNER">Partner</option>}
             </select>
           </div>
 
@@ -251,9 +285,25 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
                 className={`${selectClass} text-xs`}
                 required
               >
-                <option value="OWNER">Owner</option>
-                <option value="OPERATOR">Operator</option>
-                <option value="BOTH">Both</option>
+                {commercialRoles.map((role) => (
+                  <option key={role.value} value={role.value}>
+                    {role.label}
+                  </option>
+                ))}
+              </select>
+            ) : formData.customerType === "PARTNER" ? (
+              <select
+                name="role"
+                value={formData.role}
+                onChange={handleChange}
+                className={`${selectClass} text-xs`}
+                required
+              >
+                {partnerRoles.map((role) => (
+                  <option key={role.value} value={role.value}>
+                    {role.label}
+                  </option>
+                ))}
               </select>
             ) : (
               <input
@@ -288,7 +338,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
             <button
               type="submit"
               className={`flex-1 ${buttonPrimary} flex items-center justify-center py-1 text-xs`}
-              disabled={loading || phoneError}
+              disabled={loading}
             >
               Invite
             </button>

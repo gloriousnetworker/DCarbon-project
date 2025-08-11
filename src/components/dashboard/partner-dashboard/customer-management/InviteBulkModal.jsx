@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { pageTitle, labelClass, inputClass, selectClass, buttonPrimary } from "./styles";
@@ -18,9 +18,41 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
   const [loading, setLoading] = useState(false);
   const [csvLoading, setCsvLoading] = useState(false);
   const [phoneErrors, setPhoneErrors] = useState([]);
+  const [isSalesAgent, setIsSalesAgent] = useState(false);
+  const [userLoaded, setUserLoaded] = useState(false);
   const fileInputRef = useRef(null);
 
   const MAX_INVITEES = 100;
+
+  useEffect(() => {
+    const checkUserRole = async () => {
+      const userId = localStorage.getItem("userId");
+      const authToken = localStorage.getItem("authToken");
+
+      if (!userId || !authToken) return;
+
+      try {
+        const response = await axios.get(
+          `https://services.dcarbon.solutions/api/user/partner/user/${userId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${authToken}`
+            }
+          }
+        );
+
+        if (response.data.data?.partnerType === "sales_agent") {
+          setIsSalesAgent(true);
+        }
+      } catch (error) {
+        console.error("Error checking user role:", error);
+      } finally {
+        setUserLoaded(true);
+      }
+    };
+
+    if (isOpen) checkUserRole();
+  }, [isOpen]);
 
   const handleChange = (index, e) => {
     const { name, value } = e.target;
@@ -44,6 +76,17 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
       ...newInvitees[index],
       [name]: value
     };
+
+    if (name === "customerType") {
+      if (value === "RESIDENTIAL") {
+        newInvitees[index].role = "OWNER";
+      } else if (value === "COMMERCIAL") {
+        newInvitees[index].role = "OWNER";
+      } else if (value === "PARTNER") {
+        newInvitees[index].role = "SALES_AGENT";
+      }
+    }
+
     setInvitees(newInvitees);
   };
 
@@ -58,8 +101,8 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
         name: "",
         email: "",
         phoneNumber: "",
-        customerType: "RESIDENTIAL",
-        role: "OWNER",
+        customerType: isSalesAgent ? "PARTNER" : "RESIDENTIAL",
+        role: isSalesAgent ? "SALES_AGENT" : "OWNER",
         message: ""
       }
     ]);
@@ -86,8 +129,8 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
         name: "",
         email: "",
         phoneNumber: "",
-        customerType: "RESIDENTIAL",
-        role: "OWNER",
+        customerType: isSalesAgent ? "PARTNER" : "RESIDENTIAL",
+        role: isSalesAgent ? "SALES_AGENT" : "OWNER",
         message: ""
       }
     ]);
@@ -98,7 +141,10 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
   };
 
   const downloadTemplate = () => {
-    const csvContent = "data:text/csv;charset=utf-8,name,email,phoneNumber,customerType,role,message\nJohn Doe,john@example.com,+1234567890,RESIDENTIAL,OWNER,Welcome to our platform";
+    const csvContent = "data:text/csv;charset=utf-8,name,email,phoneNumber,customerType,role,message\n" +
+      "John Doe,john@example.com,+1234567890,RESIDENTIAL,OWNER,Welcome to our platform\n" +
+      "Jane Smith,jane@example.com,+1987654321,COMMERCIAL,OPERATOR,Commercial account setup\n" +
+      "Sales Agent,sales@example.com,+1122334455,PARTNER,SALES_AGENT,Partner invitation";
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
@@ -156,22 +202,27 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
             name: "",
             email: "",
             phoneNumber: "",
-            customerType: "RESIDENTIAL",
-            role: "OWNER",
+            customerType: isSalesAgent ? "PARTNER" : "RESIDENTIAL",
+            role: isSalesAgent ? "SALES_AGENT" : "OWNER",
             message: ""
           };
           
           headers.forEach((header, index) => {
             if (header === 'customertype') {
               const type = values[index].toUpperCase();
-              invitee.customerType = type === 'COMMERCIAL' ? 'COMMERCIAL' : 'RESIDENTIAL';
+              invitee.customerType = ['RESIDENTIAL', 'COMMERCIAL', 'PARTNER'].includes(type) ? type : 
+                isSalesAgent ? 'PARTNER' : 'RESIDENTIAL';
             } 
             else if (header === 'role') {
               const role = values[index].toUpperCase();
-              if (['OWNER', 'OPERATOR', 'BOTH'].includes(role)) {
+              if (invitee.customerType === 'COMMERCIAL' && ['OWNER', 'OPERATOR', 'BOTH'].includes(role)) {
                 invitee.role = role;
-              } else {
-                invitee.role = invitee.customerType === 'COMMERCIAL' ? 'OWNER' : 'OWNER';
+              } 
+              else if (invitee.customerType === 'PARTNER' && ['SALES_AGENT', 'FINANCE_COMPANY', 'INSTALLER'].includes(role)) {
+                invitee.role = role;
+              } 
+              else if (invitee.customerType === 'RESIDENTIAL') {
+                invitee.role = 'OWNER';
               }
             }
             else if (header === 'phonenumber' || header === 'phone') {
@@ -305,7 +356,19 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || !userLoaded) return null;
+
+  const partnerRoles = [
+    { value: "SALES_AGENT", label: "Sales Agent" },
+    { value: "FINANCE_COMPANY", label: "Finance Company" },
+    { value: "INSTALLER", label: "Installer" }
+  ];
+
+  const commercialRoles = [
+    { value: "OWNER", label: "Owner" },
+    { value: "OPERATOR", label: "Operator" },
+    { value: "BOTH", label: "Both" }
+  ];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20 overflow-y-auto">
@@ -484,6 +547,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
                   >
                     <option value="RESIDENTIAL">Residential</option>
                     <option value="COMMERCIAL">Commercial</option>
+                    {isSalesAgent && <option value="PARTNER">Partner</option>}
                   </select>
                 </div>
 
@@ -497,9 +561,25 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
                       className={`${selectClass} text-xs`}
                       required
                     >
-                      <option value="OWNER">Owner</option>
-                      <option value="OPERATOR">Operator</option>
-                      <option value="BOTH">Both</option>
+                      {commercialRoles.map((role) => (
+                        <option key={role.value} value={role.value}>
+                          {role.label}
+                        </option>
+                      ))}
+                    </select>
+                  ) : invitee.customerType === "PARTNER" ? (
+                    <select
+                      name="role"
+                      value={invitee.role}
+                      onChange={(e) => handleChange(index, e)}
+                      className={`${selectClass} text-xs`}
+                      required
+                    >
+                      {partnerRoles.map((role) => (
+                        <option key={role.value} value={role.value}>
+                          {role.label}
+                        </option>
+                      ))}
                     </select>
                   ) : (
                     <input
@@ -584,7 +664,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
               d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
             />
           </svg>
-          CSV should contain columns: name, email, phoneNumber, customerType (RESIDENTIAL/COMMERCIAL), role (OWNER/OPERATOR/BOTH), message
+          CSV should contain columns: name, email, phoneNumber, customerType (RESIDENTIAL/COMMERCIAL/PARTNER), role (OWNER/OPERATOR/BOTH/SALES_AGENT/FINANCE_COMPANY/INSTALLER), message
         </div>
       </div>
     </div>
