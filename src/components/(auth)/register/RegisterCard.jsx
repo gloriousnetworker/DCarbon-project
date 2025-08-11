@@ -35,6 +35,7 @@ function RegisterCardContent() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [hoveredButton, setHoveredButton] = useState(null);
   const [isOperatorType, setIsOperatorType] = useState(false);
+  const [partnerType, setPartnerType] = useState('');
 
   const searchParams = useSearchParams();
 
@@ -48,9 +49,14 @@ function RegisterCardContent() {
       toast.success(`You've been invited with referral code: ${code}`);
     }
     
-    if (type && type.toLowerCase() === 'operator') {
-      setIsOperatorType(true);
-      setUserCategory('Operator');
+    if (type) {
+      if (type.toLowerCase() === 'operator') {
+        setIsOperatorType(true);
+        setUserCategory('Operator');
+      } else if (['installer', 'sales-agent', 'finance-company'].includes(type.toLowerCase())) {
+        setPartnerType(type.toLowerCase());
+        setUserCategory('Partner');
+      }
     }
   }, [searchParams]);
 
@@ -61,10 +67,15 @@ function RegisterCardContent() {
     Operator: 'COMMERCIAL'
   };
 
+  const partnerTypeMapping = {
+    'installer': 'INSTALLER',
+    'sales-agent': 'SALES-AGENT',
+    'finance-company': 'FINANCE-COMPANY'
+  };
+
   const getAvailableUserCategories = () => {
-    if (isOperatorType) {
-      return ['Operator'];
-    }
+    if (isOperatorType) return ['Operator'];
+    if (partnerType) return ['Partner'];
     return ['Residential', 'Commercial', 'Partner'];
   };
 
@@ -120,6 +131,10 @@ function RegisterCardContent() {
       isPartnerOperator: userCategory === 'Operator'
     };
 
+    if (partnerType) {
+      payload.partnerType = partnerTypeMapping[partnerType];
+    }
+
     if (manualReferralCode.trim() && userCategory !== 'Partner') {
       payload.bodyReferralCode = manualReferralCode.trim();
     }
@@ -150,7 +165,7 @@ function RegisterCardContent() {
   const toggleConfirmPasswordVisibility = () => setConfirmPasswordVisible((prev) => !prev);
   
   const handleUserCategory = (category) => {
-    if (isOperatorType && category !== 'Operator') {
+    if ((isOperatorType && category !== 'Operator') || (partnerType && category !== 'Partner')) {
       return;
     }
     setUserCategory(category);
@@ -167,6 +182,15 @@ function RegisterCardContent() {
   const isReferralReadOnly = () => !!urlReferralCode;
 
   const getButtonTooltip = (category) => {
+    if (partnerType && category === 'Partner') {
+      const typeMap = {
+        'installer': 'Installer',
+        'sales-agent': 'Sales Agent',
+        'finance-company': 'Finance Company'
+      };
+      return `You have been invited to register on DCarbon as an ${typeMap[partnerType]}`;
+    }
+    
     switch(category) {
       case 'Residential':
         return 'I have a solar system on my home';
@@ -182,7 +206,7 @@ function RegisterCardContent() {
   };
 
   const isCategoryDisabled = (category) => {
-    return isOperatorType && category !== 'Operator';
+    return (isOperatorType && category !== 'Operator') || (partnerType && category !== 'Partner');
   };
 
   const availableUserCategories = getAvailableUserCategories();
@@ -220,9 +244,20 @@ function RegisterCardContent() {
             </div>
           )}
 
-          {isOperatorType && (
+          {(isOperatorType || partnerType) && (
             <div className="mb-4 p-3 bg-blue-100 text-blue-800 rounded-md text-sm">
-              You have been invited to register as an <strong>Operator</strong>
+              {isOperatorType && (
+                <>You have been invited to register as an <strong>Operator</strong></>
+              )}
+              {partnerType === 'installer' && (
+                <>You have been invited to register as an <strong>Installer</strong></>
+              )}
+              {partnerType === 'sales-agent' && (
+                <>You have been invited to register as a <strong>Sales Agent</strong></>
+              )}
+              {partnerType === 'finance-company' && (
+                <>You have been invited to register as a <strong>Finance Company</strong></>
+              )}
             </div>
           )}
 

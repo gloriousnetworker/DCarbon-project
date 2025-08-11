@@ -8,11 +8,8 @@ export default function ReminderModal({ isOpen, onClose }) {
   const [operators, setOperators] = useState([]);
   const [selectedOperator, setSelectedOperator] = useState("");
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    customerType: "COMMERCIAL",
-    role: "OPERATOR",
-    message: ""
+    reason: "Operator Registration Reminder",
+    description: "Please complete your operator registration"
   });
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(false);
@@ -46,9 +43,6 @@ export default function ReminderModal({ isOpen, onClose }) {
 
       if (response.data.status === "success" && response.data.data.length > 0) {
         setOperators(response.data.data);
-        if (response.data.data.length === 1) {
-          handleOperatorSelect(response.data.data[0]);
-        }
       }
     } catch (error) {
       console.error("Error fetching operator data:", error);
@@ -57,13 +51,8 @@ export default function ReminderModal({ isOpen, onClose }) {
     }
   };
 
-  const handleOperatorSelect = (operator) => {
-    setSelectedOperator(operator.inviteeEmail);
-    setFormData(prev => ({
-      ...prev,
-      name: operator.name || "",
-      email: operator.inviteeEmail || ""
-    }));
+  const handleOperatorSelect = (email) => {
+    setSelectedOperator(email);
   };
 
   const handleChange = (e) => {
@@ -76,11 +65,8 @@ export default function ReminderModal({ isOpen, onClose }) {
 
   const resetForm = () => {
     setFormData({
-      name: "",
-      email: "",
-      customerType: "COMMERCIAL",
-      role: "OPERATOR",
-      message: ""
+      reason: "Operator Registration Reminder",
+      description: "Please complete your operator registration"
     });
     setSelectedOperator("");
   };
@@ -98,29 +84,21 @@ export default function ReminderModal({ isOpen, onClose }) {
       return;
     }
 
-    const { name, email, customerType, role, message } = formData;
-
-    if (!email) {
+    if (!selectedOperator) {
       toast.error("Please select an operator");
       setLoading(false);
       return;
     }
 
     const payload = {
-      invitees: [
-        {
-          name,
-          email,
-          customerType,
-          role,
-          ...(message && { message })
-        }
-      ]
+      emails: [selectedOperator],
+      reason: formData.reason,
+      description: formData.description
     };
 
     try {
       const response = await axios.post(
-        `https://services.dcarbon.solutions/api/user/invite-user/${userId}`,
+        `https://services.dcarbon.solutions/api/user/operator-reminders/${userId}`,
         payload,
         {
           headers: {
@@ -209,10 +187,7 @@ export default function ReminderModal({ isOpen, onClose }) {
             <label className={`${labelClass} text-xs`}>Select Operator</label>
             <select
               value={selectedOperator}
-              onChange={(e) => {
-                const operator = operators.find(op => op.inviteeEmail === e.target.value);
-                if (operator) handleOperatorSelect(operator);
-              }}
+              onChange={(e) => handleOperatorSelect(e.target.value)}
               className={`${selectClass} text-xs`}
               required
             >
@@ -226,55 +201,25 @@ export default function ReminderModal({ isOpen, onClose }) {
           </div>
 
           <div>
-            <label className={`${labelClass} text-xs`}>Name</label>
+            <label className={`${labelClass} text-xs`}>Reason</label>
             <input
               type="text"
-              name="name"
-              value={formData.name}
-              readOnly
-              className={`${inputClass} bg-gray-100 text-xs cursor-not-allowed`}
+              name="reason"
+              value={formData.reason}
+              onChange={handleChange}
+              className={`${inputClass} text-xs`}
+              required
             />
           </div>
 
           <div>
-            <label className={`${labelClass} text-xs`}>Email Address</label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              readOnly
-              className={`${inputClass} bg-gray-100 text-xs cursor-not-allowed`}
-            />
-          </div>
-
-          <div>
-            <label className={`${labelClass} text-xs`}>Customer Type</label>
-            <input
-              type="text"
-              value="Commercial"
-              disabled
-              className={`${inputClass} bg-gray-100 text-xs cursor-not-allowed`}
-            />
-          </div>
-
-          <div>
-            <label className={`${labelClass} text-xs`}>Role</label>
-            <input
-              type="text"
-              value="Operator"
-              disabled
-              className={`${inputClass} bg-gray-100 text-xs cursor-not-allowed`}
-            />
-          </div>
-
-          <div>
-            <label className={`${labelClass} text-xs`}>Message</label>
+            <label className={`${labelClass} text-xs`}>Description</label>
             <textarea
-              name="message"
-              value={formData.message}
+              name="description"
+              value={formData.description}
               onChange={handleChange}
               className={`${inputClass} text-xs h-16 resize-none`}
-              placeholder="Add a custom message (optional)"
+              required
             />
           </div>
 
@@ -290,9 +235,9 @@ export default function ReminderModal({ isOpen, onClose }) {
             <button
               type="submit"
               className={`flex-1 ${buttonPrimary} flex items-center justify-center py-1 text-xs`}
-              disabled={loading || fetching || !formData.email}
+              disabled={loading || fetching || !selectedOperator}
             >
-              Resend Invite
+              Send Reminder
             </button>
           </div>
         </form>
