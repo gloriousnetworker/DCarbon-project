@@ -1,5 +1,5 @@
 import React from "react";
-import { FiDownload } from "react-icons/fi";
+import { Download } from "lucide-react";
 
 export default function CommercialDetailsGraph({ facilityId }) {
   const chartData = [
@@ -40,13 +40,13 @@ export default function CommercialDetailsGraph({ facilityId }) {
 
   return (
     <div className="w-full bg-white border border-gray-200 rounded-lg shadow-sm p-6">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-8">
         <h3 className="text-lg font-semibold text-[#039994]">Energy Performance</h3>
         <button 
           onClick={downloadData}
           className="flex items-center space-x-1 bg-[#039994] text-white px-3 py-1 rounded text-sm hover:bg-[#027a75] transition-colors"
         >
-          <FiDownload size={14} />
+          <Download size={14} />
           <span>Download</span>
         </button>
       </div>

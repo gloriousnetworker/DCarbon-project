@@ -49,6 +49,9 @@ export default function LoginCard() {
       localStorage.setItem('userId', user.id);
       localStorage.setItem('userType', user.userType);
       localStorage.setItem('isPartnerOperator', user.isPartnerOperator);
+      if (user.partnerType) {
+        localStorage.setItem('partnerType', user.partnerType);
+      }
 
       toast.success('Login successful');
 

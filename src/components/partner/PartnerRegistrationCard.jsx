@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -15,10 +15,20 @@ export default function StepOneCard() {
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
   const [zipCode, setZipCode] = useState('');
-  const [partnerType, setPartnerType] = useState('installer');
+  const [partnerType, setPartnerType] = useState('');
   const [errors, setErrors] = useState({});
+  const [isPartnerTypeLocked, setIsPartnerTypeLocked] = useState(false);
 
   const router = useRouter();
+
+  useEffect(() => {
+    const storedPartnerType = localStorage.getItem('partnerType');
+    if (storedPartnerType) {
+      const formattedType = storedPartnerType.toLowerCase().replace('_', '-');
+      setPartnerType(formattedType);
+      setIsPartnerTypeLocked(true);
+    }
+  }, []);
 
   const validateField = (name, value) => {
     const newErrors = { ...errors };
@@ -112,15 +122,6 @@ export default function StepOneCard() {
         }
         break;
 
-      case 'partnerType':
-        const validTypes = ['installer', 'sales_agent', 'finance_company'];
-        if (!validTypes.includes(value)) {
-          newErrors.partnerType = 'Please select a valid partner type';
-        } else {
-          delete newErrors.partnerType;
-        }
-        break;
-
       default:
         break;
     }
@@ -137,8 +138,7 @@ export default function StepOneCard() {
       address1: address1.trim(),
       city: city.trim(),
       state: state.trim(),
-      zipCode: zipCode.trim(),
-      partnerType: partnerType
+      zipCode: zipCode.trim()
     };
 
     let isValid = true;
@@ -228,10 +228,10 @@ export default function StepOneCard() {
         localStorage.setItem('partnerType', partnerType);
         
         switch(partnerType) {
-          case 'sales_agent':
+          case 'sales-agent':
             router.push('/register/partner-user-registration/sales-agent-agreement');
             break;
-          case 'finance_company':
+          case 'finance-company':
             router.push('/register/partner-user-registration/finance-company-agreement');
             break;
           case 'installer':
@@ -296,6 +296,18 @@ export default function StepOneCard() {
            Object.keys(errors).length === 0;
   };
 
+  const getDisplayPartnerType = () => {
+    switch(partnerType) {
+      case 'sales-agent':
+        return 'Sales Agent';
+      case 'finance-company':
+        return 'Finance Company';
+      case 'installer':
+      default:
+        return 'Installer';
+    }
+  };
+
   return (
     <>
       {loading && (
@@ -339,16 +351,26 @@ export default function StepOneCard() {
             <label className="block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]">
               Partner Type <span className="text-red-500">*</span>
             </label>
-            <select
-              value={partnerType}
-              onChange={handleInputChange(setPartnerType, 'partnerType')}
-              className={getInputClassName('partnerType') + " bg-white"}
-              required
-            >
-              <option value="installer">Installer</option>
-              <option value="sales_agent">Sales Agent</option>
-              <option value="finance_company">Finance Company</option>
-            </select>
+            {isPartnerTypeLocked ? (
+              <input
+                type="text"
+                value={getDisplayPartnerType()}
+                readOnly
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm bg-gray-100 cursor-not-allowed font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]"
+              />
+            ) : (
+              <select
+                value={partnerType}
+                onChange={handleInputChange(setPartnerType, 'partnerType')}
+                className={getInputClassName('partnerType') + " bg-white"}
+                required
+              >
+                <option value="">Select partner type</option>
+                <option value="installer">Installer</option>
+                <option value="sales-agent">Sales Agent</option>
+                <option value="finance-company">Finance Company</option>
+              </select>
+            )}
             {errors.partnerType && (
               <p className="mt-1 text-sm text-red-500 font-sfpro">{errors.partnerType}</p>
             )}
