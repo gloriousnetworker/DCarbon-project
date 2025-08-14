@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import {
-  HiOutlineChevronLeft,
-  HiOutlineChevronRight,
-} from 'react-icons/hi';
+import { HiOutlineChevronLeft, HiOutlineChevronRight } from 'react-icons/hi';
 import FilterModal from './FilterModal';
 import SendReminderModal from './SendReminderModal';
 import InviteIndividualModal from './InviteIndividualModal';
@@ -352,10 +349,10 @@ export default function PartnerCustomerReport() {
       const cachedDetails = customerDetailsCache[email];
       
       const customerType = cachedDetails?.userType ? cachedDetails.userType.toUpperCase() : item.customerType?.toUpperCase() || 'N/A';
-      const role = cachedDetails ? 
-        (cachedDetails.userType === 'RESIDENTIAL' ? 'OWNER' : 
-         commercialRolesCache[cachedDetails.id]?.toUpperCase() || cachedDetails.role?.toUpperCase() || 'N/A') : 
-        (item.customerType === 'RESIDENTIAL' ? 'OWNER' : item.role?.toUpperCase() || 'N/A');
+      const role = item.role ? item.role.toUpperCase() : 
+                   cachedDetails?.userType === 'RESIDENTIAL' ? 'OWNER' : 
+                   commercialRolesCache[cachedDetails?.id]?.toUpperCase() || 
+                   cachedDetails?.role?.toUpperCase() || 'N/A';
       
       const dateCreated = formatDate(item.createdAt);
       const status = item.status || 'N/A';
