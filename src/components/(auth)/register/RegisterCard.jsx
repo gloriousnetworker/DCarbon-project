@@ -76,7 +76,8 @@ function RegisterCardContent() {
   const getAvailableUserCategories = () => {
     if (isOperatorType) return ['Operator'];
     if (partnerType) return ['Partner'];
-    return ['Residential', 'Commercial', 'Partner'];
+    if (!urlReferralCode && !manualReferralCode) return ['Residential', 'Commercial', 'Partner'];
+    return ['Residential', 'Commercial'];
   };
 
   const validateForm = () => {
