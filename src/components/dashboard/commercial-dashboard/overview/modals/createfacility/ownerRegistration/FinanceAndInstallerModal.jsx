@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import axios from "axios";
 import InviteOperatorModal from "./InviteOperatorModal";
-import { Tooltip } from "./Tooltip";
 
 const styles = {
   mainContainer: 'min-h-screen w-full flex flex-col items-center justify-center py-8 px-4 bg-white',
@@ -33,7 +32,10 @@ const styles = {
   uploadInputLabel: 'relative flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-500 bg-gray-50 focus-within:outline-none focus-within:ring-2 focus-within:ring-[#039994] cursor-pointer font-sfpro',
   uploadIconContainer: 'absolute right-3 top-1/2 -translate-y-1/2 text-gray-400',
   uploadButtonStyle: 'px-4 py-2 bg-[#039994] text-white rounded-md hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro',
-  uploadNoteStyle: 'mt-2 font-sfpro text-[12px] leading-[100%] tracking-[-0.05em] font-[300] italic text-[#1E1E1E]'
+  uploadNoteStyle: 'mt-2 font-sfpro text-[12px] leading-[100%] tracking-[-0.05em] font-[300] italic text-[#1E1E1E]',
+  tooltipContainer: 'group relative inline-flex',
+  tooltipIcon: 'h-4 w-4 text-gray-400',
+  tooltipContent: 'absolute hidden group-hover:block bg-white p-2 rounded shadow-lg border border-gray-200 text-xs w-64 z-10 -left-32 -top-20'
 };
 
 export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
@@ -551,9 +553,18 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
 
                 {showFinanceCompany && (
                   <div>
-                    <div className={styles.labelWithTooltip}>
-                      <span>Finance company <span className="text-red-500">*</span></span>
-                      <Tooltip message="If you were referred by a finance company, select them here so they can help submit required documents if needed." />
+                    <div className="flex items-center gap-1">
+                      <label className={styles.labelClass}>
+                        Finance company <span className="text-red-500">*</span>
+                      </label>
+                      <div className={styles.tooltipContainer}>
+                        <svg xmlns="http://www.w3.org/2000/svg" className={styles.tooltipIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <div className={styles.tooltipContent}>
+                          If you were referred by a finance company, select them here so they can help submit required documents if needed.
+                        </div>
+                      </div>
                     </div>
                     <div className="relative">
                       <select
@@ -607,9 +618,18 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                 )}
 
                 <div>
-                  <div className={styles.labelWithTooltip}>
-                    <span>Select installer <span className="text-red-500">*</span></span>
-                    <Tooltip message="Select your installer who can submit installation documents if needed. If not listed, choose 'Not Yet Available' and your finance company can invite them later." />
+                  <div className="flex items-center gap-1">
+                    <label className={styles.labelClass}>
+                      Select installer <span className="text-red-500">*</span>
+                    </label>
+                    <div className={styles.tooltipContainer}>
+                      <svg xmlns="http://www.w3.org/2000/svg" className={styles.tooltipIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <div className={styles.tooltipContent}>
+                        Select your installer who can submit installation documents if needed. If not listed, choose 'Not Yet Available' and your finance company can invite them later.
+                      </div>
+                    </div>
                   </div>
                   <div className="relative">
                     <select
