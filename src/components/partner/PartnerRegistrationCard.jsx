@@ -24,8 +24,7 @@ export default function StepOneCard() {
   useEffect(() => {
     const storedPartnerType = localStorage.getItem('partnerType');
     if (storedPartnerType) {
-      const formattedType = storedPartnerType.toLowerCase().replace('_', '-');
-      setPartnerType(formattedType);
+      setPartnerType(storedPartnerType);
       setIsPartnerTypeLocked(true);
     }
   }, []);
@@ -367,8 +366,8 @@ export default function StepOneCard() {
               >
                 <option value="">Select partner type</option>
                 <option value="installer">Installer</option>
-                <option value="sales-agent">Sales Agent</option>
-                <option value="finance-company">Finance Company</option>
+                <option value="sales_agent">Sales Agent</option>
+                <option value="finance_company">Finance Company</option>
               </select>
             )}
             {errors.partnerType && (
