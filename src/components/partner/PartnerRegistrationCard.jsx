@@ -24,7 +24,8 @@ export default function StepOneCard() {
   useEffect(() => {
     const storedPartnerType = localStorage.getItem('partnerType');
     if (storedPartnerType) {
-      setPartnerType(storedPartnerType);
+      const formattedType = storedPartnerType.toLowerCase().replace('_', '-');
+      setPartnerType(formattedType);
       setIsPartnerTypeLocked(true);
     }
   }, []);
@@ -227,13 +228,13 @@ export default function StepOneCard() {
         localStorage.setItem('partnerType', partnerType);
         
         switch(partnerType) {
-          case 'SALES_AGENT':
+          case 'sales_agent':
             router.push('/register/partner-user-registration/sales-agent-agreement');
             break;
-          case 'FINANCE_COMPANY':
+          case 'finance_company':
             router.push('/register/partner-user-registration/finance-company-agreement');
             break;
-          case 'INSTALLER':
+          case 'installer':
           default:
             router.push('/register/partner-user-registration/partner-installer-agreement');
         }
@@ -297,11 +298,11 @@ export default function StepOneCard() {
 
   const getDisplayPartnerType = () => {
     switch(partnerType) {
-      case 'SALES_AGENT':
+      case 'sales_agent':
         return 'Sales Agent';
-      case 'FINANCE_COMPANY':
+      case 'finance_company':
         return 'Finance Company';
-      case 'INSTALLER':
+      case 'installer':
       default:
         return 'Installer';
     }
@@ -365,9 +366,9 @@ export default function StepOneCard() {
                 required
               >
                 <option value="">Select partner type</option>
-                <option value="INSTALLER">Installer</option>
-                <option value="SALES_AGENT">Sales Agent</option>
-                <option value="FINANCE_COMPANY">Finance Company</option>
+                <option value="installer">Installer</option>
+                <option value="sales-agent">Sales Agent</option>
+                <option value="finance-company">Finance Company</option>
               </select>
             )}
             {errors.partnerType && (
