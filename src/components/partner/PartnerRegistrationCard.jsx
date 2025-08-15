@@ -24,7 +24,7 @@ export default function StepOneCard() {
   useEffect(() => {
     const storedPartnerType = localStorage.getItem('partnerType');
     if (storedPartnerType) {
-      const formattedType = storedPartnerType.toLowerCase().replace('_', '-');
+      const formattedType = storedPartnerType.toLowerCase().replace('_', '_');
       setPartnerType(formattedType);
       setIsPartnerTypeLocked(true);
     }
