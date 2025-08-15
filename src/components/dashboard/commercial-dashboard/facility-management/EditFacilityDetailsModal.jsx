@@ -18,14 +18,14 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
     name: facility.name || "",
     website: facility.website || "",
     multipleOwners: facility.multipleOwners || "",
-    commercialOperationDate: facility.commercialOperationDate || "",
+    commercialOperationDate: facility.commercialOperationDate ? facility.commercialOperationDate.split('T')[0] : "",
     interconnectedUtilityId: facility.interconnectedUtilityId || "",
     eiaPlantId: facility.eiaPlantId || "",
     energyStorageCapacity: facility.energyStorageCapacity || 0,
     hasOnSiteLoad: facility.hasOnSiteLoad || false,
     hasNetMetering: facility.hasNetMetering || false
   });
-
+  
   const [loading, setLoading] = useState(false);
   const [utilityProviders, setUtilityProviders] = useState([]);
   const [utilityProvidersLoading, setUtilityProvidersLoading] = useState(false);
@@ -266,10 +266,10 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
         name: formData.name,
         website: formData.website,
         multipleOwners: formData.multipleOwners,
-        commercialOperationDate: formData.commercialOperationDate,
+        commercialOperationDate: formData.commercialOperationDate ? `${formData.commercialOperationDate}T00:00:00Z` : null,
         interconnectedUtilityId: formData.interconnectedUtilityId,
         eiaPlantId: formData.eiaPlantId,
-        energyStorageCapacity: formData.energyStorageCapacity,
+        energyStorageCapacity: parseFloat(formData.energyStorageCapacity),
         hasOnSiteLoad: formData.hasOnSiteLoad,
         hasNetMetering: formData.hasNetMetering
       };
@@ -621,12 +621,47 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
 
             <div>
               <label className={`${labelClass} mb-2`}>
+                Commercial Role <span className="text-red-500">*</span>
+              </label>
+              <select
+                name="commercialRole"
+                value={formData.commercialRole}
+                onChange={handleChange}
+                className={`${selectClass}`}
+                disabled={loading}
+                required
+              >
+                <option value="owner">Owner</option>
+                <option value="operator">Operator</option>
+                <option value="both">Both</option>
+              </select>
+            </div>
+
+            <div>
+              <label className={`${labelClass} mb-2`}>
+                Entity Type <span className="text-red-500">*</span>
+              </label>
+              <select
+                name="entityType"
+                value={formData.entityType}
+                onChange={handleChange}
+                className={`${selectClass}`}
+                disabled={loading}
+                required
+              >
+                <option value="individual">Individual</option>
+                <option value="company">Company</option>
+              </select>
+            </div>
+
+            <div>
+              <label className={`${labelClass} mb-2`}>
                 Commercial Operation Date
               </label>
               <input
                 type="date"
                 name="commercialOperationDate"
-                value={formData.commercialOperationDate ? formData.commercialOperationDate.split('T')[0] : ''}
+                value={formData.commercialOperationDate}
                 onChange={handleChange}
                 className={`${inputClass}`}
                 disabled={loading}
@@ -672,8 +707,8 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
                 onChange={handleChange}
                 className={`${inputClass}`}
                 disabled={loading}
-                min="0"
                 step="0.1"
+                min="0"
               />
             </div>
 
@@ -703,41 +738,6 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
               <label className={`${labelClass}`}>
                 Has Net Metering
               </label>
-            </div>
-
-            <div>
-              <label className={`${labelClass} mb-2`}>
-                Commercial Role <span className="text-red-500">*</span>
-              </label>
-              <select
-                name="commercialRole"
-                value={formData.commercialRole}
-                onChange={handleChange}
-                className={`${selectClass}`}
-                disabled={loading}
-                required
-              >
-                <option value="owner">Owner</option>
-                <option value="operator">Operator</option>
-                <option value="both">Both</option>
-              </select>
-            </div>
-
-            <div>
-              <label className={`${labelClass} mb-2`}>
-                Entity Type <span className="text-red-500">*</span>
-              </label>
-              <select
-                name="entityType"
-                value={formData.entityType}
-                onChange={handleChange}
-                className={`${selectClass}`}
-                disabled={loading}
-                required
-              >
-                <option value="individual">Individual</option>
-                <option value="company">Company</option>
-              </select>
             </div>
           </div>
         </div>
