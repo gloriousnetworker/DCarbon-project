@@ -17,9 +17,15 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
     entityType: facility.entityType || "company",
     name: facility.name || "",
     website: facility.website || "",
-    multipleOwners: facility.multipleOwners || ""
+    multipleOwners: facility.multipleOwners || "",
+    commercialOperationDate: facility.commercialOperationDate || "",
+    interconnectedUtilityId: facility.interconnectedUtilityId || "",
+    eiaPlantId: facility.eiaPlantId || "",
+    energyStorageCapacity: facility.energyStorageCapacity || 0,
+    hasOnSiteLoad: facility.hasOnSiteLoad || false,
+    hasNetMetering: facility.hasNetMetering || false
   });
-  
+
   const [loading, setLoading] = useState(false);
   const [utilityProviders, setUtilityProviders] = useState([]);
   const [utilityProvidersLoading, setUtilityProvidersLoading] = useState(false);
@@ -167,10 +173,10 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
   };
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: type === 'checkbox' ? checked : value
     }));
 
     if (name === "meterId") {
@@ -259,7 +265,13 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
         entityType: formData.entityType,
         name: formData.name,
         website: formData.website,
-        multipleOwners: formData.multipleOwners
+        multipleOwners: formData.multipleOwners,
+        commercialOperationDate: formData.commercialOperationDate,
+        interconnectedUtilityId: formData.interconnectedUtilityId,
+        eiaPlantId: formData.eiaPlantId,
+        energyStorageCapacity: formData.energyStorageCapacity,
+        hasOnSiteLoad: formData.hasOnSiteLoad,
+        hasNetMetering: formData.hasNetMetering
       };
 
       const response = await axios.put(
@@ -605,6 +617,92 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
                   ))
                 )}
               </select>
+            </div>
+
+            <div>
+              <label className={`${labelClass} mb-2`}>
+                Commercial Operation Date
+              </label>
+              <input
+                type="date"
+                name="commercialOperationDate"
+                value={formData.commercialOperationDate ? formData.commercialOperationDate.split('T')[0] : ''}
+                onChange={handleChange}
+                className={`${inputClass}`}
+                disabled={loading}
+              />
+            </div>
+
+            <div>
+              <label className={`${labelClass} mb-2`}>
+                Interconnected Utility ID
+              </label>
+              <input
+                type="text"
+                name="interconnectedUtilityId"
+                value={formData.interconnectedUtilityId}
+                onChange={handleChange}
+                className={`${inputClass}`}
+                disabled={loading}
+              />
+            </div>
+
+            <div>
+              <label className={`${labelClass} mb-2`}>
+                EIA Plant ID
+              </label>
+              <input
+                type="text"
+                name="eiaPlantId"
+                value={formData.eiaPlantId}
+                onChange={handleChange}
+                className={`${inputClass}`}
+                disabled={loading}
+              />
+            </div>
+
+            <div>
+              <label className={`${labelClass} mb-2`}>
+                Energy Storage Capacity (kWh)
+              </label>
+              <input
+                type="number"
+                name="energyStorageCapacity"
+                value={formData.energyStorageCapacity}
+                onChange={handleChange}
+                className={`${inputClass}`}
+                disabled={loading}
+                min="0"
+                step="0.1"
+              />
+            </div>
+
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                name="hasOnSiteLoad"
+                checked={formData.hasOnSiteLoad}
+                onChange={handleChange}
+                className="mr-2"
+                disabled={loading}
+              />
+              <label className={`${labelClass}`}>
+                Has On-Site Load
+              </label>
+            </div>
+
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                name="hasNetMetering"
+                checked={formData.hasNetMetering}
+                onChange={handleChange}
+                className="mr-2"
+                disabled={loading}
+              />
+              <label className={`${labelClass}`}>
+                Has Net Metering
+              </label>
             </div>
 
             <div>
