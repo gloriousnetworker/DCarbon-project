@@ -9,11 +9,13 @@ import {
   FiUpload,
   FiX,
   FiAlertTriangle,
-  FiChevronLeft
+  FiChevronLeft,
+  FiAlertCircle
 } from "react-icons/fi";
 import axios from "axios";
 import toast from "react-hot-toast";
 import EditResidentialFacilityModal from "./EditFacilityDetailsModal";
+import ResidentialDetailsGraph from "./ResidentialDetailsGraph";
 
 const labelClass = "block text-sm font-medium text-gray-700 mb-1";
 const buttonPrimary = "bg-[#039994] text-white px-4 py-2 rounded-md hover:bg-[#028580] transition-colors";
@@ -383,23 +385,7 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated, o
   const [financeType, setFinanceType] = useState("Cash");
   const [currentStage, setCurrentStage] = useState(1);
   const [completedStages, setCompletedStages] = useState([]);
-
-  const mockFacility = facility || {
-    id: "b151ec59-42f7-444d-a017-5fbae1a1b126",
-    address: "123 Solar Street",
-    utilityProvider: "Green Energy Co",
-    installer: "Solar Pros Inc",
-    meterId: "MTR-12345",
-    zipCode: "12345",
-    status: "active",
-    financeType: "Cash",
-    financeCompany: "N/A",
-    createdAt: "2025-01-15T10:00:00.000Z",
-    totalRecs: 1250,
-    lastRecCalculation: "2025-06-01T10:00:00.000Z",
-    systemCapacity: "10.5 kW",
-    dggId: "DGG-789"
-  };
+  const [facilityData, setFacilityData] = useState(facility);
 
   const checkStage2Completion = async (userId, authToken) => {
     try {
@@ -511,7 +497,7 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated, o
         highestCompletedStage = 4;
       }
 
-      const stage5Completed = await checkStage5Completion(mockFacility.id, authToken);
+      const stage5Completed = await checkStage5Completion(facilityData.id, authToken);
       if (stage5Completed) {
         newCompletedStages.push(5);
         highestCompletedStage = 5;
@@ -536,8 +522,8 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated, o
     });
   };
 
-  const fetchDocuments = async () => {
-    if (!mockFacility?.id) return;
+  const fetchFacilityDetails = async () => {
+    if (!facilityData?.id) return;
 
     const authToken = localStorage.getItem("authToken");
     if (!authToken) {
@@ -548,7 +534,40 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated, o
     try {
       setLoading(true);
       const response = await axios.get(
-        `https://services.dcarbon.solutions/api/residential-facility/residential-docs/${mockFacility.id}`,
+        `https://services.dcarbon.solutions/api/residential-facility/get-one-residential-facility/${facilityData.id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`
+          }
+        }
+      );
+
+      if (response.data.status === "success") {
+        setFacilityData(response.data.data);
+      } else {
+        throw new Error(response.data.message || "Failed to fetch facility details");
+      }
+    } catch (error) {
+      console.error("Error fetching facility details:", error);
+      toast.error(error.response?.data?.message || "Failed to fetch facility details");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchDocuments = async () => {
+    if (!facilityData?.id) return;
+
+    const authToken = localStorage.getItem("authToken");
+    if (!authToken) {
+      toast.error("Authentication required");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await axios.get(
+        `https://services.dcarbon.solutions/api/residential-facility/residential-docs/${facilityData.id}`,
         {
           headers: {
             Authorization: `Bearer ${authToken}`
@@ -594,11 +613,64 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated, o
     }
   };
 
+  const downloadCSV = () => {
+    const headers = [
+      'Facility ID', 'Address', 'Utility Provider', 'Installer', 
+      'Meter ID', 'Zip Code', 'Status', 'Finance Type', 
+      'Finance Company', 'Date Created', 'System Capacity', 
+      'DGG ID', 'Total RECs', 'Last REC Calculation',
+      'Commercial Operation Date', 'Interconnected Utility ID',
+      'EIA Plant ID', 'Energy Storage Capacity', 'On-site Load',
+      'Net-Metering', 'WREGIS Eligibility Date', 'WREGIS ID', 'RPS ID'
+    ];
+
+    const data = [
+      facilityData.id || '',
+      facilityData.address || '',
+      facilityData.utilityProvider || '',
+      facilityData.installer || '',
+      facilityData.meterId || '',
+      facilityData.zipCode || '',
+      facilityData.status || '',
+      facilityData.financeType || '',
+      facilityData.financeCompany || '',
+      formatDate(facilityData.createdAt) || '',
+      facilityData.systemCapacity || '',
+      facilityData.dggId || '',
+      facilityData.totalRecs || 0,
+      formatDate(facilityData.lastRecCalculation) || '',
+      formatDate(facilityData.commercialOperationDate) || '',
+      facilityData.interconnectedUtilityId || '',
+      facilityData.eiaPlantId || '',
+      facilityData.energyStorageCapacity || '',
+      facilityData.hasOnSiteLoad ? 'Yes' : 'No',
+      facilityData.hasNetMetering ? 'Yes' : 'No',
+      formatDate(facilityData.wregisEligibilityDate) || '',
+      facilityData.wregisId || '',
+      facilityData.rpsId || ''
+    ];
+
+    const csvContent = [
+      headers.join(','),
+      data.map(field => `"${field.toString().replace(/"/g, '""')}"`).join(',')
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${facilityData.facilityName || 'residential_facility'}_details.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   useEffect(() => {
+    fetchFacilityDetails();
     fetchDocuments();
     fetchFinanceType();
     checkUserProgress();
-  }, [mockFacility?.id]);
+  }, [facilityData?.id]);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -650,6 +722,7 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated, o
   };
 
   const handleSave = (updatedFacility) => {
+    setFacilityData(updatedFacility);
     if (onFacilityUpdated) {
       onFacilityUpdated(updatedFacility);
     }
@@ -675,10 +748,17 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated, o
             <FiChevronLeft size={24} />
           </button>
           <h2 className="text-xl font-semibold text-[#039994]">
-            {mockFacility.facilityName || mockFacility.address || "Residential Facility"}
+            {facilityData.facilityName || facilityData.address || "Residential Facility"}
           </h2>
         </div>
         <div className="flex space-x-3">
+          <button
+            onClick={downloadCSV}
+            className="flex items-center gap-2 bg-[#1E1E1E] text-white px-3 py-1.5 rounded-md text-sm hover:bg-black"
+          >
+            <FiDownload size={14} />
+            <span>Download CSV</span>
+          </button>
           <button
             onClick={() => setShowEditModal(true)}
             className="flex items-center gap-2 bg-[#1E1E1E] text-white px-3 py-1.5 rounded-md text-sm hover:bg-black"
@@ -701,26 +781,52 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated, o
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="border border-[#039994] rounded-lg p-4 bg-[#069B960D] h-fit">
-          <h3 className="text-[#039994] mb-3">Solar Home Details</h3>
-          <div className="grid grid-cols-2 gap-y-2 gap-x-4">
-            {[
-              ["Facility ID", mockFacility.id],
-              ["Utility Provider", mockFacility.utilityProvider || "N/A"],
-              ["Installer", mockFacility.installer || "N/A"],
-              ["Meter ID", mockFacility.meterId || "N/A"],
-              ["Address", mockFacility.address || "N/A"],
-              ["Zip Code", mockFacility.zipCode || "N/A"],
-              ["Status", mockFacility.status?.toLowerCase() || "N/A"],
-              ["Finance Type", mockFacility.financeType || "N/A"],
-              ["Finance Company", mockFacility.financeCompany || "N/A"],
-              ["Date Created", formatDate(mockFacility.createdAt)]
-            ].map(([label, value], index) => (
-              <React.Fragment key={index}>
-                <span className="font-semibold text-sm">{label}:</span>
-                <span className="text-sm">{value}</span>
-              </React.Fragment>
-            ))}
+        <div className="space-y-6">
+          <div className="border border-[#039994] rounded-lg p-4 bg-[#069B960D]">
+            <h3 className="text-[#039994] mb-3">Solar Home Details</h3>
+            <div className="grid grid-cols-2 gap-y-2 gap-x-4">
+              {[
+                ["Facility ID", facilityData.id],
+                ["Utility Provider", facilityData.utilityProvider || "N/A"],
+                ["Installer", facilityData.installer || "N/A"],
+                ["Meter ID", facilityData.meterId || "N/A"],
+                ["Address", facilityData.address || "N/A"],
+                ["Zip Code", facilityData.zipCode || "N/A"],
+                ["Status", facilityData.status?.toLowerCase() || "N/A"],
+                ["Finance Type", facilityData.financeType || "N/A"],
+                ["Finance Company", facilityData.financeCompany || "N/A"],
+                ["Date Created", formatDate(facilityData.createdAt)]
+              ].map(([label, value], index) => (
+                <React.Fragment key={index}>
+                  <span className="font-semibold text-sm">{label}:</span>
+                  <span className="text-sm">{value}</span>
+                </React.Fragment>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-lg p-4">
+            <h3 className="text-[#039994] mb-3">Additional Facility Details</h3>
+            <div className="grid grid-cols-2 gap-y-2 gap-x-4">
+              {[
+                ["Commercial Operation Date", formatDate(facilityData.commercialOperationDate)],
+                ["Interconnected Utility ID", facilityData.interconnectedUtilityId || "N/A"],
+                ["EIA Plant ID", facilityData.eiaPlantId || "N/A"],
+                ["Energy Storage Capacity", facilityData.energyStorageCapacity || "N/A"],
+                ["On-site Load", facilityData.hasOnSiteLoad ? "Yes" : "No"],
+                ["Net-Metering", facilityData.hasNetMetering ? "Yes" : "No"],
+                ["WREGIS Eligibility Date", formatDate(facilityData.wregisEligibilityDate)],
+                ["WREGIS ID", facilityData.wregisId || "N/A"],
+                ["RPS ID", facilityData.rpsId || "N/A"],
+                ["System Capacity", facilityData.systemCapacity || "N/A"],
+                ["DGG ID", facilityData.dggId || "N/A"]
+              ].map(([label, value], index) => (
+                <React.Fragment key={index}>
+                  <span className="font-semibold text-sm">{label}:</span>
+                  <span className="text-sm">{value}</span>
+                </React.Fragment>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -776,9 +882,13 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated, o
       </div>
 
       <div className="mt-6">
+        <ResidentialDetailsGraph facilityId={facilityData.id} />
+      </div>
+
+      <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="border border-[#039994] rounded-lg p-4 flex flex-col items-center">
           <p className="text-gray-500 text-sm mb-1">Total TRECs Generated</p>
-          <p className="text-[#039994] text-2xl font-bold">{mockFacility.totalRecs || 0}</p>
+          <p className="text-[#039994] text-2xl font-bold">{facilityData.totalRecs || 0}</p>
           <p className="text-gray-500 text-xs mt-1">
             Cumulative since installation
           </p>
@@ -797,11 +907,11 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated, o
         onClose={() => setShowUploadModal(false)}
         onUpload={handleDocumentUpload}
         docType={uploadDocType}
-        facilityId={mockFacility.id}
+        facilityId={facilityData.id}
       />
 
       <EditResidentialFacilityModal
-        facility={mockFacility}
+        facility={facilityData}
         onClose={() => setShowEditModal(false)}
         onSave={handleSave}
         isOpen={showEditModal}

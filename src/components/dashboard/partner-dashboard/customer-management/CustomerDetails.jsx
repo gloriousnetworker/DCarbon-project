@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { HiOutlineArrowLeft, HiOutlineEye, HiOutlineInformationCircle } from 'react-icons/hi';
-import { FiChevronRight, FiTrash2 } from 'react-icons/fi';
-import { toast } from 'react-hot-toast';
+import { HiOutlineArrowLeft, HiOutlineInformationCircle } from 'react-icons/hi';
+import { FiChevronRight } from 'react-icons/fi';
 import CommercialFacilityDetails from './commercial-details/CommercialFacilityDetails';
 import ResidentialFacilityDetails from './residential-details/ResidentialFacilityDetails';
 
@@ -577,262 +576,106 @@ export default function CustomerDetails({ customer, onBack }) {
           No facilities found
         </div>
       ) : (
-        <>
-          <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-            {facilities.map(facility => {
-              const progress = facilityProgress[facility.id] || { completedStages: [1], currentStage: 2 };
-              
-              return (
+        <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+          {facilities.map(facility => {
+            const progress = facilityProgress[facility.id] || { completedStages: [1], currentStage: 2 };
+            
+            return (
+              <div
+                key={facility.id}
+                className="border border-[#039994] rounded-lg bg-white hover:shadow transition-shadow flex flex-col justify-between p-4 cursor-pointer"
+                onClick={() => handleFacilityClick(facility)}
+              >
+                <div>
+                  <h3 className="font-semibold text-base text-[#039994] mb-1">
+                    {facility.facilityName}
+                  </h3>
+                  <div className="grid grid-cols-2 gap-y-1 text-xs">
+                    {isCommercialUser ? (
+                      <>
+                        <span className="font-medium">Role:</span>
+                        <span className="capitalize">{facility.commercialRole}</span>
+
+                        <span className="font-medium">Type:</span>
+                        <span className="capitalize">{facility.entityType}</span>
+
+                        <span className="font-medium">Utility:</span>
+                        <span>{facility.utilityProvider}</span>
+
+                        <span className="font-medium">Meter ID:</span>
+                        <span>{formatMeterIds(facility.meterIds)}</span>
+
+                        <span className="font-medium">Status:</span>
+                        <span className="capitalize">{facility.status}</span>
+
+                        <span className="font-medium">Created:</span>
+                        <span>{formatDate(facility.createdAt)}</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="font-medium">Address:</span>
+                        <span>{facility.address || "N/A"}</span>
+
+                        <span className="font-medium">Utility:</span>
+                        <span>{facility.utilityProvider || "N/A"}</span>
+
+                        <span className="font-medium">Installer:</span>
+                        <span>{facility.installer || "N/A"}</span>
+
+                        <span className="font-medium">Finance Type:</span>
+                        <span className="capitalize">{facility.financeType || "N/A"}</span>
+
+                        <span className="font-medium">Meter ID:</span>
+                        <span>{facility.meterId || "N/A"}</span>
+
+                        <span className="font-medium">Status:</span>
+                        <span className="capitalize">{facility.status || "N/A"}</span>
+
+                        <span className="font-medium">Created:</span>
+                        <span>{formatDate(facility.createdAt)}</span>
+                      </>
+                    )}
+                  </div>
+                  
+                  <div className="mt-3 pt-2 border-t border-gray-100">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-medium text-gray-600">
+                        {isCommercialUser ? 'Progress' : 'Onboarding Progress'}
+                      </span>
+                      <span className="text-xs font-medium text-[#039994]">
+                        {isCommercialUser ? `Step ${progress.currentStage} of 6` : `Stage ${progress.currentStage} of 5`}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      {isCommercialUser ? getCircleProgressSegmentsCommercial(facility.id) : getProgressSegmentsResidential(facility.id)}
+                    </div>
+                    {!isCommercialUser && (
+                      <div className="flex justify-between px-1 mt-1">
+                        {[1, 2, 3, 4].map((stage) => (
+                          <div
+                            key={stage}
+                            className={`h-0.5 flex-1 mx-1 ${
+                              progress.completedStages.includes(stage + 1) ? "bg-[#039994]" : "bg-gray-200"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
                 <div
-                  key={facility.id}
-                  className="border border-[#039994] rounded-lg bg-white hover:shadow transition-shadow flex flex-col justify-between p-4 cursor-pointer"
-                  onClick={() => handleFacilityClick(facility)}
+                  className="flex items-center justify-between mt-2 px-1 py-1"
+                  style={{ backgroundColor: "#069B9621" }}
                 >
-                  <div>
-                    <h3 className="font-semibold text-base text-[#039994] mb-1">
-                      {facility.facilityName}
-                    </h3>
-                    <div className="grid grid-cols-2 gap-y-1 text-xs">
-                      {isCommercialUser ? (
-                        <>
-                          <span className="font-medium">Role:</span>
-                          <span className="capitalize">{facility.commercialRole}</span>
-
-                          <span className="font-medium">Type:</span>
-                          <span className="capitalize">{facility.entityType}</span>
-
-                          <span className="font-medium">Utility:</span>
-                          <span>{facility.utilityProvider}</span>
-
-                          <span className="font-medium">Meter ID:</span>
-                          <span>{formatMeterIds(facility.meterIds)}</span>
-
-                          <span className="font-medium">Status:</span>
-                          <span className="capitalize">{facility.status}</span>
-
-                          <span className="font-medium">Created:</span>
-                          <span>{formatDate(facility.createdAt)}</span>
-                        </>
-                      ) : (
-                        <>
-                          <span className="font-medium">Address:</span>
-                          <span>{facility.address || "N/A"}</span>
-
-                          <span className="font-medium">Utility:</span>
-                          <span>{facility.utilityProvider || "N/A"}</span>
-
-                          <span className="font-medium">Installer:</span>
-                          <span>{facility.installer || "N/A"}</span>
-
-                          <span className="font-medium">Finance Type:</span>
-                          <span className="capitalize">{facility.financeType || "N/A"}</span>
-
-                          <span className="font-medium">Meter ID:</span>
-                          <span>{facility.meterId || "N/A"}</span>
-
-                          <span className="font-medium">Status:</span>
-                          <span className="capitalize">{facility.status || "N/A"}</span>
-
-                          <span className="font-medium">Created:</span>
-                          <span>{formatDate(facility.createdAt)}</span>
-                        </>
-                      )}
-                    </div>
-                    
-                    <div className="mt-3 pt-2 border-t border-gray-100">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-medium text-gray-600">
-                          {isCommercialUser ? 'Progress' : 'Onboarding Progress'}
-                        </span>
-                        <span className="text-xs font-medium text-[#039994]">
-                          {isCommercialUser ? `Step ${progress.currentStage} of 6` : `Stage ${progress.currentStage} of 5`}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        {isCommercialUser ? getCircleProgressSegmentsCommercial(facility.id) : getProgressSegmentsResidential(facility.id)}
-                      </div>
-                      {!isCommercialUser && (
-                        <div className="flex justify-between px-1 mt-1">
-                          {[1, 2, 3, 4].map((stage) => (
-                            <div
-                              key={stage}
-                              className={`h-0.5 flex-1 mx-1 ${
-                                progress.completedStages.includes(stage + 1) ? "bg-[#039994]" : "bg-gray-200"
-                              }`}
-                            />
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div
-                    className="flex items-center justify-between mt-2 px-1 py-1"
-                    style={{ backgroundColor: "#069B9621" }}
-                  >
-                    <span className="text-[#039994] text-xs font-medium">
-                      View details
-                    </span>
-                    <FiChevronRight size={16} className="text-[#039994]" />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {isCommercialUser ? (
-            <div className="w-full border border-[#039994] bg-[#069B960D] rounded-lg p-6 mb-8">
-              <h3 className="text-lg font-semibold text-[#039994] mb-4">Commercial Facility Details</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className="flex items-center">
-                  <span className="font-medium text-[#626060] mr-2">Commercial Operation Date:</span>
-                  <span className="text-[#1E1E1E]">N/A</span>
-                  <div className="tooltip ml-1" data-tip="From COD letter">
-                    <HiOutlineInformationCircle className="text-[#039994]" size={16} />
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <span className="font-medium text-[#626060] mr-2">Interconnected Utility ID:</span>
-                  <span className="text-[#1E1E1E]">N/A</span>
-                  <div className="tooltip ml-1" data-tip="From Interconnection Agreement">
-                    <HiOutlineInformationCircle className="text-[#039994]" size={16} />
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <span className="font-medium text-[#626060] mr-2">EIA Plant ID:</span>
-                  <span className="text-[#1E1E1E]">N/A</span>
-                  <div className="tooltip ml-1" data-tip="If >1MW">
-                    <HiOutlineInformationCircle className="text-[#039994]" size={16} />
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <span className="font-medium text-[#626060] mr-2">Energy Storage Capacity:</span>
-                  <span className="text-[#1E1E1E]">0.0</span>
-                  <div className="tooltip ml-1" data-tip="From COD letter (0.0 if none)">
-                    <HiOutlineInformationCircle className="text-[#039994]" size={16} />
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <span className="font-medium text-[#626060] mr-2">On-site load:</span>
-                  <span className="text-[#1E1E1E]">N/A</span>
-                  <div className="tooltip ml-1" data-tip="Y/N">
-                    <HiOutlineInformationCircle className="text-[#039994]" size={16} />
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <span className="font-medium text-[#626060] mr-2">Net Metering Tariff:</span>
-                  <span className="text-[#1E1E1E]">N/A</span>
-                  <div className="tooltip ml-1" data-tip="Y/N">
-                    <HiOutlineInformationCircle className="text-[#039994]" size={16} />
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <span className="font-medium text-[#626060] mr-2">WREGIS eligibility date:</span>
-                  <span className="text-[#1E1E1E]">N/A</span>
-                  <div className="tooltip ml-1" data-tip="Added from admin only">
-                    <HiOutlineInformationCircle className="text-[#039994]" size={16} />
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <span className="font-medium text-[#626060] mr-2">WREGIS ID:</span>
-                  <span className="text-[#1E1E1E]">N/A</span>
-                  <div className="tooltip ml-1" data-tip="Added from admin only">
-                    <HiOutlineInformationCircle className="text-[#039994]" size={16} />
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <span className="font-medium text-[#626060] mr-2">RPS ID:</span>
-                  <span className="text-[#1E1E1E]">N/A</span>
-                  <div className="tooltip ml-1" data-tip="Added from admin only">
-                    <HiOutlineInformationCircle className="text-[#039994]" size={16} />
-                  </div>
+                  <span className="text-[#039994] text-xs font-medium">
+                    View details
+                  </span>
+                  <FiChevronRight size={16} className="text-[#039994]" />
                 </div>
               </div>
-            </div>
-          ) : (
-            <div className="w-full border border-[#039994] bg-[#069B960D] rounded-lg p-6 mb-8">
-              <h3 className="text-lg font-semibold text-[#039994] mb-4">Residential Facility Details</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className="flex items-center">
-                  <span className="font-medium text-[#626060] mr-2">Commercial Operation Date:</span>
-                  <span className="text-[#1E1E1E]">N/A</span>
-                  <div className="tooltip ml-1" data-tip="From COD letter">
-                    <HiOutlineInformationCircle className="text-[#039994]" size={16} />
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <span className="font-medium text-[#626060] mr-2">NEM Application ID:</span>
-                  <span className="text-[#1E1E1E]">N/A</span>
-                  <div className="tooltip ml-1" data-tip="From NEM Agreement/NEM application">
-                    <HiOutlineInformationCircle className="text-[#039994]" size={16} />
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <span className="font-medium text-[#626060] mr-2">Energy Storage Capacity:</span>
-                  <span className="text-[#1E1E1E]">0.0</span>
-                  <div className="tooltip ml-1" data-tip="From COD letter (0.0 if none)">
-                    <HiOutlineInformationCircle className="text-[#039994]" size={16} />
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <span className="font-medium text-[#626060] mr-2">On-site load:</span>
-                  <span className="text-[#1E1E1E]">N/A</span>
-                  <div className="tooltip ml-1" data-tip="Y/N">
-                    <HiOutlineInformationCircle className="text-[#039994]" size={16} />
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <span className="font-medium text-[#626060] mr-2">Net Metering Tariff:</span>
-                  <span className="text-[#1E1E1E]">N/A</span>
-                  <div className="tooltip ml-1" data-tip="Y/N">
-                    <HiOutlineInformationCircle className="text-[#039994]" size={16} />
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <span className="font-medium text-[#626060] mr-2">Capacity Factor:</span>
-                  <span className="text-[#1E1E1E]">N/A</span>
-                  <div className="tooltip ml-1" data-tip="Added from admin only">
-                    <HiOutlineInformationCircle className="text-[#039994]" size={16} />
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <span className="font-medium text-[#626060] mr-2">WREGIS eligibility date:</span>
-                  <span className="text-[#1E1E1E]">N/A</span>
-                  <div className="tooltip ml-1" data-tip="Added from admin only">
-                    <HiOutlineInformationCircle className="text-[#039994]" size={16} />
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <span className="font-medium text-[#626060] mr-2">WREGIS ID:</span>
-                  <span className="text-[#1E1E1E]">N/A</span>
-                  <div className="tooltip ml-1" data-tip="Added from admin only">
-                    <HiOutlineInformationCircle className="text-[#039994]" size={16} />
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <span className="font-medium text-[#626060] mr-2">RPS ID:</span>
-                  <span className="text-[#1E1E1E]">N/A</span>
-                  <div className="tooltip ml-1" data-tip="Added from admin only">
-                    <HiOutlineInformationCircle className="text-[#039994]" size={16} />
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <span className="font-medium text-[#626060] mr-2">WREGIS GROUP ID:</span>
-                  <span className="text-[#1E1E1E]">N/A</span>
-                  <div className="tooltip ml-1" data-tip="Added from admin only">
-                    <HiOutlineInformationCircle className="text-[#039994]" size={16} />
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <span className="font-medium text-[#626060] mr-2">WREGIS GROUP Approval date:</span>
-                  <span className="text-[#1E1E1E]">N/A</span>
-                  <div className="tooltip ml-1" data-tip="Added from admin only">
-                    <HiOutlineInformationCircle className="text-[#039994]" size={16} />
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </>
+            );
+          })}
+        </div>
       )}
 
       <div className="w-full flex justify-end mt-8">

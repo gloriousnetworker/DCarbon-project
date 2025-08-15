@@ -40,7 +40,7 @@ function RegisterCardContent() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    const code = searchParams.get('referral');
+    const code = searchParams.get('referralCode') || searchParams.get('referral');
     const type = searchParams.get('type');
     
     if (code) {
@@ -69,15 +69,15 @@ function RegisterCardContent() {
 
   const partnerTypeMapping = {
     'installer': 'INSTALLER',
-    'sales-agent': 'SALES-AGENT',
-    'finance-company': 'FINANCE-COMPANY'
+    'sales-agent': 'SALES_AGENT',
+    'finance-company': 'FINANCE_COMPANY'
   };
 
   const getAvailableUserCategories = () => {
     if (isOperatorType) return ['Operator'];
     if (partnerType) return ['Partner'];
-    if (!urlReferralCode && !manualReferralCode) return ['Residential', 'Commercial', 'Partner'];
-    return ['Residential', 'Commercial'];
+    if (urlReferralCode && !partnerType) return ['Residential', 'Commercial'];
+    return ['Residential', 'Commercial', 'Partner'];
   };
 
   const validateForm = () => {
@@ -114,6 +114,10 @@ function RegisterCardContent() {
       setError('Please select a user category.');
       return false;
     }
+    if (userCategory === 'Partner' && !partnerType) {
+      setError('Please select a partner type.');
+      return false;
+    }
     setError('');
     return true;
   };
@@ -136,8 +140,8 @@ function RegisterCardContent() {
       payload.partnerType = partnerTypeMapping[partnerType];
     }
 
-    if (manualReferralCode.trim() && userCategory !== 'Partner') {
-      payload.bodyReferralCode = manualReferralCode.trim();
+    if ((urlReferralCode || manualReferralCode.trim()) && userCategory !== 'Operator') {
+      payload.bodyReferralCode = urlReferralCode || manualReferralCode.trim();
     }
 
     try {

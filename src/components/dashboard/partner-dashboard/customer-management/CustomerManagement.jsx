@@ -51,6 +51,7 @@ export default function PartnerCustomerReport() {
   const [isInviteBulkOpen, setInviteBulkOpen] = useState(false);
   const [customerDetailsCache, setCustomerDetailsCache] = useState({});
   const [commercialRolesCache, setCommercialRolesCache] = useState({});
+  const [acceptedUsersCache, setAcceptedUsersCache] = useState({});
 
   useEffect(() => {
     fetchTableData(1);
@@ -99,11 +100,37 @@ export default function PartnerCustomerReport() {
         setTableData(referrals || []);
         setCurrentPage(metadata.page || 1);
         setTotalPages(metadata.totalPages || 1);
+
+        const acceptedUsers = referrals.filter(user => user.status === 'ACCEPTED');
+        for (const user of acceptedUsers) {
+          if (user.inviteeEmail && !acceptedUsersCache[user.inviteeEmail]) {
+            fetchAcceptedUserDetails(user.inviteeEmail);
+          }
+        }
       }
     } catch (error) {
       console.error('Error fetching table data:', error);
     } finally {
       setLoadingTable(false);
+    }
+  };
+
+  const fetchAcceptedUserDetails = async (email) => {
+    try {
+      const authToken = localStorage.getItem('authToken');
+      const response = await axios.get(
+        `https://services.dcarbon.solutions/api/user/${email}`,
+        { headers: { Authorization: `Bearer ${authToken}` } }
+      );
+
+      if (response.data.status === 'success') {
+        setAcceptedUsersCache(prev => ({
+          ...prev,
+          [email]: response.data.data
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching accepted user details:', error);
     }
   };
 
@@ -344,16 +371,25 @@ export default function PartnerCustomerReport() {
 
     return tableData.map((item, index) => {
       const sn = index + 1 + (currentPage - 1) * 10;
-      const nameToShow = item.name || 'N/A';
       const email = item.inviteeEmail || 'N/A';
       const cachedDetails = customerDetailsCache[email];
+      const acceptedUserDetails = acceptedUsersCache[email];
       
-      const customerType = cachedDetails?.userType ? cachedDetails.userType.toUpperCase() : item.customerType?.toUpperCase() || 'N/A';
-      const role = item.role ? item.role.toUpperCase() : 
-                   cachedDetails?.userType === 'RESIDENTIAL' ? 'OWNER' : 
-                   commercialRolesCache[cachedDetails?.id]?.toUpperCase() || 
-                   cachedDetails?.role?.toUpperCase() || 'N/A';
-      
+      let nameToShow = item.name || 'N/A';
+      let customerType = item.customerType?.toUpperCase() || 'N/A';
+      let role = item.role?.toUpperCase() || 'N/A';
+
+      if (item.status === 'ACCEPTED' && acceptedUserDetails) {
+        nameToShow = `${acceptedUserDetails.firstName || ''} ${acceptedUserDetails.lastName || ''}`.trim() || 'N/A';
+        customerType = acceptedUserDetails.userType?.toUpperCase() || customerType;
+        role = acceptedUserDetails.userType === 'RESIDENTIAL' ? 'OWNER' : role;
+      } else if (cachedDetails) {
+        customerType = cachedDetails.userType ? cachedDetails.userType.toUpperCase() : customerType;
+        role = cachedDetails.userType === 'RESIDENTIAL' ? 'OWNER' : 
+               commercialRolesCache[cachedDetails.id]?.toUpperCase() || 
+               cachedDetails.role?.toUpperCase() || role;
+      }
+
       const dateCreated = formatDate(item.createdAt);
       const status = item.status || 'N/A';
 
