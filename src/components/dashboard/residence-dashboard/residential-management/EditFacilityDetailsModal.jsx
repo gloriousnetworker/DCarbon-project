@@ -21,7 +21,13 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
     utilityProvider: facility.utilityProvider || "",
     address: facility.address || "",
     financeType: facility.financeType || "",
-    financeCompany: facility.financeCompany || ""
+    financeCompany: facility.financeCompany || "",
+    commercialOperationDate: facility.commercialOperationDate || "",
+    interconnectedUtilityId: facility.interconnectedUtilityId || "",
+    eiaPlantId: facility.eiaPlantId || "",
+    energyStorageCapacity: facility.energyStorageCapacity || 0,
+    hasOnSiteLoad: facility.hasOnSiteLoad || false,
+    hasNetMetering: facility.hasNetMetering || false
   });
 
   const [loading, setLoading] = useState(false);
@@ -137,8 +143,11 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
   };
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({ 
+      ...prev, 
+      [name]: type === 'checkbox' ? checked : value 
+    }));
     if (name === "meterId") {
       const currentMeters = getCurrentMeters();
       const meter = currentMeters.find(m => m.uid === value);
@@ -197,7 +206,13 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
         utilityProvider: formData.utilityProvider,
         address: formData.address,
         financeType: formData.financeType,
-        financeCompany: formData.financeType !== "Cash" ? formData.financeCompany : ""
+        financeCompany: formData.financeType !== "Cash" ? formData.financeCompany : "",
+        commercialOperationDate: formData.commercialOperationDate,
+        interconnectedUtilityId: formData.interconnectedUtilityId,
+        eiaPlantId: formData.eiaPlantId,
+        energyStorageCapacity: formData.energyStorageCapacity,
+        hasOnSiteLoad: formData.hasOnSiteLoad,
+        hasNetMetering: formData.hasNetMetering
       };
       const { data } = await axios.put(`https://services.dcarbon.solutions/api/residential-facility/update-facility/${facility.id}`, updateData, { headers: { Authorization: `Bearer ${authToken}` } });
       if (data.status === "success") {
@@ -324,6 +339,74 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
                   </select>
                 </div>
               )}
+              <div>
+                <label className={labelClass}>Commercial Operation Date</label>
+                <input 
+                  type="date" 
+                  name="commercialOperationDate" 
+                  value={formData.commercialOperationDate ? formData.commercialOperationDate.split('T')[0] : ''} 
+                  onChange={handleChange} 
+                  className={inputClass} 
+                  disabled={loading} 
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Interconnected Utility ID</label>
+                <input 
+                  type="text" 
+                  name="interconnectedUtilityId" 
+                  value={formData.interconnectedUtilityId} 
+                  onChange={handleChange} 
+                  className={inputClass} 
+                  disabled={loading} 
+                />
+              </div>
+              <div>
+                <label className={labelClass}>EIA Plant ID</label>
+                <input 
+                  type="text" 
+                  name="eiaPlantId" 
+                  value={formData.eiaPlantId} 
+                  onChange={handleChange} 
+                  className={inputClass} 
+                  disabled={loading} 
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Energy Storage Capacity (kWh)</label>
+                <input 
+                  type="number" 
+                  name="energyStorageCapacity" 
+                  value={formData.energyStorageCapacity} 
+                  onChange={handleChange} 
+                  className={inputClass} 
+                  min="0" 
+                  step="0.1" 
+                  disabled={loading} 
+                />
+              </div>
+              <div className="flex items-center">
+                <input 
+                  type="checkbox" 
+                  name="hasOnSiteLoad" 
+                  checked={formData.hasOnSiteLoad} 
+                  onChange={handleChange} 
+                  className="mr-2" 
+                  disabled={loading} 
+                />
+                <label className={labelClass}>Has On-Site Load</label>
+              </div>
+              <div className="flex items-center">
+                <input 
+                  type="checkbox" 
+                  name="hasNetMetering" 
+                  checked={formData.hasNetMetering} 
+                  onChange={handleChange} 
+                  className="mr-2" 
+                  disabled={loading} 
+                />
+                <label className={labelClass}>Has Net Metering</label>
+              </div>
             </div>
             {formData.meterId !== originalMeterId && !meterAgreementAccepted && formData.meterId && (
               <div className="md:col-span-2 mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">

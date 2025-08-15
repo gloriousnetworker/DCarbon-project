@@ -24,7 +24,8 @@ export default function StepOneCard() {
   useEffect(() => {
     const storedPartnerType = localStorage.getItem('partnerType');
     if (storedPartnerType) {
-      setPartnerType(storedPartnerType);
+      const formattedType = storedPartnerType.toLowerCase().replace('_', '-');
+      setPartnerType(formattedType);
       setIsPartnerTypeLocked(true);
     }
   }, []);
@@ -227,10 +228,10 @@ export default function StepOneCard() {
         localStorage.setItem('partnerType', partnerType);
         
         switch(partnerType) {
-          case 'sales_agent':
+          case 'sales-agent':
             router.push('/register/partner-user-registration/sales-agent-agreement');
             break;
-          case 'finance_company':
+          case 'finance-company':
             router.push('/register/partner-user-registration/finance-company-agreement');
             break;
           case 'installer':
@@ -297,9 +298,9 @@ export default function StepOneCard() {
 
   const getDisplayPartnerType = () => {
     switch(partnerType) {
-      case 'sales_agent':
+      case 'sales-agent':
         return 'Sales Agent';
-      case 'finance_company':
+      case 'finance-company':
         return 'Finance Company';
       case 'installer':
       default:
@@ -366,8 +367,8 @@ export default function StepOneCard() {
               >
                 <option value="">Select partner type</option>
                 <option value="installer">Installer</option>
-                <option value="sales_agent">Sales Agent</option>
-                <option value="finance_company">Finance Company</option>
+                <option value="sales-agent">Sales Agent</option>
+                <option value="finance-company">Finance Company</option>
               </select>
             )}
             {errors.partnerType && (
