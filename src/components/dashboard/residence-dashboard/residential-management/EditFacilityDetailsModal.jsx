@@ -40,6 +40,7 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
   const [installers, setInstallers] = useState([]);
   const [loadingFinanceTypes, setLoadingFinanceTypes] = useState(false);
   const [loadingInstallers, setLoadingInstallers] = useState(false);
+  const [loadingFinanceCompanies, setLoadingFinanceCompanies] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -47,6 +48,7 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
       fetchUserMeters();
       fetchFinanceTypes();
       fetchInstallers();
+      fetchFinanceCompanies();
     }
   }, [isOpen]);
 
@@ -72,12 +74,26 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
       if (response.data.status === "success") {
         const approvedTypes = response.data.data.types.filter(type => type.status === "APPROVED" || type.name.toLowerCase() === "cash");
         setFinanceTypes(approvedTypes);
-        setFinanceCompanies(["Company 1", "Company 2", "Company 3", "Other"]);
       }
     } catch (error) {
       toast.error("Failed to load finance types");
     } finally {
       setLoadingFinanceTypes(false);
+    }
+  };
+
+  const fetchFinanceCompanies = async () => {
+    setLoadingFinanceCompanies(true);
+    try {
+      const token = localStorage.getItem("authToken");
+      const response = await axios.get("https://services.dcarbon.solutions/api/user/partner/finance-companies", { headers: { Authorization: `Bearer ${token}` } });
+      if (response.data.status === "success") {
+        setFinanceCompanies(response.data.data.financeCompanies || []);
+      }
+    } catch (error) {
+      toast.error("Failed to load finance companies");
+    } finally {
+      setLoadingFinanceCompanies(false);
     }
   };
 
@@ -174,10 +190,10 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
     try {
       const authToken = localStorage.getItem("authToken");
       const updateData = {
-        installer: formData.installer,
+        installer: formData.installer === "not_available" ? "N/A" : formData.installer,
         systemCapacity: Number(formData.systemCapacity),
         zipCode: formData.zipCode,
-        meterId: formData.meterId,
+        meterId: formData.meterId || facility.meterId,
         utilityProvider: formData.utilityProvider,
         address: formData.address,
         financeType: formData.financeType,
@@ -202,6 +218,8 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
 
   const utilityAuthEmailsWithMeters = userMeterData.filter(item => item.meters?.meters?.length > 0);
   const currentMeters = getCurrentMeters();
+  const isCashType = formData.financeType.toLowerCase() === 'cash';
+  const showFinanceCompany = !isCashType && formData.financeType !== '';
 
   if (!isOpen) return null;
 
@@ -223,12 +241,12 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className={labelClass}>Utility Provider <span className="text-red-500">*</span></label>
+                <label className={labelClass}>Utility Provider</label>
                 <input type="text" name="utilityProvider" value={formData.utilityProvider} className={`${inputClass} bg-gray-100 cursor-not-allowed`} readOnly disabled />
               </div>
               <div>
-                <label className={labelClass}>Utility Account <span className="text-red-500">*</span></label>
-                <select value={selectedUtilityAuthEmail} onChange={handleUtilityAuthEmailChange} className={selectClass} required disabled={loading || userMetersLoading}>
+                <label className={labelClass}>Utility Account</label>
+                <select value={selectedUtilityAuthEmail} onChange={handleUtilityAuthEmailChange} className={selectClass} disabled={loading || userMetersLoading}>
                   <option value="">Select utility account</option>
                   {userMetersLoading ? <option value="" disabled>Loading accounts...</option> : utilityAuthEmailsWithMeters.length === 0 ? <option value="" disabled>No utility accounts found</option> : utilityAuthEmailsWithMeters.map(item => (
                     <option key={item.id} value={item.utilityAuthEmail}>{item.utilityAuthEmail}</option>
@@ -238,8 +256,8 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
               </div>
               {selectedUtilityAuthEmail && (
                 <div>
-                  <label className={labelClass}>Meter ID <span className="text-red-500">*</span></label>
-                  <select name="meterId" value={formData.meterId} onChange={handleChange} className={selectClass} required disabled={loading || currentMeters.length === 0}>
+                  <label className={labelClass}>Meter ID</label>
+                  <select name="meterId" value={formData.meterId} onChange={handleChange} className={selectClass} disabled={loading || currentMeters.length === 0}>
                     <option value="">Select meter</option>
                     {currentMeters.length === 0 ? <option value="" disabled>No electric meters found for this account</option> : currentMeters.map(meter => (
                       <option key={meter.uid} value={meter.uid}>{meter.base.meter_numbers[0]} - {meter.base.service_tariff}</option>
@@ -252,7 +270,7 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
                 <div className="md:col-span-2">
                   <div className="mb-3 p-3 bg-gray-50 rounded-md border border-gray-200">
                     <p className="font-medium mb-2">Service Address: {selectedMeter.base.service_address}</p>
-                    <p className="font-medium mb-2">Is this the same location for the solar installation? <span className="text-red-500">*</span></p>
+                    <p className="font-medium mb-2">Is this the same location for the solar installation?</p>
                     <div className="flex gap-2">
                       <button type="button" className={`px-3 py-1 rounded-md border text-sm ${isSameLocation === true ? 'bg-green-100 border-green-500 text-green-700' : 'border-gray-300 hover:bg-gray-50'}`} onClick={() => handleLocationChoice(true)} disabled={loading}>Yes</button>
                       <button type="button" className={`px-3 py-1 rounded-md border text-sm ${isSameLocation === false ? 'bg-blue-100 border-blue-500 text-blue-700' : 'border-gray-300 hover:bg-gray-50'}`} onClick={() => handleLocationChoice(false)} disabled={loading}>No</button>
@@ -283,6 +301,7 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
                   {loadingInstallers ? <option value="" disabled>Loading installers...</option> : installers.map(installer => (
                     <option key={installer.id} value={installer.name}>{installer.name}</option>
                   ))}
+                  <option value="not_available">Not Yet Available</option>
                 </select>
               </div>
               <div>
@@ -294,19 +313,19 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
                   ))}
                 </select>
               </div>
-              {formData.financeType && formData.financeType !== "Cash" && (
+              {showFinanceCompany && (
                 <div>
                   <label className={labelClass}>Finance Company <span className="text-red-500">*</span></label>
-                  <select name="financeCompany" value={formData.financeCompany} onChange={handleChange} className={selectClass} required disabled={loading}>
+                  <select name="financeCompany" value={formData.financeCompany} onChange={handleChange} className={selectClass} required disabled={loading || loadingFinanceCompanies}>
                     <option value="">Select finance company</option>
-                    {financeCompanies.map((company, index) => (
-                      <option key={index} value={company}>{company}</option>
+                    {loadingFinanceCompanies ? <option value="" disabled>Loading finance companies...</option> : financeCompanies.map(company => (
+                      <option key={company.id} value={company.name}>{company.name}</option>
                     ))}
                   </select>
                 </div>
               )}
             </div>
-            {formData.meterId !== originalMeterId && !meterAgreementAccepted && (
+            {formData.meterId !== originalMeterId && !meterAgreementAccepted && formData.meterId && (
               <div className="md:col-span-2 mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
                 <p className="font-medium mb-2">By clicking "Accept Meter Agreement", you agree that the selected meter can be used for this facility.</p>
                 <button type="button" onClick={handleAcceptMeterAgreement} className={`w-full py-2 rounded-md text-white font-medium ${meterAgreementAccepted ? 'bg-green-600' : 'bg-[#039994] hover:bg-[#02857f]'}`} disabled={meterAgreementAccepted || acceptingAgreement || loading}>
@@ -325,8 +344,8 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
               </button>
               <button
                 type="submit"
-                disabled={loading || (formData.meterId !== originalMeterId && !meterAgreementAccepted)}
-                className={`w-32 px-4 py-2 rounded-md flex items-center justify-center gap-2 ${loading || (formData.meterId !== originalMeterId && !meterAgreementAccepted) ? 'bg-[#039994] opacity-50 cursor-not-allowed' : 'bg-[#039994] hover:bg-[#027d7b]'} text-white`}
+                disabled={loading || (formData.meterId !== originalMeterId && !meterAgreementAccepted && formData.meterId)}
+                className={`w-32 px-4 py-2 rounded-md flex items-center justify-center gap-2 ${loading || (formData.meterId !== originalMeterId && !meterAgreementAccepted && formData.meterId) ? 'bg-[#039994] opacity-50 cursor-not-allowed' : 'bg-[#039994] hover:bg-[#027d7b]'} text-white`}
               >
                 {loading && (
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -334,7 +353,6 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
                 <span>Save Changes</span>
               </button>
             </div>
-
           </form>
         </div>
       </div>

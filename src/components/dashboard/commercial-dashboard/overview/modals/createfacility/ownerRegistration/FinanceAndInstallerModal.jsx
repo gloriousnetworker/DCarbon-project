@@ -2,18 +2,21 @@ import React, { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import axios from "axios";
 import InviteOperatorModal from "./InviteOperatorModal";
+import { Tooltip } from "./Tooltip";
 
 const styles = {
   mainContainer: 'min-h-screen w-full flex flex-col items-center justify-center py-8 px-4 bg-white',
   headingContainer: 'relative w-full flex flex-col items-center mb-2',
   backArrow: 'absolute left-6 top-0 text-[#039994] cursor-pointer z-10',
   pageTitle: 'mb-4 font-[600] text-[24px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro text-left',
+  pageSubtitle: 'mb-4 font-sfpro text-[14px] leading-[120%] text-[#1E1E1E]',
   progressContainer: 'w-full max-w-md flex items-center justify-between mb-6',
   progressBarWrapper: 'flex-1 h-1 bg-gray-200 rounded-full mr-4',
   progressBarActive: 'h-1 bg-[#039994] w-2/3 rounded-full',
   progressStepText: 'text-sm font-medium text-gray-500 font-sfpro',
   formWrapper: 'w-full max-w-md space-y-6',
   labelClass: 'block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]',
+  labelWithTooltip: 'flex items-center gap-2 mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]',
   selectClass: 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#626060]',
   inputClass: 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]',
   fileInputWrapper: 'relative flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-500 bg-gray-50 focus-within:outline-none focus-within:ring-2 focus-within:ring-[#039994] cursor-pointer font-sfpro',
@@ -40,6 +43,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const [loadingFinanceTypes, setLoadingFinanceTypes] = useState(false);
   const [loadingInstallers, setLoadingInstallers] = useState(false);
   const [loadingUtilityProviders, setLoadingUtilityProviders] = useState(false);
+  const [loadingFinanceCompanies, setLoadingFinanceCompanies] = useState(false);
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [requestingFinanceType, setRequestingFinanceType] = useState(false);
   const [requestedFinanceTypeName, setRequestedFinanceTypeName] = useState('');
@@ -47,6 +51,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const [file, setFile] = useState(null);
   const [facilityNickname, setFacilityNickname] = useState('');
   const [utilityProviders, setUtilityProviders] = useState([]);
+  const [financeCompanies, setFinanceCompanies] = useState([]);
   const [commercialRole, setCommercialRole] = useState('owner');
 
   const [formData, setFormData] = useState({
@@ -70,6 +75,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const showUploadField = !isCashType && formData.financeType !== '';
   const showFinanceCompany = !isCashType && formData.financeType !== '';
   const showCustomInstaller = formData.installer === 'others';
+  const noInstallerSelected = formData.installer === 'not_available';
 
   const fetchCommercialRole = async () => {
     try {
@@ -93,6 +99,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
       fetchFinanceTypes();
       fetchInstallers();
       fetchUtilityProviders();
+      fetchFinanceCompanies();
     }
   }, [isOpen]);
 
@@ -158,6 +165,24 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     }
   };
 
+  const fetchFinanceCompanies = async () => {
+    setLoadingFinanceCompanies(true);
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await axios.get(
+        'https://services.dcarbon.solutions/api/user/partner/finance-companies',
+        { headers: { 'Authorization': `Bearer ${token}` } }
+      );
+      if (response.data.status === 'success') {
+        setFinanceCompanies(response.data.data.financeCompanies || []);
+      }
+    } catch (err) {
+      toast.error('Failed to load finance companies');
+    } finally {
+      setLoadingFinanceCompanies(false);
+    }
+  };
+
   const createCommercialFacility = async () => {
     const userId = localStorage.getItem('userId');
     const token = localStorage.getItem('authToken');
@@ -174,7 +199,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
       entityType: 'company',
       facilityTypeNamingCode: 1,
       utilityProviderNamingCode: selectedUtilityProvider?.namingCode || '',
-      installerNamingCode: selectedInstaller?.namingCode || '',
+      installerNamingCode: noInstallerSelected ? '0' : (selectedInstaller?.namingCode || ''),
       financeNamingCode: selectedFinanceType?.namingCode || ''
     };
 
@@ -203,7 +228,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const updateFinanceInfo = async () => {
     const userId = localStorage.getItem('userId');
     const token = localStorage.getItem('authToken');
-    const finalInstaller = showCustomInstaller ? formData.customInstaller : formData.installer;
+    const finalInstaller = noInstallerSelected ? 'N/A' : (showCustomInstaller ? formData.customInstaller : formData.installer);
 
     const payload = {
       financialType: formData.financeType,
@@ -307,7 +332,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     e.preventDefault();
     if (!formData.financeType) return toast.error('Please select a finance type');
     if (!formData.utilityProvider) return toast.error('Please select a utility provider');
-    if (!formData.installer) return toast.error('Please select an installer');
+    if (!formData.installer && !noInstallerSelected) return toast.error('Please select an installer');
     if (showFinanceCompany && !formData.financeCompany) return toast.error('Please select a finance company');
     if (showCustomInstaller && !formData.customInstaller) return toast.error('Please enter your installer name');
     if (!facilityNickname) return toast.error('Please enter a facility nickname');
@@ -436,6 +461,9 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
               <h2 className={styles.pageTitle}>
                 {commercialRole === 'both' ? "Finance & Installer information for Owner and Operator" : "Finance & Installer information for Owner"}
               </h2>
+              <p className={styles.pageSubtitle}>
+                Please review all tooltips to ensure correct selections for your financing and installation needs.
+              </p>
               
               <div className={styles.progressContainer}>
                 <div className={styles.progressBarWrapper}>
@@ -523,9 +551,10 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
 
                 {showFinanceCompany && (
                   <div>
-                    <label className={styles.labelClass}>
-                      Finance company <span className="text-red-500">*</span>
-                    </label>
+                    <div className={styles.labelWithTooltip}>
+                      <span>Finance company <span className="text-red-500">*</span></span>
+                      <Tooltip message="If you were referred by a finance company, select them here so they can help submit required documents if needed." />
+                    </div>
                     <div className="relative">
                       <select
                         name="financeCompany"
@@ -533,13 +562,13 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                         onChange={handleInputChange}
                         className={`${styles.selectClass} appearance-none`}
                         required
+                        disabled={loadingFinanceCompanies}
                       >
-                        <option value="">Choose company</option>
-                        <option value="company1">Company 1</option>
-                        <option value="company2">Company 2</option>
-                        <option value="company3">Company 3</option>
-                        <option value="others">Others</option>
-                        <option value="n/a">N/A</option>
+                        <option value="">{loadingFinanceCompanies ? 'Loading...' : 'Choose company'}</option>
+                        {financeCompanies.map((company) => (
+                          <option key={company.id} value={company.name}>{company.name}</option>
+                        ))}
+                        <option value="Other">Other</option>
                       </select>
                       <div className={styles.uploadIconContainer}>
                         <svg className="w-5 h-5 text-gray-400 pointer-events-none absolute top-1/2 right-3 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -578,9 +607,10 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                 )}
 
                 <div>
-                  <label className={styles.labelClass}>
-                    Select installer <span className="text-red-500">*</span>
-                  </label>
+                  <div className={styles.labelWithTooltip}>
+                    <span>Select installer <span className="text-red-500">*</span></span>
+                    <Tooltip message="Select your installer who can submit installation documents if needed. If not listed, choose 'Not Yet Available' and your finance company can invite them later." />
+                  </div>
                   <div className="relative">
                     <select
                       name="installer"
@@ -595,7 +625,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                         <option key={installer.id} value={installer.name}>{installer.name}</option>
                       ))}
                       <option value="others">Others</option>
-                      <option value="unknown">Don't know</option>
+                      <option value="not_available">Not Yet Available</option>
                     </select>
                     <div className={styles.uploadIconContainer}>
                       <svg className="w-5 h-5 text-gray-400 pointer-events-none absolute top-1/2 right-3 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
