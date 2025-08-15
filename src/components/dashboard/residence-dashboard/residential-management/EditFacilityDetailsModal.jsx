@@ -22,7 +22,7 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
     address: facility.address || "",
     financeType: facility.financeType || "",
     financeCompany: facility.financeCompany || "",
-    commercialOperationDate: facility.commercialOperationDate || "",
+    commercialOperationDate: facility.commercialOperationDate ? facility.commercialOperationDate.split('T')[0] : "",
     interconnectedUtilityId: facility.interconnectedUtilityId || "",
     eiaPlantId: facility.eiaPlantId || "",
     energyStorageCapacity: facility.energyStorageCapacity || 0,
@@ -207,10 +207,10 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
         address: formData.address,
         financeType: formData.financeType,
         financeCompany: formData.financeType !== "Cash" ? formData.financeCompany : "",
-        commercialOperationDate: formData.commercialOperationDate,
+        commercialOperationDate: formData.commercialOperationDate ? `${formData.commercialOperationDate}T00:00:00Z` : null,
         interconnectedUtilityId: formData.interconnectedUtilityId,
         eiaPlantId: formData.eiaPlantId,
-        energyStorageCapacity: formData.energyStorageCapacity,
+        energyStorageCapacity: parseFloat(formData.energyStorageCapacity),
         hasOnSiteLoad: formData.hasOnSiteLoad,
         hasNetMetering: formData.hasNetMetering
       };
@@ -341,71 +341,27 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
               )}
               <div>
                 <label className={labelClass}>Commercial Operation Date</label>
-                <input 
-                  type="date" 
-                  name="commercialOperationDate" 
-                  value={formData.commercialOperationDate ? formData.commercialOperationDate.split('T')[0] : ''} 
-                  onChange={handleChange} 
-                  className={inputClass} 
-                  disabled={loading} 
-                />
+                <input type="date" name="commercialOperationDate" value={formData.commercialOperationDate} onChange={handleChange} className={inputClass} disabled={loading} />
               </div>
               <div>
                 <label className={labelClass}>Interconnected Utility ID</label>
-                <input 
-                  type="text" 
-                  name="interconnectedUtilityId" 
-                  value={formData.interconnectedUtilityId} 
-                  onChange={handleChange} 
-                  className={inputClass} 
-                  disabled={loading} 
-                />
+                <input type="text" name="interconnectedUtilityId" value={formData.interconnectedUtilityId} onChange={handleChange} className={inputClass} disabled={loading} />
               </div>
               <div>
                 <label className={labelClass}>EIA Plant ID</label>
-                <input 
-                  type="text" 
-                  name="eiaPlantId" 
-                  value={formData.eiaPlantId} 
-                  onChange={handleChange} 
-                  className={inputClass} 
-                  disabled={loading} 
-                />
+                <input type="text" name="eiaPlantId" value={formData.eiaPlantId} onChange={handleChange} className={inputClass} disabled={loading} />
               </div>
               <div>
                 <label className={labelClass}>Energy Storage Capacity (kWh)</label>
-                <input 
-                  type="number" 
-                  name="energyStorageCapacity" 
-                  value={formData.energyStorageCapacity} 
-                  onChange={handleChange} 
-                  className={inputClass} 
-                  min="0" 
-                  step="0.1" 
-                  disabled={loading} 
-                />
+                <input type="number" name="energyStorageCapacity" value={formData.energyStorageCapacity} onChange={handleChange} className={inputClass} step="0.1" min="0" disabled={loading} />
               </div>
               <div className="flex items-center">
-                <input 
-                  type="checkbox" 
-                  name="hasOnSiteLoad" 
-                  checked={formData.hasOnSiteLoad} 
-                  onChange={handleChange} 
-                  className="mr-2" 
-                  disabled={loading} 
-                />
+                <input type="checkbox" name="hasOnSiteLoad" checked={formData.hasOnSiteLoad} onChange={handleChange} className="mr-2" disabled={loading} />
                 <label className={labelClass}>Has On-Site Load</label>
               </div>
               <div className="flex items-center">
-                <input 
-                  type="checkbox" 
-                  name="hasNetMetering" 
-                  checked={formData.hasNetMetering} 
-                  onChange={handleChange} 
-                  className="mr-2" 
-                  disabled={loading} 
-                />
-                <label className={labelClass}>Has Net Metering</label>
+                <input type="checkbox" name="hasNetMetering" checked={formData.hasNetMetering} onChange={handleChange} className="mr-2" disabled={loading} />
+                <label className={labelClass}>Has Net-Metering</label>
               </div>
             </div>
             {formData.meterId !== originalMeterId && !meterAgreementAccepted && formData.meterId && (

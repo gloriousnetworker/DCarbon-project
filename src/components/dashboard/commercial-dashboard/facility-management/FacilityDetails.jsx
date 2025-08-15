@@ -491,8 +491,8 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
       facilityData.interconnectedUtilityId || '',
       facilityData.eiaPlantId || '',
       facilityData.energyStorageCapacity || '',
-      facilityData.onSiteLoad ? 'Yes' : 'No',
-      facilityData.netMetering ? 'Yes' : 'No'
+      facilityData.hasOnSiteLoad ? 'Yes' : 'No',
+      facilityData.hasNetMetering ? 'Yes' : 'No'
     ];
 
     const csvContent = [
@@ -731,11 +731,11 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
                 </div>
                 <div className="flex justify-between items-center">
                   <span className={`${labelClass} text-xs`}>On-site Load</span>
-                  <span className="text-gray-600 text-xs">{facilityData.onSiteLoad ? "Yes" : "No"}</span>
+                  <span className="text-gray-600 text-xs">{facilityData.hasOnSiteLoad ? "Yes" : "No"}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className={`${labelClass} text-xs`}>Net-Metering</span>
-                  <span className="text-gray-600 text-xs">{facilityData.netMetering ? "Yes" : "No"}</span>
+                  <span className="text-gray-600 text-xs">{facilityData.hasNetMetering ? "Yes" : "No"}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className={`${labelClass} text-xs`}>WREGIS Eligibility Date</span>
