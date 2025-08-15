@@ -298,9 +298,9 @@ export default function StepOneCard() {
 
   const getDisplayPartnerType = () => {
     switch(partnerType) {
-      case 'sales-agent':
+      case 'sales_agent':
         return 'Sales Agent';
-      case 'finance-company':
+      case 'finance_company':
         return 'Finance Company';
       case 'installer':
       default:
@@ -367,8 +367,8 @@ export default function StepOneCard() {
               >
                 <option value="">Select partner type</option>
                 <option value="installer">Installer</option>
-                <option value="sales-agent">Sales Agent</option>
-                <option value="finance-company">Finance Company</option>
+                <option value="sales_agent">Sales Agent</option>
+                <option value="finance_company">Finance Company</option>
               </select>
             )}
             {errors.partnerType && (
