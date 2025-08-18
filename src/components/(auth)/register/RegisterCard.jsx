@@ -41,7 +41,7 @@ function RegisterCardContent() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    const code = searchParams.get('referralCode') || searchParams.get('referral');
+    const code = searchParams.get('referral') || searchParams.get('referralCode');
     const type = searchParams.get('type');
     
     if (code) {
@@ -54,8 +54,14 @@ function RegisterCardContent() {
       if (type.toLowerCase() === 'operator') {
         setIsOperatorType(true);
         setUserCategory('Operator');
-      } else if (['installer', 'sales-agent', 'finance-company'].includes(type.toLowerCase())) {
-        setPartnerType(type.toLowerCase());
+      } else if (type.toLowerCase().includes('installer')) {
+        setPartnerType('installer');
+        setUserCategory('Partner');
+      } else if (type.toLowerCase().includes('sales-agent')) {
+        setPartnerType('sales-agent');
+        setUserCategory('Partner');
+      } else if (type.toLowerCase().includes('finance-company')) {
+        setPartnerType('finance-company');
         setUserCategory('Partner');
       }
     }
@@ -141,13 +147,15 @@ function RegisterCardContent() {
       payload.partnerType = partnerTypeMapping[partnerType];
     }
 
-    if ((urlReferralCode || manualReferralCode.trim()) && userCategory !== 'Operator') {
-      payload.bodyReferralCode = urlReferralCode || manualReferralCode.trim();
-    }
-
     try {
       const baseUrl = 'https://services.dcarbon.solutions';
       let url = `${baseUrl}/api/user/register`;
+      
+      if (urlReferralCode) {
+        url += `?referralCode=${urlReferralCode}`;
+      } else if (manualReferralCode.trim()) {
+        payload.bodyReferralCode = manualReferralCode.trim();
+      }
 
       const response = await axios.post(url, payload, { 
         headers: { 'Content-Type': 'application/json' } 
