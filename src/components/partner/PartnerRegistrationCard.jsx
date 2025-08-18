@@ -228,10 +228,10 @@ export default function StepOneCard() {
         localStorage.setItem('partnerType', partnerType);
         
         switch(partnerType) {
-          case 'sales-agent':
+          case 'sales_agent':
             router.push('/register/partner-user-registration/sales-agent-agreement');
             break;
-          case 'finance-company':
+          case 'finance_company':
             router.push('/register/partner-user-registration/finance-company-agreement');
             break;
           case 'installer':

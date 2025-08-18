@@ -36,7 +36,7 @@ function RegisterCardContent() {
   const [hoveredButton, setHoveredButton] = useState(null);
   const [isOperatorType, setIsOperatorType] = useState(false);
   const [partnerType, setPartnerType] = useState('');
-  const [showPartnerTypes, setShowPartnerTypes] = useState(false);
+  const [showPartnerRoles, setShowPartnerRoles] = useState(false);
 
   const searchParams = useSearchParams();
 
@@ -115,8 +115,8 @@ function RegisterCardContent() {
       setError('Please select a user category.');
       return false;
     }
-    if (userCategory === 'Partner' && (urlReferralCode || manualReferralCode) && !partnerType) {
-      setError('Please select a partner type.');
+    if (userCategory === 'Partner' && !partnerType) {
+      setError('Please select your partner role.');
       return false;
     }
     setError('');
@@ -137,8 +137,11 @@ function RegisterCardContent() {
       isPartnerOperator: userCategory === 'Operator'
     };
 
-    if ((urlReferralCode || manualReferralCode.trim()) && userCategory === 'Partner') {
-      payload.partnerType = partnerType ? partnerTypeMapping[partnerType] : undefined;
+    if (userCategory === 'Partner') {
+      payload.partnerType = partnerTypeMapping[partnerType];
+    }
+
+    if ((urlReferralCode || manualReferralCode.trim()) && userCategory !== 'Operator') {
       payload.bodyReferralCode = urlReferralCode || manualReferralCode.trim();
     }
 
@@ -172,26 +175,22 @@ function RegisterCardContent() {
       return;
     }
     setUserCategory(category);
-    if (category === 'Partner' && (urlReferralCode || manualReferralCode)) {
-      setShowPartnerTypes(true);
+    if (category === 'Partner') {
+      setShowPartnerRoles(true);
     } else {
-      setShowPartnerTypes(false);
+      setShowPartnerRoles(false);
     }
+  };
+
+  const handlePartnerRoleSelect = (role) => {
+    setPartnerType(role);
+    setShowPartnerRoles(false);
   };
 
   const toggleReferralField = () => {
     setShowReferralField(!showReferralField);
     if (!showReferralField) {
       setManualReferralCode('');
-    }
-  };
-
-  const handleManualReferralChange = (e) => {
-    setManualReferralCode(e.target.value);
-    if (e.target.value.trim() && userCategory === 'Partner') {
-      setShowPartnerTypes(true);
-    } else if (!e.target.value.trim()) {
-      setShowPartnerTypes(false);
     }
   };
 
@@ -394,7 +393,7 @@ function RegisterCardContent() {
                       placeholder={isReferralReadOnly() ? "" : "Enter referral code"}
                       className={`${inputClass} ${grayPlaceholder} pl-10 ${isReferralReadOnly() ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                       value={getReferralDisplayValue()}
-                      onChange={handleManualReferralChange}
+                      onChange={(e) => { if (!isReferralReadOnly()) setManualReferralCode(e.target.value); }}
                       readOnly={isReferralReadOnly()}
                       disabled={isReferralReadOnly()}
                     />
@@ -454,15 +453,15 @@ function RegisterCardContent() {
               </div>
             </div>
 
-            {showPartnerTypes && (
-              <div>
+            {showPartnerRoles && (
+              <div className="mt-4">
                 <label className={labelClass}>
-                  Partner Type <span className="text-red-500">*</span>
+                  Partner Role <span className="text-red-500">*</span>
                 </label>
                 <div className="grid grid-cols-3 gap-4">
                   <button
                     type="button"
-                    onClick={() => setPartnerType('installer')}
+                    onClick={() => handlePartnerRoleSelect('installer')}
                     className={`px-4 py-2 rounded-md text-sm font-sfpro ${
                       partnerType === 'installer'
                         ? 'bg-[#039994] text-white'
@@ -473,7 +472,7 @@ function RegisterCardContent() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setPartnerType('sales-agent')}
+                    onClick={() => handlePartnerRoleSelect('sales-agent')}
                     className={`px-4 py-2 rounded-md text-sm font-sfpro ${
                       partnerType === 'sales-agent'
                         ? 'bg-[#039994] text-white'
@@ -484,7 +483,7 @@ function RegisterCardContent() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setPartnerType('finance-company')}
+                    onClick={() => handlePartnerRoleSelect('finance-company')}
                     className={`px-4 py-2 rounded-md text-sm font-sfpro ${
                       partnerType === 'finance-company'
                         ? 'bg-[#039994] text-white'
