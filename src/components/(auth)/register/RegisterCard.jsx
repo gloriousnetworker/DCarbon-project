@@ -36,6 +36,7 @@ function RegisterCardContent() {
   const [hoveredButton, setHoveredButton] = useState(null);
   const [isOperatorType, setIsOperatorType] = useState(false);
   const [partnerType, setPartnerType] = useState('');
+  const [showPartnerTypes, setShowPartnerTypes] = useState(false);
 
   const searchParams = useSearchParams();
 
@@ -114,7 +115,7 @@ function RegisterCardContent() {
       setError('Please select a user category.');
       return false;
     }
-    if (userCategory === 'Partner' && !partnerType) {
+    if (userCategory === 'Partner' && (urlReferralCode || manualReferralCode) && !partnerType) {
       setError('Please select a partner type.');
       return false;
     }
@@ -136,11 +137,8 @@ function RegisterCardContent() {
       isPartnerOperator: userCategory === 'Operator'
     };
 
-    if (partnerType) {
-      payload.partnerType = partnerTypeMapping[partnerType];
-    }
-
-    if ((urlReferralCode || manualReferralCode.trim()) && userCategory !== 'Operator') {
+    if ((urlReferralCode || manualReferralCode.trim()) && userCategory === 'Partner') {
+      payload.partnerType = partnerType ? partnerTypeMapping[partnerType] : undefined;
       payload.bodyReferralCode = urlReferralCode || manualReferralCode.trim();
     }
 
@@ -174,12 +172,26 @@ function RegisterCardContent() {
       return;
     }
     setUserCategory(category);
+    if (category === 'Partner' && (urlReferralCode || manualReferralCode)) {
+      setShowPartnerTypes(true);
+    } else {
+      setShowPartnerTypes(false);
+    }
   };
 
   const toggleReferralField = () => {
     setShowReferralField(!showReferralField);
     if (!showReferralField) {
       setManualReferralCode('');
+    }
+  };
+
+  const handleManualReferralChange = (e) => {
+    setManualReferralCode(e.target.value);
+    if (e.target.value.trim() && userCategory === 'Partner') {
+      setShowPartnerTypes(true);
+    } else if (!e.target.value.trim()) {
+      setShowPartnerTypes(false);
     }
   };
 
@@ -382,7 +394,7 @@ function RegisterCardContent() {
                       placeholder={isReferralReadOnly() ? "" : "Enter referral code"}
                       className={`${inputClass} ${grayPlaceholder} pl-10 ${isReferralReadOnly() ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                       value={getReferralDisplayValue()}
-                      onChange={(e) => { if (!isReferralReadOnly()) setManualReferralCode(e.target.value); }}
+                      onChange={handleManualReferralChange}
                       readOnly={isReferralReadOnly()}
                       disabled={isReferralReadOnly()}
                     />
@@ -441,6 +453,49 @@ function RegisterCardContent() {
                 ))}
               </div>
             </div>
+
+            {showPartnerTypes && (
+              <div>
+                <label className={labelClass}>
+                  Partner Type <span className="text-red-500">*</span>
+                </label>
+                <div className="grid grid-cols-3 gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setPartnerType('installer')}
+                    className={`px-4 py-2 rounded-md text-sm font-sfpro ${
+                      partnerType === 'installer'
+                        ? 'bg-[#039994] text-white'
+                        : 'bg-transparent text-[#039994] border border-[#039994] hover:bg-[#02857f] hover:text-white'
+                    }`}
+                  >
+                    Installer
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPartnerType('sales-agent')}
+                    className={`px-4 py-2 rounded-md text-sm font-sfpro ${
+                      partnerType === 'sales-agent'
+                        ? 'bg-[#039994] text-white'
+                        : 'bg-transparent text-[#039994] border border-[#039994] hover:bg-[#02857f] hover:text-white'
+                    }`}
+                  >
+                    Sales Agent
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPartnerType('finance-company')}
+                    className={`px-4 py-2 rounded-md text-sm font-sfpro ${
+                      partnerType === 'finance-company'
+                        ? 'bg-[#039994] text-white'
+                        : 'bg-transparent text-[#039994] border border-[#039994] hover:bg-[#02857f] hover:text-white'
+                    }`}
+                  >
+                    Finance Company
+                  </button>
+                </div>
+              </div>
+            )}
 
             <div>
               <label htmlFor="password" className={labelClass}>
