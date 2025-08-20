@@ -9,7 +9,14 @@ export default function WelcomeModal({ isOpen, onClose, userData }) {
     entityType: 'individual',
     commercialRole: 'operator',
     ownerFullName: '',
-    companyName: ''
+    companyName: '',
+    companyAddress: {
+      address1: '',
+      address2: '',
+      city: '',
+      state: '',
+      zipCode: ''
+    }
   });
   const [referralCode, setReferralCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -77,15 +84,43 @@ export default function WelcomeModal({ isOpen, onClose, userData }) {
     }));
   };
 
+  const handleAddressChange = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      companyAddress: {
+        ...prev.companyAddress,
+        [field]: value
+      }
+    }));
+  };
+
   const handleCommercialSubmit = async () => {
     if (!formData.ownerFullName.trim()) {
       toast.error('Operator full name is required');
       return;
     }
 
-    if (formData.entityType === 'company' && !formData.companyName.trim()) {
-      toast.error('Company name is required');
-      return;
+    if (formData.entityType === 'company') {
+      if (!formData.companyName.trim()) {
+        toast.error('Company name is required');
+        return;
+      }
+      if (!formData.companyAddress.address1.trim()) {
+        toast.error('Address 1 is required');
+        return;
+      }
+      if (!formData.companyAddress.city.trim()) {
+        toast.error('City is required');
+        return;
+      }
+      if (!formData.companyAddress.state.trim()) {
+        toast.error('State is required');
+        return;
+      }
+      if (!formData.companyAddress.zipCode.trim()) {
+        toast.error('Zip code is required');
+        return;
+      }
     }
 
     setIsLoading(true);
@@ -107,6 +142,7 @@ export default function WelcomeModal({ isOpen, onClose, userData }) {
 
       if (formData.entityType === 'company') {
         body.companyName = formData.companyName;
+        body.companyAddress = `${formData.companyAddress.address1}, ${formData.companyAddress.address2}, ${formData.companyAddress.city}, ${formData.companyAddress.state} ${formData.companyAddress.zipCode}`;
       }
 
       const response = await fetch(`https://services.dcarbon.solutions/api/user/commercial-registration/${userId}`, {
@@ -223,7 +259,7 @@ export default function WelcomeModal({ isOpen, onClose, userData }) {
 
       case 'commercialForm':
         return (
-          <div className="space-y-6">
+          <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-2">
             <div className="mb-6">
               <h2 className="font-[600] text-[24px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro">
                 Commercial Operator User Registration
@@ -249,14 +285,13 @@ export default function WelcomeModal({ isOpen, onClose, userData }) {
               <label className={styles.labelClass}>
                 Commercial Role <span className="text-red-500">*</span>
               </label>
-              <select
-                value={formData.commercialRole}
-                onChange={(e) => handleFormChange('commercialRole', e.target.value)}
-                className={styles.selectClass}
-                style={{ backgroundColor: '#F0F0F0' }}
-              >
-                <option value="operator">Operator</option>
-              </select>
+              <input
+                type="text"
+                value="Operator"
+                readOnly
+                className={styles.inputClass}
+                style={{ backgroundColor: '#F0F0F0', cursor: 'not-allowed' }}
+              />
             </div>
 
             <div>
@@ -274,19 +309,92 @@ export default function WelcomeModal({ isOpen, onClose, userData }) {
             </div>
 
             {formData.entityType === 'company' && (
-              <div>
-                <label className={styles.labelClass}>
-                  Company Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.companyName}
-                  onChange={(e) => handleFormChange('companyName', e.target.value)}
-                  className={styles.inputClass}
-                  style={{ backgroundColor: '#F0F0F0' }}
-                  placeholder="Enter company name"
-                />
-              </div>
+              <>
+                <div>
+                  <label className={styles.labelClass}>
+                    Company Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.companyName}
+                    onChange={(e) => handleFormChange('companyName', e.target.value)}
+                    className={styles.inputClass}
+                    style={{ backgroundColor: '#F0F0F0' }}
+                    placeholder="Enter company name"
+                  />
+                </div>
+
+                <div>
+                  <label className={styles.labelClass}>
+                    Address 1 <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.companyAddress.address1}
+                    onChange={(e) => handleAddressChange('address1', e.target.value)}
+                    className={styles.inputClass}
+                    style={{ backgroundColor: '#F0F0F0' }}
+                    placeholder="Street address"
+                  />
+                </div>
+
+                <div>
+                  <label className={styles.labelClass}>
+                    Address 2
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.companyAddress.address2}
+                    onChange={(e) => handleAddressChange('address2', e.target.value)}
+                    className={styles.inputClass}
+                    style={{ backgroundColor: '#F0F0F0' }}
+                    placeholder="Apt, suite, unit, etc."
+                  />
+                </div>
+
+                <div className="flex space-x-4">
+                  <div className="flex-1">
+                    <label className={styles.labelClass}>
+                      City <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.companyAddress.city}
+                      onChange={(e) => handleAddressChange('city', e.target.value)}
+                      className={styles.inputClass}
+                      style={{ backgroundColor: '#F0F0F0' }}
+                      placeholder="City"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className={styles.labelClass}>
+                      State <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.companyAddress.state}
+                      onChange={(e) => handleAddressChange('state', e.target.value)}
+                      className={styles.inputClass}
+                      style={{ backgroundColor: '#F0F0F0' }}
+                      placeholder="State"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className={styles.labelClass}>
+                    Zip Code <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.companyAddress.zipCode}
+                    onChange={(e) => handleAddressChange('zipCode', e.target.value)}
+                    className={styles.inputClass}
+                    style={{ backgroundColor: '#F0F0F0' }}
+                    placeholder="Zip code"
+                  />
+                </div>
+              </>
             )}
 
             <button
@@ -399,7 +507,7 @@ export default function WelcomeModal({ isOpen, onClose, userData }) {
 
       case 'referralCode':
         return (
-          <div>
+          <div className="max-h-[70vh] overflow-y-auto pr-2">
             <div className="flex items-center mb-4">
               <button
                 onClick={() => setCurrentStep('welcome')}

@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { FaBars, FaSearch, FaBell, FaHeadset, FaUserPlus } from "react-icons/fa";
+import { FaBars, FaSearch, FaBell, FaHeadset, FaUserPlus, FaComments } from "react-icons/fa";
 import CommercialRegistrationModal from "./overview/modals/createfacility/CommercialRegistrationModal";
+import FeedbackModal from "./FeedbackModal";
 
 const DashboardNavbar = ({
   toggleSidebar,
@@ -14,6 +15,7 @@ const DashboardNavbar = ({
   const [showNotificationDot, setShowNotificationDot] = useState(false);
   const [isOperator, setIsOperator] = useState(false);
   const [showRegistrationModal, setShowRegistrationModal] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [notificationCheckInterval, setNotificationCheckInterval] = useState(null);
 
   const fetchNotifications = async () => {
@@ -104,6 +106,10 @@ const DashboardNavbar = ({
     setShowRegistrationModal(false);
   };
 
+  const handleFeedbackClick = () => {
+    setShowFeedbackModal(true);
+  };
+
   return (
     <>
       <header className="bg-white border-b border-gray-200">
@@ -153,7 +159,22 @@ const DashboardNavbar = ({
               </div>
             </div>
 
-            <div className="relative">
+            <div className="relative group">
+              <button
+                onClick={handleFeedbackClick}
+                className="focus:outline-none text-[#039994] hover:text-[#02857f] transition-colors"
+              >
+                <FaComments size={20} />
+              </button>
+              <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 transform hidden group-hover:block">
+                <div className="relative bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
+                  Feature Suggestion
+                  <span className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-800 rotate-45"></span>
+                </div>
+              </div>
+            </div>
+
+            <div className="relative group">
               <button
                 onClick={() => onSectionChange("notifications")}
                 className="focus:outline-none relative"
@@ -169,14 +190,28 @@ const DashboardNavbar = ({
                   </>
                 )}
               </button>
+              <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 transform hidden group-hover:block">
+                <div className="relative bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
+                  Notifications
+                  <span className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-800 rotate-45"></span>
+                </div>
+              </div>
             </div>
 
-            <button
-              onClick={() => onSectionChange("contactSupport")}
-              className="focus:outline-none"
-            >
-              <FaHeadset className="text-[#039994]" size={20} />
-            </button>
+            <div className="relative group">
+              <button
+                onClick={() => onSectionChange("contactSupport")}
+                className="focus:outline-none"
+              >
+                <FaHeadset className="text-[#039994]" size={20} />
+              </button>
+              <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 transform hidden group-hover:block">
+                <div className="relative bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
+                  Contact Support
+                  <span className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-800 rotate-45"></span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </header>
@@ -185,6 +220,11 @@ const DashboardNavbar = ({
         isOpen={showRegistrationModal}
         onClose={handleModalClose}
         onBack={handleModalClose}
+      />
+
+      <FeedbackModal
+        isOpen={showFeedbackModal}
+        onClose={() => setShowFeedbackModal(false)}
       />
     </>
   );

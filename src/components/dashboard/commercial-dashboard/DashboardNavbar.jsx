@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { FaBars, FaSearch, FaBell, FaHeadset } from "react-icons/fa";
+import { FaBars, FaSearch, FaBell, FaHeadset, FaComments } from "react-icons/fa";
 import CommercialRegistrationModal from "../commercial-dashboard/overview/modals/createfacility/CommercialRegistrationModal";
+import FeedbackModal from "./FeedbackModal";
 
 const DashboardNavbar = ({
   toggleSidebar,
@@ -15,6 +16,7 @@ const DashboardNavbar = ({
   const [currentStage, setCurrentStage] = useState(1);
   const [nextStage, setNextStage] = useState(2);
   const [showRegistrationModal, setShowRegistrationModal] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [notificationCheckInterval, setNotificationCheckInterval] = useState(null);
 
   const fetchNotifications = async () => {
@@ -185,6 +187,10 @@ const DashboardNavbar = ({
     setShowRegistrationModal(true);
   };
 
+  const handleFeedbackClick = () => {
+    setShowFeedbackModal(true);
+  };
+
   const getTooltipText = () => {
     const texts = [
       "Account creation completed",
@@ -262,30 +268,61 @@ const DashboardNavbar = ({
               </div>
             </div>
 
-            <div className="relative">
-              <button
-                onClick={() => onSectionChange("notifications")}
-                className="focus:outline-none relative"
-              >
-                <FaBell className="text-[#039994]" size={20} />
-                {showNotificationDot && unreadCount > 0 && (
-                  <>
-                    <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-red-500 animate-ping" />
-                    <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-red-500" />
-                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                      {unreadCount}
-                    </span>
-                  </>
-                )}
-              </button>
-            </div>
+            <div className="flex items-center space-x-6">
+              <div className="relative group">
+                <button
+                  onClick={handleFeedbackClick}
+                  className="focus:outline-none text-[#039994] hover:text-[#02857f] transition-colors"
+                >
+                  <FaComments size={20} />
+                </button>
+                <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 transform hidden group-hover:block">
+                  <div className="relative bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
+                    Feature Suggestion
+                    <span className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-800 rotate-45"></span>
+                  </div>
+                </div>
+              </div>
 
-            <button
-              onClick={() => onSectionChange("contactSupport")}
-              className="focus:outline-none"
-            >
-              <FaHeadset className="text-[#039994]" size={20} />
-            </button>
+              <div className="relative group">
+                <button
+                  onClick={() => onSectionChange("notifications")}
+                  className="focus:outline-none relative"
+                >
+                  <FaBell className="text-[#039994]" size={20} />
+                  {showNotificationDot && unreadCount > 0 && (
+                    <>
+                      <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-red-500 animate-ping" />
+                      <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-red-500" />
+                      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                        {unreadCount}
+                      </span>
+                    </>
+                  )}
+                </button>
+                <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 transform hidden group-hover:block">
+                  <div className="relative bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
+                    Notifications
+                    <span className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-800 rotate-45"></span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="relative group">
+                <button
+                  onClick={() => onSectionChange("contactSupport")}
+                  className="focus:outline-none"
+                >
+                  <FaHeadset className="text-[#039994]" size={20} />
+                </button>
+                <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 transform hidden group-hover:block">
+                  <div className="relative bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
+                    Contact Support
+                    <span className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-800 rotate-45"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </header>
@@ -294,6 +331,11 @@ const DashboardNavbar = ({
         isOpen={showRegistrationModal}
         onClose={() => setShowRegistrationModal(false)}
         currentStep={currentStage}
+      />
+
+      <FeedbackModal
+        isOpen={showFeedbackModal}
+        onClose={() => setShowFeedbackModal(false)}
       />
     </>
   );
