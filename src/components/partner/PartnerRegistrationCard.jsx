@@ -16,10 +16,22 @@ export default function StepOneCard() {
   const [state, setState] = useState('');
   const [zipCode, setZipCode] = useState('');
   const [partnerType, setPartnerType] = useState('');
+  const [territory, setTerritory] = useState([]);
+  const [customTerritory, setCustomTerritory] = useState('');
+  const [showCustomInput, setShowCustomInput] = useState(false);
   const [errors, setErrors] = useState({});
   const [isPartnerTypeLocked, setIsPartnerTypeLocked] = useState(false);
 
   const router = useRouter();
+
+  const usStates = [
+    'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut', 'Delaware',
+    'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky',
+    'Louisiana', 'Maine', 'Maryland', 'Massachusetts', 'Michigan', 'Minnesota', 'Mississippi', 'Missouri',
+    'Montana', 'Nebraska', 'Nevada', 'New Hampshire', 'New Jersey', 'New Mexico', 'New York', 'North Carolina',
+    'North Dakota', 'Ohio', 'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island', 'South Carolina', 'South Dakota',
+    'Tennessee', 'Texas', 'Utah', 'Vermont', 'Virginia', 'Washington', 'West Virginia', 'Wisconsin', 'Wyoming'
+  ];
 
   useEffect(() => {
     const storedPartnerType = localStorage.getItem('partnerType');
@@ -122,6 +134,14 @@ export default function StepOneCard() {
         }
         break;
 
+      case 'territory':
+        if (!value || value.length === 0) {
+          newErrors.territory = 'At least one territory is required';
+        } else {
+          delete newErrors.territory;
+        }
+        break;
+
       default:
         break;
     }
@@ -138,7 +158,8 @@ export default function StepOneCard() {
       address1: address1.trim(),
       city: city.trim(),
       state: state.trim(),
-      zipCode: zipCode.trim()
+      zipCode: zipCode.trim(),
+      territory: territory
     };
 
     let isValid = true;
@@ -177,6 +198,27 @@ export default function StepOneCard() {
     return true;
   };
 
+  const handleTerritoryChange = (e) => {
+    const selectedOptions = Array.from(e.target.selectedOptions);
+    const selectedValues = selectedOptions.map(option => option.value);
+    setTerritory(selectedValues);
+    setTimeout(() => {
+      validateField('territory', selectedValues);
+    }, 300);
+  };
+
+  const addCustomTerritory = () => {
+    if (customTerritory.trim() && !territory.includes(customTerritory.trim())) {
+      setTerritory([...territory, customTerritory.trim()]);
+      setCustomTerritory('');
+      setShowCustomInput(false);
+    }
+  };
+
+  const removeTerritory = (territoryToRemove) => {
+    setTerritory(territory.filter(t => t !== territoryToRemove));
+  };
+
   const handleSubmit = async () => {
     if (loading) return;
 
@@ -208,7 +250,8 @@ export default function StepOneCard() {
         email: email.trim().toLowerCase(),
         phoneNumber: phoneNumber.trim(),
         partnerType: partnerType,
-        address: addressParts.join(', ')
+        address: addressParts.join(', '),
+        territory: territory
       };
 
       const response = await axios.post(
@@ -293,6 +336,7 @@ export default function StepOneCard() {
            state.trim() && 
            zipCode.trim() && 
            partnerType &&
+           territory.length > 0 &&
            Object.keys(errors).length === 0;
   };
 
@@ -426,6 +470,84 @@ export default function StepOneCard() {
             />
             {errors.email && (
               <p className="mt-1 text-sm text-red-500 font-sfpro">{errors.email}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]">
+              Territory <span className="text-red-500">*</span>
+            </label>
+            <select
+              multiple
+              value={territory}
+              onChange={handleTerritoryChange}
+              className={getInputClassName('territory') + " h-32"}
+              required
+            >
+              {usStates.map(state => (
+                <option key={state} value={state}>{state}</option>
+              ))}
+            </select>
+            <p className="mt-1 text-sm text-gray-500 font-sfpro">Hold Ctrl/Cmd to select multiple territories</p>
+            
+            <div className="mt-2">
+              {!showCustomInput ? (
+                <button
+                  type="button"
+                  onClick={() => setShowCustomInput(true)}
+                  className="text-sm text-[#039994] hover:underline font-sfpro"
+                >
+                  + Add custom territory
+                </button>
+              ) : (
+                <div className="flex space-x-2">
+                  <input
+                    type="text"
+                    value={customTerritory}
+                    onChange={(e) => setCustomTerritory(e.target.value)}
+                    placeholder="Enter custom territory"
+                    className="flex-1 rounded-md border border-gray-300 px-3 py-1 text-sm font-sfpro"
+                  />
+                  <button
+                    type="button"
+                    onClick={addCustomTerritory}
+                    className="bg-[#039994] text-white px-3 py-1 rounded-md text-sm font-sfpro"
+                  >
+                    Add
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowCustomInput(false)}
+                    className="bg-gray-300 text-gray-700 px-3 py-1 rounded-md text-sm font-sfpro"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {territory.length > 0 && (
+              <div className="mt-2">
+                <p className="text-sm font-medium text-gray-700 font-sfpro mb-1">Selected Territories:</p>
+                <div className="flex flex-wrap gap-2">
+                  {territory.map((terr, index) => (
+                    <span key={index} className="bg-gray-100 text-gray-700 px-2 py-1 rounded-md text-sm font-sfpro flex items-center">
+                      {terr}
+                      <button
+                        type="button"
+                        onClick={() => removeTerritory(terr)}
+                        className="ml-1 text-red-500 hover:text-red-700"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {errors.territory && (
+              <p className="mt-1 text-sm text-red-500 font-sfpro">{errors.territory}</p>
             )}
           </div>
 

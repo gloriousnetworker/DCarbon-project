@@ -21,6 +21,8 @@ const ContactInformation = ({ userData }) => {
   const [loading, setLoading] = useState(true);
   const [partnerType, setPartnerType] = useState("");
   const [signatureUrl, setSignatureUrl] = useState("");
+  const [territory, setTerritory] = useState([]);
+  const [partnerData, setPartnerData] = useState(null);
 
   const baseUrl = "https://services.dcarbon.solutions";
 
@@ -61,8 +63,10 @@ const ContactInformation = ({ userData }) => {
           }
         );
         
-        if (partnerResponse.data?.data?.partnerType) {
+        if (partnerResponse.data?.data) {
+          setPartnerData(partnerResponse.data.data);
           setPartnerType(partnerResponse.data.data.partnerType);
+          setTerritory(partnerResponse.data.data.territory || []);
         }
 
         const agreementResponse = await axios.get(
@@ -112,10 +116,28 @@ const ContactInformation = ({ userData }) => {
           },
         }
       );
-      toast.success("User information updated successfully");
+
+      if (partnerData) {
+        const partnerPayload = {
+          territory: territory
+        };
+
+        await axios.put(
+          `${baseUrl}/api/user/partner/${partnerData.id}`,
+          partnerPayload,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${authToken}`,
+            },
+          }
+        );
+      }
+
+      toast.success("Information updated successfully");
     } catch (error) {
       toast.error(
-        error.response?.data?.message || "Failed to update user information"
+        error.response?.data?.message || "Failed to update information"
       );
       console.error("Update error:", error);
     }
@@ -298,6 +320,21 @@ const ContactInformation = ({ userData }) => {
     doc.save(fileName);
   };
 
+  const handleTerritoryChange = (index, value) => {
+    const newTerritory = [...territory];
+    newTerritory[index] = value;
+    setTerritory(newTerritory);
+  };
+
+  const addTerritory = () => {
+    setTerritory([...territory, ""]);
+  };
+
+  const removeTerritory = (index) => {
+    const newTerritory = territory.filter((_, i) => i !== index);
+    setTerritory(newTerritory);
+  };
+
   if (loading) {
     return (
       <div className="border-b border-gray-200 pb-4 mb-4">
@@ -403,12 +440,45 @@ const ContactInformation = ({ userData }) => {
             </div>
           )}
 
+          {territory.length > 0 && (
+            <div>
+              <label className={labelClass}>Territories</label>
+              <div className="space-y-2">
+                {territory.map((terr, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={terr}
+                      onChange={(e) => handleTerritoryChange(index, e.target.value)}
+                      className={inputClass}
+                      placeholder="Enter territory"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeTerritory(index)}
+                      className="bg-red-500 text-white px-3 py-2 rounded hover:bg-red-600"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={addTerritory}
+                  className="bg-[#039994] text-white px-4 py-2 rounded hover:bg-[#02857f]"
+                >
+                  Add Territory
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-4">
             <button
               onClick={handleUpdate}
               className="w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro"
             >
-              Update Contact Information
+              Update Information
             </button>
             <button
               onClick={handleDownloadAgreement}
