@@ -2,11 +2,12 @@ import React, { useState, useEffect } from "react";
 import { FiX } from "react-icons/fi";
 import axios from "axios";
 import toast from "react-hot-toast";
-
-const labelClass = "block text-sm font-medium text-gray-700 mb-1";
-const inputClass = "w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] focus:border-transparent";
-const selectClass = "w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] focus:border-transparent";
-const buttonPrimary = "w-32 px-4 py-2 bg-[#039994] text-white rounded-md hover:bg-[#027d7b] disabled:opacity-50 disabled:cursor-not-allowed";
+import {
+  labelClass,
+  inputClass,
+  selectClass,
+  buttonPrimary
+} from "./styles";
 
 export default function EditResidentialFacilityModal({ facility, customerEmail, onClose = () => {}, onSave = () => {}, isOpen = false }) {
   const [formData, setFormData] = useState({
@@ -51,6 +52,23 @@ export default function EditResidentialFacilityModal({ facility, customerEmail, 
     }
   };
 
+  const getUserByEmail = async (email) => {
+    const authToken = localStorage.getItem("authToken");
+    if (!authToken) return null;
+    
+    try {
+      const response = await axios.get(`https://services.dcarbon.solutions/api/user/${email}`, {
+        headers: { Authorization: `Bearer ${authToken}` }
+      });
+      if (response.data.status === "success") {
+        return response.data.data;
+      }
+      return null;
+    } catch (error) {
+      return null;
+    }
+  };
+
   const fetchUserInstallers = async () => {
     const authToken = localStorage.getItem("authToken");
     const userId = localStorage.getItem("userId");
@@ -61,14 +79,22 @@ export default function EditResidentialFacilityModal({ facility, customerEmail, 
         headers: { Authorization: `Bearer ${authToken}` }
       });
       if (response.data.status === "success") {
-        const validInstallers = response.data.data.referrals.filter(
+        const installerReferrals = response.data.data.referrals.filter(
           referral => referral.role === "INSTALLER" && referral.status === "ACCEPTED"
-        ).map(installer => ({
-          id: installer.id,
-          name: installer.name || "Unnamed Installer",
-          email: installer.inviteeEmail
-        }));
-        setInstallers(validInstallers);
+        );
+
+        const installersWithIds = await Promise.all(
+          installerReferrals.map(async (installer) => {
+            const userData = await getUserByEmail(installer.inviteeEmail);
+            return {
+              id: userData?.id || installer.id,
+              name: installer.name || "Unnamed Installer",
+              email: installer.inviteeEmail
+            };
+          })
+        );
+
+        setInstallers(installersWithIds);
       }
     } catch (error) {
       toast.error("Failed to load installers");
@@ -103,12 +129,38 @@ export default function EditResidentialFacilityModal({ facility, customerEmail, 
       });
 
       if (response.data.status === "success") {
+        toast.success("Installer assigned to referral successfully");
         return true;
       }
       return false;
     } catch (error) {
-      console.error("Failed to assign installer to referral:", error);
+      toast.error(error.response?.data?.message || "Failed to assign installer to referral");
       return false;
+    }
+  };
+
+  const updateFacilityInstaller = async () => {
+    const authToken = localStorage.getItem("authToken");
+    
+    if (!authToken) return;
+
+    try {
+      const updateData = {
+        installer: formData.installer === "not_available" ? "N/A" : formData.installer
+      };
+      
+      const response = await axios.put(`https://services.dcarbon.solutions/api/residential-facility/update-facility/${facility.id}`, updateData, {
+        headers: { Authorization: `Bearer ${authToken}` }
+      });
+
+      if (response.data.status === "success") {
+        toast.success("Facility updated successfully");
+        return response.data.data;
+      }
+      return null;
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to update facility");
+      return null;
     }
   };
 
@@ -116,28 +168,20 @@ export default function EditResidentialFacilityModal({ facility, customerEmail, 
     e.preventDefault();
     if (!isAuthorized) return;
     setLoading(true);
+    
     try {
-      const authToken = localStorage.getItem("authToken");
-      const updateData = {
-        installer: formData.installer === "not_available" ? "N/A" : formData.installer
-      };
+      const updatedFacility = await updateFacilityInstaller();
       
-      const [facilityResponse, referralResponse] = await Promise.all([
-        axios.put(`https://services.dcarbon.solutions/api/residential-facility/update-facility/${facility.id}`, updateData, {
-          headers: { Authorization: `Bearer ${authToken}` }
-        }),
-        assignInstallerToReferral()
-      ]);
-
-      if (facilityResponse.data.status === "success") {
-        toast.success("Installer assigned successfully");
-        onSave(facilityResponse.data.data);
-        onClose();
-      } else {
-        throw new Error(facilityResponse.data.message || "Failed to assign installer");
+      if (updatedFacility) {
+        const referralAssigned = await assignInstallerToReferral();
+        
+        if (referralAssigned) {
+          onSave(updatedFacility);
+          onClose();
+        }
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to assign installer");
+      console.error("Error in form submission:", err);
     } finally {
       setLoading(false);
     }
@@ -180,7 +224,9 @@ export default function EditResidentialFacilityModal({ facility, customerEmail, 
                     <option value="" disabled>Loading installers...</option>
                   ) : installers.length > 0 ? (
                     installers.map(installer => (
-                      <option key={installer.id} value={installer.name}>{installer.name}</option>
+                      <option key={installer.id} value={installer.name}>
+                        {installer.name} (ID: {installer.id})
+                      </option>
                     ))
                   ) : (
                     <option value="not_available">Not Yet Available</option>
