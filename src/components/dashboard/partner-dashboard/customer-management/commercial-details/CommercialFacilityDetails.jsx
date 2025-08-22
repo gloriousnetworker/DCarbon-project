@@ -97,6 +97,39 @@ export default function FacilityDetails({ facility, customerEmail, onBack, onFac
   const [expandedRejections, setExpandedRejections] = useState({});
   const [currentStage, setCurrentStage] = useState(1);
   const [nextStage, setNextStage] = useState(2);
+  const [partnerType, setPartnerType] = useState(null);
+
+  const checkPartnerRole = async () => {
+    try {
+      const userId = localStorage.getItem('userId');
+      const authToken = localStorage.getItem('authToken');
+
+      if (!userId || !authToken) return;
+
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/user/partner/user/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        }
+      );
+
+      const result = await response.json();
+
+      if (result?.status === 'success') {
+        setPartnerType(result.data.user.partnerType);
+      }
+    } catch (error) {
+      console.error('Error checking partner role:', error);
+      setPartnerType(null);
+    }
+  };
+
+  useEffect(() => {
+    checkPartnerRole();
+  }, []);
 
   useEffect(() => {
     const checkUserProgress = async () => {
@@ -254,6 +287,24 @@ export default function FacilityDetails({ facility, customerEmail, onBack, onFac
     }));
   };
 
+  const canUploadDocument = (docType) => {
+    if (!partnerType) return true;
+    
+    if (partnerType === "INSTALLER") {
+      return docType === "solarInstallationContract" || docType === "installationSitePlan";
+    }
+    
+    if (partnerType === "FINANCE_COMPANY") {
+      return docType === "financeAgreement" || docType === "solarInstallationContract" || docType === "installationSitePlan";
+    }
+    
+    if (partnerType === "SALES_AGENT") {
+      return false;
+    }
+    
+    return true;
+  };
+
   const deleteFacility = async () => {
     const authToken = localStorage.getItem('authToken');
     if (!authToken) {
@@ -287,6 +338,11 @@ export default function FacilityDetails({ facility, customerEmail, onBack, onFac
   };
 
   const uploadDocument = async (docType, file) => {
+    if (!canUploadDocument(docType)) {
+      toast.error('You do not have permission to upload this document type');
+      return;
+    }
+
     setUploadingDoc(docType);
     
     const authToken = localStorage.getItem('authToken');
@@ -370,6 +426,11 @@ export default function FacilityDetails({ facility, customerEmail, onBack, onFac
   };
 
   const handleFileSelect = (docType) => {
+    if (!canUploadDocument(docType)) {
+      toast.error('You do not have permission to upload this document type');
+      return;
+    }
+
     const input = document.createElement("input");
     input.type = "file";
     input.accept = ".pdf,.doc,.docx,.png,.jpg,.jpeg";
@@ -398,6 +459,7 @@ export default function FacilityDetails({ facility, customerEmail, onBack, onFac
     const isRejected = status?.toUpperCase() === "REJECTED";
     const isExpanded = expandedRejections[docType];
     const displayStatus = !url ? "REQUIRED" : status || "PENDING";
+    const canUpload = canUploadDocument(docType);
     
     return (
       <div className="mb-3">
@@ -434,8 +496,8 @@ export default function FacilityDetails({ facility, customerEmail, onBack, onFac
         <div 
           className={`bg-[#F0F0F0] rounded-lg p-3 cursor-pointer hover:bg-gray-200 transition-colors flex items-center justify-center h-12 ${
             isRejected ? 'border-2 border-red-200' : ''
-          }`}
-          onClick={() => !isUploading && onUpload(docType)}
+          } ${!canUpload ? 'opacity-50 cursor-not-allowed' : ''}`}
+          onClick={() => !isUploading && canUpload && onUpload(docType)}
         >
           {isUploading ? (
             <div className="flex items-center space-x-2">
@@ -449,7 +511,7 @@ export default function FacilityDetails({ facility, customerEmail, onBack, onFac
                 {fileName || 'Document uploaded'}
               </span>
               <div className="flex items-center space-x-1">
-                {isRejected && (
+                {isRejected && canUpload && (
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -476,12 +538,12 @@ export default function FacilityDetails({ facility, customerEmail, onBack, onFac
           ) : (
             <div className="flex items-center space-x-2">
               <FiUpload className="text-gray-600" size={18} />
-              <span className="text-sm text-gray-700">Click to upload</span>
+              <span className="text-sm text-gray-700">{canUpload ? "Click to upload" : "Upload not permitted"}</span>
             </div>
           )}
         </div>
 
-        {isRejected && url && (
+        {isRejected && url && canUpload && (
           <div className="mt-1 text-xs text-red-600 flex items-center space-x-1">
             <FiAlertCircle size={10} />
             <span>Document rejected. Click to re-upload or use the refresh icon above.</span>
@@ -572,6 +634,8 @@ export default function FacilityDetails({ facility, customerEmail, onBack, onFac
     }
   };
 
+  const showAssignInstallerButton = partnerType === "FINANCE_COMPANY";
+
   return (
     <div className="bg-white">
       <div className="p-4 border-b border-gray-200">
@@ -610,13 +674,15 @@ export default function FacilityDetails({ facility, customerEmail, onBack, onFac
                 <span>Invite Collaborator</span>
               </button>
             )}
-            <button
-              onClick={() => setShowEditModal(true)}
-              className="flex items-center space-x-1 bg-[#1E1E1E] text-white px-3 py-1.5 rounded text-xs hover:bg-black transition-colors"
-            >
-              <FiEdit size={12} />
-              <span>Edit Facility Details</span>
-            </button>
+            {showAssignInstallerButton && (
+              <button
+                onClick={() => setShowEditModal(true)}
+                className="flex items-center space-x-1 bg-[#1E1E1E] text-white px-3 py-1.5 rounded text-xs hover:bg-black transition-colors"
+              >
+                <FiEdit size={12} />
+                <span>Assign Installer to Facility</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
