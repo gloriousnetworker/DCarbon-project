@@ -300,7 +300,7 @@ const DocumentUploadModal = ({ isOpen, onClose, onUpload, docType, facilityId })
       toast.success("Document uploaded successfully");
       onUpload(response.data.data);
       setFile(null);
-      setFileName('');
+  setFileName('');
       setFileInputKey(Date.now());
       onClose();
     } catch (error) {
@@ -373,7 +373,7 @@ const DocumentUploadModal = ({ isOpen, onClose, onUpload, docType, facilityId })
   );
 };
 
-export default function FacilityDetails({ facility, onBack, onFacilityUpdated, onDelete }) {
+export default function FacilityDetails({ facility, customerEmail, onBack, onFacilityUpdated, onDelete }) {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadDocType, setUploadDocType] = useState("");
@@ -386,6 +386,32 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated, o
   const [currentStage, setCurrentStage] = useState(1);
   const [completedStages, setCompletedStages] = useState([]);
   const [facilityData, setFacilityData] = useState(facility);
+  const [partnerType, setPartnerType] = useState(null);
+
+  const checkPartnerRole = async () => {
+    try {
+      const userId = localStorage.getItem('userId');
+      const authToken = localStorage.getItem('authToken');
+
+      if (!userId || !authToken) return;
+
+      const response = await axios.get(
+        `https://services.dcarbon.solutions/api/user/partner/user/${userId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
+        }
+      );
+
+      if (response?.data?.status === 'success') {
+        setPartnerType(response.data.data.user.partnerType);
+      }
+    } catch (error) {
+      console.error('Error checking partner role:', error);
+      setPartnerType(null);
+    }
+  };
 
   const checkStage2Completion = async (userId, authToken) => {
     try {
@@ -615,7 +641,7 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated, o
 
   const downloadCSV = () => {
     const headers = [
-      'Facility ID', 'Address', 'Utility Provider', 'Installer', 
+      'Facility ID', 'Email', 'Address', 'Utility Provider', 'Installer', 
       'Meter ID', 'Zip Code', 'Status', 'Finance Type', 
       'Finance Company', 'Date Created', 'System Capacity', 
       'DGG ID', 'Total RECs', 'Last REC Calculation',
@@ -626,6 +652,7 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated, o
 
     const data = [
       facilityData.id || '',
+      customerEmail || '',
       facilityData.address || '',
       facilityData.utilityProvider || '',
       facilityData.installer || '',
@@ -670,6 +697,7 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated, o
     fetchDocuments();
     fetchFinanceType();
     checkUserProgress();
+    checkPartnerRole();
   }, [facilityData?.id]);
 
   const getStatusColor = (status) => {
@@ -681,6 +709,24 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated, o
       case "REJECTED": return "bg-[#F04438] text-white";
       default: return "bg-gray-500 text-white";
     }
+  };
+
+  const canUploadDocument = (docType) => {
+    if (!partnerType) return true;
+    
+    if (partnerType === "INSTALLER") {
+      return docType === "solarInstallationContract" || docType === "installationSitePlan";
+    }
+    
+    if (partnerType === "FINANCE_COMPANY") {
+      return docType === "financeAgreement" || docType === "solarInstallationContract" || docType === "installationSitePlan";
+    }
+    
+    if (partnerType === "SALES_AGENT") {
+      return false;
+    }
+    
+    return true;
   };
 
   const getDocumentList = () => {
@@ -696,7 +742,8 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated, o
           url: documents?.[docType.urlField] || null,
           status: documents?.[docType.statusField] || "REQUIRED",
           rejectionReason: documents?.[docType.rejectionField] || null,
-          mandatory: docType.mandatory && !isFinanceAgreementOptional
+          mandatory: docType.mandatory && !isFinanceAgreementOptional,
+          canUpload: canUploadDocument(key)
         });
       }
     });
@@ -729,6 +776,8 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated, o
     setShowEditModal(false);
   };
 
+  const showAssignInstallerButton = partnerType === "FINANCE_COMPANY";
+
   return (
     <div className="max-w-6xl mx-auto bg-white rounded-lg shadow-sm p-6">
       {loading && (
@@ -759,13 +808,15 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated, o
             <FiDownload size={14} />
             <span>Download CSV</span>
           </button>
-          <button
-            onClick={() => setShowEditModal(true)}
-            className="flex items-center gap-2 bg-[#1E1E1E] text-white px-3 py-1.5 rounded-md text-sm hover:bg-black"
-          >
-            <FiEdit size={14} />
-            <span>Edit</span>
-          </button>
+          {showAssignInstallerButton && (
+            <button
+              onClick={() => setShowEditModal(true)}
+              className="flex items-center gap-2 bg-[#1E1E1E] text-white px-3 py-1.5 rounded-md text-sm hover:bg-black"
+            >
+              <FiEdit size={14} />
+              <span>Assign Installer to Facility</span>
+            </button>
+          )}
           <button
             onClick={() => {
               if (window.confirm("Are you sure you want to delete this facility?")) {
@@ -787,6 +838,7 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated, o
             <div className="grid grid-cols-2 gap-y-2 gap-x-4">
               {[
                 ["Facility ID", facilityData.id],
+                ["Email", customerEmail || "N/A"],
                 ["Utility Provider", facilityData.utilityProvider || "N/A"],
                 ["Installer", facilityData.installer || "N/A"],
                 ["Meter ID", facilityData.meterId || "N/A"],
@@ -852,8 +904,13 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated, o
                   </div>
                 )}
                 <div 
-                  className="bg-[#F0F0F0] rounded-md p-2.5 flex items-center justify-center cursor-pointer hover:bg-gray-200"
-                  onClick={() => doc.url ? handleViewDocument(doc.url, doc.name) : handleUploadClick(doc.type)}
+                  className={`bg-[#F0F0F0] rounded-md p-2.5 flex items-center justify-center ${
+                    doc.canUpload ? "cursor-pointer hover:bg-gray-200" : "opacity-50 cursor-not-allowed"
+                  }`}
+                  onClick={() => {
+                    if (!doc.canUpload) return;
+                    doc.url ? handleViewDocument(doc.url, doc.name) : handleUploadClick(doc.type);
+                  }}
                 >
                   {doc.url ? (
                     <div className="flex items-center space-x-2">
@@ -912,6 +969,7 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated, o
 
       <EditResidentialFacilityModal
         facility={facilityData}
+        customerEmail={customerEmail}
         onClose={() => setShowEditModal(false)}
         onSave={handleSave}
         isOpen={showEditModal}

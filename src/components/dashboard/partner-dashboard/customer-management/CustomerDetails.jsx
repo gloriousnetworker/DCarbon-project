@@ -494,6 +494,7 @@ export default function CustomerDetails({ customer, onBack }) {
     ) : (
       <ResidentialFacilityDetails 
         facility={selectedFacility} 
+        customerEmail={customerDetails.email}
         onBack={handleBackFromFacility} 
       />
     );
@@ -591,6 +592,9 @@ export default function CustomerDetails({ customer, onBack }) {
                     {facility.facilityName}
                   </h3>
                   <div className="grid grid-cols-2 gap-y-1 text-xs">
+                    <span className="font-medium">Email:</span>
+                    <span>{customerDetails.email}</span>
+                    
                     {isCommercialUser ? (
                       <>
                         <span className="font-medium">Role:</span>

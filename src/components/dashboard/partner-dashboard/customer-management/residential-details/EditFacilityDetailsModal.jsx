@@ -2,26 +2,18 @@ import React, { useState, useEffect } from "react";
 import { FiX } from "react-icons/fi";
 import axios from "axios";
 import toast from "react-hot-toast";
-import {
-  labelClass,
-  inputClass,
-  selectClass,
-  buttonPrimary,
-  uploadNoteStyle
-} from "./styles";
 
-export default function EditResidentialFacilityModal({ facility, onClose = () => {}, onSave = () => {}, isOpen = false }) {
+const labelClass = "block text-sm font-medium text-gray-700 mb-1";
+const inputClass = "w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] focus:border-transparent";
+const selectClass = "w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] focus:border-transparent";
+const buttonPrimary = "w-32 px-4 py-2 bg-[#039994] text-white rounded-md hover:bg-[#027d7b] disabled:opacity-50 disabled:cursor-not-allowed";
+
+export default function EditResidentialFacilityModal({ facility, customerEmail, onClose = () => {}, onSave = () => {}, isOpen = false }) {
   const [formData, setFormData] = useState({
-    installer: facility.installer || "",
-    systemCapacity: facility.systemCapacity || "",
-    zipCode: facility.zipCode || "",
-    meterId: facility.meterId || "",
-    utilityProvider: facility.utilityProvider || "",
-    address: facility.address || "",
-    financeType: facility.financeType || "",
-    financeCompany: facility.financeCompany || ""
+    installer: facility.installer || ""
   });
 
+  const [selectedInstaller, setSelectedInstaller] = useState(null);
   const [loading, setLoading] = useState(false);
   const [installers, setInstallers] = useState([]);
   const [loadingInstallers, setLoadingInstallers] = useState(false);
@@ -88,6 +80,36 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    
+    const selected = installers.find(inst => inst.name === value);
+    setSelectedInstaller(selected);
+  };
+
+  const assignInstallerToReferral = async () => {
+    const authToken = localStorage.getItem("authToken");
+    const userId = localStorage.getItem("userId");
+    
+    if (!authToken || !userId || !selectedInstaller || !customerEmail) return;
+
+    try {
+      const payload = {
+        inviteeEmail: customerEmail,
+        installerId: selectedInstaller.id,
+        installerName: selectedInstaller.name
+      };
+
+      const response = await axios.put(`https://services.dcarbon.solutions/api/user/referral/assign-installer/${userId}`, payload, {
+        headers: { Authorization: `Bearer ${authToken}` }
+      });
+
+      if (response.data.status === "success") {
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Failed to assign installer to referral:", error);
+      return false;
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -97,23 +119,23 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
     try {
       const authToken = localStorage.getItem("authToken");
       const updateData = {
-        installer: formData.installer === "not_available" ? "N/A" : formData.installer,
-        systemCapacity: Number(formData.systemCapacity),
-        zipCode: formData.zipCode,
-        meterId: formData.meterId || facility.meterId,
-        utilityProvider: formData.utilityProvider,
-        address: formData.address,
-        financeType: formData.financeType,
-        financeCompany: formData.financeType !== "Cash" ? formData.financeCompany : ""
+        installer: formData.installer === "not_available" ? "N/A" : formData.installer
       };
-      const { data } = await axios.put(`https://services.dcarbon.solutions/api/residential-facility/update-facility/${facility.id}`, updateData, {
-        headers: { Authorization: `Bearer ${authToken}` }
-      });
-      if (data.status === "success") {
+      
+      const [facilityResponse, referralResponse] = await Promise.all([
+        axios.put(`https://services.dcarbon.solutions/api/residential-facility/update-facility/${facility.id}`, updateData, {
+          headers: { Authorization: `Bearer ${authToken}` }
+        }),
+        assignInstallerToReferral()
+      ]);
+
+      if (facilityResponse.data.status === "success") {
         toast.success("Installer assigned successfully");
-        onSave(data.data);
+        onSave(facilityResponse.data.data);
         onClose();
-      } else throw new Error(data.message || "Failed to assign installer");
+      } else {
+        throw new Error(facilityResponse.data.message || "Failed to assign installer");
+      }
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to assign installer");
     } finally {
@@ -167,8 +189,12 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
+                  <label className={labelClass}>Customer Email</label>
+                  <input type="text" value={customerEmail || "N/A"} className={`${inputClass} bg-gray-100 cursor-not-allowed`} readOnly disabled />
+                </div>
+                <div>
                   <label className={labelClass}>Utility Provider</label>
-                  <input type="text" name="utilityProvider" value={formData.utilityProvider} className={`${inputClass} bg-gray-100 cursor-not-allowed`} readOnly disabled />
+                  <input type="text" value={facility.utilityProvider || "N/A"} className={`${inputClass} bg-gray-100 cursor-not-allowed`} readOnly disabled />
                 </div>
                 <div>
                   <label className={labelClass}>Utility Account</label>
@@ -176,27 +202,27 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
                 </div>
                 <div>
                   <label className={labelClass}>Meter ID</label>
-                  <input type="text" name="meterId" value={formData.meterId || "N/A"} className={`${inputClass} bg-gray-100 cursor-not-allowed`} readOnly disabled />
+                  <input type="text" value={facility.meterId || "N/A"} className={`${inputClass} bg-gray-100 cursor-not-allowed`} readOnly disabled />
                 </div>
                 <div className="md:col-span-2">
                   <label className={labelClass}>Address</label>
-                  <textarea name="address" value={formData.address} rows={3} className={`${inputClass} bg-gray-100`} disabled={true} />
+                  <textarea value={facility.address || "N/A"} rows={3} className={`${inputClass} bg-gray-100`} disabled={true} />
                 </div>
                 <div>
                   <label className={labelClass}>Zip Code</label>
-                  <input type="text" name="zipCode" value={formData.zipCode} className={`${inputClass} bg-gray-100 cursor-not-allowed`} readOnly disabled />
+                  <input type="text" value={facility.zipCode || "N/A"} className={`${inputClass} bg-gray-100 cursor-not-allowed`} readOnly disabled />
                 </div>
                 <div>
                   <label className={labelClass}>System Capacity (kW)</label>
-                  <input type="number" name="systemCapacity" value={formData.systemCapacity} className={`${inputClass} bg-gray-100 cursor-not-allowed`} readOnly disabled />
+                  <input type="number" value={facility.systemCapacity || "N/A"} className={`${inputClass} bg-gray-100 cursor-not-allowed`} readOnly disabled />
                 </div>
                 <div>
                   <label className={labelClass}>Finance Type</label>
-                  <input type="text" name="financeType" value={formData.financeType} className={`${inputClass} bg-gray-100 cursor-not-allowed`} readOnly disabled />
+                  <input type="text" value={facility.financeType || "N/A"} className={`${inputClass} bg-gray-100 cursor-not-allowed`} readOnly disabled />
                 </div>
                 <div>
                   <label className={labelClass}>Finance Company</label>
-                  <input type="text" name="financeCompany" value={formData.financeCompany} className={`${inputClass} bg-gray-100 cursor-not-allowed`} readOnly disabled />
+                  <input type="text" value={facility.financeCompany || "N/A"} className={`${inputClass} bg-gray-100 cursor-not-allowed`} readOnly disabled />
                 </div>
               </div>
               <div className="flex justify-end gap-4 pt-6">

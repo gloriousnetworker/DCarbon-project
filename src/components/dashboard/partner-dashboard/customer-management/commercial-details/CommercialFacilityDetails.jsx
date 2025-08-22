@@ -87,7 +87,7 @@ const ProgressTracker = ({ currentStage, nextStage, onStageClick }) => {
   );
 };
 
-export default function FacilityDetails({ facility, onBack, onFacilityUpdated }) {
+export default function FacilityDetails({ facility, customerEmail, onBack, onFacilityUpdated }) {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -625,6 +625,10 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
           <div className="bg-white border border-gray-200 rounded-lg p-4">
             <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className={`${labelClass} text-xs`}>Email</span>
+                <span className="text-gray-600 text-xs">{customerEmail || "N/A"}</span>
+              </div>
               <div className="flex justify-between items-center">
                 <span className={`${labelClass} text-xs`}>Commercial Role</span>
                 <span className="text-gray-600 text-xs capitalize">

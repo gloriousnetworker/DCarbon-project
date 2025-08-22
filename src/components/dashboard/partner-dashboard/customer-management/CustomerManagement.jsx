@@ -16,6 +16,7 @@ const STATUS_COLORS = {
   REGISTERED: "#1E1E1E",
   PENDING: "#FFB200",
   EXPIRED: "#FF0000",
+  ACCEPTED: "#1E1E1E"
 };
 
 const DOCUMENT_STATUS_COLORS = {
@@ -52,11 +53,47 @@ export default function PartnerCustomerReport() {
   const [customerDetailsCache, setCustomerDetailsCache] = useState({});
   const [commercialRolesCache, setCommercialRolesCache] = useState({});
   const [acceptedUsersCache, setAcceptedUsersCache] = useState({});
+  const [isInstaller, setIsInstaller] = useState(false);
 
   useEffect(() => {
-    fetchTableData(1);
-    fetchStatistics();
-  }, [filters]);
+    checkPartnerType();
+  }, []);
+
+  useEffect(() => {
+    if (isInstaller !== null) {
+      fetchTableData(1);
+      fetchStatistics();
+    }
+  }, [filters, isInstaller]);
+
+  const checkPartnerType = async () => {
+    try {
+      const userId = localStorage.getItem('userId');
+      const authToken = localStorage.getItem('authToken');
+
+      if (!userId || !authToken) {
+        console.error('User credentials not found in localStorage');
+        return;
+      }
+
+      const response = await axios.get(
+        `https://services.dcarbon.solutions/api/user/partner/user/${userId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
+        }
+      );
+
+      if (response?.data?.status === 'success') {
+        const partnerType = response.data.data.partnerType?.toUpperCase();
+        setIsInstaller(partnerType === 'INSTALLER');
+      }
+    } catch (error) {
+      console.error('Error checking partner type:', error);
+      setIsInstaller(false);
+    }
+  };
 
   const fetchTableData = async (pageNumber = 1) => {
     try {
@@ -83,28 +120,55 @@ export default function PartnerCustomerReport() {
         if (dateRange.endDate) params.endDate = dateRange.endDate;
       }
 
-      const response = await axios.get(
-        `https://services.dcarbon.solutions/api/user/get-users-referrals/${userId}`,
-        {
-          params,
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-          },
-        }
-      );
+      let response;
+      if (isInstaller) {
+        response = await axios.get(
+          `https://services.dcarbon.solutions/api/user/referrals/installer/${userId}`,
+          {
+            params,
+            headers: {
+              Authorization: `Bearer ${authToken}`,
+            },
+          }
+        );
+      } else {
+        response = await axios.get(
+          `https://services.dcarbon.solutions/api/user/get-users-referrals/${userId}`,
+          {
+            params,
+            headers: {
+              Authorization: `Bearer ${authToken}`,
+            },
+          }
+        );
+      }
 
       if (response?.data?.status === 'success') {
-        const { referrals } = response.data.data;
-        const metadata = response.data.data.metadata;
+        if (isInstaller) {
+          const referrals = response.data.data || [];
+          setTableData(referrals);
+          setCurrentPage(1);
+          setTotalPages(1);
 
-        setTableData(referrals || []);
-        setCurrentPage(metadata.page || 1);
-        setTotalPages(metadata.totalPages || 1);
+          const acceptedUsers = referrals.filter(user => user.status === 'ACCEPTED');
+          for (const user of acceptedUsers) {
+            if (user.inviteeEmail && !acceptedUsersCache[user.inviteeEmail]) {
+              fetchAcceptedUserDetails(user.inviteeEmail);
+            }
+          }
+        } else {
+          const { referrals } = response.data.data;
+          const metadata = response.data.data.metadata;
 
-        const acceptedUsers = referrals.filter(user => user.status === 'ACCEPTED');
-        for (const user of acceptedUsers) {
-          if (user.inviteeEmail && !acceptedUsersCache[user.inviteeEmail]) {
-            fetchAcceptedUserDetails(user.inviteeEmail);
+          setTableData(referrals || []);
+          setCurrentPage(metadata.page || 1);
+          setTotalPages(metadata.totalPages || 1);
+
+          const acceptedUsers = referrals.filter(user => user.status === 'ACCEPTED');
+          for (const user of acceptedUsers) {
+            if (user.inviteeEmail && !acceptedUsersCache[user.inviteeEmail]) {
+              fetchAcceptedUserDetails(user.inviteeEmail);
+            }
           }
         }
       }
@@ -180,17 +244,26 @@ export default function PartnerCustomerReport() {
         return;
       }
 
-      const response = await axios.get(
-        `https://services.dcarbon.solutions/api/user/referral-statistics/${userId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-          },
-        }
-      );
+      if (isInstaller) {
+        setStatistics({
+          totalInvited: 0,
+          totalPending: 0,
+          totalAccepted: tableData.filter(item => item.status === 'ACCEPTED').length,
+          totalExpired: 0
+        });
+      } else {
+        const response = await axios.get(
+          `https://services.dcarbon.solutions/api/user/referral-statistics/${userId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${authToken}`,
+            },
+          }
+        );
 
-      if (response?.data?.status === 'success') {
-        setStatistics(response.data.data);
+        if (response?.data?.status === 'success') {
+          setStatistics(response.data.data);
+        }
       }
     } catch (error) {
       console.error('Error fetching statistics:', error);
@@ -352,7 +425,7 @@ export default function PartnerCustomerReport() {
     if (loadingTable) {
       return (
         <tr>
-          <td colSpan="8" className="py-4 text-center">
+          <td colSpan={isInstaller ? "10" : "8"} className="py-4 text-center">
             Loading...
           </td>
         </tr>
@@ -362,7 +435,7 @@ export default function PartnerCustomerReport() {
     if (tableData.length === 0) {
       return (
         <tr>
-          <td colSpan="8" className="py-4 text-center">
+          <td colSpan={isInstaller ? "10" : "8"} className="py-4 text-center">
             No records found
           </td>
         </tr>
@@ -393,29 +466,60 @@ export default function PartnerCustomerReport() {
       const dateCreated = formatDate(item.createdAt);
       const status = item.status || 'N/A';
 
-      return (
-        <tr 
-          key={item.id || index} 
-          className="border-b hover:bg-gray-50 cursor-pointer"
-          onClick={() => handleRowClick(item)}
-        >
-          <td className="py-3 px-2 text-sm">{sn}</td>
-          <td className="py-3 px-2 text-sm">{nameToShow}</td>
-          <td className="py-3 px-2 text-sm">{email}</td>
-          <td className="py-3 px-2 text-sm font-medium">{role}</td>
-          <td className="py-3 px-2 text-sm font-medium">{customerType}</td>
-          <td className="py-3 px-2 text-sm">{dateCreated}</td>
-          <td className="py-3 px-2 text-sm">
-            <span
-              className="text-white px-2 py-1 rounded-full text-xs"
-              style={{ backgroundColor: getStatusStyle(status) }}
-            >
-              {status}
-            </span>
-          </td>
-          <td className="py-3 px-2 text-sm">{renderDocStatus(item.documentStatus)}</td>
-        </tr>
-      );
+      if (isInstaller) {
+        const financeCompany = item.inviter ? `${item.inviter.firstName} ${item.inviter.lastName}` : 'N/A';
+        const financeEmail = item.inviter?.email || 'N/A';
+        
+        return (
+          <tr 
+            key={item.id || index} 
+            className="border-b hover:bg-gray-50 cursor-pointer text-xs"
+            onClick={() => handleRowClick(item)}
+          >
+            <td className="py-3 px-1">{sn}</td>
+            <td className="py-3 px-1">{nameToShow}</td>
+            <td className="py-3 px-1">{email}</td>
+            <td className="py-3 px-1 font-medium">{role}</td>
+            <td className="py-3 px-1 font-medium">{customerType}</td>
+            <td className="py-3 px-1">{dateCreated}</td>
+            <td className="py-3 px-1">
+              <span
+                className="text-white px-2 py-1 rounded-full"
+                style={{ backgroundColor: getStatusStyle(status) }}
+              >
+                {status}
+              </span>
+            </td>
+            <td className="py-3 px-1">{renderDocStatus(item.documentStatus)}</td>
+            <td className="py-3 px-1">{financeCompany}<br/>{financeEmail}</td>
+            <td className="py-3 px-1">100%<br/>0%</td>
+          </tr>
+        );
+      } else {
+        return (
+          <tr 
+            key={item.id || index} 
+            className="border-b hover:bg-gray-50 cursor-pointer"
+            onClick={() => handleRowClick(item)}
+          >
+            <td className="py-3 px-2 text-sm">{sn}</td>
+            <td className="py-3 px-2 text-sm">{nameToShow}</td>
+            <td className="py-3 px-2 text-sm">{email}</td>
+            <td className="py-3 px-2 text-sm font-medium">{role}</td>
+            <td className="py-3 px-2 text-sm font-medium">{customerType}</td>
+            <td className="py-3 px-2 text-sm">{dateCreated}</td>
+            <td className="py-3 px-2 text-sm">
+              <span
+                className="text-white px-2 py-1 rounded-full text-xs"
+                style={{ backgroundColor: getStatusStyle(status) }}
+              >
+                {status}
+              </span>
+            </td>
+            <td className="py-3 px-2 text-sm">{renderDocStatus(item.documentStatus)}</td>
+          </tr>
+        );
+      }
     });
   };
 
@@ -573,6 +677,12 @@ export default function PartnerCustomerReport() {
               <th className="py-2 px-1 text-left">Created At</th>
               <th className="py-2 px-1 text-left">Status</th>
               <th className="py-2 px-1 text-left">Document Status</th>
+              {isInstaller && (
+                <>
+                  <th className="py-2 px-1 text-left">Finance Company</th>
+                  <th className="py-2 px-1 text-left">Commission<br/>(Finance/Installer)</th>
+                </>
+              )}
             </tr>
           </thead>
           <tbody>{renderRows()}</tbody>
