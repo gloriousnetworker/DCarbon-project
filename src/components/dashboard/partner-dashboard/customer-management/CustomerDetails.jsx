@@ -4,6 +4,7 @@ import { HiOutlineArrowLeft, HiOutlineInformationCircle } from 'react-icons/hi';
 import { FiChevronRight } from 'react-icons/fi';
 import CommercialFacilityDetails from './commercial-details/CommercialFacilityDetails';
 import ResidentialFacilityDetails from './residential-details/ResidentialFacilityDetails';
+import SendReminderModal from './SendFacilityReminder';
 
 const mainContainer = "w-full min-h-screen bg-white p-4 md:p-8";
 const headingContainer = "flex items-center mb-6";
@@ -35,6 +36,7 @@ export default function CustomerDetails({ customer, onBack }) {
   const [commercialUserDetails, setCommercialUserDetails] = useState(null);
   const [selectedFacility, setSelectedFacility] = useState(null);
   const [isCommercialUser, setIsCommercialUser] = useState(false);
+  const [showReminderModal, setShowReminderModal] = useState(false);
 
   const fetchCommercialUserDetails = async (userId) => {
     try {
@@ -563,9 +565,26 @@ export default function CustomerDetails({ customer, onBack }) {
         </div>
       </div>
 
-      <h2 className="mb-2 font-[600] text-[20px] text-[#039994]">
-        {isCommercialUser ? 'My Facilities' : 'Solar System Management'}
-      </h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="font-[600] text-[20px] text-[#039994]">
+          {isCommercialUser ? 'My Facilities' : 'Solar System Management'}
+        </h2>
+        
+        {facilities.length === 0 && (
+          <div className="relative group">
+            <button
+              onClick={() => setShowReminderModal(true)}
+              className="bg-[#039994] text-white px-4 py-2 rounded-md text-sm hover:bg-[#02827D] transition-colors"
+            >
+              Send Reminder
+            </button>
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity w-48 text-center">
+              Send a reminder to this user to Create a Facility so an installer can be Assigned to them.
+            </div>
+          </div>
+        )}
+      </div>
+      
       <hr className="w-full mb-6" />
 
       {isLoadingProgress ? (
@@ -687,6 +706,14 @@ export default function CustomerDetails({ customer, onBack }) {
           Back to List
         </button>
       </div>
+
+      {showReminderModal && (
+        <SendReminderModal 
+          isOpen={showReminderModal} 
+          onClose={() => setShowReminderModal(false)}
+          customerEmail={customerDetails.email}
+        />
+      )}
     </div>
   );
 }

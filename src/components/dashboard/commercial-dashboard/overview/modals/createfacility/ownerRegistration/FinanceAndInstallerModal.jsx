@@ -46,6 +46,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const [loadingInstallers, setLoadingInstallers] = useState(false);
   const [loadingUtilityProviders, setLoadingUtilityProviders] = useState(false);
   const [loadingFinanceCompanies, setLoadingFinanceCompanies] = useState(false);
+  const [loadingReferrer, setLoadingReferrer] = useState(false);
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [requestingFinanceType, setRequestingFinanceType] = useState(false);
   const [requestedFinanceTypeName, setRequestedFinanceTypeName] = useState('');
@@ -54,6 +55,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const [facilityNickname, setFacilityNickname] = useState('');
   const [utilityProviders, setUtilityProviders] = useState([]);
   const [financeCompanies, setFinanceCompanies] = useState([]);
+  const [referrerFinanceCompany, setReferrerFinanceCompany] = useState(null);
   const [commercialRole, setCommercialRole] = useState('owner');
 
   const [formData, setFormData] = useState({
@@ -78,6 +80,10 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const showFinanceCompany = !isCashType && formData.financeType !== '';
   const showCustomInstaller = formData.installer === 'others';
   const noInstallerSelected = formData.installer === 'not_available';
+  const isReferredByFinanceCompany = referrerFinanceCompany !== null;
+  const filteredFinanceCompanies = isReferredByFinanceCompany 
+    ? financeCompanies.filter(company => company.name === referrerFinanceCompany.name)
+    : financeCompanies;
 
   const fetchCommercialRole = async () => {
     try {
@@ -91,7 +97,24 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
         setCommercialRole(response.data.data.commercialUser.commercialRole);
       }
     } catch (error) {
-      console.error('Error fetching commercial role:', error);
+    }
+  };
+
+  const fetchReferrerInfo = async () => {
+    setLoadingReferrer(true);
+    try {
+      const token = localStorage.getItem('authToken');
+      const userId = localStorage.getItem('userId');
+      const response = await axios.get(
+        `https://services.dcarbon.solutions/api/user/referrer/${userId}`,
+        { headers: { 'Authorization': `Bearer ${token}` } }
+      );
+      if (response.data.status === 'success' && response.data.data.partnerType === 'FINANCE_COMPANY') {
+        setReferrerFinanceCompany(response.data.data.partner);
+      }
+    } catch (err) {
+    } finally {
+      setLoadingReferrer(false);
     }
   };
 
@@ -102,8 +125,18 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
       fetchInstallers();
       fetchUtilityProviders();
       fetchFinanceCompanies();
+      fetchReferrerInfo();
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (isReferredByFinanceCompany) {
+      setFormData(prev => ({
+        ...prev,
+        installer: 'not_available'
+      }));
+    }
+  }, [isReferredByFinanceCompany]);
 
   const fetchUtilityProviders = async () => {
     setLoadingUtilityProviders(true);
@@ -576,7 +609,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                         disabled={loadingFinanceCompanies}
                       >
                         <option value="">{loadingFinanceCompanies ? 'Loading...' : 'Choose company'}</option>
-                        {financeCompanies.map((company) => (
+                        {filteredFinanceCompanies.map((company) => (
                           <option key={company.id} value={company.name}>{company.name}</option>
                         ))}
                         <option value="Other">Other</option>
@@ -638,13 +671,13 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                       onChange={handleInputChange}
                       className={`${styles.selectClass} appearance-none`}
                       required
-                      disabled={loadingInstallers}
+                      disabled={loadingInstallers || isReferredByFinanceCompany}
                     >
                       <option value="">{loadingInstallers ? 'Loading...' : 'Choose installer'}</option>
-                      {installers.map((installer) => (
+                      {!isReferredByFinanceCompany && installers.map((installer) => (
                         <option key={installer.id} value={installer.name}>{installer.name}</option>
                       ))}
-                      <option value="others">Others</option>
+                      {!isReferredByFinanceCompany && <option value="others">Others</option>}
                       <option value="not_available">Not Yet Available</option>
                     </select>
                     <div className={styles.uploadIconContainer}>
@@ -653,6 +686,11 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                       </svg>
                     </div>
                   </div>
+                  {isReferredByFinanceCompany && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Your finance company will invite your installer to complete the registration process.
+                    </p>
+                  )}
                 </div>
 
                 {showCustomInstaller && (
