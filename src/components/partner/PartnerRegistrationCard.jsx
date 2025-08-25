@@ -24,13 +24,15 @@ export default function StepOneCard() {
 
   const router = useRouter();
 
-  const usStates = [
-    'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut', 'Delaware',
-    'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky',
-    'Louisiana', 'Maine', 'Maryland', 'Massachusetts', 'Michigan', 'Minnesota', 'Mississippi', 'Missouri',
-    'Montana', 'Nebraska', 'Nevada', 'New Hampshire', 'New Jersey', 'New Mexico', 'New York', 'North Carolina',
-    'North Dakota', 'Ohio', 'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island', 'South Carolina', 'South Dakota',
-    'Tennessee', 'Texas', 'Utah', 'Vermont', 'Virginia', 'Washington', 'West Virginia', 'Wisconsin', 'Wyoming'
+  const californiaCounties = [
+    'Alameda', 'Alpine', 'Amador', 'Butte', 'Calaveras', 'Colusa', 'Contra Costa', 'Del Norte',
+    'El Dorado', 'Fresno', 'Glenn', 'Humboldt', 'Imperial', 'Inyo', 'Kern', 'Kings', 'Lake',
+    'Lassen', 'Los Angeles', 'Madera', 'Marin', 'Mariposa', 'Mendocino', 'Merced', 'Modoc',
+    'Mono', 'Monterey', 'Napa', 'Nevada', 'Orange', 'Placer', 'Plumas', 'Riverside', 'Sacramento',
+    'San Benito', 'San Bernardino', 'San Diego', 'San Francisco', 'San Joaquin', 'San Luis Obispo',
+    'San Mateo', 'Santa Barbara', 'Santa Clara', 'Santa Cruz', 'Shasta', 'Sierra', 'Siskiyou',
+    'Solano', 'Sonoma', 'Stanislaus', 'Sutter', 'Tehama', 'Trinity', 'Tulare', 'Tuolumne',
+    'Ventura', 'Yolo', 'Yuba'
   ];
 
   useEffect(() => {
@@ -457,7 +459,7 @@ export default function StepOneCard() {
 
           <div>
             <label className="block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]">
-              Email Address <span className="text-red-500">*</span>
+              Partner Company Email <span className="text-red-500">*</span>
             </label>
             <input
               type="email"
@@ -475,7 +477,7 @@ export default function StepOneCard() {
 
           <div>
             <label className="block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]">
-              Territory <span className="text-red-500">*</span>
+              Territory (California Counties) <span className="text-red-500">*</span>
             </label>
             <select
               multiple
@@ -484,11 +486,11 @@ export default function StepOneCard() {
               className={getInputClassName('territory') + " h-32"}
               required
             >
-              {usStates.map(state => (
-                <option key={state} value={state}>{state}</option>
+              {californiaCounties.map(county => (
+                <option key={county} value={county}>{county}</option>
               ))}
             </select>
-            <p className="mt-1 text-sm text-gray-500 font-sfpro">Hold Ctrl/Cmd to select multiple territories</p>
+            <p className="mt-1 text-sm text-gray-500 font-sfpro">Hold Ctrl/Cmd to select multiple counties</p>
             
             <div className="mt-2">
               {!showCustomInput ? (
