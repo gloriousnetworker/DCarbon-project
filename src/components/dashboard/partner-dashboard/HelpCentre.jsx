@@ -18,29 +18,51 @@ export default function DashboardHelpCentre() {
   const [faqs, setFaqs] = useState([])
   const [loading, setLoading] = useState(true)
   const [expandedId, setExpandedId] = useState(null)
+  const [isPartner, setIsPartner] = useState(false)
 
   useEffect(() => {
-    const fetchFaqs = async () => {
+    const fetchUserData = async () => {
       try {
         const token = localStorage.getItem('authToken')
-        const response = await fetch('https://services.dcarbon.solutions/api/faq/faqs', {
+        const userId = localStorage.getItem('userId')
+        
+        const partnerResponse = await fetch(`https://services.dcarbon.solutions/api/user/partner/user/${userId}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
         })
-        const data = await response.json()
-        if (data.status === 'success') {
-          setFaqs(data.data.faqs)
+        
+        const partnerData = await partnerResponse.json()
+        if (partnerData.status === 'success' && partnerData.data.user.userType === 'PARTNER') {
+          setIsPartner(true)
+        }
+
+        const faqResponse = await fetch('https://services.dcarbon.solutions/api/faq/faqs', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        
+        const faqData = await faqResponse.json()
+        if (faqData.status === 'success') {
+          if (isPartner) {
+            const filteredFaqs = faqData.data.faqs.filter(faq => 
+              faq.target === 'GENERAL' || faq.target === 'PARTNER'
+            )
+            setFaqs(filteredFaqs)
+          } else {
+            setFaqs(faqData.data.faqs)
+          }
         }
       } catch (error) {
-        console.error('Failed to fetch FAQs:', error)
+        console.error('Failed to fetch data:', error)
       } finally {
         setLoading(false)
       }
     }
 
-    fetchFaqs()
-  }, [])
+    fetchUserData()
+  }, [isPartner])
 
   const toggleAccordion = (id) => {
     setExpandedId(expandedId === id ? null : id)

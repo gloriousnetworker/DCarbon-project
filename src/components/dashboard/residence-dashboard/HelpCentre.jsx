@@ -17,29 +17,58 @@ export default function DashboardHelpCentre() {
   const [faqs, setFaqs] = useState([])
   const [loading, setLoading] = useState(true)
   const [expandedId, setExpandedId] = useState(null)
+  const [userType, setUserType] = useState('')
 
   useEffect(() => {
-    const fetchFaqs = async () => {
+    const fetchUserData = async () => {
       try {
         const token = localStorage.getItem('authToken')
-        const response = await fetch('https://services.dcarbon.solutions/api/faq/faqs', {
+        const userId = localStorage.getItem('userId')
+        
+        const userResponse = await fetch(`https://services.dcarbon.solutions/api/user/get-one-user/${userId}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
         })
-        const data = await response.json()
-        if (data.status === 'success') {
-          setFaqs(data.data.faqs)
+        
+        const userData = await userResponse.json()
+        if (userData.status === 'success') {
+          setUserType(userData.data.userType)
+        }
+
+        const faqResponse = await fetch('https://services.dcarbon.solutions/api/faq/faqs', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        
+        const faqData = await faqResponse.json()
+        if (faqData.status === 'success') {
+          let filteredFaqs = []
+          
+          if (userType === 'RESIDENTIAL') {
+            filteredFaqs = faqData.data.faqs.filter(faq => 
+              faq.target === 'GENERAL' || faq.target === 'RESIDENTIAL'
+            )
+          } else if (userType === 'COMMERCIAL') {
+            filteredFaqs = faqData.data.faqs.filter(faq => 
+              faq.target === 'GENERAL' || faq.target === 'COMMERCIAL'
+            )
+          } else {
+            filteredFaqs = faqData.data.faqs
+          }
+          
+          setFaqs(filteredFaqs)
         }
       } catch (error) {
-        console.error('Failed to fetch FAQs:', error)
+        console.error('Failed to fetch data:', error)
       } finally {
         setLoading(false)
       }
     }
 
-    fetchFaqs()
-  }, [])
+    fetchUserData()
+  }, [userType])
 
   const toggleAccordion = (id) => {
     setExpandedId(expandedId === id ? null : id)
