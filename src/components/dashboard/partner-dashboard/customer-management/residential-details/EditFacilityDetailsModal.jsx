@@ -225,7 +225,7 @@ export default function EditResidentialFacilityModal({ facility, customerEmail, 
                   ) : installers.length > 0 ? (
                     installers.map(installer => (
                       <option key={installer.id} value={installer.name}>
-                        {installer.name} (ID: {installer.id})
+                        {installer.name}
                       </option>
                     ))
                   ) : (
@@ -283,7 +283,7 @@ export default function EditResidentialFacilityModal({ facility, customerEmail, 
                 <button
                   type="submit"
                   disabled={loading}
-                  className={`w-32 px-4 py-2 rounded-md flex items-center justify-center gap-2 ${loading ? 'bg-[#039994] opacity-50 cursor-not-allowed' : 'bg-[#039994] hover:bg-[#027d7b]'} text-white`}
+                  className={`w-32 px-4 py-2 rounded-md flex items-center justify-center gap-2 ${loading ? 'bg-[#039994] opacity-50 cursor-not-allowed' : buttonPrimary}`}
                 >
                   {loading && (
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
