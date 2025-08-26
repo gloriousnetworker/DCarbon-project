@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { HiOutlineChevronLeft, HiOutlineChevronRight } from 'react-icons/hi';
+import { HiOutlineChevronLeft, HiOutlineChevronRight, HiOutlineChevronDown } from 'react-icons/hi';
 import FilterModal from './FilterModal';
 import SendReminderModal from './SendReminderModal';
 import InviteIndividualModal from './InviteIndividualModal';
@@ -27,8 +27,14 @@ const DOCUMENT_STATUS_COLORS = {
   DEFAULT: "#6B7280"
 };
 
+const ASSIGNED_STATUS_COLORS = {
+  ASSIGNED: "#10B981",
+  UNASSIGNED: "#EF4444"
+};
+
 export default function PartnerCustomerReport() {
   const [tableData, setTableData] = useState([]);
+  const [filteredData, setFilteredData] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [statistics, setStatistics] = useState({
@@ -43,7 +49,8 @@ export default function PartnerCustomerReport() {
   const [filters, setFilters] = useState({
     status: '',
     customerType: '',
-    dateRange: ''
+    dateRange: '',
+    assignedStatus: ''
   });
   const [isFilterOpen, setFilterOpen] = useState(false);
   const [isSendReminderOpen, setSendReminderOpen] = useState(false);
@@ -54,6 +61,8 @@ export default function PartnerCustomerReport() {
   const [commercialRolesCache, setCommercialRolesCache] = useState({});
   const [acceptedUsersCache, setAcceptedUsersCache] = useState({});
   const [isInstaller, setIsInstaller] = useState(false);
+  const [assignedStatusSort, setAssignedStatusSort] = useState('all');
+  const [isAssignedSortOpen, setIsAssignedSortOpen] = useState(false);
 
   useEffect(() => {
     checkPartnerType();
@@ -65,6 +74,26 @@ export default function PartnerCustomerReport() {
       fetchStatistics();
     }
   }, [filters, isInstaller]);
+
+  useEffect(() => {
+    applyAssignedStatusSort();
+  }, [tableData, assignedStatusSort]);
+
+  const applyAssignedStatusSort = () => {
+    let sortedData = [...tableData];
+    
+    if (assignedStatusSort === 'assigned') {
+      sortedData = sortedData.filter(item => 
+        (item.assignedStatus || 'UNASSIGNED').toUpperCase() === 'ASSIGNED'
+      );
+    } else if (assignedStatusSort === 'unassigned') {
+      sortedData = sortedData.filter(item => 
+        (item.assignedStatus || 'UNASSIGNED').toUpperCase() === 'UNASSIGNED'
+      );
+    }
+    
+    setFilteredData(sortedData);
+  };
 
   const checkPartnerType = async () => {
     try {
@@ -119,6 +148,7 @@ export default function PartnerCustomerReport() {
         if (dateRange.startDate) params.startDate = dateRange.startDate;
         if (dateRange.endDate) params.endDate = dateRange.endDate;
       }
+      if (filters.assignedStatus) params.assignedStatus = filters.assignedStatus;
 
       let response;
       if (isInstaller) {
@@ -311,6 +341,11 @@ export default function PartnerCustomerReport() {
     closeFilterModal();
   };
 
+  const handleAssignedStatusSort = (sortType) => {
+    setAssignedStatusSort(sortType);
+    setIsAssignedSortOpen(false);
+  };
+
   const getTotalCount = () => {
     return (
       statistics.totalInvited +
@@ -366,6 +401,11 @@ export default function PartnerCustomerReport() {
     return DOCUMENT_STATUS_COLORS[upperStatus] || DOCUMENT_STATUS_COLORS.DEFAULT;
   };
 
+  const getAssignedStatusStyle = (status) => {
+    const upperStatus = status?.toUpperCase();
+    return ASSIGNED_STATUS_COLORS[upperStatus] || "#6B7280";
+  };
+
   const renderDocStatus = (status) => {
     const statusText = status?.toUpperCase();
     let displayText = 'NOT SUBMITTED';
@@ -381,6 +421,18 @@ export default function PartnerCustomerReport() {
         style={{ backgroundColor: getDocumentStatusStyle(status) }}
       >
         {displayText}
+      </span>
+    );
+  };
+
+  const renderAssignedStatus = (status) => {
+    const statusText = status?.toUpperCase();
+    return (
+      <span
+        className="text-white px-2 py-1 rounded-full text-xs"
+        style={{ backgroundColor: getAssignedStatusStyle(status) }}
+      >
+        {statusText}
       </span>
     );
   };
@@ -422,27 +474,29 @@ export default function PartnerCustomerReport() {
   };
 
   const renderRows = () => {
+    const dataToRender = filteredData.length > 0 || assignedStatusSort !== 'all' ? filteredData : tableData;
+    
     if (loadingTable) {
       return (
         <tr>
-          <td colSpan={isInstaller ? "10" : "8"} className="py-4 text-center">
+          <td colSpan={isInstaller ? "11" : "9"} className="py-4 text-center">
             Loading...
           </td>
         </tr>
       );
     }
 
-    if (tableData.length === 0) {
+    if (dataToRender.length === 0) {
       return (
         <tr>
-          <td colSpan={isInstaller ? "10" : "8"} className="py-4 text-center">
+          <td colSpan={isInstaller ? "11" : "9"} className="py-4 text-center">
             No records found
           </td>
         </tr>
       );
     }
 
-    return tableData.map((item, index) => {
+    return dataToRender.map((item, index) => {
       const sn = index + 1 + (currentPage - 1) * 10;
       const email = item.inviteeEmail || 'N/A';
       const cachedDetails = customerDetailsCache[email];
@@ -465,6 +519,7 @@ export default function PartnerCustomerReport() {
 
       const dateCreated = formatDate(item.createdAt);
       const status = item.status || 'N/A';
+      const assignedStatus = item.assignedStatus || 'UNASSIGNED';
 
       if (isInstaller) {
         const financeCompany = item.inviter ? `${item.inviter.firstName} ${item.inviter.lastName}` : 'N/A';
@@ -491,6 +546,7 @@ export default function PartnerCustomerReport() {
               </span>
             </td>
             <td className="py-3 px-1">{renderDocStatus(item.documentStatus)}</td>
+            <td className="py-3 px-1">{renderAssignedStatus(assignedStatus)}</td>
             <td className="py-3 px-1">{financeCompany}<br/>{financeEmail}</td>
             <td className="py-3 px-1">100%<br/>0%</td>
           </tr>
@@ -517,6 +573,7 @@ export default function PartnerCustomerReport() {
               </span>
             </td>
             <td className="py-3 px-2 text-sm">{renderDocStatus(item.documentStatus)}</td>
+            <td className="py-3 px-2 text-sm">{renderAssignedStatus(assignedStatus)}</td>
           </tr>
         );
       }
@@ -532,17 +589,54 @@ export default function PartnerCustomerReport() {
       <h2 className={`${pageTitle} text-left mb-6 text-2xl text-[#039994]`}>Customer Management</h2>
       
       <div className="w-full flex flex-col md:flex-row items-start md:items-center justify-between mb-4">
-        <button
-          onClick={openFilterModal}
-          className="flex items-center border border-black text-black bg-transparent px-3 py-1 rounded hover:bg-gray-100 focus:outline-none focus:ring-1 focus:ring-black text-sm"
-        >
-          <span className="mr-1">Filter By</span>
-          {(filters.status || filters.customerType || filters.dateRange) && (
-            <span className="bg-gray-200 px-2 py-0.5 rounded-full text-xs ml-1">
-              {[filters.status, filters.customerType, filters.dateRange].filter(Boolean).join(', ')}
-            </span>
-          )}
-        </button>
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={openFilterModal}
+            className="flex items-center border border-black text-black bg-transparent px-3 py-1 rounded hover:bg-gray-100 focus:outline-none focus:ring-1 focus:ring-black text-sm"
+          >
+            <span className="mr-1">Filter By</span>
+            {(filters.status || filters.customerType || filters.dateRange || filters.assignedStatus) && (
+              <span className="bg-gray-200 px-2 py-0.5 rounded-full text-xs ml-1">
+                {[filters.status, filters.customerType, filters.dateRange, filters.assignedStatus].filter(Boolean).join(', ')}
+              </span>
+            )}
+          </button>
+
+          <div className="relative">
+            <button
+              onClick={() => setIsAssignedSortOpen(!isAssignedSortOpen)}
+              className="flex items-center border border-[#039994] text-[#039994] bg-transparent px-3 py-1 rounded hover:bg-[#039994] hover:text-white focus:outline-none focus:ring-1 focus:ring-[#039994] text-sm"
+            >
+              <span className="mr-1">
+                Sort by Assignment: {assignedStatusSort === 'all' ? 'All' : assignedStatusSort === 'assigned' ? 'Assigned' : 'Unassigned'}
+              </span>
+              <HiOutlineChevronDown className="w-4 h-4" />
+            </button>
+
+            {isAssignedSortOpen && (
+              <div className="absolute left-0 mt-1 bg-white border border-gray-200 rounded shadow-lg z-10 w-40">
+                <button
+                  onClick={() => handleAssignedStatusSort('all')}
+                  className={`block w-full text-left px-3 py-2 hover:bg-gray-100 text-sm ${assignedStatusSort === 'all' ? 'bg-gray-100 font-medium' : ''}`}
+                >
+                  All
+                </button>
+                <button
+                  onClick={() => handleAssignedStatusSort('assigned')}
+                  className={`block w-full text-left px-3 py-2 hover:bg-gray-100 text-sm ${assignedStatusSort === 'assigned' ? 'bg-gray-100 font-medium' : ''}`}
+                >
+                  Assigned Only
+                </button>
+                <button
+                  onClick={() => handleAssignedStatusSort('unassigned')}
+                  className={`block w-full text-left px-3 py-2 hover:bg-gray-100 text-sm ${assignedStatusSort === 'unassigned' ? 'bg-gray-100 font-medium' : ''}`}
+                >
+                  Unassigned Only
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
 
         <div className="mt-2 md:mt-0 flex items-center space-x-2">
           <button
@@ -677,6 +771,7 @@ export default function PartnerCustomerReport() {
               <th className="py-2 px-1 text-left">Created At</th>
               <th className="py-2 px-1 text-left">Status</th>
               <th className="py-2 px-1 text-left">Document Status</th>
+              <th className="py-2 px-1 text-left">Assigned Status</th>
               {isInstaller && (
                 <>
                   <th className="py-2 px-1 text-left">Finance Company</th>
@@ -691,8 +786,8 @@ export default function PartnerCustomerReport() {
 
       <div className="flex items-center justify-between mt-4">
         <div className="text-sm text-gray-500">
-          {tableData.length > 0 ? (
-            <span>Showing {(currentPage - 1) * 10 + 1} to {Math.min(currentPage * 10, tableData.length + (currentPage - 1) * 10)} of {tableData.length}</span>
+          {(filteredData.length > 0 || assignedStatusSort !== 'all' ? filteredData : tableData).length > 0 ? (
+            <span>Showing {(currentPage - 1) * 10 + 1} to {Math.min(currentPage * 10, (filteredData.length > 0 || assignedStatusSort !== 'all' ? filteredData : tableData).length + (currentPage - 1) * 10)} of {(filteredData.length > 0 || assignedStatusSort !== 'all' ? filteredData : tableData).length}</span>
           ) : (
             <span>No records found</span>
           )}

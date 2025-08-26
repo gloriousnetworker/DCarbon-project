@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { HiOutlineArrowLeft, HiOutlineInformationCircle } from 'react-icons/hi';
+import { HiOutlineArrowLeft } from 'react-icons/hi';
 import { FiChevronRight } from 'react-icons/fi';
 import CommercialFacilityDetails from './commercial-details/CommercialFacilityDetails';
 import ResidentialFacilityDetails from './residential-details/ResidentialFacilityDetails';
@@ -531,35 +531,35 @@ export default function CustomerDetails({ customer, onBack }) {
       <div className="w-full border border-[#039994] bg-[#069B960D] rounded-lg p-6 mb-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-12">
           <div className="font-medium text-[#626060]">User ID</div>
-          <div className="text-[#1E1E1E]">{customerDetails.id}</div>
+          <div className="text-[#1E1E1E] truncate">{customerDetails.id}</div>
           <div className="font-medium text-[#626060]">Name</div>
-          <div className="text-[#1E1E1E]">{customerDetails.firstName} {customerDetails.lastName}</div>
+          <div className="text-[#1E1E1E] truncate">{customerDetails.firstName} {customerDetails.lastName}</div>
           <div className="font-medium text-[#626060]">Email Address</div>
-          <div className="text-[#1E1E1E]">{customerDetails.email}</div>
+          <div className="text-[#1E1E1E] truncate">{customerDetails.email}</div>
           <div className="font-medium text-[#626060]">Phone Number</div>
-          <div className="text-[#1E1E1E]">{customerDetails.phoneNumber}</div>
+          <div className="text-[#1E1E1E] truncate">{customerDetails.phoneNumber}</div>
           <div className="font-medium text-[#626060]">Customer Type</div>
-          <div className="text-[#1E1E1E]">{customerDetails.userType}</div>
+          <div className="text-[#1E1E1E] truncate">{customerDetails.userType}</div>
           
           {isCommercialUser && commercialUserDetails && (
             <>
               <div className="font-medium text-[#626060]">Commercial Role</div>
-              <div className="text-[#1E1E1E] capitalize">{commercialUserDetails.commercialRole}</div>
+              <div className="text-[#1E1E1E] truncate capitalize">{commercialUserDetails.commercialRole}</div>
               
               <div className="font-medium text-[#626060]">Entity Type</div>
-              <div className="text-[#1E1E1E] capitalize">{commercialUserDetails.entityType}</div>
+              <div className="text-[#1E1E1E] truncate capitalize">{commercialUserDetails.entityType}</div>
               
               <div className="font-medium text-[#626060]">Owner Full Name</div>
-              <div className="text-[#1E1E1E]">{commercialUserDetails.ownerFullName}</div>
+              <div className="text-[#1E1E1E] truncate">{commercialUserDetails.ownerFullName}</div>
               
               <div className="font-medium text-[#626060]">Owner Address</div>
-              <div className="text-[#1E1E1E]">{commercialUserDetails.ownerAddress}</div>
+              <div className="text-[#1E1E1E] truncate">{commercialUserDetails.ownerAddress}</div>
               
               <div className="font-medium text-[#626060]">Company Name</div>
-              <div className="text-[#1E1E1E]">{commercialUserDetails.companyName || "N/A"}</div>
+              <div className="text-[#1E1E1E] truncate">{commercialUserDetails.companyName || "N/A"}</div>
               
               <div className="font-medium text-[#626060]">Company Address</div>
-              <div className="text-[#1E1E1E]">{commercialUserDetails.companyAddress || "N/A"}</div>
+              <div className="text-[#1E1E1E] truncate">{commercialUserDetails.companyAddress || "N/A"}</div>
             </>
           )}
         </div>
@@ -603,59 +603,59 @@ export default function CustomerDetails({ customer, onBack }) {
             return (
               <div
                 key={facility.id}
-                className="border border-[#039994] rounded-lg bg-white hover:shadow transition-shadow flex flex-col justify-between p-4 cursor-pointer"
+                className="border border-[#039994] rounded-lg bg-white hover:shadow transition-shadow flex flex-col justify-between p-4 cursor-pointer overflow-hidden"
                 onClick={() => handleFacilityClick(facility)}
               >
-                <div>
-                  <h3 className="font-semibold text-base text-[#039994] mb-1">
+                <div className="overflow-hidden">
+                  <h3 className="font-semibold text-base text-[#039994] mb-1 truncate">
                     {facility.facilityName}
                   </h3>
                   <div className="grid grid-cols-2 gap-y-1 text-xs">
                     <span className="font-medium">Email:</span>
-                    <span>{customerDetails.email}</span>
+                    <span className="truncate">{customerDetails.email}</span>
                     
                     {isCommercialUser ? (
                       <>
                         <span className="font-medium">Role:</span>
-                        <span className="capitalize">{facility.commercialRole}</span>
+                        <span className="truncate capitalize">{facility.commercialRole}</span>
 
                         <span className="font-medium">Type:</span>
-                        <span className="capitalize">{facility.entityType}</span>
+                        <span className="truncate capitalize">{facility.entityType}</span>
 
                         <span className="font-medium">Utility:</span>
-                        <span>{facility.utilityProvider}</span>
+                        <span className="truncate">{facility.utilityProvider}</span>
 
                         <span className="font-medium">Meter ID:</span>
-                        <span>{formatMeterIds(facility.meterIds)}</span>
+                        <span className="truncate">{formatMeterIds(facility.meterIds)}</span>
 
                         <span className="font-medium">Status:</span>
-                        <span className="capitalize">{facility.status}</span>
+                        <span className="truncate capitalize">{facility.status}</span>
 
                         <span className="font-medium">Created:</span>
-                        <span>{formatDate(facility.createdAt)}</span>
+                        <span className="truncate">{formatDate(facility.createdAt)}</span>
                       </>
                     ) : (
                       <>
                         <span className="font-medium">Address:</span>
-                        <span>{facility.address || "N/A"}</span>
+                        <span className="truncate">{facility.address || "N/A"}</span>
 
                         <span className="font-medium">Utility:</span>
-                        <span>{facility.utilityProvider || "N/A"}</span>
+                        <span className="truncate">{facility.utilityProvider || "N/A"}</span>
 
                         <span className="font-medium">Installer:</span>
-                        <span>{facility.installer || "N/A"}</span>
+                        <span className="truncate">{facility.installer || "N/A"}</span>
 
                         <span className="font-medium">Finance Type:</span>
-                        <span className="capitalize">{facility.financeType || "N/A"}</span>
+                        <span className="truncate capitalize">{facility.financeType || "N/A"}</span>
 
                         <span className="font-medium">Meter ID:</span>
-                        <span>{facility.meterId || "N/A"}</span>
+                        <span className="truncate">{facility.meterId || "N/A"}</span>
 
                         <span className="font-medium">Status:</span>
-                        <span className="capitalize">{facility.status || "N/A"}</span>
+                        <span className="truncate capitalize">{facility.status || "N/A"}</span>
 
                         <span className="font-medium">Created:</span>
-                        <span>{formatDate(facility.createdAt)}</span>
+                        <span className="truncate">{formatDate(facility.createdAt)}</span>
                       </>
                     )}
                   </div>
