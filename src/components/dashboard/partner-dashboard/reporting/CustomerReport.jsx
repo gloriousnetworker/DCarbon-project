@@ -44,6 +44,7 @@ export default function CustomerReport({ onNavigate }) {
   const [error, setError] = useState(null);
   const [acceptedUsersCache, setAcceptedUsersCache] = useState({});
   const [commissionsData, setCommissionsData] = useState({});
+  const [allReferrals, setAllReferrals] = useState([]);
 
   const LIMIT = 10;
   const baseUrl = "https://services.dcarbon.solutions";
@@ -92,8 +93,7 @@ export default function CustomerReport({ onNavigate }) {
         const token = localStorage.getItem("authToken");
         const userId = localStorage.getItem("userId") || "8b14b23d-3082-4846-9216-2c2e9f1e96bf";
         const params = new URLSearchParams();
-        if (filters.status) params.append("status", filters.status);
-        if (filters.customerType) params.append("customerType", filters.customerType);
+        
         if (yearFilter && monthFilter) {
           const y = yearFilter;
           const m = monthFilter.padStart(2, "0");
@@ -104,20 +104,19 @@ export default function CustomerReport({ onNavigate }) {
           params.append("startDate", `${yearFilter}-01-01`);
           params.append("endDate", `${yearFilter}-12-31`);
         }
+        
         params.append("page", currentPage);
-        params.append("limit", LIMIT);
+        params.append("limit", 1000);
+        
         const res = await axios.get(
           `${baseUrl}/api/user/get-users-referrals/${userId}?${params.toString()}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
+        
         let { referrals, metadata } = res.data.data;
-        referrals.sort((a, b) => {
-          const da = new Date(a.createdAt),
-            db = new Date(b.createdAt);
-          return filters.time === "Newest" ? db - da : da - db;
-        });
-        setTableData(referrals);
+        setAllReferrals(referrals);
         setTotalPages(metadata.totalPages);
+        
         const acceptedUsers = referrals.filter(user => user.status === 'ACCEPTED');
         for (const user of acceptedUsers) {
           if (user.inviteeEmail && !acceptedUsersCache[user.inviteeEmail]) {
@@ -127,6 +126,7 @@ export default function CustomerReport({ onNavigate }) {
             fetchCommissionsData(user.id);
           }
         }
+        
       } catch (err) {
         console.error(err);
         setError(err.message || "Failed to load data");
@@ -135,7 +135,42 @@ export default function CustomerReport({ onNavigate }) {
       }
     };
     fetchReferrals();
-  }, [currentPage, filters, yearFilter, monthFilter]);
+  }, [currentPage, yearFilter, monthFilter]);
+
+  useEffect(() => {
+    const filterData = () => {
+      let filteredData = [...allReferrals];
+      
+      if (filters.status) {
+        filteredData = filteredData.filter(item => item.status === filters.status);
+      }
+      
+      if (filters.customerType) {
+        filteredData = filteredData.filter(item => {
+          if (item.status === 'ACCEPTED' && acceptedUsersCache[item.inviteeEmail]) {
+            return acceptedUsersCache[item.inviteeEmail].userType === filters.customerType;
+          }
+          return item.customerType === filters.customerType;
+        });
+      }
+      
+      filteredData.sort((a, b) => {
+        const da = new Date(a.createdAt);
+        const db = new Date(b.createdAt);
+        return filters.time === "Newest" ? db - da : da - db;
+      });
+      
+      const startIndex = (currentPage - 1) * LIMIT;
+      const paginatedData = filteredData.slice(startIndex, startIndex + LIMIT);
+      
+      setTableData(paginatedData);
+      setTotalPages(Math.ceil(filteredData.length / LIMIT));
+    };
+    
+    if (allReferrals.length > 0) {
+      filterData();
+    }
+  }, [allReferrals, filters, currentPage, acceptedUsersCache]);
 
   const handleOpenFilterModal = () => setShowFilterModal(true);
   const handleApplyFilter = (newFilters) => {
@@ -183,7 +218,7 @@ export default function CustomerReport({ onNavigate }) {
       }
 
       return (
-        <tr key={ref.id} className="border-b border-gray-200 hover:bg-gray-50">
+        <tr key={ref.id || idx} className="border-b border-gray-200 hover:bg-gray-50">
           <td className="py-3 px-4 text-sm">{(currentPage - 1) * LIMIT + idx + 1}</td>
           <td className="py-3 px-4 text-sm">{name}</td>
           <td className="py-3 px-4 text-sm">{ref.inviteeEmail}</td>

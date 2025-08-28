@@ -11,9 +11,7 @@ export default function FilterModal({
   initialFilters = { status: "", customerType: "", time: "Oldest" },
 }) {
   const [status, setStatus] = useState(initialFilters.status);
-  const [customerType, setCustomerType] = useState(
-    initialFilters.customerType
-  );
+  const [customerType, setCustomerType] = useState(initialFilters.customerType);
   const [time, setTime] = useState(initialFilters.time);
 
   useEffect(() => {
