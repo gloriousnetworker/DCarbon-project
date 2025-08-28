@@ -1,11 +1,5 @@
 import React, { useState } from "react";
 
-const EXPORT_FORMATS = [
-  { label: "Select format", value: "" },
-  { label: "CSV", value: "csv" },
-  { label: "PDF", value: "pdf" }
-];
-
 export default function ExportReportModal({
   onClose,
   initialFilters = {},
@@ -13,7 +7,6 @@ export default function ExportReportModal({
   monthFilter,
   tableData = []
 }) {
-  const [format, setFormat] = useState("");
   const [includeFilters, setIncludeFilters] = useState(true);
   const [loading, setLoading] = useState(false);
 
@@ -37,98 +30,33 @@ export default function ExportReportModal({
       csvContent += rowData.join(",") + "\n";
     });
     
-    return csvContent;
-  };
-
-  const generatePDF = async (data) => {
-    const { jsPDF } = await import('jspdf');
-    const doc = new jsPDF();
-    
-    doc.setFontSize(20);
-    doc.text("Customer Report", 20, 20);
-    
+    // Add filters information as comments at the end if includeFilters is true
     if (includeFilters) {
-      let filtersText = "Filters Applied: ";
-      const appliedFilters = [];
+      csvContent += "\n";
+      csvContent += "# Filters Applied:\n";
       
       if (yearFilter && monthFilter) {
-        appliedFilters.push(`Date: ${getMonthName(monthFilter)} ${yearFilter}`);
+        csvContent += `# Date: ${getMonthName(monthFilter)} ${yearFilter}\n`;
       } else if (yearFilter) {
-        appliedFilters.push(`Year: ${yearFilter}`);
+        csvContent += `# Year: ${yearFilter}\n`;
       }
       
       if (initialFilters.status) {
-        appliedFilters.push(`Status: ${initialFilters.status}`);
+        csvContent += `# Status: ${initialFilters.status}\n`;
       }
       
       if (initialFilters.customerType) {
-        appliedFilters.push(`Customer Type: ${initialFilters.customerType}`);
+        csvContent += `# Customer Type: ${initialFilters.customerType}\n`;
       }
       
       if (initialFilters.time) {
-        appliedFilters.push(`Sort: ${initialFilters.time} first`);
+        csvContent += `# Sort: ${initialFilters.time} first\n`;
       }
       
-      if (appliedFilters.length > 0) {
-        filtersText += appliedFilters.join(", ");
-        doc.setFontSize(10);
-        doc.text(filtersText, 20, 35);
-      }
+      csvContent += `# Generated on: ${new Date().toLocaleDateString('en-GB')}\n`;
     }
     
-    const startY = includeFilters && (yearFilter || monthFilter || initialFilters.status || initialFilters.customerType) ? 50 : 35;
-    
-    const headers = [["S/N", "Name", "Email", "Customer Type", "Role", "Commissions", "Date Reg.", "Status"]];
-    
-    const rows = data.map((row, index) => [
-      index + 1,
-      row.name || "-",
-      row.inviteeEmail || "-",
-      row.customerType || "-",
-      row.role || "-",
-      `$${row.commissions || "0.00"}`,
-      new Date(row.createdAt).toLocaleDateString('en-GB', {
-        day: '2-digit', month: '2-digit', year: 'numeric'
-      }),
-      row.status
-    ]);
-
-    const { autoTable } = await import('jspdf-autotable');
-    
-    doc.autoTable({
-      head: headers,
-      body: rows,
-      startY: startY,
-      theme: 'grid',
-      headStyles: {
-        fillColor: [3, 153, 148],
-        textColor: [255, 255, 255],
-        fontSize: 10,
-        fontStyle: 'bold'
-      },
-      bodyStyles: {
-        fontSize: 9,
-        cellPadding: 3
-      },
-      columnStyles: {
-        0: { cellWidth: 15 },
-        1: { cellWidth: 25 },
-        2: { cellWidth: 35 },
-        3: { cellWidth: 25 },
-        4: { cellWidth: 20 },
-        5: { cellWidth: 20 },
-        6: { cellWidth: 20 },
-        7: { cellWidth: 20 }
-      },
-      margin: { top: 20, right: 15, bottom: 20, left: 15 },
-      didDrawPage: function (data) {
-        doc.setFontSize(8);
-        doc.text(`Generated on: ${new Date().toLocaleDateString('en-GB')}`, data.settings.margin.left, doc.internal.pageSize.height - 10);
-        doc.text(`Page ${doc.internal.getNumberOfPages()}`, doc.internal.pageSize.width - 30, doc.internal.pageSize.height - 10);
-      }
-    });
-    
-    return doc.output('blob');
+    return csvContent;
   };
 
   const getMonthName = (monthNumber) => {
@@ -140,7 +68,7 @@ export default function ExportReportModal({
   };
 
   const downloadFile = (content, fileName, mimeType) => {
-    const blob = content instanceof Blob ? content : new Blob([content], { type: mimeType });
+    const blob = new Blob([content], { type: mimeType });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -152,11 +80,6 @@ export default function ExportReportModal({
   };
 
   const handleExport = async () => {
-    if (!format) {
-      alert("Please select an export format");
-      return;
-    }
-
     if (tableData.length === 0) {
       alert("No data available to export");
       return;
@@ -165,15 +88,10 @@ export default function ExportReportModal({
     setLoading(true);
     try {
       const dateStr = new Date().toISOString().split('T')[0];
-      const fileName = `customer-report-${dateStr}`;
+      const fileName = `customer-report-${dateStr}.csv`;
 
-      if (format === "csv") {
-        const csvContent = generateCSV(tableData);
-        downloadFile(csvContent, `${fileName}.csv`, "text/csv");
-      } else if (format === "pdf") {
-        const pdfBlob = await generatePDF(tableData);
-        downloadFile(pdfBlob, `${fileName}.pdf`, "application/pdf");
-      }
+      const csvContent = generateCSV(tableData);
+      downloadFile(csvContent, fileName, "text/csv");
       
       onClose();
     } catch (error) {
@@ -199,22 +117,18 @@ export default function ExportReportModal({
         </div>
        
         <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Export Format
-            </label>
-            <select
-              value={format}
-              onChange={(e) => setFormat(e.target.value)}
-              className="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#039994] focus:border-transparent"
-              disabled={loading}
-            >
-              {EXPORT_FORMATS.map((f) => (
-                <option key={f.value} value={f.value}>
-                  {f.label}
-                </option>
-              ))}
-            </select>
+          <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-800">CSV Export</h3>
+                <p className="text-xs text-gray-600">Download your data as a comma-separated values file</p>
+              </div>
+            </div>
           </div>
           
           <div className="flex items-center">
@@ -254,13 +168,16 @@ export default function ExportReportModal({
             </div>
           )}
           
-          {format && (
-            <div className="bg-green-50 p-3 rounded-md border border-green-200">
-              <p className="text-sm text-green-700">
-                <strong>{format.toUpperCase()}</strong> file will be downloaded with {tableData.length} records.
+          <div className="bg-green-50 p-3 rounded-md border border-green-200">
+            <p className="text-sm text-green-700">
+              <strong>CSV</strong> file will be downloaded with <strong>{tableData.length} records</strong>.
+            </p>
+            {tableData.length > 0 && (
+              <p className="text-xs text-green-600 mt-1">
+                File size: ~{Math.ceil(tableData.length * 0.1)}KB
               </p>
-            </div>
-          )}
+            )}
+          </div>
         </div>
         
         <div className="flex justify-end space-x-3 mt-6">
@@ -273,10 +190,25 @@ export default function ExportReportModal({
           </button>
           <button
             onClick={handleExport}
-            className="px-4 py-2 bg-[#039994] text-white rounded-md hover:bg-[#028c87] text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={loading || !format}
+            className="px-4 py-2 bg-[#039994] text-white rounded-md hover:bg-[#028c87] text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+            disabled={loading}
           >
-            {loading ? "Exporting..." : "Export"}
+            {loading ? (
+              <>
+                <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Exporting...</span>
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span>Download CSV</span>
+              </>
+            )}
           </button>
         </div>
       </div>

@@ -245,10 +245,15 @@ export default function CustomerReport({ onNavigate }) {
                status === "ACCEPTED" ? "#000000" : 
                status === "TERMINATED" ? "#FF0000" : "#00B4AE";
     return (
-      <span className="inline-block px-3 py-1 rounded-full text-white text-sm" style={{ backgroundColor: bg }}>
+      <span className="inline-block px-2 py-1 rounded-full text-white text-xs font-medium" style={{ backgroundColor: bg }}>
         {status}
       </span>
     );
+  };
+
+  const truncateText = (text, maxLength) => {
+    if (!text) return "-";
+    return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
   };
 
   const renderTableRows = () => {
@@ -268,26 +273,26 @@ export default function CustomerReport({ onNavigate }) {
 
       return (
         <tr key={ref.id || idx} className="border-b border-gray-200 hover:bg-gray-50">
-          <td className="py-3 px-4 text-sm">{(currentPage - 1) * LIMIT + idx + 1}</td>
-          <td className="py-3 px-4 text-sm">{name}</td>
-          <td className="py-3 px-4 text-sm">{ref.inviteeEmail}</td>
-          <td className="py-3 px-4 text-sm">{customerType}</td>
-          <td className="py-3 px-4 text-sm">{role}</td>
-          <td className="py-3 px-4 text-sm">${commissions.toFixed(2)}</td>
-          <td className="py-3 px-4 text-sm">
+          <td className="py-2 px-2 text-xs font-medium text-center">{(currentPage - 1) * LIMIT + idx + 1}</td>
+          <td className="py-2 px-2 text-xs" title={name}>{truncateText(name, 12)}</td>
+          <td className="py-2 px-2 text-xs" title={ref.inviteeEmail}>{truncateText(ref.inviteeEmail, 18)}</td>
+          <td className="py-2 px-2 text-xs text-center">{customerType === "RESIDENTIAL" ? "RES" : customerType === "COMMERCIAL" ? "COM" : "IND"}</td>
+          <td className="py-2 px-2 text-xs text-center">{role === "CUSTOMER" ? "CUST" : role}</td>
+          <td className="py-2 px-2 text-xs font-semibold text-right">${commissions.toFixed(2)}</td>
+          <td className="py-2 px-2 text-xs text-center">
             {new Date(ref.createdAt).toLocaleDateString('en-GB', {
-              day: '2-digit', month: '2-digit', year: 'numeric'
+              day: '2-digit', month: '2-digit', year: '2-digit'
             })}
           </td>
-          <td className="py-3 px-4 text-sm">{renderStatusTag(ref.status)}</td>
+          <td className="py-2 px-2 text-center">{renderStatusTag(ref.status)}</td>
         </tr>
       );
     });
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="w-full max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="w-full max-w-7xl mx-auto">
         <div className="flex items-start justify-between w-full mb-4">
           <div className="flex items-center space-x-2">
             <select
@@ -361,7 +366,7 @@ export default function CustomerReport({ onNavigate }) {
           )}
         </div>
 
-        <div className="w-full overflow-auto bg-white rounded-lg shadow-sm border border-gray-200">
+        <div className="w-full bg-white rounded-lg shadow-sm border border-gray-200">
           {loading ? (
             <p className="text-center text-gray-500 py-8">Loading…</p>
           ) : error ? (
@@ -369,21 +374,23 @@ export default function CustomerReport({ onNavigate }) {
           ) : tableData.length === 0 ? (
             <p className="text-center text-gray-500 py-8">No records found with these filters</p>
           ) : (
-            <table className="min-w-full border-collapse">
-              <thead>
-                <tr className="border-b border-gray-300 bg-gray-50">
-                  <th className="py-3 px-4 text-left text-sm font-medium text-gray-700">S/N</th>
-                  <th className="py-3 px-4 text-left text-sm font-medium text-gray-700">Name</th>
-                  <th className="py-3 px-4 text-left text-sm font-medium text-gray-700">Email</th>
-                  <th className="py-3 px-4 text-left text-sm font-medium text-gray-700">Customer Type</th>
-                  <th className="py-3 px-4 text-left text-sm font-medium text-gray-700">Role</th>
-                  <th className="py-3 px-4 text-left text-sm font-medium text-gray-700">Commissions</th>
-                  <th className="py-3 px-4 text-left text-sm font-medium text-gray-700">Date Reg.</th>
-                  <th className="py-3 px-4 text-left text-sm font-medium text-gray-700">Status</th>
-                </tr>
-              </thead>
-              <tbody>{renderTableRows()}</tbody>
-            </table>
+            <div className="w-full">
+              <table className="w-full table-fixed border-collapse">
+                <thead>
+                  <tr className="border-b border-gray-300 bg-gray-50">
+                    <th className="w-12 py-3 px-2 text-left text-xs font-bold text-gray-700">S/N</th>
+                    <th className="w-32 py-3 px-2 text-left text-xs font-bold text-gray-700">Name</th>
+                    <th className="w-48 py-3 px-2 text-left text-xs font-bold text-gray-700">Email</th>
+                    <th className="w-20 py-3 px-2 text-center text-xs font-bold text-gray-700">Type</th>
+                    <th className="w-20 py-3 px-2 text-center text-xs font-bold text-gray-700">Role</th>
+                    <th className="w-24 py-3 px-2 text-right text-xs font-bold text-gray-700">Commission</th>
+                    <th className="w-24 py-3 px-2 text-center text-xs font-bold text-gray-700">Date</th>
+                    <th className="w-24 py-3 px-2 text-center text-xs font-bold text-gray-700">Status</th>
+                  </tr>
+                </thead>
+                <tbody>{renderTableRows()}</tbody>
+              </table>
+            </div>
           )}
         </div>
 
