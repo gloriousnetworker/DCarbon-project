@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import FilterModal from "./FilterModal";
+import ExportReportModal from "./ExportReportModal";
 
 const MONTHS = [
   { label: "Month", value: "" },
@@ -171,6 +172,54 @@ export default function CustomerReport({ onNavigate }) {
       filterData();
     }
   }, [allReferrals, filters, currentPage, acceptedUsersCache]);
+
+  const getFilteredExportData = () => {
+    let filteredData = [...allReferrals];
+    
+    if (filters.status) {
+      filteredData = filteredData.filter(item => item.status === filters.status);
+    }
+    
+    if (filters.customerType) {
+      filteredData = filteredData.filter(item => {
+        if (item.status === 'ACCEPTED' && acceptedUsersCache[item.inviteeEmail]) {
+          return acceptedUsersCache[item.inviteeEmail].userType === filters.customerType;
+        }
+        return item.customerType === filters.customerType;
+      });
+    }
+    
+    filteredData.sort((a, b) => {
+      const da = new Date(a.createdAt);
+      const db = new Date(b.createdAt);
+      return filters.time === "Newest" ? db - da : da - db;
+    });
+    
+    return filteredData.map(ref => {
+      const acceptedUserDetails = acceptedUsersCache[ref.inviteeEmail];
+      const commissions = commissionsData[ref.id] || 0;
+      
+      let name = ref.name || "Name";
+      let customerType = ref.customerType || "RESIDENTIAL";
+      let role = ref.role || "CUSTOMER";
+      
+      if (ref.status === 'ACCEPTED' && acceptedUserDetails) {
+        name = `${acceptedUserDetails.firstName || ''} ${acceptedUserDetails.lastName || ''}`.trim() || name;
+        customerType = acceptedUserDetails.userType || customerType;
+        role = acceptedUserDetails.role || role;
+      }
+
+      return {
+        name,
+        inviteeEmail: ref.inviteeEmail,
+        customerType,
+        role,
+        commissions: commissions.toFixed(2),
+        createdAt: ref.createdAt,
+        status: ref.status
+      };
+    });
+  };
 
   const handleOpenFilterModal = () => setShowFilterModal(true);
   const handleApplyFilter = (newFilters) => {
@@ -365,24 +414,13 @@ export default function CustomerReport({ onNavigate }) {
         />
       )}
       {showExportModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white w-full max-w-md rounded-lg shadow-lg p-6 relative">
-            <button
-              onClick={() => setShowExportModal(false)}
-              className="absolute top-4 right-4 text-[#F04438] hover:text-red-600"
-            >
-              ✕
-            </button>
-            <h2 className="text-xl font-semibold text-[#039994] mb-4">Export Report</h2>
-            <p className="text-gray-600 mb-4">Export functionality would be implemented here</p>
-            <button
-              onClick={() => setShowExportModal(false)}
-              className="w-full py-2 bg-[#039994] text-white rounded-md hover:bg-[#028c87]"
-            >
-              Close
-            </button>
-          </div>
-        </div>
+        <ExportReportModal
+          onClose={() => setShowExportModal(false)}
+          initialFilters={filters}
+          yearFilter={yearFilter}
+          monthFilter={monthFilter}
+          tableData={getFilteredExportData()}
+        />
       )}
     </div>
   );

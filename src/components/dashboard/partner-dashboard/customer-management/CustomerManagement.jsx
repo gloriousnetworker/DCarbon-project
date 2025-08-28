@@ -479,7 +479,7 @@ export default function PartnerCustomerReport() {
     if (loadingTable) {
       return (
         <tr>
-          <td colSpan={isInstaller ? "11" : "9"} className="py-4 text-center">
+          <td colSpan={isInstaller ? "9" : "8"} className="py-4 text-center">
             Loading...
           </td>
         </tr>
@@ -489,7 +489,7 @@ export default function PartnerCustomerReport() {
     if (dataToRender.length === 0) {
       return (
         <tr>
-          <td colSpan={isInstaller ? "11" : "9"} className="py-4 text-center">
+          <td colSpan={isInstaller ? "9" : "8"} className="py-4 text-center">
             No records found
           </td>
         </tr>
@@ -532,6 +532,42 @@ export default function PartnerCustomerReport() {
             onClick={() => handleRowClick(item)}
           >
             <td className="py-2 px-1" style={{ fontSize: '10px' }}>{sn}</td>
+            <td className="py-2 px-1" style={{ fontSize: '10px', maxWidth: '70px' }}>
+              <div className="truncate" title={nameToShow}>{nameToShow}</div>
+            </td>
+            <td className="py-2 px-1" style={{ fontSize: '10px', maxWidth: '90px' }}>
+              <div className="truncate" title={email}>{email}</div>
+            </td>
+            <td className="py-2 px-1" style={{ fontSize: '10px', maxWidth: '50px' }}>
+              <div className="truncate font-medium" title={role}>{role}</div>
+            </td>
+            <td className="py-2 px-1" style={{ fontSize: '10px', maxWidth: '70px' }}>
+              <div className="truncate font-medium" title={customerType}>{customerType}</div>
+            </td>
+            <td className="py-2 px-1" style={{ maxWidth: '60px' }}>
+              <span
+                className="text-white px-1 py-0.5 rounded whitespace-nowrap"
+                style={{ backgroundColor: getStatusStyle(status), fontSize: '10px' }}
+              >
+                {status}
+              </span>
+            </td>
+            <td className="py-2 px-1" style={{ maxWidth: '80px' }}>{renderDocStatus(item.documentStatus)}</td>
+            <td className="py-2 px-1" style={{ maxWidth: '70px' }}>{renderAssignedStatus(assignedStatus)}</td>
+            <td className="py-2 px-1" style={{ fontSize: '10px', maxWidth: '90px' }}>
+              <div className="truncate" title={financeCompany}>{financeCompany}</div>
+              <div className="truncate text-gray-500" title={financeEmail}>{financeEmail}</div>
+            </td>
+          </tr>
+        );
+      } else {
+        return (
+          <tr 
+            key={item.id || index} 
+            className="border-b hover:bg-gray-50 cursor-pointer text-xs"
+            onClick={() => handleRowClick(item)}
+          >
+            <td className="py-2 px-1" style={{ fontSize: '10px' }}>{sn}</td>
             <td className="py-2 px-1" style={{ fontSize: '10px', maxWidth: '80px' }}>
               <div className="truncate" title={nameToShow}>{nameToShow}</div>
             </td>
@@ -544,7 +580,6 @@ export default function PartnerCustomerReport() {
             <td className="py-2 px-1" style={{ fontSize: '10px', maxWidth: '80px' }}>
               <div className="truncate font-medium" title={customerType}>{customerType}</div>
             </td>
-            <td className="py-2 px-1" style={{ fontSize: '10px', maxWidth: '70px' }}>{dateCreated}</td>
             <td className="py-2 px-1" style={{ maxWidth: '70px' }}>
               <span
                 className="text-white px-1 py-0.5 rounded whitespace-nowrap"
@@ -555,39 +590,6 @@ export default function PartnerCustomerReport() {
             </td>
             <td className="py-2 px-1" style={{ maxWidth: '90px' }}>{renderDocStatus(item.documentStatus)}</td>
             <td className="py-2 px-1" style={{ maxWidth: '80px' }}>{renderAssignedStatus(assignedStatus)}</td>
-            <td className="py-2 px-1" style={{ fontSize: '10px', maxWidth: '100px' }}>
-              <div className="truncate" title={financeCompany}>{financeCompany}</div>
-              <div className="truncate text-gray-500" title={financeEmail}>{financeEmail}</div>
-            </td>
-            <td className="py-2 px-1 text-center" style={{ fontSize: '10px', maxWidth: '60px' }}>
-              <div>100%</div>
-              <div>0%</div>
-            </td>
-          </tr>
-        );
-      } else {
-        return (
-          <tr 
-            key={item.id || index} 
-            className="border-b hover:bg-gray-50 cursor-pointer"
-            onClick={() => handleRowClick(item)}
-          >
-            <td className="py-3 px-2 text-sm">{sn}</td>
-            <td className="py-3 px-2 text-sm">{nameToShow}</td>
-            <td className="py-3 px-2 text-sm">{email}</td>
-            <td className="py-3 px-2 text-sm font-medium">{role}</td>
-            <td className="py-3 px-2 text-sm font-medium">{customerType}</td>
-            <td className="py-3 px-2 text-sm">{dateCreated}</td>
-            <td className="py-3 px-2 text-sm">
-              <span
-                className="text-white px-2 py-1 rounded-full text-xs"
-                style={{ backgroundColor: getStatusStyle(status) }}
-              >
-                {status}
-              </span>
-            </td>
-            <td className="py-3 px-2 text-sm">{renderDocStatus(item.documentStatus)}</td>
-            <td className="py-3 px-2 text-sm">{renderAssignedStatus(assignedStatus)}</td>
           </tr>
         );
       }
@@ -774,23 +776,19 @@ export default function PartnerCustomerReport() {
       </div>
 
       <div className="w-full overflow-x-auto mb-4">
-        <table className="min-w-full border-collapse text-sm">
+        <table className="min-w-full border-collapse text-xs">
           <thead>
             <tr className="border-b">
-              <th className="py-2 px-1 text-left" style={{ fontSize: '11px', width: '30px' }}>S/N</th>
-              <th className="py-2 px-1 text-left" style={{ fontSize: '11px', width: '80px' }}>Name</th>
-              <th className="py-2 px-1 text-left" style={{ fontSize: '11px', width: '100px' }}>Email</th>
-              <th className="py-2 px-1 text-left" style={{ fontSize: '11px', width: '60px' }}>Role</th>
-              <th className="py-2 px-1 text-left" style={{ fontSize: '11px', width: '80px' }}>Customer Type</th>
-              <th className="py-2 px-1 text-left" style={{ fontSize: '11px', width: '70px' }}>Created At</th>
-              <th className="py-2 px-1 text-left" style={{ fontSize: '11px', width: '70px' }}>Status</th>
-              <th className="py-2 px-1 text-left" style={{ fontSize: '11px', width: '90px' }}>Document Status</th>
-              <th className="py-2 px-1 text-left" style={{ fontSize: '11px', width: '80px' }}>Assigned Status</th>
+              <th className="py-2 px-1 text-left" style={{ fontSize: '10px', width: '30px' }}>S/N</th>
+              <th className="py-2 px-1 text-left" style={{ fontSize: '10px', width: '70px' }}>Name</th>
+              <th className="py-2 px-1 text-left" style={{ fontSize: '10px', width: '90px' }}>Email</th>
+              <th className="py-2 px-1 text-left" style={{ fontSize: '10px', width: '50px' }}>Role</th>
+              <th className="py-2 px-1 text-left" style={{ fontSize: '10px', width: '70px' }}>Customer Type</th>
+              <th className="py-2 px-1 text-left" style={{ fontSize: '10px', width: '60px' }}>Status</th>
+              <th className="py-2 px-1 text-left" style={{ fontSize: '10px', width: '80px' }}>Document Status</th>
+              <th className="py-2 px-1 text-left" style={{ fontSize: '10px', width: '70px' }}>Assigned Status</th>
               {isInstaller && (
-                <>
-                  <th className="py-2 px-1 text-left" style={{ fontSize: '11px', width: '100px' }}>Finance Company</th>
-                  <th className="py-2 px-1 text-left" style={{ fontSize: '11px', width: '60px' }}>Commission<br/>(Finance/Installer)</th>
-                </>
+                <th className="py-2 px-1 text-left" style={{ fontSize: '10px', width: '90px' }}>Finance Company</th>
               )}
             </tr>
           </thead>
@@ -799,7 +797,7 @@ export default function PartnerCustomerReport() {
       </div>
 
       <div className="flex items-center justify-between mt-4">
-        <div className="text-sm text-gray-500">
+        <div className="text-xs text-gray-500">
           {(filteredData.length > 0 || assignedStatusSort !== 'all' ? filteredData : tableData).length > 0 ? (
             <span>Showing {(currentPage - 1) * 10 + 1} to {Math.min(currentPage * 10, (filteredData.length > 0 || assignedStatusSort !== 'all' ? filteredData : tableData).length + (currentPage - 1) * 10)} of {(filteredData.length > 0 || assignedStatusSort !== 'all' ? filteredData : tableData).length}</span>
           ) : (
@@ -807,7 +805,7 @@ export default function PartnerCustomerReport() {
           )}
         </div>
         
-        <div className="flex items-center space-x-4 text-sm">
+        <div className="flex items-center space-x-4 text-xs">
           <button
             onClick={handlePrevious}
             disabled={currentPage <= 1}
