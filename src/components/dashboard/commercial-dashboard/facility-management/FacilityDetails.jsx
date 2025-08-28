@@ -10,13 +10,21 @@ import {
   FiChevronDown,
   FiAlertCircle,
   FiRefreshCw,
-  FiDownload
+  FiDownload,
+  FiX,
+  FiAlertTriangle
 } from "react-icons/fi";
 import { toast } from 'react-hot-toast';
 import InviteCollaboratorModal from "./OperatorReminder";
 import EditFacilityDetailsModal from "./EditFacilityDetailsModal";
 import CommercialDetailsGraph from "./CommercialDetailsGraph";
-import { pageTitle, labelClass } from "./styles";
+
+const pageTitle = "text-xl font-semibold text-[#039994]";
+const labelClass = "block text-sm font-medium text-gray-700 mb-1";
+const buttonPrimary = "bg-[#039994] text-white px-4 py-2 rounded-md hover:bg-[#028580] transition-colors";
+const spinnerOverlay = "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50";
+const spinner = "animate-spin rounded-full h-8 w-8 border-b-2 border-white";
+const uploadButtonStyle = "bg-[#039994] text-white px-4 py-2 rounded-md hover:bg-[#028580] transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
 
 const ProgressTracker = ({ currentStage, nextStage, onStageClick }) => {
   const stages = [
@@ -145,10 +153,15 @@ const DocumentCard = ({ title, status, url, onUpload, onView, docType, rejection
       )}
       
       <div 
-        className={`bg-[#F0F0F0] rounded-lg p-3 cursor-pointer hover:bg-gray-200 transition-colors flex items-center h-12 ${
-          isRejected ? 'border-2 border-red-200' : ''
-        }`}
-        onClick={() => onUpload(docType)}
+        className={`rounded-lg p-3 cursor-pointer hover:bg-gray-200 transition-colors flex items-center h-12 ${
+          (displayStatus === "APPROVED" || displayStatus === "SUBMITTED") ? 
+          'bg-gray-200 cursor-not-allowed' : 
+          'bg-[#F0F0F0]'
+        } ${isRejected ? 'border-2 border-red-200' : ''}`}
+        onClick={() => {
+          if (displayStatus === "APPROVED" || displayStatus === "SUBMITTED") return;
+          onUpload(docType);
+        }}
       >
         {url ? (
           <div className="flex items-center space-x-3 w-full">
@@ -218,64 +231,113 @@ const AcknowledgementCard = ({ title, status, url, onView, rejectionReason }) =>
   const displayStatus = status || "PENDING";
 
   return (
-    <div className="mb-3">
-      <div className="flex justify-between items-center mb-2">
-        <span className="text-black text-sm font-medium">{title}</span>
-        <div className="flex items-center space-x-2">
-          {isRejected && (
-            <button
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="p-1 hover:bg-gray-100 rounded"
-              title="View rejection reason"
-            >
-              <FiAlertCircle className="text-red-500" size={14} />
-            </button>
-          )}
-          <span className={`px-2 py-1 rounded-full text-xs font-medium text-white ${
-            displayStatus === "APPROVED" ? "bg-green-500" :
-            displayStatus === "PENDING" || displayStatus === "SUBMITTED" ? "bg-yellow-500" :
-            displayStatus === "REJECTED" ? "bg-red-500" : "bg-gray-500"
-          }`}>
-            {displayStatus}
-          </span>
-        </div>
+    <div className="mb-4 bg-green-50 border border-green-200 rounded-md p-3">
+      <div className="flex items-center justify-between mb-2">
+        <span className="font-medium text-sm text-green-800">{title}</span>
+        <span className={`px-2 py-0.5 rounded text-xs font-semibold bg-green-600 text-white`}>
+          {displayStatus}
+        </span>
       </div>
-
-      {isRejected && rejectionReason && isExpanded && (
-        <div className="mb-2 p-2 bg-red-50 border border-red-200 rounded-md">
-          <div className="flex items-start space-x-2">
-            <FiAlertCircle className="text-red-500 mt-0.5 flex-shrink-0" size={14} />
-            <div>
-              <p className="text-xs font-medium text-red-800 mb-1">Rejection Reason:</p>
-              <p className="text-xs text-red-700">{rejectionReason}</p>
-            </div>
+      
+      {isRejected && rejectionReason && (
+        <div className="mb-2 p-2 bg-red-50 border border-red-200 rounded-md flex items-start gap-2">
+          <FiAlertTriangle className="text-red-500 mt-0.5 flex-shrink-0" size={14} />
+          <div>
+            <p className="font-semibold text-xs text-red-700 mb-1">Rejection Reason:</p>
+            <p className="text-xs text-red-600">{rejectionReason}</p>
           </div>
         </div>
       )}
       
-      {url && (
+      {url ? (
         <div 
-          className="bg-[#F0F0F0] rounded-lg p-3 cursor-pointer hover:bg-gray-200 transition-colors flex items-center h-12"
+          className="bg-green-100 rounded-md p-2.5 flex items-center justify-center cursor-pointer hover:bg-green-200"
           onClick={() => onView(url)}
         >
-          <div className="flex items-center space-x-3 w-full">
-            <FiFileText className="text-gray-600" size={18} />
-            <span className="text-sm text-gray-700 flex-1 truncate">
-              {fileName || 'Document available'}
-            </span>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onView(url);
-              }}
-              className="p-1 hover:bg-gray-300 rounded flex-shrink-0"
-              title="View document"
-            >
-              <FiEye className="text-[#039994]" size={16} />
-            </button>
+          <div className="flex items-center space-x-2">
+            <FiEye className="text-green-700" size={16} />
+            <span className="text-sm text-green-700">View Acknowledgement</span>
           </div>
         </div>
+      ) : (
+        <div className="bg-green-100 rounded-md p-2.5 flex items-center justify-center">
+          <span className="text-sm text-green-700">Acknowledgement {displayStatus}</span>
+        </div>
       )}
+    </div>
+  );
+};
+
+const PDFViewerModal = ({ isOpen, onClose, url, title }) => {
+  if (!isOpen) return null;
+
+  const renderFileContent = () => {
+    if (!url) return <div>No document available</div>;
+    
+    const extension = url.split('.').pop().toLowerCase();
+    
+    if (['jpg', 'jpeg', 'png', 'gif'].includes(extension)) {
+      return (
+        <div className="flex items-center justify-center h-full">
+          <img 
+            src={url} 
+            alt={title} 
+            className="max-w-full max-h-full object-contain"
+          />
+        </div>
+      );
+    } else if (extension === 'pdf') {
+      return (
+        <div className="w-full h-full">
+          <iframe
+            src={`${url}#view=fitH`}
+            className="w-full h-full border-0"
+            title={title}
+          />
+        </div>
+      );
+    } else {
+      return (
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center">
+            <FiFileText size={48} className="mx-auto mb-4 text-gray-400" />
+            <p className="text-gray-600">Preview not available for this file type</p>
+            <a 
+              href={url} 
+              download 
+              className="text-[#039994] hover:underline mt-2 inline-block"
+            >
+              Download file
+            </a>
+          </div>
+        </div>
+      );
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg w-full max-w-4xl h-full max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between p-4 border-b">
+          <h3 className="text-lg font-semibold">{title}</h3>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
+            <FiX size={20} />
+          </button>
+        </div>
+        <div className="flex-1 p-4 overflow-auto">
+          {renderFileContent()}
+        </div>
+        <div className="p-4 border-t flex justify-end">
+          <a
+            href={url}
+            download
+            className="flex items-center gap-2 bg-[#039994] text-white px-4 py-2 rounded-md hover:bg-[#028580]"
+          >
+            <FiDownload size={16} />
+            Download
+          </a>
+        </div>
+      </div>
     </div>
   );
 };
@@ -290,6 +352,8 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
   const [currentStage, setCurrentStage] = useState(1);
   const [nextStage, setNextStage] = useState(2);
   const [hasMeters, setHasMeters] = useState(false);
+  const [showPDFModal, setShowPDFModal] = useState(false);
+  const [currentPDF, setCurrentPDF] = useState({ url: "", title: "" });
 
   useEffect(() => {
     const checkUserProgress = async () => {
@@ -501,10 +565,9 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
     }
   };
 
-  const handleViewDocument = (url) => {
-    if (url) {
-      window.open(url, '_blank');
-    }
+  const handleViewDocument = (url, title) => {
+    setCurrentPDF({ url, title });
+    setShowPDFModal(true);
   };
 
   const deleteFacility = async () => {
@@ -857,7 +920,7 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
               title={acknowledgementDocument.title}
               status={acknowledgementDocument.status}
               url={acknowledgementDocument.url}
-              onView={handleViewDocument}
+              onView={(url) => handleViewDocument(url, acknowledgementDocument.title)}
               rejectionReason={acknowledgementDocument.rejectionReason}
             />
             
@@ -869,7 +932,7 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
                   status={doc.status}
                   url={doc.url}
                   onUpload={handleFileSelect}
-                  onView={handleViewDocument}
+                  onView={(url) => handleViewDocument(url, doc.title)}
                   docType={doc.docType}
                   rejectionReason={doc.rejectionReason}
                 />
@@ -935,6 +998,13 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
           }}
         />
       )}
+
+      <PDFViewerModal
+        isOpen={showPDFModal}
+        onClose={() => setShowPDFModal(false)}
+        url={currentPDF.url}
+        title={currentPDF.title}
+      />
     </div>
   );
 }
