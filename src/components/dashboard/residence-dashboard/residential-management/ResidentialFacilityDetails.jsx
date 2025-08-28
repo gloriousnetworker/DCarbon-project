@@ -842,7 +842,7 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated, o
           <h3 className="text-[#039994] mb-2">Documentation</h3>
           <hr className="border-black mb-4" />
           
-          {documents?.acknowledgementOfStationServiceUrl && (
+          {documents?.acknowledgementOfStationServiceStatus === "APPROVED" && (
             <div className="mb-4 bg-green-50 border border-green-200 rounded-md p-3">
               <div className="flex items-center justify-between mb-2">
                 <span className="font-medium text-sm text-green-800">Acknowledgement of Station Service</span>
@@ -850,15 +850,21 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated, o
                   {documents.acknowledgementOfStationServiceStatus || "PROVIDED"}
                 </span>
               </div>
-              <div 
-                className="bg-green-100 rounded-md p-2.5 flex items-center justify-center cursor-pointer hover:bg-green-200"
-                onClick={() => handleViewDocument(documents.acknowledgementOfStationServiceUrl, "Acknowledgement of Station Service")}
-              >
-                <div className="flex items-center space-x-2">
-                  <FiEye className="text-green-700" size={16} />
-                  <span className="text-sm text-green-700">View Acknowledgement</span>
+              {documents.acknowledgementOfStationServiceUrl ? (
+                <div 
+                  className="bg-green-100 rounded-md p-2.5 flex items-center justify-center cursor-pointer hover:bg-green-200"
+                  onClick={() => handleViewDocument(documents.acknowledgementOfStationServiceUrl, "Acknowledgement of Station Service")}
+                >
+                  <div className="flex items-center space-x-2">
+                    <FiEye className="text-green-700" size={16} />
+                    <span className="text-sm text-green-700">View Acknowledgement</span>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="bg-green-100 rounded-md p-2.5 flex items-center justify-center">
+                  <span className="text-sm text-green-700">Acknowledgement Approved</span>
+                </div>
+              )}
             </div>
           )}
 
@@ -881,8 +887,15 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated, o
                   </div>
                 )}
                 <div 
-                  className="bg-[#F0F0F0] rounded-md p-2.5 flex items-center justify-center cursor-pointer hover:bg-gray-200"
-                  onClick={() => doc.url ? handleViewDocument(doc.url, doc.name) : handleUploadClick(doc.type)}
+                  className={`rounded-md p-2.5 flex items-center justify-center cursor-pointer ${
+                    doc.status === "APPROVED" || doc.status === "SUBMITTED" 
+                      ? "bg-gray-200 cursor-not-allowed" 
+                      : "bg-[#F0F0F0] hover:bg-gray-200"
+                  }`}
+                  onClick={() => {
+                    if (doc.status === "APPROVED" || doc.status === "SUBMITTED") return;
+                    doc.url ? handleViewDocument(doc.url, doc.name) : handleUploadClick(doc.type);
+                  }}
                 >
                   {doc.url ? (
                     <div className="flex items-center space-x-2">
