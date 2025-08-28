@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { FiX } from "react-icons/fi";
-import {
-  labelClass,
-  selectClass,
-  buttonPrimary
-} from "./styles";
+
+const labelClass = "block text-sm font-medium text-gray-700 mb-1";
+const selectClass = "w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#039994] focus:border-transparent";
+const buttonPrimary = "py-2 bg-[#039994] text-white rounded-md hover:bg-[#028c87]";
 
 export default function FilterModal({
   onClose,
@@ -49,7 +48,6 @@ export default function FilterModal({
         </h2>
         <hr className="mb-4 border-gray-200" />
 
-        {/* By Status */}
         <div className="mb-4">
           <label className={labelClass}>By Status</label>
           <select
@@ -65,7 +63,6 @@ export default function FilterModal({
         </div>
         <hr className="mb-4 border-gray-200" />
 
-        {/* By Customer Type */}
         <div className="mb-4">
           <label className={labelClass}>By Customer Type</label>
           <select
@@ -81,7 +78,6 @@ export default function FilterModal({
         </div>
         <hr className="mb-4 border-gray-200" />
 
-        {/* By Time */}
         <div className="mb-4">
           <label className={labelClass}>By Time</label>
           <select

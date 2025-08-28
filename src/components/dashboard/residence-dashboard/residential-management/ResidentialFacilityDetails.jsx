@@ -105,6 +105,14 @@ const DOCUMENT_TYPES = {
     statusField: "singleLineDiagramStatus",
     rejectionField: "singleLineDiagramRejectionReason",
     mandatory: true
+  },
+  assignmentOfRegistrationRight: {
+    name: "Assignment of Registration Right",
+    endpoint: "assignment-of-registration-right",
+    urlField: "assignmentOfRegistrationRightUrl",
+    statusField: "assignmentOfRegistrationRightStatus",
+    rejectionField: "assignmentOfRegistrationRightRejectionReason",
+    mandatory: true
   }
 };
 
@@ -833,6 +841,27 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated, o
         <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
           <h3 className="text-[#039994] mb-2">Documentation</h3>
           <hr className="border-black mb-4" />
+          
+          {documents?.acknowledgementOfStationServiceUrl && (
+            <div className="mb-4 bg-green-50 border border-green-200 rounded-md p-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-medium text-sm text-green-800">Acknowledgement of Station Service</span>
+                <span className={`px-2 py-0.5 rounded text-xs font-semibold bg-green-600 text-white`}>
+                  {documents.acknowledgementOfStationServiceStatus || "PROVIDED"}
+                </span>
+              </div>
+              <div 
+                className="bg-green-100 rounded-md p-2.5 flex items-center justify-center cursor-pointer hover:bg-green-200"
+                onClick={() => handleViewDocument(documents.acknowledgementOfStationServiceUrl, "Acknowledgement of Station Service")}
+              >
+                <div className="flex items-center space-x-2">
+                  <FiEye className="text-green-700" size={16} />
+                  <span className="text-sm text-green-700">View Acknowledgement</span>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-3">
             {visibleDocs.map((doc) => (
               <div key={doc.type} className="space-y-2">

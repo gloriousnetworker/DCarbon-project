@@ -14,7 +14,7 @@ import {
 } from "react-icons/fi";
 import axios from "axios";
 import toast from "react-hot-toast";
-import EditResidentialFacilityModal from "./EditFacilityDetailsModal";
+import EditResidentialFacilityModal from "./EditFacilityModal";
 import ResidentialDetailsGraph from "./ResidentialDetailsGraph";
 
 const labelClass = "block text-sm font-medium text-gray-700 mb-1";
@@ -104,6 +104,14 @@ const DOCUMENT_TYPES = {
     urlField: "singleLineDiagramUrl",
     statusField: "singleLineDiagramStatus",
     rejectionField: "singleLineDiagramRejectionReason",
+    mandatory: true
+  },
+  assignmentOfRegistrationRight: {
+    name: "Assignment of Registration Right",
+    endpoint: "assignment-of-registration-right",
+    urlField: "assignmentOfRegistrationRightUrl",
+    statusField: "assignmentOfRegistrationRightStatus",
+    rejectionField: "assignmentOfRegistrationRightRejectionReason",
     mandatory: true
   }
 };
@@ -300,7 +308,7 @@ const DocumentUploadModal = ({ isOpen, onClose, onUpload, docType, facilityId })
       toast.success("Document uploaded successfully");
       onUpload(response.data.data);
       setFile(null);
-  setFileName('');
+      setFileName('');
       setFileInputKey(Date.now());
       onClose();
     } catch (error) {
@@ -711,18 +719,10 @@ export default function FacilityDetails({ facility, customerEmail, onBack, onFac
     }
   };
 
-  const canUploadDocument = (docType) => {
+  const canUploadDocument = (docType, currentStatus) => {
     if (!partnerType) return true;
     
-    if (partnerType === "INSTALLER") {
-      return docType === "solarInstallationContract" || docType === "installationSitePlan";
-    }
-    
-    if (partnerType === "FINANCE_COMPANY") {
-      return docType === "financeAgreement" || docType === "solarInstallationContract" || docType === "installationSitePlan";
-    }
-    
-    if (partnerType === "SALES_AGENT") {
+    if (currentStatus === "SUBMITTED" || currentStatus === "APPROVED") {
       return false;
     }
     
@@ -736,14 +736,15 @@ export default function FacilityDetails({ facility, customerEmail, onBack, onFac
       const isFinanceAgreementOptional = key === 'financeAgreement' && financeType === 'Cash';
       
       if (!isFinanceAgreementOptional || !docType.mandatory) {
+        const currentStatus = documents?.[docType.statusField] || "REQUIRED";
         docList.push({
           type: key,
           name: docType.name,
           url: documents?.[docType.urlField] || null,
-          status: documents?.[docType.statusField] || "REQUIRED",
+          status: currentStatus,
           rejectionReason: documents?.[docType.rejectionField] || null,
           mandatory: docType.mandatory && !isFinanceAgreementOptional,
-          canUpload: canUploadDocument(key)
+          canUpload: canUploadDocument(key, currentStatus)
         });
       }
     });
@@ -807,6 +808,13 @@ export default function FacilityDetails({ facility, customerEmail, onBack, onFac
           >
             <FiDownload size={14} />
             <span>Download CSV</span>
+          </button>
+          <button
+            onClick={() => setShowEditModal(true)}
+            className="flex items-center gap-2 bg-[#1E1E1E] text-white px-3 py-1.5 rounded-md text-sm hover:bg-black"
+          >
+            <FiEdit size={14} />
+            <span>Edit Facility Details</span>
           </button>
           {showAssignInstallerButton && (
             <button
@@ -885,6 +893,27 @@ export default function FacilityDetails({ facility, customerEmail, onBack, onFac
         <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
           <h3 className="text-[#039994] mb-2">Documentation</h3>
           <hr className="border-black mb-4" />
+          
+          {documents?.acknowledgementOfStationServiceUrl && (
+            <div className="mb-4 bg-green-50 border border-green-200 rounded-md p-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-medium text-sm text-green-800">Acknowledgement of Station Service</span>
+                <span className={`px-2 py-0.5 rounded text-xs font-semibold bg-green-600 text-white`}>
+                  {documents.acknowledgementOfStationServiceStatus || "PROVIDED"}
+                </span>
+              </div>
+              <div 
+                className="bg-green-100 rounded-md p-2.5 flex items-center justify-center cursor-pointer hover:bg-green-200"
+                onClick={() => handleViewDocument(documents.acknowledgementOfStationServiceUrl, "Acknowledgement of Station Service")}
+              >
+                <div className="flex items-center space-x-2">
+                  <FiEye className="text-green-700" size={16} />
+                  <span className="text-sm text-green-700">View Acknowledgement</span>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-3">
             {visibleDocs.map((doc) => (
               <div key={doc.type} className="space-y-2">

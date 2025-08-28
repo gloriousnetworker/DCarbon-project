@@ -199,6 +199,87 @@ const DocumentCard = ({ title, status, url, onUpload, onView, docType, rejection
   );
 };
 
+const AcknowledgementCard = ({ title, status, url, onView, rejectionReason }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const getDocumentFileName = (url) => {
+    if (!url) return null;
+    try {
+      const urlParts = url.split('/');
+      const fileName = urlParts[urlParts.length - 1];
+      return decodeURIComponent(fileName).replace(/^\d+-/, '');
+    } catch (error) {
+      return 'Document';
+    }
+  };
+
+  const fileName = getDocumentFileName(url);
+  const isRejected = status?.toUpperCase() === "REJECTED";
+  const displayStatus = status || "PENDING";
+
+  return (
+    <div className="mb-3">
+      <div className="flex justify-between items-center mb-2">
+        <span className="text-black text-sm font-medium">{title}</span>
+        <div className="flex items-center space-x-2">
+          {isRejected && (
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="p-1 hover:bg-gray-100 rounded"
+              title="View rejection reason"
+            >
+              <FiAlertCircle className="text-red-500" size={14} />
+            </button>
+          )}
+          <span className={`px-2 py-1 rounded-full text-xs font-medium text-white ${
+            displayStatus === "APPROVED" ? "bg-green-500" :
+            displayStatus === "PENDING" || displayStatus === "SUBMITTED" ? "bg-yellow-500" :
+            displayStatus === "REJECTED" ? "bg-red-500" : "bg-gray-500"
+          }`}>
+            {displayStatus}
+          </span>
+        </div>
+      </div>
+
+      {isRejected && rejectionReason && isExpanded && (
+        <div className="mb-2 p-2 bg-red-50 border border-red-200 rounded-md">
+          <div className="flex items-start space-x-2">
+            <FiAlertCircle className="text-red-500 mt-0.5 flex-shrink-0" size={14} />
+            <div>
+              <p className="text-xs font-medium text-red-800 mb-1">Rejection Reason:</p>
+              <p className="text-xs text-red-700">{rejectionReason}</p>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {url && (
+        <div 
+          className="bg-[#F0F0F0] rounded-lg p-3 cursor-pointer hover:bg-gray-200 transition-colors flex items-center h-12"
+          onClick={() => onView(url)}
+        >
+          <div className="flex items-center space-x-3 w-full">
+            <FiFileText className="text-gray-600" size={18} />
+            <span className="text-sm text-gray-700 flex-1 truncate">
+              {fileName || 'Document available'}
+            </span>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onView(url);
+              }}
+              className="p-1 hover:bg-gray-300 rounded flex-shrink-0"
+              title="View document"
+            >
+              <FiEye className="text-[#039994]" size={16} />
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export default function FacilityDetails({ facility, onBack, onFacilityUpdated }) {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -358,7 +439,8 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
       installationSitePlan: `${baseUrl}/api/facility/update-facility-site-plan/${facilityId}`,
       panelInverterDatasheet: `${baseUrl}/api/facility/update-facility-inverter-datasheet/${facilityId}`,
       revenueMeterDatasheet: `${baseUrl}/api/facility/update-facility-revenue-meter-data/${facilityId}`,
-      utilityMeterPhoto: `${baseUrl}/api/facility/update-commercial-utility-meter-photo/${facilityId}`
+      utilityMeterPhoto: `${baseUrl}/api/facility/update-commercial-utility-meter-photo/${facilityId}`,
+      assignmentOfRegistrationRight: `${baseUrl}/api/facility/update-assignment-of-registration-right/${facilityId}`
     };
 
     const fieldNames = {
@@ -371,7 +453,8 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
       installationSitePlan: 'file',
       panelInverterDatasheet: 'file',
       revenueMeterDatasheet: 'file',
-      utilityMeterPhoto: 'utilityMeterPhotoUrl'
+      utilityMeterPhoto: 'utilityMeterPhotoUrl',
+      assignmentOfRegistrationRight: 'file'
     };
 
     const formData = new FormData();
@@ -512,6 +595,13 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
 
   const allDocuments = [
     {
+      title: "Assignment of Registration Right",
+      status: facilityData.assignmentOfRegistrationRightStatus,
+      url: facilityData.assignmentOfRegistrationRightUrl,
+      docType: "assignmentOfRegistrationRight",
+      rejectionReason: facilityData.assignmentOfRegistrationRightRejectionReason
+    },
+    {
       title: "WREGIS Assignment of Registration Rights",
       status: facilityData.wregisAssignmentStatus,
       url: facilityData.wregisAssignmentUrl,
@@ -582,6 +672,13 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
       rejectionReason: facilityData.utilityMeterPhotoRejectionReason
     }
   ];
+
+  const acknowledgementDocument = {
+    title: "Acknowledgement of Station Service",
+    status: facilityData.acknowledgementOfStationServiceStatus,
+    url: facilityData.acknowledgementOfStationServiceUrl,
+    rejectionReason: facilityData.acknowledgementOfStationServiceRejectionReason
+  };
 
   const visibleDocuments = showAllDocs ? allDocuments : allDocuments.slice(0, 3);
   const isOwner = facilityData.commercialRole?.toLowerCase() === "owner";
@@ -755,6 +852,14 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
 
           <div className="bg-white border border-gray-200 rounded-lg p-4">
             <h3 className="text-sm font-semibold text-[#039994] mb-3">Facility Documents</h3>
+            
+            <AcknowledgementCard
+              title={acknowledgementDocument.title}
+              status={acknowledgementDocument.status}
+              url={acknowledgementDocument.url}
+              onView={handleViewDocument}
+              rejectionReason={acknowledgementDocument.rejectionReason}
+            />
             
             <div className={`${showAllDocs ? 'max-h-[500px] overflow-y-auto' : ''}`}>
               {visibleDocuments.map((doc, index) => (

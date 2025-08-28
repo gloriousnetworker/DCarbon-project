@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import FilterModal from "./FilterModal";
 
 const MONTHS = [
   { label: "Month", value: "" },
@@ -329,14 +330,24 @@ export default function CustomerReport({ onNavigate }) {
         />
       )}
       {showExportModal && (
-        <ExportReportModal
-          onClose={() => setShowExportModal(false)}
-          onExport={() => {}}
-          initialFilters={filters}
-          yearFilter={yearFilter}
-          monthFilter={monthFilter}
-          tableData={tableData}
-        />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white w-full max-w-md rounded-lg shadow-lg p-6 relative">
+            <button
+              onClick={() => setShowExportModal(false)}
+              className="absolute top-4 right-4 text-[#F04438] hover:text-red-600"
+            >
+              ✕
+            </button>
+            <h2 className="text-xl font-semibold text-[#039994] mb-4">Export Report</h2>
+            <p className="text-gray-600 mb-4">Export functionality would be implemented here</p>
+            <button
+              onClick={() => setShowExportModal(false)}
+              className="w-full py-2 bg-[#039994] text-white rounded-md hover:bg-[#028c87]"
+            >
+              Close
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -417,8 +417,8 @@ export default function PartnerCustomerReport() {
 
     return (
       <span
-        className="text-white px-2 py-1 rounded-full text-xs"
-        style={{ backgroundColor: getDocumentStatusStyle(status) }}
+        className="text-white px-1 py-0.5 rounded text-xs whitespace-nowrap"
+        style={{ backgroundColor: getDocumentStatusStyle(status), fontSize: '10px' }}
       >
         {displayText}
       </span>
@@ -429,8 +429,8 @@ export default function PartnerCustomerReport() {
     const statusText = status?.toUpperCase();
     return (
       <span
-        className="text-white px-2 py-1 rounded-full text-xs"
-        style={{ backgroundColor: getAssignedStatusStyle(status) }}
+        className="text-white px-1 py-0.5 rounded text-xs whitespace-nowrap"
+        style={{ backgroundColor: getAssignedStatusStyle(status), fontSize: '10px' }}
       >
         {statusText}
       </span>
@@ -531,24 +531,38 @@ export default function PartnerCustomerReport() {
             className="border-b hover:bg-gray-50 cursor-pointer text-xs"
             onClick={() => handleRowClick(item)}
           >
-            <td className="py-3 px-1">{sn}</td>
-            <td className="py-3 px-1">{nameToShow}</td>
-            <td className="py-3 px-1">{email}</td>
-            <td className="py-3 px-1 font-medium">{role}</td>
-            <td className="py-3 px-1 font-medium">{customerType}</td>
-            <td className="py-3 px-1">{dateCreated}</td>
-            <td className="py-3 px-1">
+            <td className="py-2 px-1" style={{ fontSize: '10px' }}>{sn}</td>
+            <td className="py-2 px-1" style={{ fontSize: '10px', maxWidth: '80px' }}>
+              <div className="truncate" title={nameToShow}>{nameToShow}</div>
+            </td>
+            <td className="py-2 px-1" style={{ fontSize: '10px', maxWidth: '100px' }}>
+              <div className="truncate" title={email}>{email}</div>
+            </td>
+            <td className="py-2 px-1" style={{ fontSize: '10px', maxWidth: '60px' }}>
+              <div className="truncate font-medium" title={role}>{role}</div>
+            </td>
+            <td className="py-2 px-1" style={{ fontSize: '10px', maxWidth: '80px' }}>
+              <div className="truncate font-medium" title={customerType}>{customerType}</div>
+            </td>
+            <td className="py-2 px-1" style={{ fontSize: '10px', maxWidth: '70px' }}>{dateCreated}</td>
+            <td className="py-2 px-1" style={{ maxWidth: '70px' }}>
               <span
-                className="text-white px-2 py-1 rounded-full"
-                style={{ backgroundColor: getStatusStyle(status) }}
+                className="text-white px-1 py-0.5 rounded whitespace-nowrap"
+                style={{ backgroundColor: getStatusStyle(status), fontSize: '10px' }}
               >
                 {status}
               </span>
             </td>
-            <td className="py-3 px-1">{renderDocStatus(item.documentStatus)}</td>
-            <td className="py-3 px-1">{renderAssignedStatus(assignedStatus)}</td>
-            <td className="py-3 px-1">{financeCompany}<br/>{financeEmail}</td>
-            <td className="py-3 px-1">100%<br/>0%</td>
+            <td className="py-2 px-1" style={{ maxWidth: '90px' }}>{renderDocStatus(item.documentStatus)}</td>
+            <td className="py-2 px-1" style={{ maxWidth: '80px' }}>{renderAssignedStatus(assignedStatus)}</td>
+            <td className="py-2 px-1" style={{ fontSize: '10px', maxWidth: '100px' }}>
+              <div className="truncate" title={financeCompany}>{financeCompany}</div>
+              <div className="truncate text-gray-500" title={financeEmail}>{financeEmail}</div>
+            </td>
+            <td className="py-2 px-1 text-center" style={{ fontSize: '10px', maxWidth: '60px' }}>
+              <div>100%</div>
+              <div>0%</div>
+            </td>
           </tr>
         );
       } else {
@@ -763,19 +777,19 @@ export default function PartnerCustomerReport() {
         <table className="min-w-full border-collapse text-sm">
           <thead>
             <tr className="border-b">
-              <th className="py-2 px-1 text-left">S/N</th>
-              <th className="py-2 px-1 text-left">Name</th>
-              <th className="py-2 px-1 text-left">Email</th>
-              <th className="py-2 px-1 text-left">Role</th>
-              <th className="py-2 px-1 text-left">Customer Type</th>
-              <th className="py-2 px-1 text-left">Created At</th>
-              <th className="py-2 px-1 text-left">Status</th>
-              <th className="py-2 px-1 text-left">Document Status</th>
-              <th className="py-2 px-1 text-left">Assigned Status</th>
+              <th className="py-2 px-1 text-left" style={{ fontSize: '11px', width: '30px' }}>S/N</th>
+              <th className="py-2 px-1 text-left" style={{ fontSize: '11px', width: '80px' }}>Name</th>
+              <th className="py-2 px-1 text-left" style={{ fontSize: '11px', width: '100px' }}>Email</th>
+              <th className="py-2 px-1 text-left" style={{ fontSize: '11px', width: '60px' }}>Role</th>
+              <th className="py-2 px-1 text-left" style={{ fontSize: '11px', width: '80px' }}>Customer Type</th>
+              <th className="py-2 px-1 text-left" style={{ fontSize: '11px', width: '70px' }}>Created At</th>
+              <th className="py-2 px-1 text-left" style={{ fontSize: '11px', width: '70px' }}>Status</th>
+              <th className="py-2 px-1 text-left" style={{ fontSize: '11px', width: '90px' }}>Document Status</th>
+              <th className="py-2 px-1 text-left" style={{ fontSize: '11px', width: '80px' }}>Assigned Status</th>
               {isInstaller && (
                 <>
-                  <th className="py-2 px-1 text-left">Finance Company</th>
-                  <th className="py-2 px-1 text-left">Commission<br/>(Finance/Installer)</th>
+                  <th className="py-2 px-1 text-left" style={{ fontSize: '11px', width: '100px' }}>Finance Company</th>
+                  <th className="py-2 px-1 text-left" style={{ fontSize: '11px', width: '60px' }}>Commission<br/>(Finance/Installer)</th>
                 </>
               )}
             </tr>

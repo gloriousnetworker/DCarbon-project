@@ -2,10 +2,12 @@ import React, { useState, useEffect } from "react";
 import { FiX } from "react-icons/fi";
 import axios from "axios";
 import toast from "react-hot-toast";
+import Loader from "@/components/loader/Loader.jsx";
 import {
   labelClass,
   inputClass,
   selectClass,
+  spinnerOverlay,
   buttonPrimary,
   uploadNoteStyle
 } from "./styles";
@@ -196,11 +198,11 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
     setLoading(true);
     try {
       const authToken = localStorage.getItem("authToken");
-      
       const updateData = {
         installer: formData.installer === "not_available" ? "N/A" : formData.installer,
         systemCapacity: Number(formData.systemCapacity),
         zipCode: formData.zipCode,
+        meterId: formData.meterId || facility.meterId,
         utilityProvider: formData.utilityProvider,
         address: formData.address,
         financeType: formData.financeType,
@@ -212,11 +214,6 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
         hasOnSiteLoad: formData.hasOnSiteLoad,
         hasNetMetering: formData.hasNetMetering
       };
-      
-      if (formData.meterId && formData.meterId !== facility.meterId) {
-        updateData.meterId = formData.meterId;
-      }
-      
       const { data } = await axios.put(`https://services.dcarbon.solutions/api/residential-facility/update-facility/${facility.id}`, updateData, { headers: { Authorization: `Bearer ${authToken}` } });
       if (data.status === "success") {
         toast.success("Facility updated successfully");
