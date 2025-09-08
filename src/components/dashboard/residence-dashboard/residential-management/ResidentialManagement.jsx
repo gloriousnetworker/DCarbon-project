@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import FacilityTabs from "./FacilityTabs";
 import FacilityCardView from "./ResidentialFacilityCardView";
 import FacilityTableView from "./ResidentialFacilityTableView";
-import FacilityDetails from "./ResidentialFacilityDetails";
+import FacilityDetails from "./residential-facility-details/ResidentialFacilityDetails";
 
 // Modals
 import AddResidentialFacilityModal from "./AddResidentialFacilityModal";

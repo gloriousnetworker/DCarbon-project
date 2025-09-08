@@ -3,7 +3,7 @@ import axios from "axios";
 import { FiChevronRight } from "react-icons/fi";
 import toast from "react-hot-toast";
 import FilterModal from "./FilterModal";
-import FacilityDetails from "./FacilityDetails";
+import FacilityDetails from "./commercial-facility-details/FacilityDetails";
 
 export default function FacilityCardView() {
   const [facilities, setFacilities] = useState([]);

@@ -3,7 +3,7 @@ import axios from "axios";
 import { FiChevronRight, FiEdit2, FiTrash2 } from "react-icons/fi";
 import toast from "react-hot-toast";
 import FilterModal from "./FilterModal";
-import FacilityDetails from "./ResidentialFacilityDetails";
+import FacilityDetails from "./residential-facility-details/ResidentialFacilityDetails";
 import ConfirmationModal from "./ConfirmationModal";
 
 export default function FacilityCardView() {

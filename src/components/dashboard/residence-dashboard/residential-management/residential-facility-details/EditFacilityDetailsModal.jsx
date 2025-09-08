@@ -8,7 +8,7 @@ import {
   selectClass,
   buttonPrimary,
   uploadNoteStyle
-} from "./styles";
+} from "../styles";
 
 export default function EditResidentialFacilityModal({ facility, onClose = () => { }, onSave = () => { }, isOpen = false }) {
   const [formData, setFormData] = useState({

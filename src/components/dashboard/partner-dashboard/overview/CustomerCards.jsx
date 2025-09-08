@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { useRouter } from "next/navigation";
 import SendReminderModal from "../overview/modals/SendReminderModal";
 
 export default function ThreeCardsDashboard({ onSectionChange }) {
+  const router = useRouter();
+  
   const [referralStats, setReferralStats] = useState({
     totalInvited: 0,
     totalPending: 0,
@@ -28,6 +31,15 @@ export default function ThreeCardsDashboard({ onSectionChange }) {
 
   const [selectedEmail, setSelectedEmail] = useState("");
   const [showReminderModal, setShowReminderModal] = useState(false);
+
+  const handleAuthError = () => {
+    localStorage.clear();
+    router.push("/login");
+  };
+
+  const isAuthError = (error) => {
+    return error.response && (error.response.status === 422 || error.response.status === 401 || error.response.status === 403);
+  };
 
   useEffect(() => {
     const storedUserId = localStorage.getItem("userId") || "8b14b23d-3082-4846-9216-2c2e9f1e96bf";
@@ -77,6 +89,11 @@ export default function ThreeCardsDashboard({ onSectionChange }) {
           completeDocumentation: workProgressData.completeDocumentation || 0
         });
       } catch (err) {
+        if (isAuthError(err)) {
+          handleAuthError();
+          return;
+        }
+        
         setErrorStats(err.message || "Failed to load stats");
         setErrorPending(err.message || "Failed to load pending referrals");
         setErrorWorkProgress(err.message || "Failed to load work progress");
@@ -91,7 +108,7 @@ export default function ThreeCardsDashboard({ onSectionChange }) {
 
     const refreshInterval = setInterval(fetchData, 300000);
     return () => clearInterval(refreshInterval);
-  }, []);
+  }, [router]);
 
   const totalRefCount = referralStats.totalInvited || 1;
 

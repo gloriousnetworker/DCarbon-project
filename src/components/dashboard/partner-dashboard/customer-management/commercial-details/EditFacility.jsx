@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { FiX } from "react-icons/fi";
 import axios from "axios";
 import toast from "react-hot-toast";
-import { labelClass, inputClass, selectClass } from "./styles";
+import { labelClass, inputClass, selectClass } from "../styles";
 import Loader from "@/components/loader/Loader.jsx";
 
 export default function EditFacilityDetailsModal({ facility, onClose = () => {}, onSave = () => {} }) {

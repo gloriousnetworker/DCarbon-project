@@ -115,7 +115,7 @@ export default function EditResidentialFacilityModal({ facility, customerEmail, 
     const authToken = localStorage.getItem("authToken");
     const userId = localStorage.getItem("userId");
     
-    if (!authToken || !userId || !selectedInstaller || !customerEmail) return false;
+    if (!authToken || !userId || !selectedInstaller || !customerEmail) return;
 
     try {
       const payload = {
@@ -142,7 +142,7 @@ export default function EditResidentialFacilityModal({ facility, customerEmail, 
   const updateFacilityInstaller = async () => {
     const authToken = localStorage.getItem("authToken");
     
-    if (!authToken) return null;
+    if (!authToken) return;
 
     try {
       const updateData = {
@@ -166,35 +166,29 @@ export default function EditResidentialFacilityModal({ facility, customerEmail, 
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!isAuthorized) {
-      toast.error("You are not authorized to perform this action");
-      return;
-    }
-    
+    if (!isAuthorized) return;
     setLoading(true);
     
     try {
       const updatedFacility = await updateFacilityInstaller();
       
       if (updatedFacility) {
-        await assignInstallerToReferral();
-        onSave(updatedFacility);
-        toast.success("Installer assigned successfully!");
-      } else {
-        toast.error("Failed to update facility");
+        const referralAssigned = await assignInstallerToReferral();
+        
+        if (referralAssigned) {
+          onSave(updatedFacility);
+          onClose();
+        }
       }
     } catch (err) {
       console.error("Error in form submission:", err);
-      toast.error("An error occurred while assigning the installer");
     } finally {
       setLoading(false);
-      onClose();
-      window.location.reload();
     }
   };
 
   const handleBackdropClick = (e) => {
-    if (e.target === e.currentTarget && !loading) onClose();
+    if (e.target === e.currentTarget) onClose();
   };
 
   if (!isOpen) return null;
