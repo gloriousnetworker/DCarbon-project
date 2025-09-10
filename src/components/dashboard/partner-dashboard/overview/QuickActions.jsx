@@ -126,7 +126,7 @@ export default function QuickActions() {
             />
             <hr className="border-white w-full mb-2" />
             <p className="text-white text-sm font-bold leading-tight">
-              Invite an Installer
+              Invite an Installer/EPC Mode
             </p>
           </div>
         )}

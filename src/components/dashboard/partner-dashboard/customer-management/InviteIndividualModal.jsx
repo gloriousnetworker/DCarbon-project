@@ -11,11 +11,15 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
     phoneNumber: "",
     customerType: "RESIDENTIAL",
     role: "OWNER",
-    message: ""
+    message: "",
+    address: "",
+    zipCode: ""
   });
   const [loading, setLoading] = useState(false);
   const [isSalesAgent, setIsSalesAgent] = useState(false);
   const [userLoaded, setUserLoaded] = useState(false);
+  const [addressError, setAddressError] = useState("");
+  const [zipCodeError, setZipCodeError] = useState("");
 
   useEffect(() => {
     const checkUserRole = async () => {
@@ -54,6 +58,24 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
       [name]: value
     };
 
+    if (name === "address") {
+      if (!value.trim()) {
+        setAddressError("Address is required");
+      } else {
+        setAddressError("");
+      }
+    }
+
+    if (name === "zipCode") {
+      if (!value.trim()) {
+        setZipCodeError("Zip code is required");
+      } else if (!/^\d{5}(-\d{4})?$/.test(value)) {
+        setZipCodeError("Invalid zip code format");
+      } else {
+        setZipCodeError("");
+      }
+    }
+
     if (name === "customerType") {
       if (value === "RESIDENTIAL") {
         newFormData.role = "OWNER";
@@ -90,8 +112,37 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
       phoneNumber: "",
       customerType: isSalesAgent ? "PARTNER" : "RESIDENTIAL",
       role: isSalesAgent ? "SALES_AGENT" : "OWNER",
-      message: ""
+      message: "",
+      address: "",
+      zipCode: ""
     });
+    setAddressError("");
+    setZipCodeError("");
+  };
+
+  const sendFacilityInvite = async (userId, authToken) => {
+    try {
+      const response = await axios.post(
+        `https://services.dcarbon.solutions/api/user/invite-facility/${userId}`,
+        {
+          inviteeEmail: formData.email,
+          zipCode: formData.zipCode,
+          streetNo: formData.address,
+          message: formData.message || ""
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`
+          }
+        }
+      );
+      
+      return response.data.status === "success";
+    } catch (error) {
+      console.error("Error sending facility invitation:", error);
+      return false;
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -107,7 +158,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
       return;
     }
 
-    const { name, email, phoneNumber, customerType, role, message } = formData;
+    const { name, email, phoneNumber, customerType, role, message, address, zipCode } = formData;
 
     if (!email) {
       toast.error("Please enter an email address");
@@ -117,6 +168,24 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
 
     if (!phoneNumber) {
       toast.error("Please enter a valid phone number");
+      setLoading(false);
+      return;
+    }
+
+    if (!address) {
+      toast.error("Please enter a facility address");
+      setLoading(false);
+      return;
+    }
+
+    if (!zipCode) {
+      toast.error("Please enter a zip code");
+      setLoading(false);
+      return;
+    }
+
+    if (!/^\d{5}(-\d{4})?$/.test(zipCode)) {
+      toast.error("Please enter a valid zip code");
       setLoading(false);
       return;
     }
@@ -135,7 +204,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
     };
 
     try {
-      const response = await axios.post(
+      const userResponse = await axios.post(
         `https://services.dcarbon.solutions/api/user/invite-user/${userId}`,
         payload,
         {
@@ -146,12 +215,19 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
         }
       );
 
-      if (response.data.status === "success") {
-        toast.success("Invitation sent successfully");
+      if (userResponse.data.status === "success") {
+        const facilitySuccess = await sendFacilityInvite(userId, authToken);
+        
+        if (facilitySuccess) {
+          toast.success("Invitation with facility details sent successfully");
+        } else {
+          toast.warning("User invitation sent but facility invitation failed");
+        }
+        
         resetForm();
         onClose();
       } else {
-        throw new Error(response.data.message || "Failed to send invitation");
+        throw new Error(userResponse.data.message || "Failed to send invitation");
       }
     } catch (error) {
       console.error("Error sending invitation:", error);
@@ -261,6 +337,39 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
           </div>
 
           <div>
+            <label className={`${labelClass} text-xs`}>Facility Address <span className="text-red-500">*</span></label>
+            <input
+              type="text"
+              name="address"
+              value={formData.address}
+              onChange={handleChange}
+              className={`${inputClass} text-xs ${addressError ? "border-red-500" : ""}`}
+              placeholder="Enter facility address (e.g. MERCHANT PROP MGT CO, 5360 UNIVERSITY AVE C, SAN DIEGO, CA 92104)"
+              required
+            />
+            {addressError && (
+              <p className="text-red-500 text-xs mt-1">{addressError}</p>
+            )}
+          </div>
+
+          <div>
+            <label className={`${labelClass} text-xs`}>Zip Code <span className="text-red-500">*</span></label>
+            <input
+              type="text"
+              name="zipCode"
+              value={formData.zipCode}
+              onChange={handleChange}
+              className={`${inputClass} text-xs ${zipCodeError ? "border-red-500" : ""}`}
+              placeholder="Enter zip code (e.g. 92104)"
+              pattern="^\d{5}(-\d{4})?$"
+              required
+            />
+            {zipCodeError && (
+              <p className="text-red-500 text-xs mt-1">{zipCodeError}</p>
+            )}
+          </div>
+
+          <div>
             <label className={`${labelClass} text-xs`}>Customer Type <span className="text-red-500">*</span></label>
             <select
               name="customerType"
@@ -338,7 +447,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
             <button
               type="submit"
               className={`flex-1 ${buttonPrimary} flex items-center justify-center py-1 text-xs`}
-              disabled={loading}
+              disabled={loading || addressError || zipCodeError}
             >
               Invite
             </button>
