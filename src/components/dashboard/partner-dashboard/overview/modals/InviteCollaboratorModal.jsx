@@ -314,31 +314,30 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
       );
 
       if (userResponse.data.status === "success") {
+        toast.success("Customer invitation sent successfully");
+        
         const facilitySuccess = await sendFacilityInvite(userId, authToken);
         
-        let installerAssignmentSuccess = true;
         if (epcMode && installerId) {
           const selectedInstaller = installers.find(inst => inst.id === installerId);
           if (selectedInstaller) {
-            installerAssignmentSuccess = await assignInstallerToCustomer(
+            const installerAssignmentSuccess = await assignInstallerToCustomer(
               userId, 
               authToken, 
               selectedInstaller.inviteeEmail, 
               selectedInstaller.name || selectedInstaller.inviteeEmail
             );
+
+            if (installerAssignmentSuccess) {
+              toast.success("Installer assigned successfully");
+            } else {
+              toast.error("Failed to assign installer");
+            }
           }
         }
         
-        if (facilitySuccess) {
-          if (epcMode && installerAssignmentSuccess) {
-            toast.success("Invitation with EPC mode sent successfully. Installer assigned.");
-          } else if (epcMode && !installerAssignmentSuccess) {
-            toast.success("Invitation sent but installer assignment failed");
-          } else {
-            toast.success("Invitation sent successfully");
-          }
-        } else {
-          toast.warning("User invitation sent but facility invitation failed");
+        if (!facilitySuccess) {
+          toast.warning("Facility invitation failed");
         }
         
         resetForm();

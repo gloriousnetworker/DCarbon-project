@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { pageTitle, labelClass, inputClass, selectClass, buttonPrimary } from "../styles";
@@ -9,53 +9,9 @@ export default function InviteInstallerModal({ isOpen, onClose }) {
     name: "",
     email: "",
     phoneNumber: "",
-    message: "",
-    installerId: ""
+    message: ""
   });
   const [loading, setLoading] = useState(false);
-  const [epcMode, setEpcMode] = useState(false);
-  const [installers, setInstallers] = useState([]);
-  const [installersLoading, setInstallersLoading] = useState(false);
-
-  useEffect(() => {
-    if (isOpen && epcMode) {
-      fetchInstallers();
-    }
-  }, [isOpen, epcMode]);
-
-  const fetchInstallers = async () => {
-    const userId = localStorage.getItem("userId");
-    const authToken = localStorage.getItem("authToken");
-
-    if (!userId || !authToken) return;
-
-    setInstallersLoading(true);
-    try {
-      const response = await axios.get(
-        `https://services.dcarbon.solutions/api/user/get-users-referrals/${userId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${authToken}`
-          }
-        }
-      );
-
-      if (response.data.status === "success") {
-        const filteredInstallers = response.data.data.referrals.filter(
-          referral => 
-            referral.customerType === "PARTNER" &&
-            referral.role === "INSTALLER" &&
-            referral.status === "ACCEPTED"
-        );
-        setInstallers(filteredInstallers);
-      }
-    } catch (error) {
-      console.error("Error fetching installers:", error);
-      toast.error("Failed to load installers");
-    } finally {
-      setInstallersLoading(false);
-    }
-  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -86,10 +42,8 @@ export default function InviteInstallerModal({ isOpen, onClose }) {
       name: "",
       email: "",
       phoneNumber: "",
-      message: "",
-      installerId: ""
+      message: ""
     });
-    setEpcMode(false);
   };
 
   const handleSubmit = async (e) => {
@@ -105,7 +59,7 @@ export default function InviteInstallerModal({ isOpen, onClose }) {
       return;
     }
 
-    const { name, email, phoneNumber, message, installerId } = formData;
+    const { name, email, phoneNumber, message } = formData;
 
     if (!email) {
       toast.error("Please enter an email address");
@@ -119,12 +73,6 @@ export default function InviteInstallerModal({ isOpen, onClose }) {
       return;
     }
 
-    if (epcMode && !installerId) {
-      toast.error("Please select an installer for EPC mode");
-      setLoading(false);
-      return;
-    }
-
     const payload = {
       invitees: [
         {
@@ -133,8 +81,7 @@ export default function InviteInstallerModal({ isOpen, onClose }) {
           phoneNumber,
           customerType: "PARTNER",
           role: "INSTALLER",
-          ...(message && { message }),
-          ...(epcMode && installerId && { installerId })
+          ...(message && { message })
         }
       ]
     };
@@ -152,7 +99,7 @@ export default function InviteInstallerModal({ isOpen, onClose }) {
       );
 
       if (response.data.status === "success") {
-        toast.success(epcMode ? "Installer invitation with EPC mode sent successfully" : "Installer invitation sent successfully");
+        toast.success("Installer invitation sent successfully");
         resetForm();
         onClose();
       } else {
@@ -210,33 +157,7 @@ export default function InviteInstallerModal({ isOpen, onClose }) {
             />
           </div>
 
-          <h2 className={`text-base font-semibold ${pageTitle} text-center ${epcMode ? "text-green-600" : ""}`}>
-            {epcMode ? "EPC MODE ACTIVATED" : "Invite an Installer"}
-          </h2>
-          
-          {epcMode && (
-            <p className="text-gray-500 text-xs text-center mt-1">
-              Select an installer to attach to your customer for registration assistance
-            </p>
-          )}
-        </div>
-
-        <div className="flex items-center justify-center my-4">
-          <label className="flex items-center cursor-pointer">
-            <div className="mr-3 text-xs font-medium text-gray-700">
-              EPC Mode
-            </div>
-            <div className="relative">
-              <input
-                type="checkbox"
-                className="sr-only"
-                checked={epcMode}
-                onChange={() => setEpcMode(!epcMode)}
-              />
-              <div className={`w-14 h-7 rounded-full ${epcMode ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-              <div className={`absolute left-1 top-1 bg-white w-5 h-5 rounded-full transition-transform ${epcMode ? 'transform translate-x-7' : ''}`}></div>
-            </div>
-          </label>
+          <h2 className={`text-base font-semibold ${pageTitle} text-center`}>Invite an Installer</h2>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-2 mt-3">
@@ -279,35 +200,6 @@ export default function InviteInstallerModal({ isOpen, onClose }) {
             />
           </div>
 
-          {epcMode && (
-            <div>
-              <label className={`${labelClass} text-xs`}>Select Installer <span className="text-red-500">*</span></label>
-              {installersLoading ? (
-                <div className="flex justify-center">
-                  <Loader size="small" />
-                </div>
-              ) : (
-                <select
-                  name="installerId"
-                  value={formData.installerId}
-                  onChange={handleChange}
-                  className={`${selectClass} text-xs`}
-                  required={epcMode}
-                >
-                  <option value="">Select an installer</option>
-                  {installers.map((installer) => (
-                    <option key={installer.id} value={installer.id}>
-                      {installer.name || installer.inviteeEmail}
-                    </option>
-                  ))}
-                </select>
-              )}
-              {installers.length === 0 && !installersLoading && (
-                <p className="text-red-500 text-xs mt-1">No registered installers found</p>
-              )}
-            </div>
-          )}
-
           <div>
             <label className={`${labelClass} text-xs`}>Message</label>
             <textarea
@@ -330,10 +222,10 @@ export default function InviteInstallerModal({ isOpen, onClose }) {
             </button>
             <button
               type="submit"
-              className={`flex-1 ${buttonPrimary} ${epcMode ? "bg-green-600 hover:bg-green-700" : ""} flex items-center justify-center py-1 text-xs`}
-              disabled={loading || (epcMode && installers.length === 0)}
+              className={`flex-1 ${buttonPrimary} flex items-center justify-center py-1 text-xs`}
+              disabled={loading}
             >
-              {epcMode ? "Invite Installer by EPC Mode" : "Invite Installer"}
+              Invite Installer
             </button>
           </div>
         </form>
