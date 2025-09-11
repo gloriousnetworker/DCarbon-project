@@ -107,7 +107,7 @@ export default function QuickActions() {
           />
           <hr className="border-white w-full mb-2" />
           <p className="text-white text-sm font-bold leading-tight">
-            Invite New Customer
+            Invite a Customer/EPC Assited Mode
           </p>
         </div>
 
@@ -126,7 +126,7 @@ export default function QuickActions() {
             />
             <hr className="border-white w-full mb-2" />
             <p className="text-white text-sm font-bold leading-tight">
-              Invite an Installer/EPC Mode
+              Invite an Installer
             </p>
           </div>
         )}

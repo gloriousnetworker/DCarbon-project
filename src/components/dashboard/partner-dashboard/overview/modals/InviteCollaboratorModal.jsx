@@ -11,11 +11,29 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
     phoneNumber: "",
     customerType: "RESIDENTIAL",
     role: "OWNER",
-    message: ""
+    message: "",
+    address1: "",
+    address2: "",
+    city: "",
+    state: "",
+    zipCode: "",
+    epcMode: false,
+    installerId: ""
   });
   const [loading, setLoading] = useState(false);
   const [isSalesAgent, setIsSalesAgent] = useState(false);
+  const [isFinanceCompany, setIsFinanceCompany] = useState(false);
   const [userLoaded, setUserLoaded] = useState(false);
+  const [zipCodeError, setZipCodeError] = useState("");
+  const [installers, setInstallers] = useState([]);
+  const [installersLoading, setInstallersLoading] = useState(false);
+  const [states] = useState([
+    "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", 
+    "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD", 
+    "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", 
+    "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", 
+    "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"
+  ]);
 
   useEffect(() => {
     const checkUserRole = async () => {
@@ -36,6 +54,8 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
 
         if (response.data.data?.partnerType === "sales_agent") {
           setIsSalesAgent(true);
+        } else if (response.data.data?.partnerType === "finance_company") {
+          setIsFinanceCompany(true);
         }
       } catch (error) {
         console.error("Error checking user role:", error);
@@ -47,24 +67,80 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
     if (isOpen) checkUserRole();
   }, [isOpen]);
 
+  useEffect(() => {
+    if (isOpen && formData.epcMode && isFinanceCompany) {
+      fetchInstallers();
+    }
+  }, [isOpen, formData.epcMode, isFinanceCompany]);
+
+  const fetchInstallers = async () => {
+    const userId = localStorage.getItem("userId");
+    const authToken = localStorage.getItem("authToken");
+
+    if (!userId || !authToken) return;
+
+    setInstallersLoading(true);
+    try {
+      const response = await axios.get(
+        `https://services.dcarbon.solutions/api/user/get-users-referrals/${userId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`
+          }
+        }
+      );
+
+      if (response.data.status === "success") {
+        const filteredInstallers = response.data.data.referrals.filter(
+          referral => 
+            referral.customerType === "PARTNER" &&
+            referral.role === "INSTALLER" &&
+            referral.status === "ACCEPTED"
+        );
+        setInstallers(filteredInstallers);
+      }
+    } catch (error) {
+      console.error("Error fetching installers:", error);
+      toast.error("Failed to load installers");
+    } finally {
+      setInstallersLoading(false);
+    }
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-    const newFormData = {
-      ...formData,
+    setFormData(prev => ({
+      ...prev,
       [name]: value
-    };
+    }));
 
-    if (name === "customerType") {
-      if (value === "RESIDENTIAL") {
-        newFormData.role = "OWNER";
-      } else if (value === "COMMERCIAL") {
-        newFormData.role = "OWNER";
-      } else if (value === "PARTNER") {
-        newFormData.role = "SALES_AGENT";
+    if (name === "zipCode") {
+      if (!value.trim()) {
+        setZipCodeError("Zip code is required");
+      } else if (!/^\d{5}(-\d{4})?$/.test(value)) {
+        setZipCodeError("Invalid zip code format");
+      } else {
+        setZipCodeError("");
       }
     }
 
-    setFormData(newFormData);
+    if (name === "customerType") {
+      if (value === "RESIDENTIAL") {
+        setFormData(prev => ({ ...prev, role: "OWNER" }));
+      } else if (value === "COMMERCIAL") {
+        setFormData(prev => ({ ...prev, role: "OWNER" }));
+      } else if (value === "PARTNER") {
+        setFormData(prev => ({ ...prev, role: "SALES_AGENT" }));
+      }
+    }
+  };
+
+  const handleAddressChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value.toUpperCase()
+    }));
   };
 
   const handlePhoneChange = (e) => {
@@ -90,8 +166,81 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
       phoneNumber: "",
       customerType: isSalesAgent ? "PARTNER" : "RESIDENTIAL",
       role: isSalesAgent ? "SALES_AGENT" : "OWNER",
-      message: ""
+      message: "",
+      address1: "",
+      address2: "",
+      city: "",
+      state: "",
+      zipCode: "",
+      epcMode: false,
+      installerId: ""
     });
+    setZipCodeError("");
+  };
+
+  const sendFacilityInvite = async (userId, authToken) => {
+    try {
+      const fullAddress = `${formData.address1}${formData.address2 ? ', ' + formData.address2 : ''}, ${formData.city}, ${formData.state} ${formData.zipCode}`;
+      
+      const response = await axios.post(
+        `https://services.dcarbon.solutions/api/user/invite-facility/${userId}`,
+        {
+          inviteeEmail: formData.email,
+          zipCode: formData.zipCode,
+          streetNo: fullAddress,
+          message: formData.message || ""
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`
+          }
+        }
+      );
+      
+      return response.data.status === "success";
+    } catch (error) {
+      console.error("Error sending facility invitation:", error);
+      return false;
+    }
+  };
+
+  const assignInstallerToCustomer = async (userId, authToken, installerEmail, installerName) => {
+    try {
+      const installerResponse = await axios.get(
+        `https://services.dcarbon.solutions/api/user/${installerEmail}`,
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`
+          }
+        }
+      );
+
+      if (installerResponse.data.status === "success") {
+        const installerId = installerResponse.data.data.id;
+        
+        const assignResponse = await axios.put(
+          `https://services.dcarbon.solutions/api/user/referral/assign-installer/${userId}`,
+          {
+            inviteeEmail: formData.email,
+            installerId: installerId,
+            installerName: installerName
+          },
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${authToken}`
+            }
+          }
+        );
+
+        return assignResponse.data.status === "success";
+      }
+      return false;
+    } catch (error) {
+      console.error("Error assigning installer:", error);
+      return false;
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -107,7 +256,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
       return;
     }
 
-    const { name, email, phoneNumber, customerType, role, message } = formData;
+    const { name, email, phoneNumber, customerType, role, message, address1, city, state, zipCode, epcMode, installerId } = formData;
 
     if (!email) {
       toast.error("Please enter an email address");
@@ -117,6 +266,24 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
 
     if (!phoneNumber) {
       toast.error("Please enter a valid phone number");
+      setLoading(false);
+      return;
+    }
+
+    if (!address1 || !city || !state || !zipCode) {
+      toast.error("Please complete all address fields");
+      setLoading(false);
+      return;
+    }
+
+    if (!/^\d{5}(-\d{4})?$/.test(zipCode)) {
+      toast.error("Please enter a valid zip code");
+      setLoading(false);
+      return;
+    }
+
+    if (epcMode && !installerId) {
+      toast.error("Please select an installer for EPC mode");
       setLoading(false);
       return;
     }
@@ -135,7 +302,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
     };
 
     try {
-      const response = await axios.post(
+      const userResponse = await axios.post(
         `https://services.dcarbon.solutions/api/user/invite-user/${userId}`,
         payload,
         {
@@ -146,12 +313,38 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
         }
       );
 
-      if (response.data.status === "success") {
-        toast.success("Invitation sent successfully");
+      if (userResponse.data.status === "success") {
+        const facilitySuccess = await sendFacilityInvite(userId, authToken);
+        
+        let installerAssignmentSuccess = true;
+        if (epcMode && installerId) {
+          const selectedInstaller = installers.find(inst => inst.id === installerId);
+          if (selectedInstaller) {
+            installerAssignmentSuccess = await assignInstallerToCustomer(
+              userId, 
+              authToken, 
+              selectedInstaller.inviteeEmail, 
+              selectedInstaller.name || selectedInstaller.inviteeEmail
+            );
+          }
+        }
+        
+        if (facilitySuccess) {
+          if (epcMode && installerAssignmentSuccess) {
+            toast.success("Invitation with EPC mode sent successfully. Installer assigned.");
+          } else if (epcMode && !installerAssignmentSuccess) {
+            toast.success("Invitation sent but installer assignment failed");
+          } else {
+            toast.success("Invitation sent successfully");
+          }
+        } else {
+          toast.warning("User invitation sent but facility invitation failed");
+        }
+        
         resetForm();
         onClose();
       } else {
-        throw new Error(response.data.message || "Failed to send invitation");
+        throw new Error(userResponse.data.message || "Failed to send invitation");
       }
     } catch (error) {
       console.error("Error sending invitation:", error);
@@ -181,7 +374,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20 overflow-y-auto">
-      <div className="relative bg-white p-5 rounded-lg w-full max-w-md text-sm max-h-[90vh] overflow-y-auto">
+      <div className="relative bg-white p-5 rounded-lg w-full max-w-lg text-sm max-h-[90vh] overflow-y-auto">
         <button
           onClick={onClose}
           className="absolute right-3 top-3 text-gray-500 hover:text-gray-700 focus:outline-none"
@@ -217,8 +410,36 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
             />
           </div>
 
-          <h2 className={`text-base font-semibold ${pageTitle} text-center`}>Invite a Customer</h2>
+          <h2 className={`text-base font-semibold ${pageTitle} text-center ${formData.epcMode ? "text-green-600" : ""}`}>
+            {formData.epcMode ? "EPC MODE ACTIVATED" : "Invite a Customer"}
+          </h2>
+          
+          {formData.epcMode && (
+            <p className="text-gray-500 text-xs text-center mt-1">
+              Select an installer to attach to your customer for registration assistance
+            </p>
+          )}
         </div>
+
+        {isFinanceCompany && (
+          <div className="flex items-center justify-center my-4">
+            <label className="flex items-center cursor-pointer">
+              <div className="mr-3 text-xs font-medium text-gray-700">
+                EPC Assisted Mode
+              </div>
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  className="sr-only"
+                  checked={formData.epcMode}
+                  onChange={() => setFormData(prev => ({ ...prev, epcMode: !prev.epcMode, installerId: "" }))}
+                />
+                <div className={`w-14 h-7 rounded-full ${formData.epcMode ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                <div className={`absolute left-1 top-1 bg-white w-5 h-5 rounded-full transition-transform ${formData.epcMode ? 'transform translate-x-7' : ''}`}></div>
+              </div>
+            </label>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-2 mt-3">
           <div>
@@ -259,6 +480,82 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
               required
             />
           </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className={`${labelClass} text-xs`}>Address 1 <span className="text-red-500">*</span></label>
+              <input
+                type="text"
+                name="address1"
+                value={formData.address1}
+                onChange={handleAddressChange}
+                className={`${inputClass} text-xs`}
+                placeholder="Street address"
+                required
+              />
+            </div>
+            <div>
+              <label className={`${labelClass} text-xs`}>Address 2</label>
+              <input
+                type="text"
+                name="address2"
+                value={formData.address2}
+                onChange={handleAddressChange}
+                className={`${inputClass} text-xs`}
+                placeholder="Apt, suite, etc."
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2">
+            <div>
+              <label className={`${labelClass} text-xs`}>City <span className="text-red-500">*</span></label>
+              <input
+                type="text"
+                name="city"
+                value={formData.city}
+                onChange={handleAddressChange}
+                className={`${inputClass} text-xs`}
+                placeholder="City"
+                required
+              />
+            </div>
+            <div>
+              <label className={`${labelClass} text-xs`}>State <span className="text-red-500">*</span></label>
+              <select
+                name="state"
+                value={formData.state}
+                onChange={handleChange}
+                className={`${selectClass} text-xs`}
+                required
+              >
+                <option value="">Select State</option>
+                {states.map(state => (
+                  <option key={state} value={state}>{state}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className={`${labelClass} text-xs`}>Zip Code <span className="text-red-500">*</span></label>
+              <input
+                type="text"
+                name="zipCode"
+                value={formData.zipCode}
+                onChange={handleChange}
+                className={`${inputClass} text-xs ${zipCodeError ? "border-red-500" : ""}`}
+                placeholder="92105"
+                pattern="^\d{5}(-\d{4})?$"
+                required
+              />
+              {zipCodeError && (
+                <p className="text-red-500 text-xs mt-1">{zipCodeError}</p>
+              )}
+            </div>
+          </div>
+
+          <p className="text-xs text-gray-500 italic">
+            Address must match the service address of your facility meter exactly
+          </p>
 
           <div>
             <label className={`${labelClass} text-xs`}>Customer Type <span className="text-red-500">*</span></label>
@@ -315,6 +612,35 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
             )}
           </div>
 
+          {formData.epcMode && (
+            <div>
+              <label className={`${labelClass} text-xs`}>Select Installer <span className="text-red-500">*</span></label>
+              {installersLoading ? (
+                <div className="flex justify-center">
+                  <Loader size="small" />
+                </div>
+              ) : (
+                <select
+                  name="installerId"
+                  value={formData.installerId}
+                  onChange={handleChange}
+                  className={`${selectClass} text-xs`}
+                  required={formData.epcMode}
+                >
+                  <option value="">Select an installer</option>
+                  {installers.map((installer) => (
+                    <option key={installer.id} value={installer.id}>
+                      {installer.name || installer.inviteeEmail}
+                    </option>
+                  ))}
+                </select>
+              )}
+              {installers.length === 0 && !installersLoading && (
+                <p className="text-red-500 text-xs mt-1">No registered installers found</p>
+              )}
+            </div>
+          )}
+
           <div>
             <label className={`${labelClass} text-xs`}>Message</label>
             <textarea
@@ -337,10 +663,10 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
             </button>
             <button
               type="submit"
-              className={`flex-1 ${buttonPrimary} flex items-center justify-center py-1 text-xs`}
-              disabled={loading}
+              className={`flex-1 ${buttonPrimary} ${formData.epcMode ? "bg-green-600 hover:bg-green-700" : ""} flex items-center justify-center py-1 text-xs`}
+              disabled={loading || (formData.epcMode && installers.length === 0)}
             >
-              Invite
+              {formData.epcMode ? "Invite by EPC Mode" : "Invite"}
             </button>
           </div>
         </form>
