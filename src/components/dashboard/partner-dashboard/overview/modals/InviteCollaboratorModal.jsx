@@ -489,7 +489,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
                 value={formData.address1}
                 onChange={handleAddressChange}
                 className={`${inputClass} text-xs`}
-                placeholder="Street address"
+                placeholder="5348 UNIVERSITY AVE"
                 required
               />
             </div>
@@ -515,7 +515,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
                 value={formData.city}
                 onChange={handleAddressChange}
                 className={`${inputClass} text-xs`}
-                placeholder="City"
+                placeholder="SAN DIEGO"
                 required
               />
             </div>

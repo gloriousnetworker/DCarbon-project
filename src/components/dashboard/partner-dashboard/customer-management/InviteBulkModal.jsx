@@ -13,18 +13,27 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
       customerType: "RESIDENTIAL",
       role: "OWNER",
       message: "",
-      address: "",
+      address1: "",
+      address2: "",
+      city: "",
+      state: "",
       zipCode: ""
     }
   ]);
   const [loading, setLoading] = useState(false);
   const [csvLoading, setCsvLoading] = useState(false);
   const [phoneErrors, setPhoneErrors] = useState([]);
-  const [addressErrors, setAddressErrors] = useState([]);
   const [zipCodeErrors, setZipCodeErrors] = useState([]);
   const [isSalesAgent, setIsSalesAgent] = useState(false);
   const [userLoaded, setUserLoaded] = useState(false);
   const fileInputRef = useRef(null);
+  const [states] = useState([
+    "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", 
+    "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD", 
+    "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", 
+    "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", 
+    "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"
+  ]);
 
   const MAX_INVITEES = 100;
 
@@ -76,16 +85,6 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
       setPhoneErrors(newPhoneErrors);
     }
     
-    if (name === "address") {
-      const newAddressErrors = [...addressErrors];
-      if (!value.trim()) {
-        newAddressErrors[index] = "Address is required";
-      } else {
-        newAddressErrors[index] = "";
-      }
-      setAddressErrors(newAddressErrors);
-    }
-    
     if (name === "zipCode") {
       const newZipCodeErrors = [...zipCodeErrors];
       if (!value.trim()) {
@@ -116,6 +115,18 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
     setInvitees(newInvitees);
   };
 
+  const handleAddressChange = (index, e) => {
+    const { name, value } = e.target;
+    const newInvitees = [...invitees];
+    
+    newInvitees[index] = {
+      ...newInvitees[index],
+      [name]: value.toUpperCase()
+    };
+    
+    setInvitees(newInvitees);
+  };
+
   const addInvitee = () => {
     if (invitees.length >= MAX_INVITEES) {
       toast.error(`Maximum ${MAX_INVITEES} invitees allowed per submission`);
@@ -130,12 +141,14 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
         customerType: isSalesAgent ? "PARTNER" : "RESIDENTIAL",
         role: isSalesAgent ? "SALES_AGENT" : "OWNER",
         message: "",
-        address: "",
+        address1: "",
+        address2: "",
+        city: "",
+        state: "",
         zipCode: ""
       }
     ]);
     setPhoneErrors([...phoneErrors, ""]);
-    setAddressErrors([...addressErrors, ""]);
     setZipCodeErrors([...zipCodeErrors, ""]);
   };
 
@@ -152,10 +165,6 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
     newPhoneErrors.splice(index, 1);
     setPhoneErrors(newPhoneErrors);
     
-    const newAddressErrors = [...addressErrors];
-    newAddressErrors.splice(index, 1);
-    setAddressErrors(newAddressErrors);
-    
     const newZipCodeErrors = [...zipCodeErrors];
     newZipCodeErrors.splice(index, 1);
     setZipCodeErrors(newZipCodeErrors);
@@ -170,12 +179,14 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
         customerType: isSalesAgent ? "PARTNER" : "RESIDENTIAL",
         role: isSalesAgent ? "SALES_AGENT" : "OWNER",
         message: "",
-        address: "",
+        address1: "",
+        address2: "",
+        city: "",
+        state: "",
         zipCode: ""
       }
     ]);
     setPhoneErrors([""]);
-    setAddressErrors([""]);
     setZipCodeErrors([""]);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
@@ -183,10 +194,10 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
   };
 
   const downloadTemplate = () => {
-    const csvContent = "data:text/csv;charset=utf-8,name,email,phoneNumber,customerType,role,message,address,zipCode\n" +
-      "John Doe,john@example.com,+1234567890,RESIDENTIAL,OWNER,Welcome to our platform,MERCHANT PROP MGT CO, 5360 UNIVERSITY AVE C, SAN DIEGO, CA 92104,92104\n" +
-      "Jane Smith,jane@example.com,+1987654321,COMMERCIAL,OPERATOR,Commercial account setup,123 MAIN ST, ANYTOWN, CA 12345,12345\n" +
-      "Sales Agent,sales@example.com,+1122334455,PARTNER,SALES_AGENT,Partner invitation,456 OAK AVE, SOMETOWN, CA 67890,67890";
+    const csvContent = "data:text/csv;charset=utf-8,name,email,phoneNumber,customerType,role,message,address1,address2,city,state,zipCode\n" +
+      "John Doe,john@example.com,+1234567890,RESIDENTIAL,OWNER,Welcome to our platform,5348 UNIVERSITY AVE,Apt 2C,SAN DIEGO,CA,92104\n" +
+      "Jane Smith,jane@example.com,+1987654321,COMMERCIAL,OPERATOR,Commercial account setup,123 MAIN ST,,ANYTOWN,CA,12345\n" +
+      "Sales Agent,sales@example.com,+1122334455,PARTNER,SALES_AGENT,Partner invitation,456 OAK AVE,Suite 100,SOMETOWN,CA,67890";
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
@@ -217,7 +228,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
         const rows = csvData.split('\n');
         const headers = rows[0].split(',').map(header => header.trim().toLowerCase().replace(/\s+/g, ''));
         
-        const requiredHeaders = ['email', 'name', 'address', 'zipcode'];
+        const requiredHeaders = ['email', 'name', 'address1', 'city', 'state', 'zipcode'];
         const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
         
         if (missingHeaders.length > 0) {
@@ -226,7 +237,6 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
         
         const newInvitees = [];
         const newPhoneErrors = [];
-        const newAddressErrors = [];
         const newZipCodeErrors = [];
         for (let i = 1; i < rows.length; i++) {
           if (!rows[i].trim()) continue;
@@ -249,7 +259,10 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
             customerType: isSalesAgent ? "PARTNER" : "RESIDENTIAL",
             role: isSalesAgent ? "SALES_AGENT" : "OWNER",
             message: "",
-            address: "",
+            address1: "",
+            address2: "",
+            city: "",
+            state: "",
             zipCode: ""
           };
           
@@ -283,10 +296,9 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
             }
           });
           
-          if (invitee.email && invitee.address && invitee.zipCode) {
+          if (invitee.email && invitee.address1 && invitee.city && invitee.state && invitee.zipCode) {
             newInvitees.push(invitee);
             newPhoneErrors.push("");
-            newAddressErrors.push("");
             newZipCodeErrors.push("");
           }
         }
@@ -297,7 +309,6 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
         
         setInvitees(newInvitees);
         setPhoneErrors(newPhoneErrors);
-        setAddressErrors(newAddressErrors);
         setZipCodeErrors(newZipCodeErrors);
         toast.success(`Successfully imported ${newInvitees.length} invitees from CSV`);
       } catch (error) {
@@ -330,12 +341,14 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
 
   const sendFacilityInvite = async (invitee, userId, authToken) => {
     try {
+      const fullAddress = `${invitee.address1}${invitee.address2 ? ', ' + invitee.address2 : ''}, ${invitee.city}, ${invitee.state} ${invitee.zipCode}`;
+      
       const response = await axios.post(
         `https://services.dcarbon.solutions/api/user/invite-facility/${userId}`,
         {
           inviteeEmail: invitee.email,
           zipCode: invitee.zipCode,
-          streetNo: invitee.address,
+          streetNo: fullAddress,
           message: invitee.message || ""
         },
         {
@@ -357,10 +370,9 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
     e.preventDefault();
     
     const hasPhoneErrors = phoneErrors.some(error => error);
-    const hasAddressErrors = addressErrors.some(error => error);
     const hasZipCodeErrors = zipCodeErrors.some(error => error);
     
-    if (hasPhoneErrors || hasAddressErrors || hasZipCodeErrors) {
+    if (hasPhoneErrors || hasZipCodeErrors) {
       toast.error("Please fix validation errors before submitting");
       return;
     }
@@ -384,7 +396,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
     }
 
     const missingRequiredFields = invitees.filter(invitee => 
-      !invitee.email || !invitee.address || !invitee.zipCode
+      !invitee.email || !invitee.address1 || !invitee.city || !invitee.state || !invitee.zipCode
     );
     
     if (missingRequiredFields.length > 0) {
@@ -473,7 +485,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20 overflow-y-auto">
-      <div className="relative bg-white p-5 rounded-lg w-full max-w-2xl text-sm max-h-[90vh] overflow-y-auto">
+      <div className="relative bg-white p-5 rounded-lg w-full max-w-4xl text-sm max-h-[90vh] overflow-y-auto">
         <button
           onClick={onClose}
           className="absolute right-3 top-3 text-gray-500 hover:text-gray-700 focus:outline-none"
@@ -530,7 +542,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
               />
             </svg>
             <p className="text-sm font-medium mb-1">Import invitees from CSV</p>
-            <p className="text-xs text-gray-500 mb-3">CSV should include columns: name, email, phoneNumber, customerType, role, message, address, zipCode</p>
+            <p className="text-xs text-gray-500 mb-3">CSV should include columns: name, email, phoneNumber, customerType, role, message, address1, address2, city, state, zipCode</p>
             <p className="text-xs text-gray-500 mb-3">Maximum {MAX_INVITEES} invitees per upload</p>
             
             <input
@@ -637,6 +649,78 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
                   )}
                 </div>
 
+                <div className="grid grid-cols-2 gap-2 md:col-span-2">
+                  <div>
+                    <label className={`${labelClass} text-xs`}>Address 1 <span className="text-red-500">*</span></label>
+                    <input
+                      type="text"
+                      name="address1"
+                      value={invitee.address1}
+                      onChange={(e) => handleAddressChange(index, e)}
+                      className={`${inputClass} text-xs`}
+                      placeholder="5348 UNIVERSITY AVE"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className={`${labelClass} text-xs`}>Address 2</label>
+                    <input
+                      type="text"
+                      name="address2"
+                      value={invitee.address2}
+                      onChange={(e) => handleAddressChange(index, e)}
+                      className={`${inputClass} text-xs`}
+                      placeholder="Apt, suite, etc."
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 md:col-span-2">
+                  <div>
+                    <label className={`${labelClass} text-xs`}>City <span className="text-red-500">*</span></label>
+                    <input
+                      type="text"
+                      name="city"
+                      value={invitee.city}
+                      onChange={(e) => handleAddressChange(index, e)}
+                      className={`${inputClass} text-xs`}
+                      placeholder="SAN DIEGO"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className={`${labelClass} text-xs`}>State <span className="text-red-500">*</span></label>
+                    <select
+                      name="state"
+                      value={invitee.state}
+                      onChange={(e) => handleChange(index, e)}
+                      className={`${selectClass} text-xs`}
+                      required
+                    >
+                      <option value="">Select State</option>
+                      {states.map(state => (
+                        <option key={state} value={state}>{state}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className={`${labelClass} text-xs`}>Zip Code <span className="text-red-500">*</span></label>
+                    <input
+                      type="text"
+                      name="zipCode"
+                      value={invitee.zipCode}
+                      onChange={(e) => handleChange(index, e)}
+                      className={`${inputClass} text-xs ${zipCodeErrors[index] ? "border-red-500" : ""}`}
+                      placeholder="92105"
+                      pattern="^\d{5}(-\d{4})?$"
+                      required
+                    />
+                    {zipCodeErrors[index] && (
+                      <p className="text-red-500 text-xs mt-1">{zipCodeErrors[index]}</p>
+                    )}
+                  </div>
+                </div>
+
                 <div>
                   <label className={`${labelClass} text-xs`}>Customer Type <span className="text-red-500">*</span></label>
                   <select
@@ -693,39 +777,6 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className={`${labelClass} text-xs`}>Address <span className="text-red-500">*</span></label>
-                  <input
-                    type="text"
-                    name="address"
-                    value={invitee.address}
-                    onChange={(e) => handleChange(index, e)}
-                    className={`${inputClass} text-xs ${addressErrors[index] ? "border-red-500" : ""}`}
-                    placeholder="Enter facility address (e.g. MERCHANT PROP MGT CO, 5360 UNIVERSITY AVE C, SAN DIEGO, CA 92104)"
-                    required
-                  />
-                  {addressErrors[index] && (
-                    <p className="text-red-500 text-xs mt-1">{addressErrors[index]}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className={`${labelClass} text-xs`}>Zip Code <span className="text-red-500">*</span></label>
-                  <input
-                    type="text"
-                    name="zipCode"
-                    value={invitee.zipCode}
-                    onChange={(e) => handleChange(index, e)}
-                    className={`${inputClass} text-xs ${zipCodeErrors[index] ? "border-red-500" : ""}`}
-                    placeholder="Enter zip code (e.g. 92104)"
-                    pattern="^\d{5}(-\d{4})?$"
-                    required
-                  />
-                  {zipCodeErrors[index] && (
-                    <p className="text-red-500 text-xs mt-1">{zipCodeErrors[index]}</p>
-                  )}
-                </div>
-
-                <div className="md:col-span-2">
                   <label className={`${labelClass} text-xs`}>Message</label>
                   <textarea
                     name="message"
@@ -776,7 +827,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
             <button
               type="submit"
               className={`flex-1 ${buttonPrimary} flex items-center justify-center py-2 text-xs`}
-              disabled={loading || csvLoading || phoneErrors.some(error => error) || addressErrors.some(error => error) || zipCodeErrors.some(error => error)}
+              disabled={loading || csvLoading || phoneErrors.some(error => error) || zipCodeErrors.some(error => error)}
             >
               {invitees.length > 1 ? 'Send Invitations' : 'Send Invitation'}
             </button>
@@ -798,7 +849,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
               d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
             />
           </svg>
-          CSV should contain columns: name, email, phoneNumber, customerType (RESIDENTIAL/COMMERCIAL/PARTNER), role (OWNER/OPERATOR/BOTH/SALES_AGENT/FINANCE_COMPANY/INSTALLER), message, address, zipCode
+          CSV should contain columns: name, email, phoneNumber, customerType (RESIDENTIAL/COMMERCIAL/PARTNER), role (OWNER/OPERATOR/BOTH/SALES_AGENT/FINANCE_COMPANY/INSTALLER), message, address1, address2, city, state, zipCode
         </div>
       </div>
     </div>

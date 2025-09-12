@@ -12,14 +12,23 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
     customerType: "RESIDENTIAL",
     role: "OWNER",
     message: "",
-    address: "",
+    address1: "",
+    address2: "",
+    city: "",
+    state: "",
     zipCode: ""
   });
   const [loading, setLoading] = useState(false);
   const [isSalesAgent, setIsSalesAgent] = useState(false);
   const [userLoaded, setUserLoaded] = useState(false);
-  const [addressError, setAddressError] = useState("");
   const [zipCodeError, setZipCodeError] = useState("");
+  const [states] = useState([
+    "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", 
+    "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD", 
+    "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", 
+    "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", 
+    "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"
+  ]);
 
   useEffect(() => {
     const checkUserRole = async () => {
@@ -53,18 +62,10 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    const newFormData = {
-      ...formData,
+    setFormData(prev => ({
+      ...prev,
       [name]: value
-    };
-
-    if (name === "address") {
-      if (!value.trim()) {
-        setAddressError("Address is required");
-      } else {
-        setAddressError("");
-      }
-    }
+    }));
 
     if (name === "zipCode") {
       if (!value.trim()) {
@@ -78,15 +79,21 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
 
     if (name === "customerType") {
       if (value === "RESIDENTIAL") {
-        newFormData.role = "OWNER";
+        setFormData(prev => ({ ...prev, role: "OWNER" }));
       } else if (value === "COMMERCIAL") {
-        newFormData.role = "OWNER";
+        setFormData(prev => ({ ...prev, role: "OWNER" }));
       } else if (value === "PARTNER") {
-        newFormData.role = "SALES_AGENT";
+        setFormData(prev => ({ ...prev, role: "SALES_AGENT" }));
       }
     }
+  };
 
-    setFormData(newFormData);
+  const handleAddressChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value.toUpperCase()
+    }));
   };
 
   const handlePhoneChange = (e) => {
@@ -113,21 +120,25 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
       customerType: isSalesAgent ? "PARTNER" : "RESIDENTIAL",
       role: isSalesAgent ? "SALES_AGENT" : "OWNER",
       message: "",
-      address: "",
+      address1: "",
+      address2: "",
+      city: "",
+      state: "",
       zipCode: ""
     });
-    setAddressError("");
     setZipCodeError("");
   };
 
   const sendFacilityInvite = async (userId, authToken) => {
     try {
+      const fullAddress = `${formData.address1}${formData.address2 ? ', ' + formData.address2 : ''}, ${formData.city}, ${formData.state} ${formData.zipCode}`;
+      
       const response = await axios.post(
         `https://services.dcarbon.solutions/api/user/invite-facility/${userId}`,
         {
           inviteeEmail: formData.email,
           zipCode: formData.zipCode,
-          streetNo: formData.address,
+          streetNo: fullAddress,
           message: formData.message || ""
         },
         {
@@ -158,7 +169,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
       return;
     }
 
-    const { name, email, phoneNumber, customerType, role, message, address, zipCode } = formData;
+    const { name, email, phoneNumber, customerType, role, message, address1, city, state, zipCode } = formData;
 
     if (!email) {
       toast.error("Please enter an email address");
@@ -172,14 +183,8 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
       return;
     }
 
-    if (!address) {
-      toast.error("Please enter a facility address");
-      setLoading(false);
-      return;
-    }
-
-    if (!zipCode) {
-      toast.error("Please enter a zip code");
+    if (!address1 || !city || !state || !zipCode) {
+      toast.error("Please complete all address fields");
       setLoading(false);
       return;
     }
@@ -257,7 +262,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20 overflow-y-auto">
-      <div className="relative bg-white p-5 rounded-lg w-full max-w-md text-sm max-h-[90vh] overflow-y-auto">
+      <div className="relative bg-white p-5 rounded-lg w-full max-w-lg text-sm max-h-[90vh] overflow-y-auto">
         <button
           onClick={onClose}
           className="absolute right-3 top-3 text-gray-500 hover:text-gray-700 focus:outline-none"
@@ -336,38 +341,81 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
             />
           </div>
 
-          <div>
-            <label className={`${labelClass} text-xs`}>Facility Address <span className="text-red-500">*</span></label>
-            <input
-              type="text"
-              name="address"
-              value={formData.address}
-              onChange={handleChange}
-              className={`${inputClass} text-xs ${addressError ? "border-red-500" : ""}`}
-              placeholder="Enter facility address (e.g. MERCHANT PROP MGT CO, 5360 UNIVERSITY AVE C, SAN DIEGO, CA 92104)"
-              required
-            />
-            {addressError && (
-              <p className="text-red-500 text-xs mt-1">{addressError}</p>
-            )}
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className={`${labelClass} text-xs`}>Address 1 <span className="text-red-500">*</span></label>
+              <input
+                type="text"
+                name="address1"
+                value={formData.address1}
+                onChange={handleAddressChange}
+                className={`${inputClass} text-xs`}
+                placeholder="5348 UNIVERSITY AVE"
+                required
+              />
+            </div>
+            <div>
+              <label className={`${labelClass} text-xs`}>Address 2</label>
+              <input
+                type="text"
+                name="address2"
+                value={formData.address2}
+                onChange={handleAddressChange}
+                className={`${inputClass} text-xs`}
+                placeholder="Apt, suite, etc."
+              />
+            </div>
           </div>
 
-          <div>
-            <label className={`${labelClass} text-xs`}>Zip Code <span className="text-red-500">*</span></label>
-            <input
-              type="text"
-              name="zipCode"
-              value={formData.zipCode}
-              onChange={handleChange}
-              className={`${inputClass} text-xs ${zipCodeError ? "border-red-500" : ""}`}
-              placeholder="Enter zip code (e.g. 92104)"
-              pattern="^\d{5}(-\d{4})?$"
-              required
-            />
-            {zipCodeError && (
-              <p className="text-red-500 text-xs mt-1">{zipCodeError}</p>
-            )}
+          <div className="grid grid-cols-3 gap-2">
+            <div>
+              <label className={`${labelClass} text-xs`}>City <span className="text-red-500">*</span></label>
+              <input
+                type="text"
+                name="city"
+                value={formData.city}
+                onChange={handleAddressChange}
+                className={`${inputClass} text-xs`}
+                placeholder="SAN DIEGO"
+                required
+              />
+            </div>
+            <div>
+              <label className={`${labelClass} text-xs`}>State <span className="text-red-500">*</span></label>
+              <select
+                name="state"
+                value={formData.state}
+                onChange={handleChange}
+                className={`${selectClass} text-xs`}
+                required
+              >
+                <option value="">Select State</option>
+                {states.map(state => (
+                  <option key={state} value={state}>{state}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className={`${labelClass} text-xs`}>Zip Code <span className="text-red-500">*</span></label>
+              <input
+                type="text"
+                name="zipCode"
+                value={formData.zipCode}
+                onChange={handleChange}
+                className={`${inputClass} text-xs ${zipCodeError ? "border-red-500" : ""}`}
+                placeholder="92105"
+                pattern="^\d{5}(-\d{4})?$"
+                required
+              />
+              {zipCodeError && (
+                <p className="text-red-500 text-xs mt-1">{zipCodeError}</p>
+              )}
+            </div>
           </div>
+
+          <p className="text-xs text-gray-500 italic">
+            Address must match the service address of your facility meter exactly
+          </p>
 
           <div>
             <label className={`${labelClass} text-xs`}>Customer Type <span className="text-red-500">*</span></label>
@@ -447,7 +495,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
             <button
               type="submit"
               className={`flex-1 ${buttonPrimary} flex items-center justify-center py-1 text-xs`}
-              disabled={loading || addressError || zipCodeError}
+              disabled={loading || zipCodeError}
             >
               Invite
             </button>
