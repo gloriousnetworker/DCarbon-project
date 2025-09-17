@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { HiOutlineChevronDown } from 'react-icons/hi';
 import GeneratorReport from './GeneratorReport';
-import MonthlyStatement from './MonthlyStatement';
+import QuartelyStatement from './QuarterlyStatement';
 
 const GeneratorMonthlyReport = () => {
   const [currentView, setCurrentView] = useState('generator');
@@ -17,7 +17,7 @@ const GeneratorMonthlyReport = () => {
               onClick={() => setShowDropdown(!showDropdown)}
               className="flex items-center text-[#039994] font-[600] text-[24px] leading-[100%] tracking-[-0.05em] font-sfpro"
             >
-              {currentView === 'generator' ? 'Generator Report' : 'Monthly Statement'}
+              {currentView === 'generator' ? 'Generator Report' : 'Quartely Statement'}
               <HiOutlineChevronDown className={`ml-2 h-5 w-5 transition-transform ${showDropdown ? 'transform rotate-180' : ''}`} />
             </button>
             
@@ -38,9 +38,9 @@ const GeneratorMonthlyReport = () => {
                       setCurrentView('monthly');
                       setShowDropdown(false);
                     }}
-                    className={`block px-4 py-2 text-sm w-full text-left ${currentView === 'monthly' ? 'bg-gray-100 text-[#039994]' : 'text-gray-700 hover:bg-gray-100'}`}
+                    className={`block px-4 py-2 text-sm w-full text-left ${currentView === 'quartely' ? 'bg-gray-100 text-[#039994]' : 'text-gray-700 hover:bg-gray-100'}`}
                   >
-                    Monthly Statement
+                    Quartely Statement
                   </button>
                 </div>
               </div>
@@ -50,7 +50,7 @@ const GeneratorMonthlyReport = () => {
       </div>
 
       {/* Render the appropriate component based on currentView */}
-      {currentView === 'generator' ? <GeneratorReport /> : <MonthlyStatement />}
+      {currentView === 'generator' ? <GeneratorReport /> : <QuartelyStatement />}
     </div>
   );
 };
