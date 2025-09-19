@@ -20,28 +20,34 @@ export default function CommercialDetailsGraph({ facilityId }) {
   const [selectedMonths, setSelectedMonths] = useState([]);
   const [sortBy, setSortBy] = useState('date-asc');
   const [showFilters, setShowFilters] = useState(false);
+  const [meterId, setMeterId] = useState(null);
 
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
   useEffect(() => {
-    fetchMeterData();
-  }, [facilityId]);
+    fetchMeterId();
+  }, []);
+
+  useEffect(() => {
+    if (meterId) {
+      fetchMeterData();
+    }
+  }, [meterId]);
 
   useEffect(() => {
     applyFiltersAndSort();
   }, [rawData, dateRange, selectedMonths, sortBy]);
 
-  const fetchMeterData = async () => {
+  const fetchMeterId = async () => {
     try {
-      setLoading(true);
-      setError(null);
-      
       const authToken = localStorage.getItem('authToken');
-      if (!authToken) {
-        throw new Error('Authentication token not found');
+      const userId = localStorage.getItem('userId');
+      
+      if (!authToken || !userId) {
+        throw new Error('Authentication token or user ID not found');
       }
 
-      const response = await fetch('https://services.dcarbon.solutions/api/facility/get-meter-rec-data/1858864', {
+      const response = await fetch(`https://services.dcarbon.solutions/api/auth/user-meters/${userId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${authToken}`,
@@ -55,7 +61,46 @@ export default function CommercialDetailsGraph({ facilityId }) {
 
       const result = await response.json();
       
-      if (result.status === 'success' && result.data) {
+      if (result.status === 'success' && result.data && result.data.length > 0) {
+        const meterUid = result.data[0].meters.meters[0].uid;
+        setMeterId(meterUid);
+      } else {
+        throw new Error(result.message || 'Failed to fetch meter ID');
+      }
+    } catch (err) {
+      setError(err.message);
+      console.error('Error fetching meter ID:', err);
+      setLoading(false);
+    }
+  };
+
+  const fetchMeterData = async () => {
+    if (!meterId) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const authToken = localStorage.getItem('authToken');
+      if (!authToken) {
+        throw new Error('Authentication token not found');
+      }
+
+      const response = await fetch(`https://services.dcarbon.solutions/api/facility/get-meter-rec-data/${meterId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      
+      if (result.status === 'success' && result.data && result.data.data.intervals.length > 0) {
         const readings = result.data.data.intervals[0].readings;
         setRawData(readings);
         
@@ -67,7 +112,15 @@ export default function CommercialDetailsGraph({ facilityId }) {
           endDate: endDate.toISOString().split('T')[0]
         });
       } else {
-        throw new Error(result.message || 'Failed to fetch data');
+        setRawData([]);
+        setFilteredData([]);
+        setChartData([]);
+        setStats({
+          recGenerated: 0,
+          recSold: 0,
+          revenueEarned: 0,
+          energyProduced: 0
+        });
       }
     } catch (err) {
       setError(err.message);
@@ -241,7 +294,7 @@ export default function CommercialDetailsGraph({ facilityId }) {
       const filterSuffix = selectedMonths.length > 0 ? `_${selectedMonths.join('-')}` : 
                           (dateRange.startDate && dateRange.endDate) ? `_${dateRange.startDate}_to_${dateRange.endDate}` : '';
       
-      link.setAttribute('download', `facility_${facilityId}_meter_1858864${filterSuffix}_${new Date().toISOString().split('T')[0]}.csv`);
+      link.setAttribute('download', `facility_${facilityId}_meter_${meterId}${filterSuffix}_${new Date().toISOString().split('T')[0]}.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -296,6 +349,23 @@ export default function CommercialDetailsGraph({ facilityId }) {
             className="mt-4 bg-[#039994] text-white px-4 py-2 rounded text-sm hover:bg-[#027a75] transition-colors"
           >
             Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (rawData.length === 0) {
+    return (
+      <div className="w-full bg-white border border-gray-200 rounded-lg shadow-sm p-6">
+        <div className="flex flex-col justify-center items-center h-64">
+          <div className="text-gray-500 mb-2">📊 No REC data available</div>
+          <p className="text-gray-600 text-sm text-center">This meter currently doesn't have any REC data available.</p>
+          <button 
+            onClick={fetchMeterData}
+            className="mt-4 bg-[#039994] text-white px-4 py-2 rounded text-sm hover:bg-[#027a75] transition-colors"
+          >
+            Refresh Data
           </button>
         </div>
       </div>
@@ -469,7 +539,7 @@ export default function CommercialDetailsGraph({ facilityId }) {
           </div>
           <p className="text-[#056C69] text-lg font-bold">${stats.revenueEarned.toLocaleString()}</p>
         </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-4 flex flex-col">
+        <div className="bg-white border border-gray-200 rounded-lg p-4 flex flexCol">
           <div className="flex items-center space-x-2 mb-2">
             <div className="h-3 w-3 bg-[#FBBF24] rounded-full"></div>
             <p className="text-gray-700 text-xs font-medium">Energy Generated</p>

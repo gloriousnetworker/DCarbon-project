@@ -20,18 +20,63 @@ export default function CommercialDetailsGraph({ facilityId }) {
   const [selectedMonths, setSelectedMonths] = useState([]);
   const [sortBy, setSortBy] = useState('date-asc');
   const [showFilters, setShowFilters] = useState(false);
+  const [meterId, setMeterId] = useState(null);
 
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
   useEffect(() => {
-    fetchMeterData();
-  }, [facilityId]);
+    fetchMeterId();
+  }, []);
+
+  useEffect(() => {
+    if (meterId) {
+      fetchMeterData();
+    }
+  }, [meterId]);
 
   useEffect(() => {
     applyFiltersAndSort();
   }, [rawData, dateRange, selectedMonths, sortBy]);
 
+  const fetchMeterId = async () => {
+    try {
+      const authToken = localStorage.getItem('authToken');
+      const userId = localStorage.getItem('userId');
+      
+      if (!authToken || !userId) {
+        throw new Error('Authentication token or user ID not found');
+      }
+
+      const response = await fetch(`https://services.dcarbon.solutions/api/auth/user-meters/${userId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      
+      if (result.status === 'success' && result.data && result.data.length > 0) {
+        const meterUid = result.data[0].meters.meters[0].uid;
+        setMeterId(meterUid);
+      } else {
+        throw new Error(result.message || 'Failed to fetch meter ID');
+      }
+    } catch (err) {
+      setError(err.message);
+      console.error('Error fetching meter ID:', err);
+      setLoading(false);
+    }
+  };
+
   const fetchMeterData = async () => {
+    if (!meterId) return;
+
     try {
       setLoading(true);
       setError(null);
@@ -41,7 +86,7 @@ export default function CommercialDetailsGraph({ facilityId }) {
         throw new Error('Authentication token not found');
       }
 
-      const response = await fetch('https://services.dcarbon.solutions/api/facility/get-meter-rec-data/1858864', {
+      const response = await fetch(`https://services.dcarbon.solutions/api/facility/get-meter-rec-data/${meterId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${authToken}`,
@@ -241,7 +286,7 @@ export default function CommercialDetailsGraph({ facilityId }) {
       const filterSuffix = selectedMonths.length > 0 ? `_${selectedMonths.join('-')}` : 
                           (dateRange.startDate && dateRange.endDate) ? `_${dateRange.startDate}_to_${dateRange.endDate}` : '';
       
-      link.setAttribute('download', `facility_${facilityId}_meter_1858864${filterSuffix}_${new Date().toISOString().split('T')[0]}.csv`);
+      link.setAttribute('download', `facility_${facilityId}_meter_${meterId}${filterSuffix}_${new Date().toISOString().split('T')[0]}.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

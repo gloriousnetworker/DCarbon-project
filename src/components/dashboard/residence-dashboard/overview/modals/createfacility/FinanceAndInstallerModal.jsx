@@ -221,6 +221,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
       facilityName: uniqueFacilityName,
       utilityProvider: formData.utilityProvider || "N/A",
       installer: noInstallerSelected ? "N/A" : (showCustomInstaller ? formData.customInstaller : formData.installer || "N/A"),
+      installerId: noInstallerSelected ? "N/A" : (selectedInstaller?.id || "N/A"),
       financeType: formData.financeType || "N/A",
       financeCompany: formData.financeCompany || "N/A",
       financeAgreement: file ? file.name : "N/A",
