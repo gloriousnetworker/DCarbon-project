@@ -101,6 +101,7 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
   const [hasMeters, setHasMeters] = useState(false);
   const [showPDFModal, setShowPDFModal] = useState(false);
   const [currentPDF, setCurrentPDF] = useState({ url: "", title: "" });
+  const [meterId, setMeterId] = useState(null);
 
   useEffect(() => {
     const checkUserProgress = async () => {
@@ -157,6 +158,12 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
           );
           const result = await response.json();
           const metersExist = result.status === 'success' && result.data?.length > 0 && result.data.some(item => item.meters?.meters?.length > 0);
+          
+          if (metersExist) {
+            const meterUid = result.data[0].meters.meters[0].uid;
+            setMeterId(meterUid);
+          }
+          
           setHasMeters(metersExist);
           return metersExist;
         } catch (error) {
@@ -582,7 +589,7 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
         </div>
 
         <div className="mb-6">
-          <CommercialDetailsGraph facilityId={facilityData.id} />
+          <CommercialDetailsGraph facilityId={facilityData.id} meterId={meterId} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">

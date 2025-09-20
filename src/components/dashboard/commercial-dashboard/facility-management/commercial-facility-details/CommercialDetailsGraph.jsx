@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { FiDownload, FiCalendar, FiFilter } from "react-icons/fi";
 
-export default function CommercialDetailsGraph({ facilityId }) {
+export default function CommercialDetailsGraph({ facilityId, meterId }) {
   const [chartData, setChartData] = useState([]);
   const [stats, setStats] = useState({
     recGenerated: 0,
@@ -20,13 +20,8 @@ export default function CommercialDetailsGraph({ facilityId }) {
   const [selectedMonths, setSelectedMonths] = useState([]);
   const [sortBy, setSortBy] = useState('date-asc');
   const [showFilters, setShowFilters] = useState(false);
-  const [meterId, setMeterId] = useState(null);
 
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-  useEffect(() => {
-    fetchMeterId();
-  }, []);
 
   useEffect(() => {
     if (meterId) {
@@ -37,42 +32,6 @@ export default function CommercialDetailsGraph({ facilityId }) {
   useEffect(() => {
     applyFiltersAndSort();
   }, [rawData, dateRange, selectedMonths, sortBy]);
-
-  const fetchMeterId = async () => {
-    try {
-      const authToken = localStorage.getItem('authToken');
-      const userId = localStorage.getItem('userId');
-      
-      if (!authToken || !userId) {
-        throw new Error('Authentication token or user ID not found');
-      }
-
-      const response = await fetch(`https://services.dcarbon.solutions/api/auth/user-meters/${userId}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${authToken}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
-      
-      if (result.status === 'success' && result.data && result.data.length > 0) {
-        const meterUid = result.data[0].meters.meters[0].uid;
-        setMeterId(meterUid);
-      } else {
-        throw new Error(result.message || 'Failed to fetch meter ID');
-      }
-    } catch (err) {
-      setError(err.message);
-      console.error('Error fetching meter ID:', err);
-      setLoading(false);
-    }
-  };
 
   const fetchMeterData = async () => {
     if (!meterId) return;
@@ -532,7 +491,7 @@ export default function CommercialDetailsGraph({ facilityId }) {
           </div>
           <p className="text-[#056C69] text-lg font-bold">{stats.recSold.toLocaleString()}</p>
         </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-4 flex flex-col">
+        <div className="bg-white border border-gray-200 rounded-lg p-4 flex flexCol">
           <div className="flex items-center space-x-2 mb-2">
             <div className="h-3 w-3 bg-black rounded-full"></div>
             <p className="text-gray-700 text-xs font-medium">Revenue Earned</p>

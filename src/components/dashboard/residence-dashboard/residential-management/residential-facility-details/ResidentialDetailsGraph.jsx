@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { FiDownload, FiCalendar, FiFilter } from "react-icons/fi";
 
-export default function CommercialDetailsGraph({ facilityId }) {
+export default function CommercialDetailsGraph({ facilityId, meterId }) {
   const [chartData, setChartData] = useState([]);
   const [stats, setStats] = useState({
     recGenerated: 0,
@@ -20,59 +20,22 @@ export default function CommercialDetailsGraph({ facilityId }) {
   const [selectedMonths, setSelectedMonths] = useState([]);
   const [sortBy, setSortBy] = useState('date-asc');
   const [showFilters, setShowFilters] = useState(false);
-  const [meterId, setMeterId] = useState(null);
+  const [dataAvailable, setDataAvailable] = useState(false);
 
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
   useEffect(() => {
-    fetchMeterId();
-  }, []);
-
-  useEffect(() => {
     if (meterId) {
       fetchMeterData();
+    } else {
+      setLoading(false);
+      setError("No meter ID available");
     }
   }, [meterId]);
 
   useEffect(() => {
     applyFiltersAndSort();
   }, [rawData, dateRange, selectedMonths, sortBy]);
-
-  const fetchMeterId = async () => {
-    try {
-      const authToken = localStorage.getItem('authToken');
-      const userId = localStorage.getItem('userId');
-      
-      if (!authToken || !userId) {
-        throw new Error('Authentication token or user ID not found');
-      }
-
-      const response = await fetch(`https://services.dcarbon.solutions/api/auth/user-meters/${userId}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${authToken}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
-      
-      if (result.status === 'success' && result.data && result.data.length > 0) {
-        const meterUid = result.data[0].meters.meters[0].uid;
-        setMeterId(meterUid);
-      } else {
-        throw new Error(result.message || 'Failed to fetch meter ID');
-      }
-    } catch (err) {
-      setError(err.message);
-      console.error('Error fetching meter ID:', err);
-      setLoading(false);
-    }
-  };
 
   const fetchMeterData = async () => {
     if (!meterId) return;
@@ -102,28 +65,49 @@ export default function CommercialDetailsGraph({ facilityId }) {
       
       if (result.status === 'success' && result.data) {
         const readings = result.data.data.intervals[0].readings;
-        setRawData(readings);
         
-        const startDate = new Date(Math.min(...readings.map(r => new Date(r.start))));
-        const endDate = new Date(Math.max(...readings.map(r => new Date(r.start))));
-        
-        setDateRange({
-          startDate: startDate.toISOString().split('T')[0],
-          endDate: endDate.toISOString().split('T')[0]
-        });
+        if (readings && readings.length > 0) {
+          setRawData(readings);
+          setDataAvailable(true);
+          
+          const startDate = new Date(Math.min(...readings.map(r => new Date(r.start))));
+          const endDate = new Date(Math.max(...readings.map(r => new Date(r.start))));
+          
+          setDateRange({
+            startDate: startDate.toISOString().split('T')[0],
+            endDate: endDate.toISOString().split('T')[0]
+          });
+        } else {
+          setDataAvailable(false);
+          setRawData([]);
+        }
+      } else if (result.status === 'fail') {
+        setDataAvailable(false);
+        setRawData([]);
       } else {
         throw new Error(result.message || 'Failed to fetch data');
       }
     } catch (err) {
       setError(err.message);
       console.error('Error fetching meter data:', err);
+      setDataAvailable(false);
     } finally {
       setLoading(false);
     }
   };
 
   const applyFiltersAndSort = () => {
-    if (!rawData || rawData.length === 0) return;
+    if (!rawData || rawData.length === 0) {
+      setFilteredData([]);
+      setChartData([]);
+      setStats({
+        recGenerated: 0,
+        recSold: 0,
+        revenueEarned: 0,
+        energyProduced: 0
+      });
+      return;
+    }
 
     let filtered = [...rawData];
 
@@ -166,6 +150,17 @@ export default function CommercialDetailsGraph({ facilityId }) {
   };
 
   const processFilteredData = (data) => {
+    if (!data || data.length === 0) {
+      setChartData([]);
+      setStats({
+        recGenerated: 0,
+        recSold: 0,
+        revenueEarned: 0,
+        energyProduced: 0
+      });
+      return;
+    }
+
     const monthlyData = {};
     let totalEnergyProduced = 0;
     
@@ -336,6 +331,23 @@ export default function CommercialDetailsGraph({ facilityId }) {
         <div className="flex flex-col justify-center items-center h-64">
           <div className="text-red-500 mb-2">⚠️ Error loading data</div>
           <p className="text-gray-600 text-sm text-center">{error}</p>
+          <button 
+            onClick={fetchMeterData}
+            className="mt-4 bg-[#039994] text-white px-4 py-2 rounded text-sm hover:bg-[#027a75] transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!dataAvailable) {
+    return (
+      <div className="w-full bg-white border border-gray-200 rounded-lg shadow-sm p-6">
+        <div className="flex flex-col justify-center items-center h-64">
+          <div className="text-gray-500 mb-2">No data available</div>
+          <p className="text-gray-600 text-sm text-center">No REC data found for this meter</p>
           <button 
             onClick={fetchMeterData}
             className="mt-4 bg-[#039994] text-white px-4 py-2 rounded text-sm hover:bg-[#027a75] transition-colors"

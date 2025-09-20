@@ -518,7 +518,7 @@ export default function ResidentialFacilityDetails({ facility, onBack, onFacilit
       </div>
 
       <div className="mt-6">
-        <ResidentialDetailsGraph facilityId={facilityData.id} />
+        <ResidentialDetailsGraph facilityId={facilityData.id} meterId={facilityData.meterId} />
       </div>
 
       <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
