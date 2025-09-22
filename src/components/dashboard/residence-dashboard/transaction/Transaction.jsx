@@ -10,16 +10,16 @@ export default function RedemptionTransactions() {
   const [pendingRedemption, setPendingRedemption] = useState(null);
 
   const transactions = [
-    { id: 1, residentId: "RES001", paymentId: "PAY001", pointRedeemed: 3000, pricePerPoint: 0.02, totalAmount: 10, date: "16-03-2025", status: "Successful" },
-    { id: 2, residentId: "RES002", paymentId: "PAY002", pointRedeemed: 3000, pricePerPoint: 0.02, totalAmount: 10, date: "16-03-2025", status: "Pending" },
-    { id: 3, residentId: "RES003", paymentId: "PAY003", pointRedeemed: 3000, pricePerPoint: 0.02, totalAmount: 10, date: "16-03-2025", status: "Failed" },
+    { id: 1, residentId: "RES001", paymentId: "PAY001", pointRedeemed: 3000, pricePerPoint: 0.01, totalAmount: 30, date: "16-03-2025", status: "Successful" },
+    { id: 2, residentId: "RES002", paymentId: "PAY002", pointRedeemed: 3000, pricePerPoint: 0.01, totalAmount: 30, date: "16-03-2025", status: "Pending" },
+    { id: 3, residentId: "RES003", paymentId: "PAY003", pointRedeemed: 3000, pricePerPoint: 0.01, totalAmount: 30, date: "16-03-2025", status: "Failed" },
     ...Array.from({ length: 8 }, (_, i) => ({
       id: 4 + i,
       residentId: `RES${String(4 + i).padStart(3, '0')}`,
       paymentId: `PAY${String(4 + i).padStart(3, '0')}`,
       pointRedeemed: 3000,
-      pricePerPoint: 0.02,
-      totalAmount: 10,
+      pricePerPoint: 0.01,
+      totalAmount: 30,
       date: "16-03-2025",
       status: "Successful",
     })),
@@ -52,7 +52,7 @@ export default function RedemptionTransactions() {
       residentId: "RES_USER",
       paymentId: `PAY${Date.now()}`,
       pointRedeemed: redemptionData.points,
-      pricePerPoint: 0.02,
+      pricePerPoint: 0.01,
       totalAmount: redemptionData.total,
       date: new Date().toLocaleDateString('en-GB'),
       status: "Successful"
@@ -77,7 +77,7 @@ export default function RedemptionTransactions() {
     }
   };
 
-  const availableMoney = (userPoints / 100).toFixed(2);
+  const availableMoney = (userPoints * 0.01).toFixed(2);
 
   return (
     <div className={`${styles.mainContainer} px-6 py-8`}>

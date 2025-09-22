@@ -7,8 +7,8 @@ export default function RequestRedemption({ onClose, onSubmit, availablePoints }
   const [error, setError] = useState("");
   
   const pricePerPoint = 0.01;
-  const total = points ? (points * pricePerPoint).toFixed(2) : "0.00";
-  const recsEquivalent = points ? (points / 1000).toFixed(1) : "0";
+  const commissionRate = 0.5;
+  const userAmount = points ? (points * pricePerPoint * commissionRate).toFixed(2) : "0.00";
   const remainingPoints = points ? availablePoints - parseInt(points) : availablePoints;
 
   const handleSubmit = (e) => {
@@ -33,7 +33,7 @@ export default function RequestRedemption({ onClose, onSubmit, availablePoints }
     }
 
     if (onSubmit) {
-      onSubmit({ points: pointsValue, total: parseFloat(total) });
+      onSubmit({ points: pointsValue, total: parseFloat(userAmount) });
     }
   };
 
@@ -91,9 +91,6 @@ export default function RequestRedemption({ onClose, onSubmit, availablePoints }
               {points && (
                 <div className="flex justify-between text-sm font-sfpro">
                   <span className="text-[#626060]">
-                    Equivalent: {recsEquivalent} RECs
-                  </span>
-                  <span className="text-[#626060]">
                     Remaining: {remainingPoints} pts
                   </span>
                 </div>
@@ -104,26 +101,15 @@ export default function RequestRedemption({ onClose, onSubmit, availablePoints }
             )}
           </div>
 
-          <div className="bg-gray-50 p-4 rounded-md">
-            <div className="text-center mb-3">
-              <span className="font-sfpro text-[14px] text-[#1E1E1E] font-semibold">
-                Conversion Rate
-              </span>
-            </div>
-            <div className="flex justify-center items-center space-x-2 text-[#039994] font-sfpro">
-              <span className="font-semibold">1000 pts = 1 REC = $10</span>
-            </div>
-          </div>
-
           {points && (
             <div>
-              <label className={styles.labelClass}>Total Amount to Receive</label>
+              <label className={styles.labelClass}>Amount You Will Receive</label>
               <div
                 className="p-4 rounded-md text-center"
                 style={{ backgroundColor: "#069B9621" }}
               >
                 <span className="font-sfpro font-semibold text-[24px] text-[#039994]">
-                  ${total}
+                  ${userAmount}
                 </span>
               </div>
             </div>
@@ -134,7 +120,7 @@ export default function RequestRedemption({ onClose, onSubmit, availablePoints }
           <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
             <div className="text-sm font-sfpro text-yellow-800">
               <strong>Notice:</strong> Your redemption request will be reviewed and approved by an admin. 
-              Once approved, you'll be able to redeem your points for cash.
+              Once approved, you'll receive a payment link from DCarbon to complete your redemption.
             </div>
           </div>
 

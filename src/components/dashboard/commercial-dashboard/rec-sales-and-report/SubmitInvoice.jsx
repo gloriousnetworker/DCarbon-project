@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { HiOutlineArrowLeft, HiOutlineUpload } from 'react-icons/hi';
 
 const mainContainer = "flex items-center justify-center min-h-screen p-4";
@@ -8,6 +8,7 @@ const pageTitle = "text-2xl font-bold text-gray-800";
 const formWrapper = "bg-white p-8 rounded-xl shadow-lg w-full";
 const labelClass = "block text-sm font-medium text-gray-700 mb-1";
 const inputClass = "w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors";
+const disabledInputClass = "w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed";
 const rowWrapper = "flex flex-wrap -mx-2 mb-4";
 const halfWidth = "w-full md:w-1/2 px-2 mb-4 md:mb-0";
 const uploadHeading = "block text-sm font-medium text-gray-700 mb-2";
@@ -16,7 +17,13 @@ const uploadInputLabel = "flex-grow px-4 py-2 text-gray-600 truncate cursor-poin
 const uploadIconContainer = "inline-flex items-center justify-center ml-2";
 const uploadButtonStyle = "px-4 py-2 bg-gray-100 hover:bg-gray-200 transition-colors border-l border-gray-300";
 const uploadNoteStyle = "text-xs text-gray-500 mt-2";
-const buttonPrimary = "w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors mt-6";
+const buttonPrimary = "w-full bg-green-900 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-lg transition-colors mt-6";
+
+const generateInvoiceNumber = () => {
+  const timestamp = Date.now().toString().slice(-6);
+  const randomDigits = Math.floor(100 + Math.random() * 900);
+  return `DCARBON-${timestamp}-${randomDigits}`;
+};
 
 const SubmitInvoice = ({ onBack }) => {
   const [formData, setFormData] = useState({
@@ -29,6 +36,11 @@ const SubmitInvoice = ({ onBack }) => {
   });
 
   const [fileName, setFileName] = useState('');
+
+  useEffect(() => {
+    const newInvoiceNumber = generateInvoiceNumber();
+    setFormData(prev => ({ ...prev, invoiceNumber: newInvoiceNumber }));
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -71,9 +83,9 @@ const SubmitInvoice = ({ onBack }) => {
                 type="text"
                 name="invoiceNumber"
                 value={formData.invoiceNumber}
-                onChange={handleInputChange}
-                className={inputClass}
-                required
+                className={disabledInputClass}
+                readOnly
+                disabled
               />
             </div>
             <div className={halfWidth}>

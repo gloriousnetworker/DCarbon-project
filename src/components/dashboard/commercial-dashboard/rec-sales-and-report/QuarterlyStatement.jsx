@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { HiOutlineDownload, HiOutlineX } from 'react-icons/hi';
 import SubmitInvoice from './SubmitInvoice';
-import AdminInvoices from './AdminInvoices';
+import AdminInvoices from './paidReceipts';
 
 const QuarterlyStatement = () => {
   const [showExportModal, setShowExportModal] = useState(false);
@@ -184,9 +184,9 @@ const QuarterlyStatement = () => {
 
           <button 
             onClick={() => setShowAdminInvoices(true)}
-            className="inline-flex items-center px-4 py-2 rounded-md text-sm bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 font-sfpro"
+            className="inline-flex items-center px-4 py-2 rounded-md text-sm bg-green-900 text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 font-sfpro"
           >
-            View Admin Invoices
+            View Paid Receipts
           </button>
         </div>
       </div>

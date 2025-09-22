@@ -50,7 +50,7 @@ const AdminInvoices = ({ onBack }) => {
           <button onClick={onBack} className={backArrow}>
             <HiOutlineArrowLeft className="h-6 w-6" />
           </button>
-          <h1 className={pageTitle}>Admin Invoices</h1>
+          <h1 className={pageTitle}>Paid Receipts</h1>
         </div>
 
         <div className="flex space-x-4 mb-6">
