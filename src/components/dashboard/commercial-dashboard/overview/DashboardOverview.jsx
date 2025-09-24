@@ -26,6 +26,10 @@ const ProgressTracker = ({ currentStage, nextStage, onStageClick, hasFacility })
     }
   };
 
+  const isClickable = (stageId) => {
+    return (stageId <= currentStage || stageId === nextStage) && (!hasFacility || stageId === 5);
+  };
+
   return (
     <div className="w-full bg-white rounded-lg shadow-sm p-4 mb-6">
       <div className="flex justify-between items-center mb-4">
@@ -39,7 +43,7 @@ const ProgressTracker = ({ currentStage, nextStage, onStageClick, hasFacility })
           {stages.map((stage) => (
             <div 
               key={stage.id} 
-              className="flex flex-col items-center group relative"
+              className={`flex flex-col items-center group relative ${isClickable(stage.id) ? 'cursor-pointer' : 'cursor-default'}`}
               onClick={() => handleClick(stage.id)}
             >
               <div
@@ -47,7 +51,7 @@ const ProgressTracker = ({ currentStage, nextStage, onStageClick, hasFacility })
                   stage.id < currentDisplayStage ? "bg-[#039994] text-white" : 
                   stage.id === currentDisplayStage ? "bg-[#039994] text-white" : 
                   stage.id === nextStage ? "border-2 border-[#039994] bg-white text-gray-600" : "bg-gray-200 text-gray-600"
-                } ${(stage.id <= currentDisplayStage && (!hasFacility || stage.id === 5)) ? 'hover:bg-[#028a85] cursor-pointer' : 'cursor-default'}`}
+                } ${isClickable(stage.id) ? 'hover:bg-[#028a85]' : ''}`}
               >
                 {stage.id}
               </div>
