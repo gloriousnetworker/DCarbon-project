@@ -323,7 +323,7 @@ export default function DashboardOverview() {
   }
 
   return (
-    <div className="w-full min-h-screen space-y-8 p-4">
+    <div className="w-full min-h-screen space-y-8 p-4 relative">
       <div className="flex justify-between items-start mb-4">
         <div>
           <h1 className="font-[600] text-[16px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro">
@@ -351,26 +351,32 @@ export default function DashboardOverview() {
       <RecentRecSales />
 
       {showWelcomeModal && (
-        <WelcomeModal 
-          isOpen 
-          onClose={handleCloseWelcomeModal}
-          userData={userData}
-        />
+        <div className="fixed inset-0 z-[100]">
+          <WelcomeModal 
+            isOpen 
+            onClose={handleCloseWelcomeModal}
+            userData={userData}
+          />
+        </div>
       )}
 
       {showAddUtilityModal && (
-        <AddUtilityProvider 
-          isOpen={showAddUtilityModal}
-          onClose={handleCloseAddUtilityModal}
-        />
+        <div className="fixed inset-0 z-[100]">
+          <AddUtilityProvider 
+            isOpen={showAddUtilityModal}
+            onClose={handleCloseAddUtilityModal}
+          />
+        </div>
       )}
 
       {showRegistrationModal && (
-        <CommercialRegistrationModal
-          isOpen={showRegistrationModal}
-          onClose={handleCloseRegistrationModal}
-          currentStep={clickedStage}
-        />
+        <div className="fixed inset-0 z-[100]">
+          <CommercialRegistrationModal
+            isOpen={showRegistrationModal}
+            onClose={handleCloseRegistrationModal}
+            currentStep={clickedStage}
+          />
+        </div>
       )}
     </div>
   );

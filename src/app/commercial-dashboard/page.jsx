@@ -19,7 +19,6 @@ export default function UserDashboard() {
 
   const handleSectionChange = (section) => {
     setActiveSection(section);
-    // Close sidebar on mobile after selection
     setSidebarOpen(false);
   };
 
@@ -31,7 +30,6 @@ export default function UserDashboard() {
     setSidebarOpen(!sidebarOpen);
   };
 
-  // Mapping from section keys to display text for the navbar
   const sectionDisplayMap = {
     overview: 'Overview',
     generatorManagement: 'Generator Management',
@@ -78,8 +76,7 @@ export default function UserDashboard() {
   }
 
   return (
-    <div className="min-h-screen flex bg-gray-100">
-      {/* Desktop Sidebar */}
+    <div className="min-h-screen flex bg-gray-100 relative">
       <aside className="hidden md:flex flex-col w-64 bg-white border-r h-screen fixed">
         <DashboardSidebar
           selectedSection={activeSection}
@@ -87,26 +84,21 @@ export default function UserDashboard() {
         />
       </aside>
 
-      {/* Main Area */}
       <div className="md:ml-64 flex-1 flex flex-col">
-        {/* Top Navbar with dynamic title */}
         <DashboardNavbar
           toggleSidebar={toggleSidebar}
           selectedSection={activeSection}
           sectionDisplayMap={sectionDisplayMap}
-          onSectionChange={handleSectionChange} // Pass the handler
+          onSectionChange={handleSectionChange}
         />
 
-        {/* Mobile Sidebar Overlay */}
         {sidebarOpen && (
-          <div className="fixed inset-0 z-50 flex md:hidden">
-            {/* Overlay backdrop */}
+          <div className="fixed inset-0 z-40 flex md:hidden">
             <div
               className="absolute inset-0 bg-black bg-opacity-50"
               onClick={toggleSidebar}
             />
-            {/* Sidebar itself */}
-            <div className="relative bg-white w-64 h-full shadow-md">
+            <div className="relative bg-white w-64 h-full shadow-md z-50">
               <DashboardSidebar
                 selectedSection={activeSection}
                 onSectionChange={handleSectionChange}
@@ -116,8 +108,7 @@ export default function UserDashboard() {
           </div>
         )}
 
-        {/* Main Content */}
-        <main className="flex-1">
+        <main className="flex-1 relative">
           <div className="max-w-7xl mx-auto p-6">
             {activeSection === 'logout' ? (
               <DashboardLogout 
