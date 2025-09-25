@@ -115,7 +115,7 @@ const AccountPayableInformation = ({ stripeEnabled, setStripeEnabled }) => {
     <div className="border-b border-gray-200 pb-4 mb-4">
       <Toaster />
       <div className={sectionHeader} onClick={() => setIsOpen(!isOpen)}>
-        <h2 className={sectionTitle}>Account Payable Information</h2>
+        <h2 className={sectionTitle}>Account Owner Information</h2>
         {isOpen ? (
           <FaChevronUp className="text-[#039994]" size={20} />
         ) : (
@@ -217,7 +217,7 @@ const AccountPayableInformation = ({ stripeEnabled, setStripeEnabled }) => {
               onClick={handleUpdate}
               className="w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro"
             >
-              Update User Information
+              Update Account Owner Information
             </button>
           </div>
         </div>

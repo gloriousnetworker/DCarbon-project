@@ -174,7 +174,7 @@ const ContactInformation = () => {
     return (
       <div className="border-b border-gray-200 pb-4 mb-4">
         <div className={sectionHeader} onClick={() => setIsOpen(!isOpen)}>
-          <h2 className={sectionTitle}>Contact Information</h2>
+          <h2 className={sectionTitle}>Commercial Facility Owner Information</h2>
           {isOpen ? (
             <FaChevronUp className="text-[#039994]" size={20} />
           ) : (
@@ -202,7 +202,7 @@ const ContactInformation = () => {
     <div className="border-b border-gray-200 pb-4 mb-4">
       <Toaster />
       <div className={sectionHeader} onClick={() => setIsOpen(!isOpen)}>
-        <h2 className={sectionTitle}>Contact Information</h2>
+        <h2 className={sectionTitle}>Commercial Facility Owner Information</h2>
         {isOpen ? (
           <FaChevronUp className="text-[#039994]" size={20} />
         ) : (
@@ -300,7 +300,7 @@ const ContactInformation = () => {
               className="w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro transition-colors duration-200"
               disabled={!ownerFullName.trim()}
             >
-              Update Contact Information
+              Update Commercial Facility Information
             </button>
           </div>
         </div>

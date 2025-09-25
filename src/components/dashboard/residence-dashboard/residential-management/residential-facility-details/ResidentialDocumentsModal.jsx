@@ -97,27 +97,70 @@ const DOCUMENT_TYPES = {
 const PDFViewerModal = ({ isOpen, onClose, url, title }) => {
   if (!isOpen) return null;
 
+  const getFileExtension = (url) => {
+    if (!url) return '';
+    return url.split('.').pop().toLowerCase();
+  };
+
   const renderFileContent = () => {
     if (!url) return <div>No document available</div>;
     
-    const extension = url.split('.').pop().toLowerCase();
+    const extension = getFileExtension(url);
     
-    if (['jpg', 'jpeg', 'png', 'gif'].includes(extension)) {
+    if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(extension)) {
       return (
         <div className="flex items-center justify-center h-full">
           <img 
             src={url} 
             alt={title} 
             className="max-w-full max-h-full object-contain"
+            onError={(e) => {
+              e.target.style.display = 'none';
+              e.target.nextSibling.style.display = 'block';
+            }}
           />
+          <div style={{display: 'none'}} className="text-center">
+            <FiFileText size={48} className="mx-auto mb-4 text-gray-400" />
+            <p className="text-gray-600">Unable to load image</p>
+          </div>
         </div>
       );
     } else if (extension === 'pdf') {
+      const pdfViewerUrl = url.includes('drive.google.com') 
+        ? url.replace('/view', '/preview')
+        : `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+      
+      return (
+        <div className="w-full h-full relative">
+          <iframe
+            src={pdfViewerUrl}
+            className="w-full h-full border-0"
+            title={title}
+            onError={() => {
+              console.error('PDF viewer failed to load');
+            }}
+          />
+          <div className="absolute inset-0 pointer-events-none"></div>
+        </div>
+      );
+    } else if (['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].includes(extension)) {
+      const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+      
       return (
         <div className="w-full h-full">
           <iframe
-            src={`${url}#view=fitH`}
+            src={viewerUrl}
             className="w-full h-full border-0"
+            title={title}
+          />
+        </div>
+      );
+    } else if (['txt', 'csv', 'json', 'xml'].includes(extension)) {
+      return (
+        <div className="w-full h-full p-4">
+          <iframe
+            src={url}
+            className="w-full h-full border border-gray-300 rounded"
             title={title}
           />
         </div>
@@ -127,41 +170,64 @@ const PDFViewerModal = ({ isOpen, onClose, url, title }) => {
         <div className="flex items-center justify-center h-full">
           <div className="text-center">
             <FiFileText size={48} className="mx-auto mb-4 text-gray-400" />
-            <p className="text-gray-600">Preview not available for this file type</p>
-            <a 
-              href={url} 
-              download 
-              className="text-[#039994] hover:underline mt-2 inline-block"
+            <p className="text-gray-600 mb-2">Preview not available for this file type</p>
+            <p className="text-sm text-gray-500 mb-4">File extension: .{extension}</p>
+            <button
+              onClick={() => {
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = title || 'document';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+              }}
+              className="inline-flex items-center gap-2 bg-[#039994] text-white px-4 py-2 rounded-md hover:bg-[#028580] transition-colors"
             >
-              Download file
-            </a>
+              <FiDownload size={16} />
+              Download File
+            </button>
           </div>
         </div>
       );
     }
   };
 
+  const handleDownload = (e) => {
+    e.preventDefault();
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = title || 'document';
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg w-full max-w-4xl h-full max-h-[90vh] flex flex-col">
-        <div className="flex items-center justify-between p-4 border-b">
-          <h3 className="text-lg font-semibold">{title}</h3>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
-            <FiX size={20} />
-          </button>
+      <div className="bg-white rounded-lg w-full max-w-5xl h-full max-h-[95vh] flex flex-col">
+        <div className="flex items-center justify-between p-4 border-b bg-gray-50 rounded-t-lg">
+          <h3 className="text-lg font-semibold text-gray-800 truncate">{title}</h3>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleDownload}
+              className="flex items-center gap-2 bg-[#039994] text-white px-3 py-1.5 rounded-md hover:bg-[#028580] transition-colors text-sm"
+              title="Download file"
+            >
+              <FiDownload size={14} />
+              Download
+            </button>
+            <button 
+              onClick={onClose} 
+              className="p-2 hover:bg-gray-200 rounded-full transition-colors"
+              title="Close preview"
+            >
+              <FiX size={20} className="text-gray-600" />
+            </button>
+          </div>
         </div>
-        <div className="flex-1 p-4 overflow-auto">
+        <div className="flex-1 overflow-hidden bg-gray-100">
           {renderFileContent()}
-        </div>
-        <div className="p-4 border-t flex justify-end">
-          <a
-            href={url}
-            download
-            className="flex items-center gap-2 bg-[#039994] text-white px-4 py-2 rounded-md hover:bg-[#028580]"
-          >
-            <FiDownload size={16} />
-            Download
-          </a>
         </div>
       </div>
     </div>
