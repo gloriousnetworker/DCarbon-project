@@ -51,7 +51,8 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
       invitees: [
         {
           email,
-          message
+          message,
+          inviterUserType: "COMMERCIAL_USER"
         }
       ]
     };
@@ -70,7 +71,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
 
       if (response.data.status === "success") {
         toast.success("Invitation sent successfully");
-        resetForm();      // Reset form after successful invite
+        resetForm();
         onClose();
       } else {
         throw new Error(response.data.message || "Failed to send invitation");
@@ -92,7 +93,6 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20 overflow-y-auto">
       <div className="relative bg-white p-5 rounded-lg w-full max-w-md text-sm max-h-[90vh] overflow-y-auto">
-        {/* Close Button */}
         <button
           onClick={onClose}
           className="absolute right-3 top-3 text-gray-500 hover:text-gray-700 focus:outline-none"
@@ -113,16 +113,13 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
           </svg>
         </button>
 
-        {/* Loader Overlay */}
         {loading && (
           <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-80 z-10">
             <Loader size="large" />
           </div>
         )}
 
-        {/* Modal Content */}
         <div className="flex flex-col items-center">
-          {/* Vector Image */}
           <div className="flex justify-center mb-2">
             <img 
               src="/vectors/EmailVector.png" 
@@ -135,7 +132,6 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-3 mt-4">
-          {/* Email Input */}
           <div>
             <label className={`${labelClass} text-xs`}>Email Address <span className="text-red-500">*</span></label>
             <input
@@ -149,7 +145,6 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
             />
           </div>
 
-          {/* Message */}
           <div>
             <label className={`${labelClass} text-xs`}>Message</label>
             <textarea
@@ -161,7 +156,6 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
             />
           </div>
 
-          {/* Form Actions */}
           <div className="flex space-x-2 pt-3">
             <button
               type="button"

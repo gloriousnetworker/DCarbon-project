@@ -20,8 +20,11 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
   });
   const [loading, setLoading] = useState(false);
   const [isSalesAgent, setIsSalesAgent] = useState(false);
+  const [isFinanceCompany, setIsFinanceCompany] = useState(false);
+  const [isInstaller, setIsInstaller] = useState(false);
   const [userLoaded, setUserLoaded] = useState(false);
   const [zipCodeError, setZipCodeError] = useState("");
+  const [partnerType, setPartnerType] = useState("");
   const [states] = useState([
     "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", 
     "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD", 
@@ -47,8 +50,16 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
           }
         );
 
-        if (response.data.data?.partnerType === "sales_agent") {
+        const partnerType = response.data.data?.partnerType;
+        setPartnerType(partnerType);
+
+        if (partnerType === "sales_agent") {
           setIsSalesAgent(true);
+          setFormData(prev => ({ ...prev, customerType: "PARTNER", role: "SALES_AGENT" }));
+        } else if (partnerType === "finance_company") {
+          setIsFinanceCompany(true);
+        } else if (partnerType === "installer") {
+          setIsInstaller(true);
         }
       } catch (error) {
         console.error("Error checking user role:", error);
@@ -59,6 +70,13 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
 
     if (isOpen) checkUserRole();
   }, [isOpen]);
+
+  const getInviterUserType = () => {
+    if (partnerType === "sales_agent") return "SALES_AGENT";
+    if (partnerType === "finance_company") return "FINANCE_COMPANY";
+    if (partnerType === "installer") return "INSTALLER";
+    return "";
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -195,6 +213,8 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
       return;
     }
 
+    const inviterUserType = getInviterUserType();
+
     const payload = {
       invitees: [
         {
@@ -203,6 +223,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
           phoneNumber: phoneNumber.replace(/\D/g, ''),
           customerType,
           role,
+          inviterUserType,
           ...(message && { message })
         }
       ]
@@ -226,7 +247,13 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
         if (facilitySuccess) {
           toast.success("Invitation with facility details sent successfully");
         } else {
-          toast.warning("User invitation sent but facility invitation failed");
+          toast("User invitation sent but facility invitation failed", {
+            icon: "⚠️",
+            style: {
+              background: "#FEF3C7",
+              color: "#92400E",
+            }
+          });
         }
         
         resetForm();

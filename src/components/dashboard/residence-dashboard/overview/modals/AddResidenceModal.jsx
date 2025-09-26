@@ -18,7 +18,6 @@ import {
   uploadNoteStyle,
   spinnerOverlay
 } from "../styles";
-import Loader from "@/components/loader/Loader.jsx";
 
 export default function AddResidentialFacilityModal({ isOpen, onClose }) {
   const [formData, setFormData] = useState({
@@ -51,6 +50,8 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
   const [installersLoading, setInstallersLoading] = useState(false);
   const [financeTypes, setFinanceTypes] = useState([]);
   const [financeTypesLoading, setFinanceTypesLoading] = useState(false);
+  const [financeCompanies, setFinanceCompanies] = useState([]);
+  const [financeCompaniesLoading, setFinanceCompaniesLoading] = useState(false);
   const [showAddUtilityModal, setShowAddUtilityModal] = useState(false);
   const [showUtilityAuthModal, setShowUtilityAuthModal] = useState(false);
   const [showAddFinanceTypeModal, setShowAddFinanceTypeModal] = useState(false);
@@ -68,6 +69,7 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
       fetchUserMeters();
       fetchInstallers();
       fetchFinanceTypes();
+      fetchFinanceCompanies();
     }
   }, [isOpen]);
 
@@ -206,13 +208,49 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
       );
 
       if (response.data.status === "success") {
-        setFinanceTypes(response.data.data.types);
+        const approvedTypes = response.data.data.types.filter(type =>
+          type.status === 'APPROVED' || type.name.toLowerCase() === 'cash'
+        );
+        const uniqueTypes = approvedTypes.reduce((acc, current) => {
+          const x = acc.find(item => item.name.toLowerCase() === current.name.toLowerCase());
+          if (!x) return acc.concat([current]);
+          return acc;
+        }, []);
+        setFinanceTypes(uniqueTypes);
       }
     } catch (error) {
       console.error("Error fetching finance types:", error);
       toast.error("Failed to load finance types");
     } finally {
       setFinanceTypesLoading(false);
+    }
+  };
+
+  const fetchFinanceCompanies = async () => {
+    const authToken = localStorage.getItem("authToken");
+
+    if (!authToken) return;
+
+    setFinanceCompaniesLoading(true);
+    try {
+      const response = await axios.get(
+        "https://services.dcarbon.solutions/api/user/partner/finance-companies",
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`
+          }
+        }
+      );
+
+      if (response.data.status === "success") {
+        setFinanceCompanies(response.data.data.financeCompanies || []);
+      }
+    } catch (error) {
+      console.error("Error fetching finance companies:", error);
+      toast.error("Failed to load finance companies");
+    } finally {
+      setFinanceCompaniesLoading(false);
     }
   };
 
@@ -348,6 +386,12 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
+    if (!selectedFile) return;
+    const validTypes = ['application/pdf', 'image/jpeg', 'image/png', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    if (!validTypes.includes(selectedFile.type)) {
+      toast.error('Invalid file type. Please upload PDF, JPEG, PNG, or Word documents.');
+      return;
+    }
     setFile(selectedFile);
     setUploadSuccess(false);
   };
@@ -416,12 +460,6 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
       return;
     }
 
-    if (showUploadField && !formData.financeAgreement) {
-      toast.error("Please upload the financial agreement");
-      setLoading(false);
-      return;
-    }
-
     if (showFinanceCompany && !formData.financeCompany) {
       toast.error("Please select a finance company");
       setLoading(false);
@@ -435,12 +473,15 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
     }
 
     try {
+      const selectedInstaller = installers.find(installer => installer.name === formData.installer);
+      
       const payload = {
         utilityProvider: formData.utilityProvider,
         installer: formData.installer,
+        installerId: selectedInstaller?.id || "N/A",
         financeType: formData.financeType,
         financeCompany: formData.financeCompany,
-        financeAgreement: formData.financeAgreement,
+        financeAgreement: formData.financeAgreement || "N/A",
         address: formData.address,
         meterId: formData.meterId,
         zipCode: formData.zipCode,
@@ -554,7 +595,7 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
     formData.meterId &&
     formData.zipCode &&
     formData.systemCapacity &&
-    (isCashType || (formData.financeCompany && (!showUploadField || formData.financeAgreement))) &&
+    (isCashType || (formData.financeCompany)) &&
     (selectedMeter ? isSameLocation !== null : true) &&
     (selectedMeter ? meterAgreementAccepted : true);
 
@@ -857,22 +898,32 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
               {showFinanceCompany && (
                 <div>
                   <label className={labelClass}>Finance Company <span className="text-red-500">*</span></label>
-                  <input
-                    type="text"
+                  <select
                     name="financeCompany"
                     value={formData.financeCompany}
                     onChange={handleChange}
-                    className={inputClass}
-                    placeholder="Enter finance company"
+                    className={selectClass}
                     required
-                  />
+                    disabled={loading || financeCompaniesLoading}
+                  >
+                    <option value="">Select finance company</option>
+                    {financeCompaniesLoading ? (
+                      <option value="" disabled>Loading finance companies...</option>
+                    ) : (
+                      financeCompanies.map(company => (
+                        <option key={company.id} value={company.name}>
+                          {company.name}
+                        </option>
+                      ))
+                    )}
+                  </select>
                 </div>
               )}
 
               {showUploadField && (
                 <div>
                   <label className={uploadHeading}>
-                    Finance Agreement <span className="text-red-500">*</span>
+                    Finance Agreement
                   </label>
                   <div className={uploadFieldWrapper}>
                     <label className={uploadInputLabel}>
@@ -881,6 +932,7 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
                         type="file"
                         className="absolute inset-0 opacity-0 cursor-pointer"
                         onChange={handleFileChange}
+                        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                       />
                       <span className={uploadIconContainer}>
                         <svg
@@ -948,7 +1000,7 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
                     </button>
                   </div>
                   <p className={uploadNoteStyle}>
-                    Required for loan, PPA, and lease agreements
+                    Optional for loan, PPA, and lease agreements
                   </p>
                 </div>
               )}

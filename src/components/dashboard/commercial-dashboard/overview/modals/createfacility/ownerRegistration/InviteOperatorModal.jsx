@@ -74,7 +74,8 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, onDashboa
             role: "OPERATOR",
             name: formData.name.trim(),
             customerType: "COMMERCIAL",
-            message: formData.message.trim()
+            message: formData.message.trim(),
+            inviterUserType: "COMMERCIAL_USER"
           }
         ]
       };

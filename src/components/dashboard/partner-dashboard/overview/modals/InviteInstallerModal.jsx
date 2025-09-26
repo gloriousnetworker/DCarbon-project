@@ -81,6 +81,7 @@ export default function InviteInstallerModal({ isOpen, onClose }) {
           phoneNumber,
           customerType: "PARTNER",
           role: "INSTALLER",
+          inviterUserType: "INSTALLER",
           ...(message && { message })
         }
       ]

@@ -25,7 +25,10 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
   const [phoneErrors, setPhoneErrors] = useState([]);
   const [zipCodeErrors, setZipCodeErrors] = useState([]);
   const [isSalesAgent, setIsSalesAgent] = useState(false);
+  const [isFinanceCompany, setIsFinanceCompany] = useState(false);
+  const [isInstaller, setIsInstaller] = useState(false);
   const [userLoaded, setUserLoaded] = useState(false);
+  const [partnerType, setPartnerType] = useState("");
   const fileInputRef = useRef(null);
   const [states] = useState([
     "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", 
@@ -54,8 +57,15 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
           }
         );
 
-        if (response.data.data?.partnerType === "sales_agent") {
+        const partnerType = response.data.data?.partnerType;
+        setPartnerType(partnerType);
+
+        if (partnerType === "sales_agent") {
           setIsSalesAgent(true);
+        } else if (partnerType === "finance_company") {
+          setIsFinanceCompany(true);
+        } else if (partnerType === "installer") {
+          setIsInstaller(true);
         }
       } catch (error) {
         console.error("Error checking user role:", error);
@@ -66,6 +76,13 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
 
     if (isOpen) checkUserRole();
   }, [isOpen]);
+
+  const getInviterUserType = () => {
+    if (partnerType === "sales_agent") return "SALES_AGENT";
+    if (partnerType === "finance_company") return "FINANCE_COMPANY";
+    if (partnerType === "installer") return "INSTALLER";
+    return "";
+  };
 
   const handleChange = (index, e) => {
     const { name, value } = e.target;
@@ -242,13 +259,25 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
           if (!rows[i].trim()) continue;
           
           if (newInvitees.length >= MAX_INVITEES) {
-            toast.warning(`Only the first ${MAX_INVITEES} invitees will be processed`);
+            toast("Only the first ${MAX_INVITEES} invitees will be processed", {
+              icon: "⚠️",
+              style: {
+                background: "#FEF3C7",
+                color: "#92400E",
+              }
+            });
             break;
           }
           
           const values = rows[i].split(',').map(val => val.trim());
           if (values.length !== headers.length) {
-            toast.warning(`Row ${i} has incorrect format and was skipped`);
+            toast(`Row ${i} has incorrect format and was skipped`, {
+              icon: "⚠️",
+              style: {
+                background: "#FEF3C7",
+                color: "#92400E",
+              }
+            });
             continue;
           }
           
@@ -416,6 +445,8 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
     }
 
     try {
+      const inviterUserType = getInviterUserType();
+      
       const userInvitePayload = {
         invitees: invitees.map(({ name, email, phoneNumber, customerType, role, message }) => ({
           name,
@@ -423,6 +454,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
           phoneNumber,
           customerType,
           role,
+          inviterUserType,
           ...(message && { message })
         }))
       };
@@ -448,7 +480,13 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
         if (successfulFacilityInvites === invitees.length) {
           toast.success(`Successfully sent ${invitees.length} invitation${invitees.length > 1 ? 's' : ''} with facility details`);
         } else {
-          toast.warning(`Sent user invitations but ${invitees.length - successfulFacilityInvites} facility invitations failed`);
+          toast(`Sent user invitations but ${invitees.length - successfulFacilityInvites} facility invitations failed`, {
+            icon: "⚠️",
+            style: {
+              background: "#FEF3C7",
+              color: "#92400E",
+            }
+          });
         }
         
         resetForm();

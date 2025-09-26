@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { HiOutlineDownload, HiOutlineX } from 'react-icons/hi';
 import SubmitInvoice from './SubmitInvoice';
 import AdminInvoices from './paidReceipts';
@@ -7,8 +7,10 @@ const QuarterlyStatement = () => {
   const [showExportModal, setShowExportModal] = useState(false);
   const [showSubmitInvoice, setShowSubmitInvoice] = useState(false);
   const [showAdminInvoices, setShowAdminInvoices] = useState(false);
-  const [selectedQuarter, setSelectedQuarter] = useState('Q1');
+  const [selectedQuarter, setSelectedQuarter] = useState('1');
   const [selectedYear, setSelectedYear] = useState('2024');
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const staticData = {
     customerName: 'John Smith',
@@ -16,10 +18,6 @@ const QuarterlyStatement = () => {
     email: 'john.smith@example.com',
     phoneNumber: '(512) 555-0123',
     name: 'Solar Energy Corp',
-    totalRecsGenerated: 245.5,
-    totalRecsSold: 180,
-    totalRecsBalance: 65.5,
-    averageRecPrice: '12.50',
     facilities: [
       {
         facilityName: 'Austin Solar Farm',
@@ -36,22 +34,52 @@ const QuarterlyStatement = () => {
     ]
   };
 
-  const salesData = {
-    sales: [
-      { status: 'COMPLETED', totalAmount: 1250.00 },
-      { status: 'COMPLETED', totalAmount: 1000.00 }
-    ]
+  const fetchQuarterlyStatement = async () => {
+    setLoading(true);
+    try {
+      const userId = localStorage.getItem('userId');
+      const userType = localStorage.getItem('userType');
+      const authToken = localStorage.getItem('authToken');
+
+      if (!userId || !authToken) {
+        alert('Authentication required. Please log in.');
+        setLoading(false);
+        return;
+      }
+
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/quarterly-statements?quarter=${selectedQuarter}&year=${selectedYear}&userId=${userId}&userType=${userType || 'COMMERCIAL'}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      const result = await response.json();
+
+      if (response.ok && result.status === 'success') {
+        setData(result.data);
+      } else {
+        alert(result.message || 'Failed to fetch quarterly statement');
+      }
+    } catch (error) {
+      console.error('Error fetching quarterly statement:', error);
+      alert('An error occurred while fetching the quarterly statement');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const calculateTotalPayout = () => {
-    return salesData.sales
-      .filter(sale => sale.status === 'COMPLETED')
-      .reduce((total, sale) => total + sale.totalAmount, 0);
-  };
+  useEffect(() => {
+    fetchQuarterlyStatement();
+  }, [selectedQuarter, selectedYear]);
 
   const exportData = (format) => {
     const dataToExport = {
-      period: `${selectedQuarter} ${selectedYear}`,
+      period: `Q${selectedQuarter} ${selectedYear}`,
       customerInfo: {
         name: staticData.customerName,
         address: staticData.address,
@@ -64,12 +92,12 @@ const QuarterlyStatement = () => {
         email: staticData.email
       },
       recSummary: {
-        totalRecsGenerated: staticData.totalRecsGenerated,
-        totalRecsSold: staticData.totalRecsSold,
-        totalRecsBalance: staticData.totalRecsBalance,
-        averageRecPrice: staticData.averageRecPrice,
+        totalRecsGenerated: data?.totalRecsGenerated || 0,
+        totalRecsSold: data?.totalRecsSold || 0,
+        totalRecsBalance: data?.totalRecsBalance || 0,
+        averageRecPrice: data?.averageRecPrice || 0,
         revenueTier: '60%',
-        totalPayout: calculateTotalPayout()
+        totalPayout: data?.totalRecPayout || 0
       },
       facilities: staticData.facilities
     };
@@ -78,8 +106,6 @@ const QuarterlyStatement = () => {
       const csvContent = convertToCSV(dataToExport);
       downloadFile(csvContent, 'quarterly-statement.csv', 'text/csv');
     } else {
-      // For PDF, we would typically use a library like jsPDF
-      // This is a simplified version that just logs the data
       console.log('PDF Export Data:', dataToExport);
       alert('PDF export functionality would be implemented here with a library like jsPDF');
     }
@@ -149,17 +175,19 @@ const QuarterlyStatement = () => {
               value={selectedQuarter}
               onChange={(e) => setSelectedQuarter(e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro"
+              disabled={loading}
             >
-              <option value="Q1">Q1</option>
-              <option value="Q2">Q2</option>
-              <option value="Q3">Q3</option>
-              <option value="Q4">Q4</option>
+              <option value="1">Q1</option>
+              <option value="2">Q2</option>
+              <option value="3">Q3</option>
+              <option value="4">Q4</option>
             </select>
 
             <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro"
+              disabled={loading}
             >
               <option value="2023">2023</option>
               <option value="2024">2024</option>
@@ -170,6 +198,7 @@ const QuarterlyStatement = () => {
           <button
             onClick={() => setShowExportModal(true)}
             className="inline-flex items-center px-4 py-2 rounded-md text-sm bg-[#039994] text-white hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro"
+            disabled={loading}
           >
             <HiOutlineDownload className="mr-2 h-4 w-4" />
             Export Report
@@ -191,103 +220,109 @@ const QuarterlyStatement = () => {
         </div>
       </div>
 
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="border border-[#039994] rounded-lg p-4" style={{ backgroundColor: '#069B960D' }}>
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="font-sfpro text-[14px] font-[400] text-[#1E1E1E]">Name</span>
-                <span className="font-sfpro text-[14px] font-[400] text-[#1E1E1E]">{staticData.customerName}</span>
+      {loading ? (
+        <div className="flex justify-center items-center py-8">
+          <div className="text-[#039994] font-sfpro">Loading quarterly statement...</div>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="border border-[#039994] rounded-lg p-4" style={{ backgroundColor: '#069B960D' }}>
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="font-sfpro text-[14px] font-[400] text-[#1E1E1E]">Name</span>
+                  <span className="font-sfpro text-[14px] font-[400] text-[#1E1E1E]">{staticData.customerName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-sfpro text-[14px] font-[400] text-[#1E1E1E]">Address</span>
+                  <span className="font-sfpro text-[14px] font-[400] text-[#1E1E1E] text-right max-w-[200px]">{staticData.address}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-sfpro text-[14px] font-[400] text-[#1E1E1E]">Email Address</span>
+                  <span className="font-sfpro text-[14px] font-[400] text-[#1E1E1E]">{staticData.email}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-sfpro text-[14px] font-[400] text-[#1E1E1E]">Phone number</span>
+                  <span className="font-sfpro text-[14px] font-[400] text-[#1E1E1E]">{staticData.phoneNumber}</span>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="font-sfpro text-[14px] font-[400] text-[#1E1E1E]">Address</span>
-                <span className="font-sfpro text-[14px] font-[400] text-[#1E1E1E] text-right max-w-[200px]">{staticData.address}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-sfpro text-[14px] font-[400] text-[#1E1E1E]">Email Address</span>
-                <span className="font-sfpro text-[14px] font-[400] text-[#1E1E1E]">{staticData.email}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-sfpro text-[14px] font-[400] text-[#1E1E1E]">Phone number</span>
-                <span className="font-sfpro text-[14px] font-[400] text-[#1E1E1E]">{staticData.phoneNumber}</span>
+            </div>
+
+            <div className="rounded-lg p-4" style={{ backgroundColor: '#EFEFEF80' }}>
+              <h3 className="font-sfpro text-[16px] font-[600] text-[#039994] mb-3">Billing to</h3>
+              <div className="space-y-2">
+                <div className="font-sfpro text-[14px] font-[600] text-[#1E1E1E]">{staticData.name}</div>
+                <div className="font-sfpro text-[12px] font-[400] text-[#1E1E1E]">{staticData.address}</div>
+                <div className="font-sfpro text-[12px] font-[400] text-[#1E1E1E]">{staticData.email}</div>
               </div>
             </div>
           </div>
 
-          <div className="rounded-lg p-4" style={{ backgroundColor: '#EFEFEF80' }}>
-            <h3 className="font-sfpro text-[16px] font-[600] text-[#039994] mb-3">Billing to</h3>
-            <div className="space-y-2">
-              <div className="font-sfpro text-[14px] font-[600] text-[#1E1E1E]">{staticData.name}</div>
-              <div className="font-sfpro text-[12px] font-[400] text-[#1E1E1E]">{staticData.address}</div>
-              <div className="font-sfpro text-[12px] font-[400] text-[#1E1E1E]">{staticData.email}</div>
+          <hr className="border-gray-300" />
+
+          <div className="space-y-4">
+            <div className="flex justify-between py-2">
+              <span className="font-sfpro text-[14px] font-[400] text-[#1E1E1E]">Total RECs generated</span>
+              <span className="font-sfpro text-[14px] font-[600] text-[#1E1E1E]">{data?.totalRecsGenerated?.toFixed(1) || '0.0'}</span>
+            </div>
+            <div className="flex justify-between py-2">
+              <span className="font-sfpro text-[14px] font-[400] text-[#1E1E1E]">Total RECs sold</span>
+              <span className="font-sfpro text-[14px] font-[600] text-[#1E1E1E]">{data?.totalRecsSold?.toFixed(0) || '0'}</span>
+            </div>
+            <div className="flex justify-between py-2">
+              <span className="font-sfpro text-[14px] font-[400] text-[#1E1E1E]">Total RECs balance</span>
+              <span className="font-sfpro text-[14px] font-[600] text-[#1E1E1E]">{data?.totalRecsBalance?.toFixed(1) || '0.0'}</span>
+            </div>
+            <div className="flex justify-between py-2">
+              <span className="font-sfpro text-[14px] font-[400] text-[#1E1E1E]">Average REC price</span>
+              <span className="font-sfpro text-[14px] font-[600] text-[#1E1E1E]">${data?.averageRecPrice?.toFixed(2) || '0.00'}</span>
+            </div>
+            <div className="flex justify-between py-2">
+              <span className="font-sfpro text-[14px] font-[400] text-[#1E1E1E]">Revenue Tier</span>
+              <span className="font-sfpro text-[14px] font-[600] text-[#1E1E1E]">60%</span>
             </div>
           </div>
-        </div>
 
-        <hr className="border-gray-300" />
+          <div className="bg-[#039994] rounded-lg p-4 flex justify-between items-center">
+            <span className="font-sfpro text-[16px] font-[600] text-white">Total REC Payout</span>
+            <span className="font-sfpro text-[20px] font-[700] text-white">${data?.totalRecPayout?.toFixed(2) || '0.00'}</span>
+          </div>
 
-        <div className="space-y-4">
-          <div className="flex justify-between py-2">
-            <span className="font-sfpro text-[14px] font-[400] text-[#1E1E1E]">Total RECs generated</span>
-            <span className="font-sfpro text-[14px] font-[600] text-[#1E1E1E]">{staticData.totalRecsGenerated.toFixed(1)}</span>
-          </div>
-          <div className="flex justify-between py-2">
-            <span className="font-sfpro text-[14px] font-[400] text-[#1E1E1E]">Total RECs sold</span>
-            <span className="font-sfpro text-[14px] font-[600] text-[#1E1E1E]">{staticData.totalRecsSold.toFixed(0)}</span>
-          </div>
-          <div className="flex justify-between py-2">
-            <span className="font-sfpro text-[14px] font-[400] text-[#1E1E1E]">Total RECs balance</span>
-            <span className="font-sfpro text-[14px] font-[600] text-[#1E1E1E]">{staticData.totalRecsBalance.toFixed(1)}</span>
-          </div>
-          <div className="flex justify-between py-2">
-            <span className="font-sfpro text-[14px] font-[400] text-[#1E1E1E]">Average REC price</span>
-            <span className="font-sfpro text-[14px] font-[600] text-[#1E1E1E]">${staticData.averageRecPrice}</span>
-          </div>
-          <div className="flex justify-between py-2">
-            <span className="font-sfpro text-[14px] font-[400] text-[#1E1E1E]">Revenue Tier</span>
-            <span className="font-sfpro text-[14px] font-[600] text-[#1E1E1E]">60%</span>
-          </div>
-        </div>
-
-        <div className="bg-[#039994] rounded-lg p-4 flex justify-between items-center">
-          <span className="font-sfpro text-[16px] font-[600] text-white">Total REC Payout</span>
-          <span className="font-sfpro text-[20px] font-[700] text-white">${calculateTotalPayout().toFixed(2)}</span>
-        </div>
-
-        <div className="mt-6">
-          <h3 className="font-sfpro text-[16px] font-[600] text-[#039994] mb-3">Facilities</h3>
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm text-left text-gray-700">
-              <thead className="border-b border-gray-200 text-xs font-medium uppercase text-gray-700">
-                <tr>
-                  <th className="px-4 py-3 font-sfpro">Facility Name</th>
-                  <th className="px-4 py-3 font-sfpro">Address</th>
-                  <th className="px-4 py-3 font-sfpro">Status</th>
-                  <th className="px-4 py-3 font-sfpro">Current REC Balance</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {staticData.facilities.map((facility, idx) => (
-                  <tr key={idx} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 font-sfpro">{facility.facilityName}</td>
-                    <td className="px-4 py-3 font-sfpro">{facility.address}</td>
-                    <td className="px-4 py-3 font-sfpro">
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        facility.status === 'VERIFIED' ? 'bg-green-100 text-green-800' :
-                        facility.status === 'ACTIVE' ? 'bg-blue-100 text-blue-800' :
-                        'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {facility.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 font-sfpro">{facility.currentRecBalance.toFixed(1)}</td>
+          <div className="mt-6">
+            <h3 className="font-sfpro text-[16px] font-[600] text-[#039994] mb-3">Facilities</h3>
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm text-left text-gray-700">
+                <thead className="border-b border-gray-200 text-xs font-medium uppercase text-gray-700">
+                  <tr>
+                    <th className="px-4 py-3 font-sfpro">Facility Name</th>
+                    <th className="px-4 py-3 font-sfpro">Address</th>
+                    <th className="px-4 py-3 font-sfpro">Status</th>
+                    <th className="px-4 py-3 font-sfpro">Current REC Balance</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {staticData.facilities.map((facility, idx) => (
+                    <tr key={idx} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 font-sfpro">{facility.facilityName}</td>
+                      <td className="px-4 py-3 font-sfpro">{facility.address}</td>
+                      <td className="px-4 py-3 font-sfpro">
+                        <span className={`px-2 py-1 text-xs rounded-full ${
+                          facility.status === 'VERIFIED' ? 'bg-green-100 text-green-800' :
+                          facility.status === 'ACTIVE' ? 'bg-blue-100 text-blue-800' :
+                          'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {facility.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 font-sfpro">{facility.currentRecBalance.toFixed(1)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {showExportModal && (
         <QuarterlyStatementExportReport 
