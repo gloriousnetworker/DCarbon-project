@@ -20,6 +20,8 @@ export default function FinanceCompanyAgreement() {
   const [showSignatureModal, setShowSignatureModal] = useState(false);
   const [hasSigned, setHasSigned] = useState(false);
   const [signatureUrl, setSignatureUrl] = useState(null);
+  const [showDeclineModal, setShowDeclineModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -71,6 +73,69 @@ export default function FinanceCompanyAgreement() {
     } catch (error) {
       console.error('Error fetching agreement:', error);
       return null;
+    }
+  };
+
+  const getPartnerDetails = async () => {
+    try {
+      const userId = localStorage.getItem('userId');
+      const authToken = localStorage.getItem('authToken');
+      
+      if (!userId || !authToken) {
+        throw new Error('Authentication required');
+      }
+
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/user/partner/user/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (response.ok && data.status === 'success') {
+        return data.data;
+      } else {
+        throw new Error(data.message || 'Failed to fetch partner details');
+      }
+    } catch (error) {
+      console.error('Error fetching partner details:', error);
+      throw error;
+    }
+  };
+
+  const deletePartner = async (partnerId) => {
+    try {
+      const authToken = localStorage.getItem('authToken');
+      
+      if (!authToken) {
+        throw new Error('Authentication required');
+      }
+
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/user/partner/${partnerId}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (response.ok && data.status === 'success') {
+        return true;
+      } else {
+        throw new Error(data.message || 'Failed to delete partner');
+      }
+    } catch (error) {
+      console.error('Error deleting partner:', error);
+      throw error;
     }
   };
 
@@ -161,6 +226,32 @@ export default function FinanceCompanyAgreement() {
     setTimeout(() => {
       router.push("/partner-dashboard");
     }, 2000);
+  };
+
+  const handleDeclineClick = () => {
+    setShowDeclineModal(true);
+  };
+
+  const handleConfirmDecline = async () => {
+    try {
+      setIsDeleting(true);
+      const partnerDetails = await getPartnerDetails();
+      if (partnerDetails && partnerDetails.id) {
+        await deletePartner(partnerDetails.id);
+        toast.success('Partner registration cancelled successfully');
+      }
+      setShowDeclineModal(false);
+      router.back();
+    } catch (error) {
+      console.error('Error during decline process:', error);
+      toast.error('Failed to cancel registration. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleCancelDecline = () => {
+    setShowDeclineModal(false);
   };
 
   const loadImage = (url) => {
@@ -346,7 +437,7 @@ export default function FinanceCompanyAgreement() {
               {loading ? "Processing..." : hasSigned ? "Accepted" : "Accept Agreement"}
             </button>
             <button
-              onClick={() => router.back()}
+              onClick={handleDeclineClick}
               disabled={loading}
               className="flex-1 rounded-md bg-white border border-[#039994] text-[#039994] font-semibold py-3 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -374,6 +465,36 @@ export default function FinanceCompanyAgreement() {
         onClose={handleSignatureCancel}
         onComplete={handleSignatureComplete}
       />
+
+      {showDeclineModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-semibold text-[#039994] mb-4">
+              Confirm Decline
+            </h3>
+            <p className="text-gray-700 mb-6">
+              In order for you to proceed to the next step, you must Accept Agreement. 
+              Are you sure you want to Decline? This will cancel your partner registration.
+            </p>
+            <div className="flex justify-end gap-4">
+              <button
+                onClick={handleCancelDecline}
+                disabled={isDeleting}
+                className="px-4 py-2 border border-[#039994] text-[#039994] rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#039994] disabled:opacity-50"
+              >
+                No
+              </button>
+              <button
+                onClick={handleConfirmDecline}
+                disabled={isDeleting}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50"
+              >
+                {isDeleting ? "Deleting..." : "Yes"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
