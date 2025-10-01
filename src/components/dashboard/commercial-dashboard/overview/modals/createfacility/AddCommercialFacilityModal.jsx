@@ -25,7 +25,9 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
     facilityTypeNamingCode: 1,
     utilityProviderNamingCode: "",
     installerNamingCode: "",
-    financeNamingCode: ""
+    installerId: "",
+    financeNamingCode: "",
+    financeCompanyId: ""
   });
   const [loading, setLoading] = useState(false);
   const [utilityProviders, setUtilityProviders] = useState([]);
@@ -39,6 +41,8 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
   const [installersLoading, setInstallersLoading] = useState(false);
   const [financeTypes, setFinanceTypes] = useState([]);
   const [financeTypesLoading, setFinanceTypesLoading] = useState(false);
+  const [financeCompanies, setFinanceCompanies] = useState([]);
+  const [financeCompaniesLoading, setFinanceCompaniesLoading] = useState(false);
   const [showAddUtilityModal, setShowAddUtilityModal] = useState(false);
   const [showUtilityAuthModal, setShowUtilityAuthModal] = useState(false);
   const [showFinanceTypeRequestModal, setShowFinanceTypeRequestModal] = useState(false);
@@ -54,6 +58,7 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
       fetchUserMeters();
       fetchInstallers();
       fetchFinanceTypes();
+      fetchFinanceCompanies();
     }
   }, [isOpen]);
 
@@ -140,7 +145,7 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
     setInstallersLoading(true);
     try {
       const response = await axios.get(
-        "https://services.dcarbon.solutions/api/admin/partners",
+        "https://services.dcarbon.solutions/api/user/partner/get-all-installer",
         {
           headers: {
             "Content-Type": "application/json",
@@ -150,7 +155,7 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
       );
 
       if (response.data.status === "success") {
-        setInstallers(response.data.data.partners.filter(partner => partner.partnerType === "installer"));
+        setInstallers(response.data.data.installers || []);
       }
     } catch (error) {
       console.error("Error fetching installers:", error);
@@ -184,6 +189,33 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
       toast.error("Failed to load finance types");
     } finally {
       setFinanceTypesLoading(false);
+    }
+  };
+
+  const fetchFinanceCompanies = async () => {
+    const authToken = localStorage.getItem("authToken");
+    if (!authToken) return;
+
+    setFinanceCompaniesLoading(true);
+    try {
+      const response = await axios.get(
+        "https://services.dcarbon.solutions/api/user/partner/finance-companies",
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`
+          }
+        }
+      );
+
+      if (response.data.status === "success") {
+        setFinanceCompanies(response.data.data.financeCompanies || []);
+      }
+    } catch (error) {
+      console.error("Error fetching finance companies:", error);
+      toast.error("Failed to load finance companies");
+    } finally {
+      setFinanceCompaniesLoading(false);
     }
   };
 
@@ -227,6 +259,7 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
       setFormData(prev => ({
         ...prev,
         installerNamingCode: value,
+        installerId: selectedInstaller ? selectedInstaller.userId : "",
         installerName: selectedInstaller ? selectedInstaller.name : ""
       }));
     } else if (name === "financeNamingCode") {
@@ -235,6 +268,13 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
         ...prev,
         financeNamingCode: value,
         financeType: selectedFinanceType ? selectedFinanceType.name : ""
+      }));
+    } else if (name === "financeCompanyId") {
+      const selectedFinanceCompany = financeCompanies.find(company => company.userId === value);
+      setFormData(prev => ({
+        ...prev,
+        financeCompanyId: value,
+        financeCompanyName: selectedFinanceCompany ? selectedFinanceCompany.name : ""
       }));
     } else if (name === "meterId") {
       const currentMeters = getCurrentMeters();
@@ -344,7 +384,9 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
       facilityTypeNamingCode: 1,
       utilityProviderNamingCode: "",
       installerNamingCode: "",
-      financeNamingCode: ""
+      installerId: "",
+      financeNamingCode: "",
+      financeCompanyId: ""
     });
     setSelectedMeter(null);
     setIsSameLocation(null);
@@ -376,7 +418,9 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
         facilityTypeNamingCode: formData.facilityTypeNamingCode,
         utilityProviderNamingCode: formData.utilityProviderNamingCode,
         installerNamingCode: formData.installerNamingCode,
-        financeNamingCode: formData.financeNamingCode
+        installerId: formData.installerId,
+        financeNamingCode: formData.financeNamingCode,
+        financeCompanyId: formData.financeCompanyId
       };
 
       const response = await axios.post(
@@ -755,6 +799,32 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
                 >
                   Finance Type not listed?
                 </button>
+              </div>
+
+              <div>
+                <label className={labelClass}>
+                  Finance Company
+                </label>
+                <select
+                  name="financeCompanyId"
+                  value={formData.financeCompanyId}
+                  onChange={handleChange}
+                  className={selectClass}
+                  disabled={loading || financeCompaniesLoading}
+                >
+                  <option value="">Select finance company (optional)</option>
+                  {financeCompaniesLoading ? (
+                    <option value="" disabled>Loading finance companies...</option>
+                  ) : financeCompanies.length === 0 ? (
+                    <option value="" disabled>No finance companies found</option>
+                  ) : (
+                    financeCompanies.map(company => (
+                      <option key={company.id} value={company.userId}>
+                        {company.name}
+                      </option>
+                    ))
+                  )}
+                </select>
               </div>
 
               <div>
