@@ -333,7 +333,7 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
 
     try {
       setLoading(true);
-      const response = await fetch(`https://services.dcarbon.solutions/api/commercial-facility/${facilityData.id}`, {
+      const response = await fetch(`https://services.dcarbon.solutions/api/facility/delete-facility/${facilityData.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${authToken}`
@@ -344,7 +344,7 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
 
       if (result.status === 'success') {
         toast.success('Facility deleted successfully');
-        onBack();
+        window.location.reload();
       } else {
         toast.error(`Delete failed: ${result.message || 'Unknown error'}`);
       }
@@ -455,10 +455,11 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
             </button>
             <button
               onClick={deleteFacility}
-              className="flex items-center space-x-1 bg-red-600 text-white px-3 py-1.5 rounded text-xs hover:bg-red-700 transition-colors"
+              disabled={loading}
+              className="flex items-center space-x-1 bg-red-600 text-white px-3 py-1.5 rounded text-xs hover:bg-red-700 transition-colors disabled:opacity-50"
             >
               <FiTrash2 size={12} />
-              <span>Delete Facility</span>
+              <span>{loading ? "Deleting..." : "Delete Facility"}</span>
             </button>
             {isOwner && (
               <div className="relative">

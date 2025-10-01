@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import RequestRedemption from "./RequestRedemption";
 import RedeemPoints from "./RedeemPoints";
 import * as styles from "./styles";
@@ -8,6 +8,16 @@ export default function RedemptionTransactions() {
   const [showRedeemPointsModal, setShowRedeemPointsModal] = useState(false);
   const [userPoints, setUserPoints] = useState(5000);
   const [pendingRedemption, setPendingRedemption] = useState(null);
+  const [processingStatus, setProcessingStatus] = useState(null);
+  const [userId, setUserId] = useState("");
+  const [authToken, setAuthToken] = useState("");
+
+  useEffect(() => {
+    const storedUserId = localStorage.getItem("userId");
+    const storedToken = localStorage.getItem("authToken");
+    setUserId(storedUserId || "");
+    setAuthToken(storedToken || "");
+  }, []);
 
   const transactions = [
     { id: 1, residentId: "RES001", paymentId: "PAY001", pointRedeemed: 3000, pricePerPoint: 0.01, totalAmount: 30, date: "16-03-2025", status: "Successful" },
@@ -30,20 +40,43 @@ export default function RedemptionTransactions() {
   const handleOpenRedeemPoints = () => setShowRedeemPointsModal(true);
   const handleCloseRedeemPoints = () => setShowRedeemPointsModal(false);
 
-  const handleRequestSubmit = ({ points, total }) => {
-    const redemptionRequest = {
-      points: parseInt(points),
-      total: parseFloat(total),
-      status: "approved"
-    };
-    
-    setPendingRedemption(redemptionRequest);
-    setUserPoints(prevPoints => prevPoints - parseInt(points));
-    setShowRequestRedemptionModal(false);
-    
-    setTimeout(() => {
-      setShowRedeemPointsModal(true);
-    }, 500);
+  const handleRequestSubmit = async (requestData) => {
+    try {
+      const response = await fetch(`https://services.dcarbon.solutions/api/payout/request-payout/${userId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        },
+        body: JSON.stringify({
+          quarter: requestData.quarter,
+          year: requestData.year
+        })
+      });
+
+      const result = await response.json();
+      
+      if (result.status === "success") {
+        const redemptionRequest = {
+          points: requestData.points,
+          total: requestData.total,
+          status: "approved",
+          quarter: requestData.quarter,
+          year: requestData.year
+        };
+        
+        setPendingRedemption(redemptionRequest);
+        setProcessingStatus(result.data);
+        setUserPoints(prevPoints => prevPoints - requestData.points);
+        setShowRequestRedemptionModal(false);
+        
+        setTimeout(() => {
+          setShowRedeemPointsModal(true);
+        }, 500);
+      }
+    } catch (error) {
+      console.error("Error submitting redemption request:", error);
+    }
   };
 
   const handleRedeemComplete = (redemptionData) => {
@@ -61,6 +94,7 @@ export default function RedemptionTransactions() {
     transactions.unshift(newTransaction);
     
     setPendingRedemption(null);
+    setProcessingStatus(null);
     setShowRedeemPointsModal(false);
   };
 
@@ -162,6 +196,8 @@ export default function RedemptionTransactions() {
           onClose={handleCloseRequestRedemption} 
           onSubmit={handleRequestSubmit}
           availablePoints={userPoints}
+          userId={userId}
+          authToken={authToken}
         />
       )}
 
@@ -170,6 +206,9 @@ export default function RedemptionTransactions() {
           onClose={handleCloseRedeemPoints}
           onComplete={handleRedeemComplete}
           redemptionData={pendingRedemption}
+          processingStatus={processingStatus}
+          userId={userId}
+          authToken={authToken}
         />
       )}
     </div>

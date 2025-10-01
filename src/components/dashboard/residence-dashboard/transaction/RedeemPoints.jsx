@@ -1,10 +1,35 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FiX, FiCheck } from "react-icons/fi";
 import * as styles from "./styles";
 
-export default function RedeemPoints({ onClose, onComplete, redemptionData }) {
+export default function RedeemPoints({ onClose, onComplete, redemptionData, processingStatus, userId, authToken }) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [currentStatus, setCurrentStatus] = useState(processingStatus);
+
+  useEffect(() => {
+    if (processingStatus && !processingStatus.isProcessingComplete) {
+      checkProcessingStatus();
+    }
+  }, [processingStatus]);
+
+  const checkProcessingStatus = async () => {
+    try {
+      const response = await fetch(`https://services.dcarbon.solutions/api/payout/processing-status/${userId}?quarter=${redemptionData.quarter}&year=${redemptionData.year}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      });
+
+      const result = await response.json();
+      if (result.status === "success") {
+        setCurrentStatus(result.data);
+      }
+    } catch (error) {
+      console.error("Error checking processing status:", error);
+    }
+  };
 
   const handleRedeem = async (e) => {
     e.preventDefault();
@@ -86,6 +111,19 @@ export default function RedeemPoints({ onClose, onComplete, redemptionData }) {
               </div>
             </div>
           </div>
+
+          {currentStatus && (
+            <div className="mt-3 p-3 bg-blue-50 rounded-md">
+              <div className="text-sm font-sfpro text-blue-800">
+                <strong>Processing Status:</strong> {currentStatus.message || "Processing your quarter data..."}
+              </div>
+              {currentStatus.months && (
+                <div className="text-xs font-sfpro text-blue-600 mt-1">
+                  Processing months: {currentStatus.months.join(", ")}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <form onSubmit={handleRedeem} className="space-y-6">

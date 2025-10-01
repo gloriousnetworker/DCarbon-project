@@ -1,17 +1,26 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FiX } from "react-icons/fi";
 import * as styles from "./styles";
 
-export default function RequestRedemption({ onClose, onSubmit, availablePoints }) {
+export default function RequestRedemption({ onClose, onSubmit, availablePoints, userId, authToken }) {
   const [points, setPoints] = useState("");
+  const [quarter, setQuarter] = useState("");
+  const [year, setYear] = useState("");
   const [error, setError] = useState("");
+  const [years, setYears] = useState([]);
   
-  const pricePerPoint = 0.01;
   const commissionRate = 0.5;
-  const userAmount = points ? (points * pricePerPoint * commissionRate).toFixed(2) : "0.00";
+  const userAmount = points ? (points * 0.01 * commissionRate).toFixed(2) : "0.00";
   const remainingPoints = points ? availablePoints - parseInt(points) : availablePoints;
 
-  const handleSubmit = (e) => {
+  useEffect(() => {
+    const currentYear = new Date().getFullYear();
+    const yearOptions = [currentYear - 3, currentYear - 2, currentYear - 1, currentYear];
+    setYears(yearOptions);
+    setYear(currentYear);
+  }, []);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
@@ -32,13 +41,38 @@ export default function RequestRedemption({ onClose, onSubmit, availablePoints }
       return;
     }
 
+    if (!quarter) {
+      setError("Please select a quarter");
+      return;
+    }
+
+    if (!year) {
+      setError("Please select a year");
+      return;
+    }
+
     if (onSubmit) {
-      onSubmit({ points: pointsValue, total: parseFloat(userAmount) });
+      onSubmit({ 
+        points: pointsValue, 
+        total: parseFloat(userAmount),
+        quarter: parseInt(quarter),
+        year: parseInt(year)
+      });
     }
   };
 
   const handlePointsChange = (e) => {
     setPoints(e.target.value);
+    setError("");
+  };
+
+  const handleQuarterChange = (e) => {
+    setQuarter(e.target.value);
+    setError("");
+  };
+
+  const handleYearChange = (e) => {
+    setYear(e.target.value);
     setError("");
   };
 
@@ -63,17 +97,44 @@ export default function RequestRedemption({ onClose, onSubmit, availablePoints }
               {availablePoints} pts
             </span>
           </div>
-          <div className="flex justify-between items-center mt-2">
-            <span className="font-sfpro text-[14px] text-[#1E1E1E]">
-              Worth:
-            </span>
-            <span className="font-sfpro font-semibold text-[16px] text-[#039994]">
-              ${(availablePoints * pricePerPoint).toFixed(2)}
-            </span>
-          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={styles.labelClass}>Quarter</label>
+              <select
+                value={quarter}
+                onChange={handleQuarterChange}
+                className={`${styles.inputClass} bg-[#F0F0F0] w-full`}
+                required
+              >
+                <option value="">Select Quarter</option>
+                <option value="1">Q1</option>
+                <option value="2">Q2</option>
+                <option value="3">Q3</option>
+                <option value="4">Q4</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className={styles.labelClass}>Year</label>
+              <select
+                value={year}
+                onChange={handleYearChange}
+                className={`${styles.inputClass} bg-[#F0F0F0] w-full`}
+                required
+              >
+                <option value="">Select Year</option>
+                {years.map((y) => (
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
           <div>
             <label className={styles.labelClass}>Points to Redeem</label>
             <div className="space-y-3">
@@ -126,8 +187,8 @@ export default function RequestRedemption({ onClose, onSubmit, availablePoints }
 
           <button 
             type="submit" 
-            className={`${styles.buttonPrimary} ${(!points || parseInt(points) < 3000) ? 'opacity-50 cursor-not-allowed' : ''}`}
-            disabled={!points || parseInt(points) < 3000}
+            className={`${styles.buttonPrimary} ${(!points || parseInt(points) < 3000 || !quarter || !year) ? 'opacity-50 cursor-not-allowed' : ''}`}
+            disabled={!points || parseInt(points) < 3000 || !quarter || !year}
           >
             Submit Redemption Request
           </button>
