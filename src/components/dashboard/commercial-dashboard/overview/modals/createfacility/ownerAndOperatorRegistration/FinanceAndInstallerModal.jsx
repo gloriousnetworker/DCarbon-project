@@ -55,7 +55,9 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const [formData, setFormData] = useState({
     financeType: "",
     financeCompany: "",
+    financeCompanyId: "",
     installer: "",
+    installerId: "",
     customInstaller: "",
     utilityProvider: "",
     systemSize: "",
@@ -230,8 +232,14 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
 
     const payload = {
       financialType: formData.financeType,
-      ...(showFinanceCompany && { financeCompany: formData.financeCompany }),
-      ...(finalInstaller && { installer: finalInstaller }),
+      ...(showFinanceCompany && formData.financeCompany && { 
+        financeCompany: formData.financeCompany,
+        financeCompanyId: formData.financeCompanyId 
+      }),
+      ...(finalInstaller && finalInstaller !== 'N/A' && { 
+        installer: finalInstaller,
+        installerId: formData.installerId 
+      }),
       ...(formData.systemSize && { systemSize: formData.systemSize }),
       ...(formData.cod && { cod: formData.cod }),
     };
@@ -302,27 +310,42 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    
     if (name === "financeType") {
       const selectedFinanceType = financeTypes.find(type => type.name === value);
       setFormData(prev => ({
         ...prev,
+        financeType: value,
         financeNamingCode: selectedFinanceType?.namingCode || ""
       }));
     }
-    if (name === "installer") {
+    else if (name === "installer") {
       const selectedInstaller = installers.find(installer => installer.name === value);
       setFormData(prev => ({
         ...prev,
+        installer: value,
+        installerId: selectedInstaller?.userId || "",
         installerNamingCode: selectedInstaller?.namingCode || ""
       }));
     }
-    if (name === "utilityProvider") {
+    else if (name === "financeCompany") {
+      const selectedFinanceCompany = financeCompanies.find(company => company.name === value);
+      setFormData(prev => ({
+        ...prev,
+        financeCompany: value,
+        financeCompanyId: selectedFinanceCompany?.userId || ""
+      }));
+    }
+    else if (name === "utilityProvider") {
       const selectedUtilityProvider = utilityProviders.find(provider => provider.name === value);
       setFormData(prev => ({
         ...prev,
+        utilityProvider: value,
         utilityProviderNamingCode: selectedUtilityProvider?.namingCode || ""
       }));
+    }
+    else {
+      setFormData(prev => ({ ...prev, [name]: value }));
     }
   };
 
@@ -371,7 +394,6 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     if (!formData.financeType) return toast.error('Please select a finance type');
     if (!formData.utilityProvider) return toast.error('Please select a utility provider');
     if (!formData.installer && !noInstallerSelected) return toast.error('Please select an installer');
-    if (showFinanceCompany && !formData.financeCompany) return toast.error('Please select a finance company');
     if (showCustomInstaller && !formData.customInstaller) return toast.error('Please enter your installer name');
     if (!facilityNickname) return toast.error('Please enter a facility nickname');
 
@@ -399,7 +421,9 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     setFormData({
       financeType: "",
       financeCompany: "",
+      financeCompanyId: "",
       installer: "",
+      installerId: "",
       customInstaller: "",
       utilityProvider: "",
       systemSize: "",
@@ -619,7 +643,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                 <div>
                   <div className="flex items-center gap-1">
                     <label className={styles.labelClass}>
-                      Finance company <span className="text-red-500">*</span>
+                      Finance company
                     </label>
                     <div className="group relative">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -636,7 +660,6 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                       value={formData.financeCompany}
                       onChange={handleInputChange}
                       className={`${styles.selectClass} appearance-none`}
-                      required
                       disabled={loadingFinanceCompanies}
                     >
                       <option value="">{loadingFinanceCompanies ? 'Loading...' : 'Choose company'}</option>
@@ -684,7 +707,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
               <div>
                 <div className="flex items-center gap-1">
                   <label className={styles.labelClass}>
-                    Select installer <span className="text-red-500">*</span>
+                    Select installer
                   </label>
                   <div className="group relative">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -701,7 +724,6 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                     value={formData.installer}
                     onChange={handleInputChange}
                     className={`${styles.selectClass} appearance-none`}
-                    required
                     disabled={loadingInstallers}
                   >
                     <option value="">{loadingInstallers ? 'Loading...' : 'Choose installer'}</option>
@@ -722,7 +744,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
               {showCustomInstaller && (
                 <div>
                   <label className={styles.labelClass}>
-                    Installer Name <span className="text-red-500">*</span>
+                    Installer Name
                   </label>
                   <input
                     type="text"
@@ -731,7 +753,6 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                     onChange={handleInputChange}
                     placeholder="Enter your installer name"
                     className={`${styles.inputClass} ${styles.grayPlaceholder}`}
-                    required
                   />
                 </div>
               )}
