@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { HiOutlineArrowLeft, HiOutlineDownload, HiOutlineEye } from 'react-icons/hi';
+import CommercialBonus from './CommercialBonus';
 import { 
   mainContainer,
   headingContainer,
@@ -12,6 +13,7 @@ import {
 const AdminInvoices = ({ onBack }) => {
   const [selectedYear, setSelectedYear] = useState('2024');
   const [selectedStatus, setSelectedStatus] = useState('all');
+  const [showCommercialBonus, setShowCommercialBonus] = useState(false);
 
   const invoices = [
     {
@@ -43,6 +45,9 @@ const AdminInvoices = ({ onBack }) => {
     return matchesYear && matchesStatus;
   });
 
+  const handleOpenCommercialBonus = () => setShowCommercialBonus(true);
+  const handleCloseCommercialBonus = () => setShowCommercialBonus(false);
+
   return (
     <div className={mainContainer}>
       <div className="w-full max-w-6xl">
@@ -51,6 +56,15 @@ const AdminInvoices = ({ onBack }) => {
             <HiOutlineArrowLeft className="h-6 w-6" />
           </button>
           <h1 className={pageTitle}>Paid Receipts</h1>
+        </div>
+
+        <div className="flex justify-end mb-6">
+          <button
+            onClick={handleOpenCommercialBonus}
+            className="px-4 py-2 bg-[#039994] text-white rounded-md hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro"
+          >
+            Check Commercial Bonus
+          </button>
         </div>
 
         <div className="flex space-x-4 mb-6">
@@ -124,6 +138,12 @@ const AdminInvoices = ({ onBack }) => {
           </table>
         </div>
       </div>
+
+      {showCommercialBonus && (
+        <CommercialBonus 
+          onClose={handleCloseCommercialBonus}
+        />
+      )}
     </div>
   );
 };

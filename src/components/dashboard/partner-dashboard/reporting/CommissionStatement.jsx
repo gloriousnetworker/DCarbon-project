@@ -8,7 +8,7 @@ import {
   buttonPrimary,
   labelClass,
 } from "./styles";
-
+import PartnerBonus from "./PartnerBonus";
 import ExportReportModal from "./ExportReportModal";
 
 const MONTHS = [
@@ -39,6 +39,9 @@ export default function CommissionStatement({ onNavigate }) {
   const [monthFilter, setMonthFilter] = useState("March");
   const [viewType, setViewType] = useState("Month");
   const [commissionData, setCommissionData] = useState({});
+  const [showPartnerBonus, setShowPartnerBonus] = useState(false);
+  const [partnerType, setPartnerType] = useState("");
+  const [loadingPartner, setLoadingPartner] = useState(true);
 
   useEffect(() => {
     const mockCommissionData = {
@@ -71,7 +74,36 @@ export default function CommissionStatement({ onNavigate }) {
       totalCommission: "$200.00"
     };
     setCommissionData(mockCommissionData);
+    fetchPartnerType();
   }, []);
+
+  const fetchPartnerType = async () => {
+    try {
+      const userId = localStorage.getItem("userId");
+      const authToken = localStorage.getItem("authToken");
+      
+      if (!userId || !authToken) {
+        setLoadingPartner(false);
+        return;
+      }
+
+      const response = await fetch(`https://services.dcarbon.solutions/api/user/partner/user/${userId}`, {
+        headers: {
+          "Authorization": `Bearer ${authToken}`
+        }
+      });
+
+      const result = await response.json();
+      
+      if (result.status === "success" && result.data) {
+        setPartnerType(result.data.partnerType || "");
+      }
+    } catch (error) {
+      console.error("Error fetching partner type:", error);
+    } finally {
+      setLoadingPartner(false);
+    }
+  };
 
   const handleReportNavigation = (reportType) => {
     setShowReportDropdown(false);
@@ -137,6 +169,11 @@ export default function CommissionStatement({ onNavigate }) {
     }
   };
 
+  const handleOpenPartnerBonus = () => setShowPartnerBonus(true);
+  const handleClosePartnerBonus = () => setShowPartnerBonus(false);
+
+  const isSalesAgent = partnerType === "SALES_AGENT";
+
   return (
     <div className={`${mainContainer} text-sm`}>
       <div className="w-full max-w-6xl">
@@ -175,6 +212,15 @@ export default function CommissionStatement({ onNavigate }) {
           </div>
           
           <div className="flex items-center space-x-4">
+            {!loadingPartner && partnerType && (
+              <button
+                onClick={handleOpenPartnerBonus}
+                className="px-4 py-2 bg-[#039994] text-white rounded-md hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-sm"
+              >
+                Check {isSalesAgent ? "Sales Agent" : "Partner"} Bonus
+              </button>
+            )}
+
             <button
               onClick={() => setViewType(viewType === "Month" ? "Year" : "Month")}
               className="border border-gray-300 px-4 py-1 rounded text-xs hover:bg-gray-50"
@@ -291,6 +337,13 @@ export default function CommissionStatement({ onNavigate }) {
           onClose={() => setShowExportModal(false)}
           onExport={handleExportReport}
           reportType="commission"
+        />
+      )}
+
+      {showPartnerBonus && (
+        <PartnerBonus 
+          onClose={handleClosePartnerBonus}
+          partnerType={partnerType}
         />
       )}
     </div>

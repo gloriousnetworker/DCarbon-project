@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
 import RequestRedemption from "./RequestRedemption";
 import RedeemPoints from "./RedeemPoints";
+import ResidentialBonusTable from "./ResidentialBonusTable";
 import * as styles from "./styles";
 
 export default function RedemptionTransactions() {
   const [showRequestRedemptionModal, setShowRequestRedemptionModal] = useState(false);
   const [showRedeemPointsModal, setShowRedeemPointsModal] = useState(false);
+  const [showResidentialBonusModal, setShowResidentialBonusModal] = useState(false);
   const [userPoints, setUserPoints] = useState(5000);
   const [pendingRedemption, setPendingRedemption] = useState(null);
   const [processingStatus, setProcessingStatus] = useState(null);
@@ -39,6 +41,8 @@ export default function RedemptionTransactions() {
   const handleCloseRequestRedemption = () => setShowRequestRedemptionModal(false);
   const handleOpenRedeemPoints = () => setShowRedeemPointsModal(true);
   const handleCloseRedeemPoints = () => setShowRedeemPointsModal(false);
+  const handleOpenResidentialBonus = () => setShowResidentialBonusModal(true);
+  const handleCloseResidentialBonus = () => setShowResidentialBonusModal(false);
 
   const handleRequestSubmit = async (requestData) => {
     try {
@@ -128,6 +132,13 @@ export default function RedemptionTransactions() {
           <button
             className="px-4 py-2 rounded font-sfpro text-white bg-[#039994] text-sm hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994]"
             type="button"
+            onClick={handleOpenResidentialBonus}
+          >
+            Check Residential Bonus
+          </button>
+          <button
+            className="px-4 py-2 rounded font-sfpro text-white bg-[#039994] text-sm hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994]"
+            type="button"
             onClick={handleOpenRequestRedemption}
             disabled={userPoints < 3000}
           >
@@ -207,6 +218,14 @@ export default function RedemptionTransactions() {
           onComplete={handleRedeemComplete}
           redemptionData={pendingRedemption}
           processingStatus={processingStatus}
+          userId={userId}
+          authToken={authToken}
+        />
+      )}
+
+      {showResidentialBonusModal && (
+        <ResidentialBonusTable 
+          onClose={handleCloseResidentialBonus}
           userId={userId}
           authToken={authToken}
         />
