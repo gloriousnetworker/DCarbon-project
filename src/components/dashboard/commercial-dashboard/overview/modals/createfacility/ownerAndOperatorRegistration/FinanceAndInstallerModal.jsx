@@ -89,7 +89,6 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
         setCommercialRole(response.data.data.commercialUser.commercialRole);
       }
     } catch (error) {
-      console.error('Error fetching commercial role:', error);
     }
   };
 
@@ -189,6 +188,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     const selectedFinanceType = financeTypes.find(type => type.name === formData.financeType);
     const selectedInstaller = installers.find(installer => installer.name === (showCustomInstaller ? formData.customInstaller : formData.installer));
     const selectedUtilityProvider = utilityProviders.find(provider => provider.name === formData.utilityProvider);
+    const selectedFinanceCompany = financeCompanies.find(company => company.name === formData.financeCompany);
 
     const payload = {
       nickname: facilityNickname || 'New Facility',
@@ -202,6 +202,16 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
       installerNamingCode: noInstallerSelected ? '0' : (selectedInstaller?.namingCode || ''),
       financeNamingCode: selectedFinanceType?.namingCode || ''
     };
+
+    if (selectedFinanceCompany) {
+      payload.financeCompany = selectedFinanceCompany.name;
+      payload.financeCompanyId = selectedFinanceCompany.id;
+    }
+
+    if (!noInstallerSelected && selectedInstaller) {
+      payload.installer = selectedInstaller.name;
+      payload.installerId = selectedInstaller.id;
+    }
 
     const response = await axios.post(
       `https://services.dcarbon.solutions/api/facility/create-new-facility/${userId}`,
@@ -228,21 +238,30 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const updateFinanceInfo = async () => {
     const userId = localStorage.getItem('userId');
     const token = localStorage.getItem('authToken');
+    const selectedInstaller = installers.find(installer => installer.name === (showCustomInstaller ? formData.customInstaller : formData.installer));
+
     const finalInstaller = noInstallerSelected ? 'N/A' : (showCustomInstaller ? formData.customInstaller : formData.installer);
+    const finalInstallerId = noInstallerSelected ? null : (selectedInstaller?.id || null);
 
     const payload = {
-      financialType: formData.financeType,
-      ...(showFinanceCompany && formData.financeCompany && { 
-        financeCompany: formData.financeCompany,
-        financeCompanyId: formData.financeCompanyId 
-      }),
-      ...(finalInstaller && finalInstaller !== 'N/A' && { 
-        installer: finalInstaller,
-        installerId: formData.installerId 
-      }),
-      ...(formData.systemSize && { systemSize: formData.systemSize }),
-      ...(formData.cod && { cod: formData.cod }),
+      financialType: formData.financeType
     };
+
+    if (showFinanceCompany && formData.financeCompany) {
+      payload.financeCompany = formData.financeCompany;
+    }
+
+    if (finalInstaller && finalInstaller !== 'N/A') {
+      payload.installer = finalInstaller;
+    }
+
+    if (formData.systemSize) {
+      payload.systemSize = formData.systemSize;
+    }
+
+    if (formData.cod) {
+      payload.cod = formData.cod;
+    }
 
     await axios.put(
       `https://services.dcarbon.solutions/api/user/financial-info/${userId}`,
@@ -295,7 +314,6 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
       const reader = new FileReader();
       reader.onloadend = () => {
         const base64data = reader.result;
-        localStorage.setItem('tempFinancialAgreement', base64data);
         setUploadSuccess(true);
         toast.success('Financial agreement uploaded successfully!');
       };
@@ -324,7 +342,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
       setFormData(prev => ({
         ...prev,
         installer: value,
-        installerId: selectedInstaller?.userId || "",
+        installerId: selectedInstaller?.id || "",
         installerNamingCode: selectedInstaller?.namingCode || ""
       }));
     }
@@ -333,7 +351,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
       setFormData(prev => ({
         ...prev,
         financeCompany: value,
-        financeCompanyId: selectedFinanceCompany?.userId || ""
+        financeCompanyId: selectedFinanceCompany?.id || ""
       }));
     }
     else if (name === "utilityProvider") {
@@ -409,6 +427,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
       }
 
       toast.dismiss(toastId);
+      toast.success('Facility created successfully!');
       await initiateUtilityAuth();
     } catch (err) {
       toast.error(err.response?.data?.message || err.message || 'Operation failed', { id: toastId });

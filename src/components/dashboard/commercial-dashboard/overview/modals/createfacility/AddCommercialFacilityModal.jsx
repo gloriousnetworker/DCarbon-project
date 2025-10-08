@@ -26,8 +26,11 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
     utilityProviderNamingCode: "",
     installerNamingCode: "",
     installerId: "",
+    installer: "",
     financeNamingCode: "",
-    financeCompanyId: ""
+    financeCompanyId: "",
+    financeCompany: "",
+    financeType: ""
   });
   const [loading, setLoading] = useState(false);
   const [utilityProviders, setUtilityProviders] = useState([]);
@@ -98,7 +101,6 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
         setUtilityProviders(response.data.data);
       }
     } catch (error) {
-      console.error("Error fetching utility providers:", error);
       toast.error("Failed to load utility providers");
     } finally {
       setUtilityProvidersLoading(false);
@@ -131,7 +133,6 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
         }
       }
     } catch (error) {
-      console.error("Error fetching user meters:", error);
       toast.error("Failed to load meter information");
     } finally {
       setUserMetersLoading(false);
@@ -158,7 +159,6 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
         setInstallers(response.data.data.installers || []);
       }
     } catch (error) {
-      console.error("Error fetching installers:", error);
       toast.error("Failed to load installers");
     } finally {
       setInstallersLoading(false);
@@ -185,7 +185,6 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
         setFinanceTypes(response.data.data.types);
       }
     } catch (error) {
-      console.error("Error fetching finance types:", error);
       toast.error("Failed to load finance types");
     } finally {
       setFinanceTypesLoading(false);
@@ -212,7 +211,6 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
         setFinanceCompanies(response.data.data.financeCompanies || []);
       }
     } catch (error) {
-      console.error("Error fetching finance companies:", error);
       toast.error("Failed to load finance companies");
     } finally {
       setFinanceCompaniesLoading(false);
@@ -254,27 +252,27 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
         utilityProvider: value,
         utilityProviderNamingCode: selectedProvider ? selectedProvider.namingCode : ""
       }));
-    } else if (name === "installerNamingCode") {
-      const selectedInstaller = installers.find(installer => installer.namingCode.toString() === value);
+    } else if (name === "installer") {
+      const selectedInstaller = installers.find(installer => installer.name === value);
       setFormData(prev => ({
         ...prev,
-        installerNamingCode: value,
-        installerId: selectedInstaller ? selectedInstaller.userId : "",
-        installerName: selectedInstaller ? selectedInstaller.name : ""
+        installer: value,
+        installerId: selectedInstaller ? selectedInstaller.id : "",
+        installerNamingCode: selectedInstaller ? selectedInstaller.namingCode : ""
       }));
-    } else if (name === "financeNamingCode") {
-      const selectedFinanceType = financeTypes.find(type => type.namingCode.toString() === value);
+    } else if (name === "financeType") {
+      const selectedFinanceType = financeTypes.find(type => type.name === value);
       setFormData(prev => ({
         ...prev,
-        financeNamingCode: value,
-        financeType: selectedFinanceType ? selectedFinanceType.name : ""
+        financeType: value,
+        financeNamingCode: selectedFinanceType ? selectedFinanceType.namingCode : ""
       }));
-    } else if (name === "financeCompanyId") {
-      const selectedFinanceCompany = financeCompanies.find(company => company.userId === value);
+    } else if (name === "financeCompany") {
+      const selectedFinanceCompany = financeCompanies.find(company => company.name === value);
       setFormData(prev => ({
         ...prev,
-        financeCompanyId: value,
-        financeCompanyName: selectedFinanceCompany ? selectedFinanceCompany.name : ""
+        financeCompany: value,
+        financeCompanyId: selectedFinanceCompany ? selectedFinanceCompany.id : ""
       }));
     } else if (name === "meterId") {
       const currentMeters = getCurrentMeters();
@@ -340,7 +338,6 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
         throw new Error(response.data.message || "Failed to accept agreement");
       }
     } catch (error) {
-      console.error("Error accepting meter agreement:", error);
       toast.error(
         error.response?.data?.message ||
         error.message ||
@@ -369,7 +366,6 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
       ];
       localStorage.setItem(userFacilitiesKey, JSON.stringify(updatedFacilities));
     } catch (error) {
-      console.error("Error storing facility data:", error);
     }
   };
 
@@ -385,8 +381,11 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
       utilityProviderNamingCode: "",
       installerNamingCode: "",
       installerId: "",
+      installer: "",
       financeNamingCode: "",
-      financeCompanyId: ""
+      financeCompanyId: "",
+      financeCompany: "",
+      financeType: ""
     });
     setSelectedMeter(null);
     setIsSameLocation(null);
@@ -408,6 +407,11 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
     }
 
     try {
+      const selectedInstaller = installers.find(installer => installer.name === formData.installer);
+      const selectedFinanceCompany = financeCompanies.find(company => company.name === formData.financeCompany);
+      const selectedUtilityProvider = utilityProviders.find(provider => provider.name === formData.utilityProvider);
+      const selectedFinanceType = financeTypes.find(type => type.name === formData.financeType);
+
       const payload = {
         nickname: formData.nickname,
         address: formData.address,
@@ -415,13 +419,21 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
         meterIds: formData.meterIds,
         commercialRole: formData.commercialRole,
         entityType: formData.entityType,
-        facilityTypeNamingCode: formData.facilityTypeNamingCode,
-        utilityProviderNamingCode: formData.utilityProviderNamingCode,
-        installerNamingCode: formData.installerNamingCode,
-        installerId: formData.installerId,
-        financeNamingCode: formData.financeNamingCode,
-        financeCompanyId: formData.financeCompanyId
+        facilityTypeNamingCode: 1,
+        utilityProviderNamingCode: selectedUtilityProvider?.namingCode || '',
+        installerNamingCode: selectedInstaller?.namingCode || '',
+        financeNamingCode: selectedFinanceType?.namingCode || ''
       };
+
+      if (selectedInstaller) {
+        payload.installer = selectedInstaller.name;
+        payload.installerId = selectedInstaller.id;
+      }
+
+      if (selectedFinanceCompany) {
+        payload.financeCompany = selectedFinanceCompany.name;
+        payload.financeCompanyId = selectedFinanceCompany.id;
+      }
 
       const response = await axios.post(
         `https://services.dcarbon.solutions/api/facility/create-new-facility/${userId}`,
@@ -438,12 +450,12 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
         setCreatedFacilityData(response.data.data);
         storeFacilityData(response.data.data);
         resetForm();
+        toast.success('Facility created successfully!');
         setShowSuccessModal(true);
       } else {
         throw new Error(response.data.message || "Failed to create facility");
       }
     } catch (error) {
-      console.error("Error creating facility:", error);
       toast.error(
         error.response?.data?.message ||
         error.message ||
@@ -498,7 +510,6 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
         throw new Error(response.data.message || "Failed to submit request");
       }
     } catch (error) {
-      console.error("Error requesting finance type:", error);
       toast.error(
         error.response?.data?.message ||
         error.message ||
@@ -512,9 +523,8 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
     formData.address &&
     formData.utilityProvider &&
     formData.meterIds.length > 0 &&
-    formData.utilityProviderNamingCode &&
-    formData.installerNamingCode &&
-    formData.financeNamingCode &&
+    formData.installer &&
+    formData.financeType &&
     (selectedMeter ? isSameLocation !== null : true) &&
     (selectedMeter ? meterAgreementAccepted : true);
 
@@ -745,8 +755,8 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
                   Installer <span className="text-red-500">*</span>
                 </label>
                 <select
-                  name="installerNamingCode"
-                  value={formData.installerNamingCode}
+                  name="installer"
+                  value={formData.installer}
                   onChange={handleChange}
                   className={selectClass}
                   required
@@ -759,7 +769,7 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
                     <option value="" disabled>No installers found</option>
                   ) : (
                     installers.map(installer => (
-                      <option key={installer.id} value={installer.namingCode}>
+                      <option key={installer.id} value={installer.name}>
                         {installer.name}
                       </option>
                     ))
@@ -772,8 +782,8 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
                   Finance Type <span className="text-red-500">*</span>
                 </label>
                 <select
-                  name="financeNamingCode"
-                  value={formData.financeNamingCode}
+                  name="financeType"
+                  value={formData.financeType}
                   onChange={handleChange}
                   className={selectClass}
                   required
@@ -786,7 +796,7 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
                     <option value="" disabled>No finance types found</option>
                   ) : (
                     financeTypes.map(type => (
-                      <option key={type.id} value={type.namingCode}>
+                      <option key={type.id} value={type.name}>
                         {type.name}
                       </option>
                     ))
@@ -806,8 +816,8 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
                   Finance Company
                 </label>
                 <select
-                  name="financeCompanyId"
-                  value={formData.financeCompanyId}
+                  name="financeCompany"
+                  value={formData.financeCompany}
                   onChange={handleChange}
                   className={selectClass}
                   disabled={loading || financeCompaniesLoading}
@@ -819,7 +829,7 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
                     <option value="" disabled>No finance companies found</option>
                   ) : (
                     financeCompanies.map(company => (
-                      <option key={company.id} value={company.userId}>
+                      <option key={company.id} value={company.name}>
                         {company.name}
                       </option>
                     ))
