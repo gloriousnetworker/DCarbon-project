@@ -15,7 +15,7 @@ export default function RedeemPoints({ onClose, onComplete, redemptionData, proc
 
   const checkProcessingStatus = async () => {
     try {
-      const response = await fetch(`https://services.dcarbon.solutions/api/payout/processing-status/${userId}?quarter=${redemptionData.quarter}&year=${redemptionData.year}`, {
+      const response = await fetch(`https://services.dcarbon.solutions/api/payout/processing-status/${userId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${authToken}`
@@ -42,7 +42,7 @@ export default function RedeemPoints({ onClose, onComplete, redemptionData, proc
       
       onComplete({
         points: redemptionData.points,
-        total: redemptionData.total
+        amount: redemptionData.amount
       });
     } catch (err) {
       setIsProcessing(false);
@@ -68,7 +68,7 @@ export default function RedeemPoints({ onClose, onComplete, redemptionData, proc
               Submission Received
             </h3>
             <p className="text-sm font-sfpro text-gray-600">
-              Your redemption request has been submitted successfully. You will receive a payment link from DCarbon shortly to complete your transaction.
+              Your payout request has been submitted successfully. You will receive a payment link from DCarbon shortly to complete your transaction.
             </p>
           </div>
         </div>
@@ -93,21 +93,21 @@ export default function RedeemPoints({ onClose, onComplete, redemptionData, proc
           <div className="flex items-center mb-3">
             <FiCheck className="text-green-600 mr-2" size={20} />
             <span className="font-sfpro font-semibold text-green-800">
-              Redemption Request Approved
+              Payout Request Approved
             </span>
           </div>
           
           <div className="grid grid-cols-2 gap-4 text-sm font-sfpro">
             <div>
-              <span className="text-gray-600">Points to Redeem:</span>
+              <span className="text-gray-600">Points:</span>
               <div className="font-semibold text-[#039994]">
                 {redemptionData.points.toLocaleString()} pts
               </div>
             </div>
             <div>
-              <span className="text-gray-600">Amount You Will Receive:</span>
+              <span className="text-gray-600">Amount You Receive:</span>
               <div className="font-semibold text-[#039994] text-lg">
-                {formatCurrency(redemptionData.total)}
+                {formatCurrency(redemptionData.amount)}
               </div>
             </div>
           </div>
@@ -115,13 +115,8 @@ export default function RedeemPoints({ onClose, onComplete, redemptionData, proc
           {currentStatus && (
             <div className="mt-3 p-3 bg-blue-50 rounded-md">
               <div className="text-sm font-sfpro text-blue-800">
-                <strong>Processing Status:</strong> {currentStatus.message || "Processing your quarter data..."}
+                <strong>Processing Status:</strong> {currentStatus.message || "Processing your request..."}
               </div>
-              {currentStatus.months && (
-                <div className="text-xs font-sfpro text-blue-600 mt-1">
-                  Processing months: {currentStatus.months.join(", ")}
-                </div>
-              )}
             </div>
           )}
         </div>
@@ -129,7 +124,7 @@ export default function RedeemPoints({ onClose, onComplete, redemptionData, proc
         <form onSubmit={handleRedeem} className="space-y-6">
           <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded">
             <div className="text-sm font-sfpro text-blue-800">
-              <strong>Payment Process:</strong> After submission, you will receive a secure payment link from DCarbon to complete your redemption. This ensures safe and verified transactions.
+              <strong>Payment Process:</strong> After submission, you will receive a secure payment link from DCarbon to complete your payout. This ensures safe and verified transactions.
             </div>
           </div>
 
@@ -137,7 +132,7 @@ export default function RedeemPoints({ onClose, onComplete, redemptionData, proc
 
           <div className="space-y-4">
             <div className="text-sm font-sfpro text-gray-600">
-              By clicking "Submit Redemption", you confirm your redemption request and agree to receive a payment link from DCarbon.
+              By clicking "Submit Payout", you confirm your payout request and agree to receive a payment link from DCarbon.
             </div>
 
             <button
@@ -153,7 +148,7 @@ export default function RedeemPoints({ onClose, onComplete, redemptionData, proc
                   Processing...
                 </div>
               ) : (
-                `Submit Redemption - ${formatCurrency(redemptionData.total)}`
+                `Submit Payout - ${formatCurrency(redemptionData.amount)}`
               )}
             </button>
           </div>

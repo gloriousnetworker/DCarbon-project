@@ -8,11 +8,12 @@ export default function RedemptionTransactions() {
   const [showRequestRedemptionModal, setShowRequestRedemptionModal] = useState(false);
   const [showRedeemPointsModal, setShowRedeemPointsModal] = useState(false);
   const [showResidentialBonusModal, setShowResidentialBonusModal] = useState(false);
-  const [userPoints, setUserPoints] = useState(5000);
+  const [userPoints, setUserPoints] = useState(18000);
   const [pendingRedemption, setPendingRedemption] = useState(null);
   const [processingStatus, setProcessingStatus] = useState(null);
   const [userId, setUserId] = useState("");
   const [authToken, setAuthToken] = useState("");
+  const [showToast, setShowToast] = useState(false);
 
   useEffect(() => {
     const storedUserId = localStorage.getItem("userId");
@@ -20,6 +21,15 @@ export default function RedemptionTransactions() {
     setUserId(storedUserId || "");
     setAuthToken(storedToken || "");
   }, []);
+
+  useEffect(() => {
+    if (showToast) {
+      const timer = setTimeout(() => {
+        setShowToast(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [showToast]);
 
   const transactions = [
     { id: 1, residentId: "RES001", paymentId: "PAY001", pointRedeemed: 3000, pricePerPoint: 0.01, totalAmount: 30, date: "16-03-2025", status: "Successful" },
@@ -53,8 +63,9 @@ export default function RedemptionTransactions() {
           'Authorization': `Bearer ${authToken}`
         },
         body: JSON.stringify({
-          quarter: requestData.quarter,
-          year: requestData.year
+          points: requestData.points,
+          amount: requestData.amount,
+          bankAccount: requestData.bankAccount
         })
       });
 
@@ -63,20 +74,16 @@ export default function RedemptionTransactions() {
       if (result.status === "success") {
         const redemptionRequest = {
           points: requestData.points,
-          total: requestData.total,
-          status: "approved",
-          quarter: requestData.quarter,
-          year: requestData.year
+          amount: requestData.amount,
+          bankAccount: requestData.bankAccount,
+          status: "approved"
         };
         
         setPendingRedemption(redemptionRequest);
         setProcessingStatus(result.data);
         setUserPoints(prevPoints => prevPoints - requestData.points);
         setShowRequestRedemptionModal(false);
-        
-        setTimeout(() => {
-          setShowRedeemPointsModal(true);
-        }, 500);
+        setShowToast(true);
       }
     } catch (error) {
       console.error("Error submitting redemption request:", error);
@@ -90,7 +97,7 @@ export default function RedemptionTransactions() {
       paymentId: `PAY${Date.now()}`,
       pointRedeemed: redemptionData.points,
       pricePerPoint: 0.01,
-      totalAmount: redemptionData.total,
+      totalAmount: redemptionData.amount,
       date: new Date().toLocaleDateString('en-GB'),
       status: "Successful"
     };
@@ -119,6 +126,12 @@ export default function RedemptionTransactions() {
 
   return (
     <div className={`${styles.mainContainer} px-6 py-8`}>
+      {showToast && (
+        <div className="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-md shadow-lg z-50">
+          Payout request submitted successfully!
+        </div>
+      )}
+
       <div className={`${styles.headingContainer} w-full max-w-5xl flex items-center justify-between`}>
         <h1 className={styles.pageTitle}>Points Transactions</h1>
 
@@ -132,17 +145,10 @@ export default function RedemptionTransactions() {
           <button
             className="px-4 py-2 rounded font-sfpro text-white bg-[#039994] text-sm hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994]"
             type="button"
-            onClick={handleOpenResidentialBonus}
-          >
-            Check Residential Bonus
-          </button>
-          <button
-            className="px-4 py-2 rounded font-sfpro text-white bg-[#039994] text-sm hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994]"
-            type="button"
             onClick={handleOpenRequestRedemption}
             disabled={userPoints < 3000}
           >
-            Request Redemption
+            Request Payout
           </button>
           {pendingRedemption && (
             <button
