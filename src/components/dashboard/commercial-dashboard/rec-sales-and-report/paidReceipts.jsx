@@ -49,7 +49,7 @@ const AdminInvoices = ({ onBack }) => {
   const handleCloseCommercialBonus = () => setShowCommercialBonus(false);
 
   return (
-    <div className={mainContainer}>
+    <div className={`${mainContainer} pt-4 flex flex-col items-center min-h-screen`}>
       <div className="w-full max-w-6xl">
         <div className={headingContainer}>
           <button onClick={onBack} className={backArrow}>
@@ -58,6 +58,8 @@ const AdminInvoices = ({ onBack }) => {
           <h1 className={pageTitle}>Paid Receipts</h1>
         </div>
 
+        {/* Comment out this button to hide it */}
+        {/* 
         <div className="flex justify-end mb-6">
           <button
             onClick={handleOpenCommercialBonus}
@@ -66,8 +68,9 @@ const AdminInvoices = ({ onBack }) => {
             Check Commercial Bonus
           </button>
         </div>
+        */}
 
-        <div className="flex space-x-4 mb-6">
+        <div className="flex space-x-4 mb-6 mt-4">
           <div className="w-1/2">
             <label className={labelClass}>Year</label>
             <select

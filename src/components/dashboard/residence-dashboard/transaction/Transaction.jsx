@@ -8,12 +8,13 @@ export default function RedemptionTransactions() {
   const [showRequestRedemptionModal, setShowRequestRedemptionModal] = useState(false);
   const [showRedeemPointsModal, setShowRedeemPointsModal] = useState(false);
   const [showResidentialBonusModal, setShowResidentialBonusModal] = useState(false);
-  const [userPoints, setUserPoints] = useState(18000);
-  const [pendingRedemption, setPendingRedemption] = useState(null);
-  const [processingStatus, setProcessingStatus] = useState(null);
+  const [userPoints, setUserPoints] = useState(0);
+  const [walletData, setWalletData] = useState(null);
+  const [transactions, setTransactions] = useState([]);
   const [userId, setUserId] = useState("");
   const [authToken, setAuthToken] = useState("");
   const [showToast, setShowToast] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const storedUserId = localStorage.getItem("userId");
@@ -21,6 +22,13 @@ export default function RedemptionTransactions() {
     setUserId(storedUserId || "");
     setAuthToken(storedToken || "");
   }, []);
+
+  useEffect(() => {
+    if (userId && authToken) {
+      fetchWalletData();
+      fetchPayoutHistory();
+    }
+  }, [userId, authToken]);
 
   useEffect(() => {
     if (showToast) {
@@ -31,21 +39,57 @@ export default function RedemptionTransactions() {
     }
   }, [showToast]);
 
-  const transactions = [
-    { id: 1, residentId: "RES001", paymentId: "PAY001", pointRedeemed: 3000, pricePerPoint: 0.01, totalAmount: 30, date: "16-03-2025", status: "Successful" },
-    { id: 2, residentId: "RES002", paymentId: "PAY002", pointRedeemed: 3000, pricePerPoint: 0.01, totalAmount: 30, date: "16-03-2025", status: "Pending" },
-    { id: 3, residentId: "RES003", paymentId: "PAY003", pointRedeemed: 3000, pricePerPoint: 0.01, totalAmount: 30, date: "16-03-2025", status: "Failed" },
-    ...Array.from({ length: 8 }, (_, i) => ({
-      id: 4 + i,
-      residentId: `RES${String(4 + i).padStart(3, '0')}`,
-      paymentId: `PAY${String(4 + i).padStart(3, '0')}`,
-      pointRedeemed: 3000,
-      pricePerPoint: 0.01,
-      totalAmount: 30,
-      date: "16-03-2025",
-      status: "Successful",
-    })),
-  ];
+  const fetchWalletData = async () => {
+    try {
+      const response = await fetch(`https://services.dcarbon.solutions/api/revenue/${userId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      });
+
+      const result = await response.json();
+      
+      if (result.status === "success") {
+        setWalletData(result.data);
+        const points = result.data.availableBalance * 1000;
+        setUserPoints(points);
+      }
+    } catch (error) {
+      console.error("Error fetching wallet data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchPayoutHistory = async () => {
+    try {
+      const response = await fetch(`https://services.dcarbon.solutions/api/payout-request?userId=${userId}&userType=RESIDENTIAL`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      });
+
+      const result = await response.json();
+      
+      if (result.status === "success") {
+        const formattedTransactions = result.data.map((item, index) => ({
+          id: item.id,
+          serialNumber: index + 1,
+          userType: item.userType,
+          amountRequested: item.amountRequested,
+          status: item.status,
+          approvedAt: item.approvedAt ? new Date(item.approvedAt).toLocaleDateString('en-GB') : "-",
+          rejectedAt: item.rejectedAt ? new Date(item.rejectedAt).toLocaleDateString('en-GB') : "-",
+          createdAt: new Date(item.createdAt).toLocaleDateString('en-GB')
+        }));
+        setTransactions(formattedTransactions);
+      }
+    } catch (error) {
+      console.error("Error fetching payout history:", error);
+    }
+  };
 
   const handleOpenRequestRedemption = () => setShowRequestRedemptionModal(true);
   const handleCloseRequestRedemption = () => setShowRequestRedemptionModal(false);
@@ -56,73 +100,48 @@ export default function RedemptionTransactions() {
 
   const handleRequestSubmit = async (requestData) => {
     try {
-      const response = await fetch(`https://services.dcarbon.solutions/api/payout/request-payout/${userId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`
-        },
-        body: JSON.stringify({
-          points: requestData.points,
-          amount: requestData.amount,
-          bankAccount: requestData.bankAccount
-        })
-      });
-
-      const result = await response.json();
-      
-      if (result.status === "success") {
-        const redemptionRequest = {
-          points: requestData.points,
-          amount: requestData.amount,
-          bankAccount: requestData.bankAccount,
-          status: "approved"
-        };
-        
-        setPendingRedemption(redemptionRequest);
-        setProcessingStatus(result.data);
-        setUserPoints(prevPoints => prevPoints - requestData.points);
-        setShowRequestRedemptionModal(false);
-        setShowToast(true);
-      }
+      setUserPoints(prevPoints => prevPoints - requestData.points);
+      setShowRequestRedemptionModal(false);
+      setShowToast(true);
+      fetchPayoutHistory();
+      fetchWalletData();
     } catch (error) {
-      console.error("Error submitting redemption request:", error);
+      console.error("Error handling redemption request:", error);
     }
   };
 
   const handleRedeemComplete = (redemptionData) => {
-    const newTransaction = {
-      id: transactions.length + 1,
-      residentId: "RES_USER",
-      paymentId: `PAY${Date.now()}`,
-      pointRedeemed: redemptionData.points,
-      pricePerPoint: 0.01,
-      totalAmount: redemptionData.amount,
-      date: new Date().toLocaleDateString('en-GB'),
-      status: "Successful"
-    };
-    
-    transactions.unshift(newTransaction);
-    
-    setPendingRedemption(null);
-    setProcessingStatus(null);
     setShowRedeemPointsModal(false);
+    fetchPayoutHistory();
+    fetchWalletData();
   };
 
   const statusColor = (status) => {
     switch (status) {
-      case "Successful":
-        return "text-[#039994]";
-      case "Pending":
-        return "text-[#FFB200]";
-      case "Failed":
-        return "text-[#FF0000]";
+      case "PAID":
+        return "bg-[#039994] text-white";
+      case "PENDING":
+        return "bg-[#FFB200] text-white";
+      case "REJECTED":
+        return "bg-[#FF0000] text-white";
       default:
-        return "";
+        return "bg-gray-400 text-white";
     }
   };
 
-  const availableMoney = (userPoints * 0.01).toFixed(2);
+  const formatId = (id) => {
+    return `${id.substring(0, 8)}...`;
+  };
+
+  const availableMoney = walletData ? (walletData.availableBalance).toFixed(2) : "0.00";
+
+  if (loading) {
+    return (
+      <div className={`${styles.mainContainer} px-6 py-8 flex items-center justify-center`}>
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#039994] border-t-transparent"></div>
+      </div>
+    );
+  }
 
   return (
     <div className={`${styles.mainContainer} px-6 py-8`}>
@@ -150,58 +169,79 @@ export default function RedemptionTransactions() {
           >
             Request Payout
           </button>
-          {pendingRedemption && (
-            <button
-              className="px-4 py-2 rounded font-sfpro text-white bg-[#FF6B35] text-sm hover:bg-[#e55a2b] focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
-              type="button"
-              onClick={handleOpenRedeemPoints}
-            >
-              Redeem Points
-            </button>
-          )}
         </div>
       </div>
 
       <hr className="border-gray-300 my-6 w-full max-w-5xl" />
 
-      <div className="w-full max-w-5xl mb-6">
-        <div className="bg-[#069B9621] p-4 rounded-md">
-          <span className="font-sfpro text-[16px] text-[#1E1E1E] mr-2">
-            Available Money:
-          </span>
-          <span className="font-sfpro font-semibold text-[20px] text-[#039994]">
-            ${availableMoney}
-          </span>
+      {walletData && (
+        <div className="w-full max-w-5xl mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-[#069B9621] p-4 rounded-md">
+            <span className="font-sfpro text-[14px] text-[#1E1E1E] block">
+              Available Money
+            </span>
+            <span className="font-sfpro font-semibold text-[18px] text-[#039994]">
+              ${availableMoney}
+            </span>
+          </div>
+          <div className="bg-[#069B9621] p-4 rounded-md">
+            <span className="font-sfpro text-[14px] text-[#1E1E1E] block">
+              Total Commission
+            </span>
+            <span className="font-sfpro font-semibold text-[18px] text-[#039994]">
+              ${walletData.totalCommission.toFixed(2)}
+            </span>
+          </div>
+          <div className="bg-[#069B9621] p-4 rounded-md">
+            <span className="font-sfpro text-[14px] text-[#1E1E1E] block">
+              Total Bonus
+            </span>
+            <span className="font-sfpro font-semibold text-[18px] text-[#039994]">
+              ${walletData.totalBonus.toFixed(2)}
+            </span>
+          </div>
+          <div className="bg-[#069B9621] p-4 rounded-md">
+            <span className="font-sfpro text-[14px] text-[#1E1E1E] block">
+              Pending Payout
+            </span>
+            <span className="font-sfpro font-semibold text-[18px] text-[#039994]">
+              ${walletData.pendingPayout.toFixed(2)}
+            </span>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="w-full max-w-5xl overflow-x-auto">
         <table className="w-full table-auto border-collapse">
           <thead>
             <tr className="text-left text-[#1E1E1E]">
               <th className="pb-2 font-sfpro font-semibold">S/N</th>
-              <th className="pb-2 font-sfpro font-semibold">Resident ID</th>
-              <th className="pb-2 font-sfpro font-semibold">Payment ID</th>
-              <th className="pb-2 font-sfpro font-semibold">Points Value</th>
-              <th className="pb-2 font-sfpro font-semibold">Price/Point</th>
-              <th className="pb-2 font-sfpro font-semibold">Total Amount</th>
-              <th className="pb-2 font-sfpro font-semibold">Date</th>
+              <th className="pb-2 font-sfpro font-semibold">Payout ID</th>
+              <th className="pb-2 font-sfpro font-semibold">User Type</th>
+              <th className="pb-2 font-sfpro font-semibold">Amount Requested</th>
               <th className="pb-2 font-sfpro font-semibold">Status</th>
+              <th className="pb-2 font-sfpro font-semibold">Approved At</th>
+              <th className="pb-2 font-sfpro font-semibold">Rejected At</th>
+              <th className="pb-2 font-sfpro font-semibold">Created At</th>
             </tr>
           </thead>
           <tbody>
             {transactions.map((t) => (
               <tr key={t.id} className="border-t">
-                <td className="py-3 font-sfpro">{t.id}</td>
-                <td className="py-3 font-sfpro">{t.residentId}</td>
-                <td className="py-3 font-sfpro">{t.paymentId}</td>
-                <td className="py-3 font-sfpro">{t.pointRedeemed}</td>
-                <td className="py-3 font-sfpro">${t.pricePerPoint.toFixed(2)}</td>
-                <td className="py-3 font-sfpro">${t.totalAmount.toFixed(2)}</td>
-                <td className="py-3 font-sfpro">{t.date}</td>
-                <td className={`py-3 font-semibold font-sfpro ${statusColor(t.status)}`}>
-                  {t.status}
+                <td className="py-3 font-sfpro">{t.serialNumber}</td>
+                <td className="py-3 font-sfpro cursor-pointer hover:text-[#039994]" title={t.id}>
+                  {formatId(t.id)}
                 </td>
+                <td className="py-3 font-sfpro">{t.userType}</td>
+                <td className="py-3 font-sfpro">${t.amountRequested.toFixed(2)}</td>
+                <td className="py-3">
+                  <span className={`px-3 py-1 rounded-full text-xs font-sfpro font-semibold ${statusColor(t.status)}`}>
+                    {t.status}
+                  </span>
+                </td>
+                <td className="py-3 font-sfpro">{t.approvedAt}</td>
+                <td className="py-3 font-sfpro">{t.rejectedAt}</td>
+                <td className="py-3 font-sfpro">{t.createdAt}</td>
               </tr>
             ))}
           </tbody>
@@ -218,12 +258,10 @@ export default function RedemptionTransactions() {
         />
       )}
 
-      {showRedeemPointsModal && pendingRedemption && (
+      {showRedeemPointsModal && (
         <RedeemPoints 
           onClose={handleCloseRedeemPoints}
           onComplete={handleRedeemComplete}
-          redemptionData={pendingRedemption}
-          processingStatus={processingStatus}
           userId={userId}
           authToken={authToken}
         />

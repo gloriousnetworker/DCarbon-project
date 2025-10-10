@@ -9,10 +9,49 @@ export default function QuickActions() {
   const [modal, setModal] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [hasMeters, setHasMeters] = useState(false);
+  const [walletData, setWalletData] = useState(null);
+  const [walletLoading, setWalletLoading] = useState(true);
 
-  const currentPoints = 20;
-  const redemption = { done: 250, total: 3000 };
-  const referral = { done: 150, total: 3000 };
+  const fetchWalletData = async () => {
+    try {
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const userId = loginResponse?.data?.user?.id;
+      const authToken = loginResponse?.data?.token;
+
+      if (!userId || !authToken) {
+        setWalletLoading(false);
+        return;
+      }
+
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/revenue/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        }
+      );
+      const result = await response.json();
+      if (result.status === "success") {
+        setWalletData(result.data);
+      }
+    } catch (error) {
+      console.error('Error fetching wallet data:', error);
+    } finally {
+      setWalletLoading(false);
+    }
+  };
+
+  const currentPoints = walletData ? walletData.availableBalance * 1000 : 0;
+  const redemption = { 
+    done: Math.min(currentPoints, 3000), 
+    total: 3000 
+  };
+  const referral = { 
+    done: walletData ? Math.min(walletData.totalBonus * 1000, 3000) : 0, 
+    total: 3000 
+  };
 
   const redemptionPct = Math.round((redemption.done / redemption.total) * 100);
   const referralPct = Math.round((referral.done / referral.total) * 100);
@@ -48,6 +87,7 @@ export default function QuickActions() {
 
   useEffect(() => {
     checkMeters();
+    fetchWalletData();
   }, []);
 
   const openModal = (type) => {
@@ -151,52 +191,77 @@ export default function QuickActions() {
 
         <div className="col-span-1 lg:col-span-2">
           <h2 className={pageTitle}>Rewards</h2>
-          <div className="bg-white rounded-2xl p-6 space-y-6 shadow min-h-[260px]">
+          <div className="bg-white rounded-2xl p-6 space-y-1 shadow h-full min-h-[248px]">
             <div className="flex justify-between items-center">
               <div className="flex items-center">
                 <span className={labelClass}>Current Points Balance</span>
               </div>
-              <span className="text-[#1E1E1E] font-bold">{currentPoints}pts</span>
+              <span className="text-[#1E1E1E] font-bold">
+                {walletLoading ? "Loading..." : `${currentPoints.toLocaleString()}pts`}
+              </span>
             </div>
 
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center">
-                  <span className={labelClass}>Redemption progress</span>
+            {walletData && (
+              <>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center">
+                      <span className={labelClass}>Redemption progress</span>
+                    </div>
+                    <span className="text-[#039994] font-semibold">{redemption.done.toLocaleString()}/{redemption.total.toLocaleString()}pts</span>
+                  </div>
+                  <div className="w-full h-2 bg-[#EEEEEE] rounded-full overflow-hidden">
+                    <div className="h-full rounded-full" style={{ backgroundColor: "#039994", width: `${redemptionPct}%` }} />
+                  </div>
                 </div>
-                <span className="text-[#039994] font-semibold">{redemption.done}/{redemption.total}pts</span>
-              </div>
-              <div className="w-full h-2 bg-[#EEEEEE] rounded-full overflow-hidden">
-                <div className="h-full rounded-full" style={{ backgroundColor: "#039994", width: `${redemptionPct}%` }} />
-              </div>
-            </div>
 
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center">
-                  <span className={labelClass}>Referral bonus progress</span>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center">
+                      <span className={labelClass}>Referral bonus progress</span>
+                    </div>
+                    <span className="text-[#1E1E1E] font-semibold">{referral.done.toLocaleString()}/{referral.total.toLocaleString()}pts</span>
+                  </div>
+                  <div className="w-full h-2 bg-[#D4D4D4] rounded-full overflow-hidden">
+                    <div className="h-full rounded-full" style={{ backgroundColor: "#1E1E1E", width: `${referralPct}%` }} />
+                  </div>
                 </div>
-                <span className="text-[#1E1E1E] font-semibold">{referral.done}/{referral.total}pts</span>
-              </div>
-              <div className="w-full h-2 bg-[#D4D4D4] rounded-full overflow-hidden">
-                <div className="h-full rounded-full" style={{ backgroundColor: "#1E1E1E", width: `${referralPct}%` }} />
-              </div>
-              
-              <div className="flex items-center space-x-4 pt-2">
-                <div className="flex items-center space-x-1">
-                  <span className="block w-2 h-2 bg-[#D4D4D4] rounded-full" />
-                  <span className={noteText}>Bronze Tier</span>
+
+                <div className="flex items-center space-x-4 pt-1">
+                  <div className="flex items-center space-x-1">
+                    <span className="block w-2 h-2 bg-[#D4D4D4] rounded-full" />
+                    <span className={noteText}>Bronze Tier</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <span className="block w-2 h-2 bg-[#A37C50] rounded-full" />
+                    <span className={noteText}>Silver Tier</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <span className="block w-2 h-2 bg-[#FFD700] rounded-full" />
+                    <span className={noteText}>Gold Tier</span>
+                  </div>
                 </div>
-                <div className="flex items-center space-x-1">
-                  <span className="block w-2 h-2 bg-[#A37C50] rounded-full" />
-                  <span className={noteText}>Silver Tier</span>
+
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                  <div className="bg-[#069B9621] p-2 rounded-md">
+                    <span className="font-sfpro text-[11px] text-[#1E1E1E] block">
+                      Total Commission
+                    </span>
+                    <span className="font-sfpro font-semibold text-[12px] text-[#039994]">
+                      ${walletData.totalCommission.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="bg-[#069B9621] p-2 rounded-md">
+                    <span className="font-sfpro text-[11px] text-[#1E1E1E] block">
+                      Pending Payout
+                    </span>
+                    <span className="font-sfpro font-semibold text-[12px] text-[#039994]">
+                      ${walletData.pendingPayout.toFixed(2)}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center space-x-1">
-                  <span className="block w-2 h-2 bg-[#FFD700] rounded-full" />
-                  <span className={noteText}>Gold Tier</span>
-                </div>
-              </div>
-            </div>
+              </>
+            )}
           </div>
         </div>
       </div>
