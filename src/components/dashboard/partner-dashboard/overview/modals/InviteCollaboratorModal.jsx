@@ -213,7 +213,11 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
         }
       );
       
-      return response.data.status === "success";
+      if (response.data.status === "success") {
+        toast.success(response.data.message || "Facility invitation sent successfully");
+        return true;
+      }
+      return false;
     } catch (error) {
       console.error("Error sending facility invitation:", error);
       return false;
@@ -285,16 +289,18 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
       return;
     }
 
-    if (!address1 || !city || !state || !zipCode) {
-      toast.error("Please complete all address fields");
-      setLoading(false);
-      return;
-    }
+    if (!isSalesAgent) {
+      if (!address1 || !city || !state || !zipCode) {
+        toast.error("Please complete all address fields");
+        setLoading(false);
+        return;
+      }
 
-    if (!/^\d{5}(-\d{4})?$/.test(zipCode)) {
-      toast.error("Please enter a valid zip code");
-      setLoading(false);
-      return;
+      if (!/^\d{5}(-\d{4})?$/.test(zipCode)) {
+        toast.error("Please enter a valid zip code");
+        setLoading(false);
+        return;
+      }
     }
 
     if (epcMode && !installerId) {
@@ -334,34 +340,26 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
       if (userResponse.data.status === "success") {
         toast.success("Customer invitation sent successfully");
         
-        const facilitySuccess = await sendFacilityInvite(userId, authToken);
-        
-        if (epcMode && installerId) {
-          const selectedInstaller = installers.find(inst => inst.id === installerId);
-          if (selectedInstaller) {
-            const installerAssignmentSuccess = await assignInstallerToCustomer(
-              userId, 
-              authToken, 
-              selectedInstaller.inviteeEmail, 
-              selectedInstaller.name || selectedInstaller.inviteeEmail
-            );
+        if (!isSalesAgent) {
+          const facilitySuccess = await sendFacilityInvite(userId, authToken);
+          
+          if (epcMode && installerId) {
+            const selectedInstaller = installers.find(inst => inst.id === installerId);
+            if (selectedInstaller) {
+              const installerAssignmentSuccess = await assignInstallerToCustomer(
+                userId, 
+                authToken, 
+                selectedInstaller.inviteeEmail, 
+                selectedInstaller.name || selectedInstaller.inviteeEmail
+              );
 
-            if (installerAssignmentSuccess) {
-              toast.success("Installer assigned successfully");
-            } else {
-              toast.error("Failed to assign installer");
+              if (installerAssignmentSuccess) {
+                toast.success("Installer assigned successfully");
+              } else {
+                toast.error("Failed to assign installer");
+              }
             }
           }
-        }
-        
-        if (!facilitySuccess) {
-          toast("Facility invitation failed - please check and try again", {
-            icon: "⚠️",
-            style: {
-              background: "#FEF3C7",
-              color: "#92400E",
-            }
-          });
         }
         
         resetForm();
@@ -504,81 +502,85 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className={`${labelClass} text-xs`}>Address 1 <span className="text-red-500">*</span></label>
-              <input
-                type="text"
-                name="address1"
-                value={formData.address1}
-                onChange={handleAddressChange}
-                className={`${inputClass} text-xs`}
-                placeholder="5348 UNIVERSITY AVE"
-                required
-              />
-            </div>
-            <div>
-              <label className={`${labelClass} text-xs`}>Address 2</label>
-              <input
-                type="text"
-                name="address2"
-                value={formData.address2}
-                onChange={handleAddressChange}
-                className={`${inputClass} text-xs`}
-                placeholder="Apt, suite, etc."
-              />
-            </div>
-          </div>
+          {!isSalesAgent && (
+            <>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className={`${labelClass} text-xs`}>Address 1 <span className="text-red-500">*</span></label>
+                  <input
+                    type="text"
+                    name="address1"
+                    value={formData.address1}
+                    onChange={handleAddressChange}
+                    className={`${inputClass} text-xs`}
+                    placeholder="5348 UNIVERSITY AVE"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className={`${labelClass} text-xs`}>Address 2</label>
+                  <input
+                    type="text"
+                    name="address2"
+                    value={formData.address2}
+                    onChange={handleAddressChange}
+                    className={`${inputClass} text-xs`}
+                    placeholder="Apt, suite, etc."
+                  />
+                </div>
+              </div>
 
-          <div className="grid grid-cols-3 gap-2">
-            <div>
-              <label className={`${labelClass} text-xs`}>City <span className="text-red-500">*</span></label>
-              <input
-                type="text"
-                name="city"
-                value={formData.city}
-                onChange={handleAddressChange}
-                className={`${inputClass} text-xs`}
-                placeholder="SAN DIEGO"
-                required
-              />
-            </div>
-            <div>
-              <label className={`${labelClass} text-xs`}>State <span className="text-red-500">*</span></label>
-              <select
-                name="state"
-                value={formData.state}
-                onChange={handleChange}
-                className={`${selectClass} text-xs`}
-                required
-              >
-                <option value="">Select State</option>
-                {states.map(state => (
-                  <option key={state} value={state}>{state}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className={`${labelClass} text-xs`}>Zip Code <span className="text-red-500">*</span></label>
-              <input
-                type="text"
-                name="zipCode"
-                value={formData.zipCode}
-                onChange={handleChange}
-                className={`${inputClass} text-xs ${zipCodeError ? "border-red-500" : ""}`}
-                placeholder="92105"
-                pattern="^\d{5}(-\d{4})?$"
-                required
-              />
-              {zipCodeError && (
-                <p className="text-red-500 text-xs mt-1">{zipCodeError}</p>
-              )}
-            </div>
-          </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <label className={`${labelClass} text-xs`}>City <span className="text-red-500">*</span></label>
+                  <input
+                    type="text"
+                    name="city"
+                    value={formData.city}
+                    onChange={handleAddressChange}
+                    className={`${inputClass} text-xs`}
+                    placeholder="SAN DIEGO"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className={`${labelClass} text-xs`}>State <span className="text-red-500">*</span></label>
+                  <select
+                    name="state"
+                    value={formData.state}
+                    onChange={handleChange}
+                    className={`${selectClass} text-xs`}
+                    required
+                  >
+                    <option value="">Select State</option>
+                    {states.map(state => (
+                      <option key={state} value={state}>{state}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className={`${labelClass} text-xs`}>Zip Code <span className="text-red-500">*</span></label>
+                  <input
+                    type="text"
+                    name="zipCode"
+                    value={formData.zipCode}
+                    onChange={handleChange}
+                    className={`${inputClass} text-xs ${zipCodeError ? "border-red-500" : ""}`}
+                    placeholder="92105"
+                    pattern="^\d{5}(-\d{4})?$"
+                    required
+                  />
+                  {zipCodeError && (
+                    <p className="text-red-500 text-xs mt-1">{zipCodeError}</p>
+                  )}
+                </div>
+              </div>
 
-          <p className="text-xs text-gray-500 italic">
-            Address must match the service address of your facility meter exactly
-          </p>
+              <p className="text-xs text-gray-500 italic">
+                Address must match the service address of your facility meter exactly
+              </p>
+            </>
+          )}
 
           <div>
             <label className={`${labelClass} text-xs`}>Customer Type <span className="text-red-500">*</span></label>
