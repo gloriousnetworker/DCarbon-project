@@ -11,27 +11,49 @@ const QuarterlyStatement = () => {
   const [selectedYear, setSelectedYear] = useState('2024');
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [walletData, setWalletData] = useState(null);
+  const [walletLoading, setWalletLoading] = useState(false);
 
   const staticData = {
     customerName: 'John Smith',
     address: '123 Solar Street, Austin, TX 78701',
     email: 'john.smith@example.com',
     phoneNumber: '(512) 555-0123',
-    name: 'Solar Energy Corp',
-    facilities: [
-      {
-        facilityName: 'Austin Solar Farm',
-        address: '123 Solar Street, Austin, TX 78701',
-        status: 'VERIFIED',
-        currentRecBalance: 45.5
-      },
-      {
-        facilityName: 'Texas Wind Facility',
-        address: '456 Wind Avenue, Houston, TX 77001',
-        status: 'ACTIVE',
-        currentRecBalance: 20.0
+    name: 'Solar Energy Corp'
+  };
+
+  const fetchWalletData = async () => {
+    setWalletLoading(true);
+    try {
+      const userId = localStorage.getItem('userId');
+      const authToken = localStorage.getItem('authToken');
+
+      if (!userId || !authToken) {
+        setWalletLoading(false);
+        return;
       }
-    ]
+
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/revenue/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      const result = await response.json();
+
+      if (response.ok && result.status === 'success') {
+        setWalletData(result.data);
+      }
+    } catch (error) {
+      console.error('Error fetching wallet data:', error);
+    } finally {
+      setWalletLoading(false);
+    }
   };
 
   const fetchQuarterlyStatement = async () => {
@@ -75,7 +97,18 @@ const QuarterlyStatement = () => {
 
   useEffect(() => {
     fetchQuarterlyStatement();
+    fetchWalletData();
   }, [selectedQuarter, selectedYear]);
+
+  const handleInvoiceSubmitted = (invoiceAmount) => {
+    if (walletData && walletData.availableBalance) {
+      setWalletData(prev => ({
+        ...prev,
+        availableBalance: prev.availableBalance - parseFloat(invoiceAmount)
+      }));
+    }
+    fetchWalletData();
+  };
 
   const exportData = (format) => {
     const dataToExport = {
@@ -98,8 +131,7 @@ const QuarterlyStatement = () => {
         averageRecPrice: data?.averageRecPrice || 0,
         revenueTier: '60%',
         totalPayout: data?.totalRecPayout || 0
-      },
-      facilities: staticData.facilities
+      }
     };
 
     if (format === 'csv') {
@@ -129,13 +161,7 @@ const QuarterlyStatement = () => {
     csv += `Total RECs Balance,${data.recSummary.totalRecsBalance}\n`;
     csv += `Average REC Price,${data.recSummary.averageRecPrice}\n`;
     csv += `Revenue Tier,${data.recSummary.revenueTier}\n`;
-    csv += `Total Payout,${data.recSummary.totalPayout}\n\n`;
-    
-    csv += 'Facilities\n';
-    csv += 'Facility Name,Address,Status,Current REC Balance\n';
-    data.facilities.forEach(facility => {
-      csv += `${facility.facilityName},${facility.address},${facility.status},${facility.currentRecBalance}\n`;
-    });
+    csv += `Total Payout,${data.recSummary.totalPayout}\n`;
     
     return csv;
   };
@@ -155,7 +181,7 @@ const QuarterlyStatement = () => {
   };
 
   if (showSubmitInvoice) {
-    return <SubmitInvoice onBack={() => setShowSubmitInvoice(false)} />;
+    return <SubmitInvoice onBack={() => setShowSubmitInvoice(false)} onInvoiceSubmitted={handleInvoiceSubmitted} />;
   }
 
   if (showAdminInvoices) {
@@ -258,68 +284,50 @@ const QuarterlyStatement = () => {
             </div>
           </div>
 
-          <hr className="border-gray-300" />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div className="flex justify-between py-2">
+                <span className="font-sfpro text-[14px] font-[400] text-[#1E1E1E]">Total RECs generated</span>
+                <span className="font-sfpro text-[14px] font-[600] text-[#1E1E1E]">{data?.totalRecsGenerated?.toFixed(1) || '0.0'}</span>
+              </div>
+              <div className="flex justify-between py-2">
+                <span className="font-sfpro text-[14px] font-[400] text-[#1E1E1E]">Total RECs sold</span>
+                <span className="font-sfpro text-[14px] font-[600] text-[#1E1E1E]">{data?.totalRecsSold?.toFixed(0) || '0'}</span>
+              </div>
+              <div className="flex justify-between py-2">
+                <span className="font-sfpro text-[14px] font-[400] text-[#1E1E1E]">Total RECs balance</span>
+                <span className="font-sfpro text-[14px] font-[600] text-[#1E1E1E]">{data?.totalRecsBalance?.toFixed(1) || '0.0'}</span>
+              </div>
+              <div className="flex justify-between py-2">
+                <span className="font-sfpro text-[14px] font-[400] text-[#1E1E1E]">Average REC price</span>
+                <span className="font-sfpro text-[14px] font-[600] text-[#1E1E1E]">${data?.averageRecPrice?.toFixed(2) || '0.00'}</span>
+              </div>
+              <div className="flex justify-between py-2">
+                <span className="font-sfpro text-[14px] font-[400] text-[#1E1E1E]">Revenue Tier</span>
+                <span className="font-sfpro text-[14px] font-[600] text-[#1E1E1E]">60%</span>
+              </div>
+            </div>
 
-          <div className="space-y-4">
-            <div className="flex justify-between py-2">
-              <span className="font-sfpro text-[14px] font-[400] text-[#1E1E1E]">Total RECs generated</span>
-              <span className="font-sfpro text-[14px] font-[600] text-[#1E1E1E]">{data?.totalRecsGenerated?.toFixed(1) || '0.0'}</span>
-            </div>
-            <div className="flex justify-between py-2">
-              <span className="font-sfpro text-[14px] font-[400] text-[#1E1E1E]">Total RECs sold</span>
-              <span className="font-sfpro text-[14px] font-[600] text-[#1E1E1E]">{data?.totalRecsSold?.toFixed(0) || '0'}</span>
-            </div>
-            <div className="flex justify-between py-2">
-              <span className="font-sfpro text-[14px] font-[400] text-[#1E1E1E]">Total RECs balance</span>
-              <span className="font-sfpro text-[14px] font-[600] text-[#1E1E1E]">{data?.totalRecsBalance?.toFixed(1) || '0.0'}</span>
-            </div>
-            <div className="flex justify-between py-2">
-              <span className="font-sfpro text-[14px] font-[400] text-[#1E1E1E]">Average REC price</span>
-              <span className="font-sfpro text-[14px] font-[600] text-[#1E1E1E]">${data?.averageRecPrice?.toFixed(2) || '0.00'}</span>
-            </div>
-            <div className="flex justify-between py-2">
-              <span className="font-sfpro text-[14px] font-[400] text-[#1E1E1E]">Revenue Tier</span>
-              <span className="font-sfpro text-[14px] font-[600] text-[#1E1E1E]">60%</span>
+            <div className="bg-[#039994] rounded-lg p-6 flex flex-col justify-center items-center text-white">
+              <div className="flex items-center justify-center w-16 h-16 bg-white bg-opacity-20 rounded-full mb-4">
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="font-sfpro text-[18px] font-[600] mb-2">Available Balance</h3>
+              {walletLoading ? (
+                <div className="font-sfpro text-[16px]">Loading...</div>
+              ) : (
+                <div className="font-sfpro text-[24px] font-[700]">
+                  ${walletData?.availableBalance?.toFixed(2) || '0.00'}
+                </div>
+              )}
             </div>
           </div>
 
           <div className="bg-[#039994] rounded-lg p-4 flex justify-between items-center">
             <span className="font-sfpro text-[16px] font-[600] text-white">Total REC Payout</span>
             <span className="font-sfpro text-[20px] font-[700] text-white">${data?.totalRecPayout?.toFixed(2) || '0.00'}</span>
-          </div>
-
-          <div className="mt-6">
-            <h3 className="font-sfpro text-[16px] font-[600] text-[#039994] mb-3">Facilities</h3>
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm text-left text-gray-700">
-                <thead className="border-b border-gray-200 text-xs font-medium uppercase text-gray-700">
-                  <tr>
-                    <th className="px-4 py-3 font-sfpro">Facility Name</th>
-                    <th className="px-4 py-3 font-sfpro">Address</th>
-                    <th className="px-4 py-3 font-sfpro">Status</th>
-                    <th className="px-4 py-3 font-sfpro">Current REC Balance</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {staticData.facilities.map((facility, idx) => (
-                    <tr key={idx} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 font-sfpro">{facility.facilityName}</td>
-                      <td className="px-4 py-3 font-sfpro">{facility.address}</td>
-                      <td className="px-4 py-3 font-sfpro">
-                        <span className={`px-2 py-1 text-xs rounded-full ${
-                          facility.status === 'VERIFIED' ? 'bg-green-100 text-green-800' :
-                          facility.status === 'ACTIVE' ? 'bg-blue-100 text-blue-800' :
-                          'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {facility.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 font-sfpro">{facility.currentRecBalance.toFixed(1)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
           </div>
         </div>
       )}

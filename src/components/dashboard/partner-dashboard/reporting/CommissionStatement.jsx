@@ -8,7 +8,6 @@ import {
   buttonPrimary,
   labelClass,
 } from "./styles";
-import PartnerBonus from "./PartnerBonus";
 import ExportReportModal from "./ExportReportModal";
 
 const MONTHS = [
@@ -39,9 +38,12 @@ export default function CommissionStatement({ onNavigate }) {
   const [monthFilter, setMonthFilter] = useState("March");
   const [viewType, setViewType] = useState("Month");
   const [commissionData, setCommissionData] = useState({});
-  const [showPartnerBonus, setShowPartnerBonus] = useState(false);
-  const [partnerType, setPartnerType] = useState("");
-  const [loadingPartner, setLoadingPartner] = useState(true);
+  const [walletBalance, setWalletBalance] = useState(0);
+  const [showPayoutModal, setShowPayoutModal] = useState(false);
+  const [payoutAmount, setPayoutAmount] = useState("");
+  const [payoutHistory, setPayoutHistory] = useState([]);
+  const [loadingPayout, setLoadingPayout] = useState(false);
+  const [payoutMessage, setPayoutMessage] = useState("");
 
   useEffect(() => {
     const mockCommissionData = {
@@ -74,20 +76,18 @@ export default function CommissionStatement({ onNavigate }) {
       totalCommission: "$200.00"
     };
     setCommissionData(mockCommissionData);
-    fetchPartnerType();
+    fetchWalletBalance();
+    fetchPayoutHistory();
   }, []);
 
-  const fetchPartnerType = async () => {
+  const fetchWalletBalance = async () => {
     try {
       const userId = localStorage.getItem("userId");
       const authToken = localStorage.getItem("authToken");
       
-      if (!userId || !authToken) {
-        setLoadingPartner(false);
-        return;
-      }
+      if (!userId || !authToken) return;
 
-      const response = await fetch(`https://services.dcarbon.solutions/api/user/partner/user/${userId}`, {
+      const response = await fetch(`https://services.dcarbon.solutions/api/revenue/${userId}`, {
         headers: {
           "Authorization": `Bearer ${authToken}`
         }
@@ -96,12 +96,33 @@ export default function CommissionStatement({ onNavigate }) {
       const result = await response.json();
       
       if (result.status === "success" && result.data) {
-        setPartnerType(result.data.partnerType || "");
+        setWalletBalance(result.data.availableBalance || 0);
       }
     } catch (error) {
-      console.error("Error fetching partner type:", error);
-    } finally {
-      setLoadingPartner(false);
+      console.error("Error fetching wallet balance:", error);
+    }
+  };
+
+  const fetchPayoutHistory = async () => {
+    try {
+      const userId = localStorage.getItem("userId");
+      const authToken = localStorage.getItem("authToken");
+      
+      if (!userId || !authToken) return;
+
+      const response = await fetch(`https://services.dcarbon.solutions/api/payout-request?userId=${userId}&userType=PARTNER`, {
+        headers: {
+          "Authorization": `Bearer ${authToken}`
+        }
+      });
+
+      const result = await response.json();
+      
+      if (result.status === "success" && result.data) {
+        setPayoutHistory(result.data);
+      }
+    } catch (error) {
+      console.error("Error fetching payout history:", error);
     }
   };
 
@@ -169,10 +190,66 @@ export default function CommissionStatement({ onNavigate }) {
     }
   };
 
-  const handleOpenPartnerBonus = () => setShowPartnerBonus(true);
-  const handleClosePartnerBonus = () => setShowPartnerBonus(false);
+  const handleSubmitPayout = async () => {
+    try {
+      setLoadingPayout(true);
+      setPayoutMessage("");
+      
+      const userId = localStorage.getItem("userId");
+      const authToken = localStorage.getItem("authToken");
+      
+      if (!userId || !authToken) {
+        setPayoutMessage("Authentication required");
+        return;
+      }
 
-  const isSalesAgent = partnerType === "SALES_AGENT";
+      if (!payoutAmount || parseFloat(payoutAmount) <= 0) {
+        setPayoutMessage("Please enter a valid amount");
+        return;
+      }
+
+      const requestBody = {
+        userId: userId,
+        amount: parseFloat(payoutAmount),
+        userType: "PARTNER"
+      };
+
+      const response = await fetch("https://services.dcarbon.solutions/api/payout-request/request", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${authToken}`
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      const result = await response.json();
+      
+      if (result.status === "success") {
+        setPayoutMessage("Payout request submitted successfully!");
+        setPayoutAmount("");
+        setShowPayoutModal(false);
+        fetchWalletBalance();
+        fetchPayoutHistory();
+      } else {
+        setPayoutMessage(result.message || "Failed to submit payout request");
+      }
+    } catch (error) {
+      console.error("Error submitting payout:", error);
+      setPayoutMessage("An error occurred while submitting payout request");
+    } finally {
+      setLoadingPayout(false);
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "PAID": return "text-green-600";
+      case "PENDING": return "text-yellow-600";
+      case "REJECTED": return "text-red-600";
+      default: return "text-gray-600";
+    }
+  };
 
   return (
     <div className={`${mainContainer} text-sm`}>
@@ -212,14 +289,10 @@ export default function CommissionStatement({ onNavigate }) {
           </div>
           
           <div className="flex items-center space-x-4">
-            {!loadingPartner && partnerType && (
-              <button
-                onClick={handleOpenPartnerBonus}
-                className="px-4 py-2 bg-[#039994] text-white rounded-md hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-sm"
-              >
-                Check {isSalesAgent ? "Sales Agent" : "Partner"} Bonus
-              </button>
-            )}
+            <div className="bg-[#039994] text-white px-4 py-2 rounded-lg">
+              <div className="text-xs">Available Balance</div>
+              <div className="text-lg font-bold">${walletBalance.toFixed(2)}</div>
+            </div>
 
             <button
               onClick={() => setViewType(viewType === "Month" ? "Year" : "Month")}
@@ -272,10 +345,11 @@ export default function CommissionStatement({ onNavigate }) {
             </button>
             
             <button
+              onClick={() => setShowPayoutModal(true)}
               className="border border-black px-4 py-1 rounded bg-[#1E1E1E] text-xs text-white"
               style={{ paddingTop: '4px', paddingBottom: '4px' }}
             >
-              Submit Invoice
+              Request Payout
             </button>
           </div>
         </div>
@@ -324,10 +398,50 @@ export default function CommissionStatement({ onNavigate }) {
           ))}
         </div>
 
-        <div className="bg-[#039994] text-white p-4 rounded-lg">
+        <div className="bg-[#039994] text-white p-4 rounded-lg mb-8">
           <div className="flex justify-between items-center">
             <span className="text-lg font-semibold">Total Commission Payable</span>
             <span className="text-xl font-bold">{commissionData.totalCommission}</span>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-[#039994] mb-4">Payout History</h3>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead>
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payout ID</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User Type</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Admin Note</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Approved By</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {payoutHistory.map((payout) => (
+                  <tr key={payout.id}>
+                    <td className="px-4 py-3 text-sm text-gray-900">{payout.id.slice(0, 8)}...</td>
+                    <td className="px-4 py-3 text-sm text-gray-900">{payout.userType}</td>
+                    <td className="px-4 py-3 text-sm text-gray-900">${payout.amountRequested}</td>
+                    <td className={`px-4 py-3 text-sm font-medium ${getStatusColor(payout.status)}`}>
+                      {payout.status}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 max-w-xs">
+                      {payout.adminNote || "-"}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900">
+                      {new Date(payout.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900">
+                      {payout.approvedBy ? payout.approvedBy.slice(0, 8) + "..." : "-"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -340,11 +454,53 @@ export default function CommissionStatement({ onNavigate }) {
         />
       )}
 
-      {showPartnerBonus && (
-        <PartnerBonus 
-          onClose={handleClosePartnerBonus}
-          partnerType={partnerType}
-        />
+      {showPayoutModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold text-[#039994] mb-4">Request Payout</h3>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Amount ($)
+              </label>
+              <input
+                type="number"
+                value={payoutAmount}
+                onChange={(e) => setPayoutAmount(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994]"
+                placeholder="Enter amount"
+              />
+            </div>
+
+            {payoutMessage && (
+              <div className={`mb-4 p-3 rounded-md ${
+                payoutMessage.includes("success") ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+              }`}>
+                {payoutMessage}
+              </div>
+            )}
+
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => {
+                  setShowPayoutModal(false);
+                  setPayoutMessage("");
+                  setPayoutAmount("");
+                }}
+                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSubmitPayout}
+                disabled={loadingPayout}
+                className="px-4 py-2 bg-[#039994] text-white rounded-md hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] disabled:opacity-50"
+              >
+                {loadingPayout ? "Submitting..." : "Submit Request"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

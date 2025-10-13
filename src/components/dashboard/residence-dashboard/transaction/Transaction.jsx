@@ -129,10 +129,6 @@ export default function RedemptionTransactions() {
     }
   };
 
-  const formatId = (id) => {
-    return `${id.substring(0, 8)}...`;
-  };
-
   const availableMoney = walletData ? (walletData.availableBalance).toFixed(2) : "0.00";
 
   if (loading) {
@@ -175,37 +171,13 @@ export default function RedemptionTransactions() {
       <hr className="border-gray-300 my-6 w-full max-w-5xl" />
 
       {walletData && (
-        <div className="w-full max-w-5xl mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="w-full max-w-5xl mb-6">
           <div className="bg-[#069B9621] p-4 rounded-md">
-            <span className="font-sfpro text-[14px] text-[#1E1E1E] block">
-              Available Money
+            <span className="font-sfpro text-[16px] text-[#1E1E1E] mr-2">
+              Available Money:
             </span>
-            <span className="font-sfpro font-semibold text-[18px] text-[#039994]">
+            <span className="font-sfpro font-semibold text-[20px] text-[#039994]">
               ${availableMoney}
-            </span>
-          </div>
-          <div className="bg-[#069B9621] p-4 rounded-md">
-            <span className="font-sfpro text-[14px] text-[#1E1E1E] block">
-              Total Commission
-            </span>
-            <span className="font-sfpro font-semibold text-[18px] text-[#039994]">
-              ${walletData.totalCommission.toFixed(2)}
-            </span>
-          </div>
-          <div className="bg-[#069B9621] p-4 rounded-md">
-            <span className="font-sfpro text-[14px] text-[#1E1E1E] block">
-              Total Bonus
-            </span>
-            <span className="font-sfpro font-semibold text-[18px] text-[#039994]">
-              ${walletData.totalBonus.toFixed(2)}
-            </span>
-          </div>
-          <div className="bg-[#069B9621] p-4 rounded-md">
-            <span className="font-sfpro text-[14px] text-[#1E1E1E] block">
-              Pending Payout
-            </span>
-            <span className="font-sfpro font-semibold text-[18px] text-[#039994]">
-              ${walletData.pendingPayout.toFixed(2)}
             </span>
           </div>
         </div>
@@ -215,23 +187,21 @@ export default function RedemptionTransactions() {
         <table className="w-full table-auto border-collapse">
           <thead>
             <tr className="text-left text-[#1E1E1E]">
-              <th className="pb-2 font-sfpro font-semibold">S/N</th>
-              <th className="pb-2 font-sfpro font-semibold">Payout ID</th>
-              <th className="pb-2 font-sfpro font-semibold">User Type</th>
-              <th className="pb-2 font-sfpro font-semibold">Amount Requested</th>
-              <th className="pb-2 font-sfpro font-semibold">Status</th>
-              <th className="pb-2 font-sfpro font-semibold">Approved At</th>
-              <th className="pb-2 font-sfpro font-semibold">Rejected At</th>
-              <th className="pb-2 font-sfpro font-semibold">Created At</th>
+              <th className="pb-2 font-sfpro font-medium">S/N</th>
+              <th className="pb-2 font-sfpro font-medium">Payout ID</th>
+              <th className="pb-2 font-sfpro font-medium">User Type</th>
+              <th className="pb-2 font-sfpro font-medium">Amount Requested</th>
+              <th className="pb-2 font-sfpro font-medium">Status</th>
+              <th className="pb-2 font-sfpro font-medium">Approved At</th>
+              <th className="pb-2 font-sfpro font-medium">Rejected At</th>
+              <th className="pb-2 font-sfpro font-medium">Created At</th>
             </tr>
           </thead>
           <tbody>
             {transactions.map((t) => (
               <tr key={t.id} className="border-t">
                 <td className="py-3 font-sfpro">{t.serialNumber}</td>
-                <td className="py-3 font-sfpro cursor-pointer hover:text-[#039994]" title={t.id}>
-                  {formatId(t.id)}
-                </td>
+                <td className="py-3 font-sfpro">{t.id}</td>
                 <td className="py-3 font-sfpro">{t.userType}</td>
                 <td className="py-3 font-sfpro">${t.amountRequested.toFixed(2)}</td>
                 <td className="py-3">
