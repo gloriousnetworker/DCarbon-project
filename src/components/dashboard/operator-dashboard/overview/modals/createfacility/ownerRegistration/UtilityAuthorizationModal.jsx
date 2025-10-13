@@ -23,6 +23,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
   const [utilityStatus, setUtilityStatus] = useState('');
   const [commercialRole, setCommercialRole] = useState('');
   const [showInviteOperatorModal, setShowInviteOperatorModal] = useState(false);
+  const [scale, setScale] = useState(1);
 
   const baseUrl = 'https://services.dcarbon.solutions';
 
@@ -208,6 +209,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
         setIframeUrl('https://utilityapi.com/authorize/DCarbon_Solutions');
         setShowIframe(true);
         setCurrentStep(2);
+        setScale(1);
       } else {
         toast.error('Failed to initiate utility authorization', { id: toastId });
       }
@@ -296,6 +298,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
 
   const handleIframeClose = () => {
     setShowIframe(false);
+    setScale(1);
     onClose();
     window.location.reload();
   };
@@ -310,23 +313,69 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
     onClose();
   };
 
+  const zoomIn = () => {
+    setScale(prev => Math.min(prev + 0.25, 3));
+  };
+
+  const zoomOut = () => {
+    setScale(prev => Math.max(prev - 0.25, 0.5));
+  };
+
+  const resetZoom = () => {
+    setScale(1);
+  };
+
   const displayedFacilities = showAllFacilities ? verifiedFacilities : verifiedFacilities.slice(0, 3);
 
   if (showIframe) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-        <div className="relative w-full max-w-4xl h-[90vh] bg-white rounded-2xl overflow-hidden">
+        <div className="relative w-full max-w-6xl h-[90vh] bg-white rounded-2xl overflow-hidden flex flex-col">
           <div className="flex items-center justify-between p-4 border-b">
             <h3 className="text-lg font-semibold text-[#039994]">Utility Authorization Portal</h3>
-            <button
-              onClick={handleIframeClose}
-              className="text-red-500 hover:text-red-700"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
+            <div className="flex items-center gap-4">
+              <div className="flex gap-2">
+                <button
+                  onClick={zoomOut}
+                  className="bg-gray-500 text-white px-3 py-1 rounded-md text-sm hover:bg-gray-600 flex items-center gap-1"
+                  disabled={scale <= 0.5}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                  Zoom Out
+                </button>
+                <button
+                  onClick={resetZoom}
+                  className="bg-gray-500 text-white px-3 py-1 rounded-md text-sm hover:bg-gray-600 flex items-center gap-1"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M15 3H21V9M21 3L15 9M9 21H3V15M3 21L9 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  Reset
+                </button>
+                <button
+                  onClick={zoomIn}
+                  className="bg-gray-500 text-white px-3 py-1 rounded-md text-sm hover:bg-gray-600 flex items-center gap-1"
+                  disabled={scale >= 3}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                  Zoom In
+                </button>
+              </div>
+              <button
+                onClick={handleIframeClose}
+                className="text-red-500 hover:text-red-700"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+            </div>
           </div>
+          
           <div className="p-4 bg-blue-50 border-b border-blue-200">
             <p className="text-sm text-blue-700">
               <strong>Step 1:</strong> Enter the email of your DCarbon account you are authorizing for.
@@ -335,11 +384,35 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
               <strong>Step 2:</strong> Enter the credentials (username and password) you use to login to your utility billing portal. This data is secure and not stored on our servers per utility regulations.
             </p>
           </div>
-          <iframe
-            src={iframeUrl}
-            className="w-full h-full"
-            title="Utility Authorization"
-          />
+
+          <div className="flex-1 p-4 bg-gray-100 overflow-hidden">
+            <div className="w-full h-full bg-white rounded-lg overflow-auto">
+              <div 
+                className="w-full h-full origin-top-left"
+                style={{ 
+                  transform: `scale(${scale})`,
+                  width: `${100/scale}%`,
+                  height: `${100/scale}%`
+                }}
+              >
+                <iframe
+                  src={iframeUrl}
+                  className="w-full h-full border-0"
+                  title="Utility Authorization"
+                  sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="p-3 border-t bg-gray-50 flex justify-between items-center">
+            <span className="text-sm text-gray-600">
+              Zoom: {Math.round(scale * 100)}%
+            </span>
+            <span className="text-sm text-gray-600">
+              Use scroll to navigate when zoomed in
+            </span>
+          </div>
         </div>
       </div>
     );
