@@ -79,7 +79,7 @@ const ProgressTracker = ({ currentStage, completedStages, onStageClick }) => {
   );
 };
 
-export default function DashboardOverview() {
+export default function DashboardOverview({ onSectionChange }) {
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [showFinanceModal, setShowFinanceModal] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
@@ -269,7 +269,7 @@ export default function DashboardOverview() {
           onStageClick={handleStageClick}
         />
       )}
-      <QuickActions />
+      <QuickActions onSectionChange={onSectionChange} />
 
       <hr className="border-gray-300" />
 

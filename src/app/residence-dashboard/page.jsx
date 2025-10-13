@@ -29,7 +29,6 @@ export default function UserDashboard() {
     setSidebarOpen(!sidebarOpen);
   };
 
-  // Mapping from section keys to display text for the navbar
   const sectionDisplayMap = {
     overview: 'Overview',
     transaction: 'Transaction',
@@ -43,9 +42,12 @@ export default function UserDashboard() {
   };
 
   let SectionComponent;
+  let sectionProps = {};
+  
   switch (activeSection) {
     case 'overview':
       SectionComponent = DashboardOverview;
+      sectionProps = { onSectionChange: handleSectionChange };
       break;
     case 'transaction':
       SectionComponent = Transaction;
@@ -67,14 +69,15 @@ export default function UserDashboard() {
       break;
     case 'logout':
       SectionComponent = DashboardLogout;
+      sectionProps = { onNavigateToOverview: handleNavigateToOverview };
       break;
     default:
       SectionComponent = DashboardOverview;
+      sectionProps = { onSectionChange: handleSectionChange };
   }
 
   return (
     <div className="min-h-screen flex bg-gray-100">
-      {/* Desktop Sidebar */}
       <aside className="hidden md:flex flex-col w-64 bg-white border-r h-screen fixed">
         <DashboardSidebar
           selectedSection={activeSection}
@@ -82,9 +85,7 @@ export default function UserDashboard() {
         />
       </aside>
 
-      {/* Main Area */}
       <div className="md:ml-64 flex-1 flex flex-col">
-        {/* Top Navbar with dynamic title */}
         <DashboardNavbar
           toggleSidebar={toggleSidebar}
           selectedSection={activeSection}
@@ -92,15 +93,12 @@ export default function UserDashboard() {
           onSectionChange={handleSectionChange}
         />
 
-        {/* Mobile Sidebar Overlay */}
         {sidebarOpen && (
           <div className="fixed inset-0 z-50 flex md:hidden">
-            {/* Overlay backdrop */}
             <div
               className="absolute inset-0 bg-black bg-opacity-50"
               onClick={toggleSidebar}
             />
-            {/* Sidebar itself */}
             <div className="relative bg-white w-64 h-full shadow-md">
               <DashboardSidebar
                 selectedSection={activeSection}
@@ -111,16 +109,9 @@ export default function UserDashboard() {
           </div>
         )}
 
-        {/* Main Content */}
         <main className="flex-1">
           <div className="max-w-7xl mx-auto p-6">
-            {activeSection === 'logout' ? (
-              <DashboardLogout 
-                onNavigateToOverview={handleNavigateToOverview}
-              />
-            ) : (
-              <SectionComponent />
-            )}
+            <SectionComponent {...sectionProps} />
           </div>
         </main>
       </div>

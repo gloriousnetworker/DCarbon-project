@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from "react";
 import AddResidenceModal from "./modals/AddResidenceModal";
-import UploadDocumentsModal from "./modals/UploadDocumentModal";
-import RequestRedemptionModal from "./modals/RequestRedemptionModal";
 import ReferOwnerModal from "./modals/ReferOwnerModal";
 import { pageTitle, labelClass, noteText } from "./styles";
 
-export default function QuickActions() {
+export default function QuickActions({ onSectionChange }) {
   const [modal, setModal] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [hasMeters, setHasMeters] = useState(false);
   const [walletData, setWalletData] = useState(null);
   const [walletLoading, setWalletLoading] = useState(true);
+  const [referralData, setReferralData] = useState(null);
+  const [referralLoading, setReferralLoading] = useState(true);
 
   const fetchWalletData = async () => {
     try {
@@ -43,18 +43,44 @@ export default function QuickActions() {
     }
   };
 
-  const currentPoints = walletData ? walletData.availableBalance * 1000 : 0;
-  const redemption = { 
-    done: Math.min(currentPoints, 3000), 
-    total: 3000 
-  };
-  const referral = { 
-    done: walletData ? Math.min(walletData.totalBonus * 1000, 3000) : 0, 
-    total: 3000 
+  const fetchReferralData = async () => {
+    try {
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const userId = loginResponse?.data?.user?.id;
+      const authToken = loginResponse?.data?.token;
+
+      if (!userId || !authToken) {
+        setReferralLoading(false);
+        return;
+      }
+
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/user/referred-progress/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        }
+      );
+      const result = await response.json();
+      if (result.success) {
+        setReferralData(result.data);
+      }
+    } catch (error) {
+      console.error('Error fetching referral data:', error);
+    } finally {
+      setReferralLoading(false);
+    }
   };
 
-  const redemptionPct = Math.round((redemption.done / redemption.total) * 100);
-  const referralPct = Math.round((referral.done / referral.total) * 100);
+  const currentPoints = walletData ? walletData.availableBalance * 1000 : 0;
+  const redemptionThreshold = 3000;
+  const redemptionPct = Math.min(Math.round((currentPoints / redemptionThreshold) * 100), 100);
+  
+  const referralCount = referralData ? referralData.referralCount : 0;
+  const referralThreshold = 10;
+  const referralPct = Math.min(Math.round((referralCount / referralThreshold) * 100), 100);
 
   const checkMeters = async () => {
     try {
@@ -88,6 +114,7 @@ export default function QuickActions() {
   useEffect(() => {
     checkMeters();
     fetchWalletData();
+    fetchReferralData();
   }, []);
 
   const openModal = (type) => {
@@ -115,6 +142,20 @@ export default function QuickActions() {
     return "";
   };
 
+  const handleUploadDocuments = () => {
+    if (isActionDisabled()) return;
+    if (onSectionChange) {
+      onSectionChange("residentialManagement");
+    }
+  };
+
+  const handleRedeemPoints = () => {
+    if (isActionDisabled()) return;
+    if (onSectionChange) {
+      onSectionChange("transaction");
+    }
+  };
+
   return (
     <div className="w-full py-4 px-4">
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
@@ -140,25 +181,25 @@ export default function QuickActions() {
             </div>
 
             <div
-              onClick={() => openModal("uploadDocuments")}
+              onClick={handleUploadDocuments}
               className={`p-4 rounded-2xl flex flex-col h-full min-h-[120px] ${
-                !hasMeters ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+                isActionDisabled() ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
               }`}
               style={{
                 background: "radial-gradient(433.01% 729.42% at 429.68% -283.45%, rgba(6,155,150,0.3) 0%, #FFFFFF 100%)",
               }}
               title={getActionTooltip()}
             >
-              <img src="/vectors/Files.png" alt="Upload Documents" className="h-6 w-6 mb-2" />
+              <img src="/vectors/Files.png" alt="Upload Documents for a Facility" className="h-6 w-6 mb-2" />
               <hr className="border-[#CCC] mb-2" />
-              <p className="text-[#1E1E1E] text-sm font-bold line-clamp-2">Upload Documents</p>
+              <p className="text-[#1E1E1E] text-sm font-bold line-clamp-2">Upload Documents for a Facility</p>
               {isActionDisabled() && <div className="mt-1 text-[#1E1E1E] text-xs">{getActionStatusText()}</div>}
             </div>
 
             <div
-              onClick={() => openModal("requestRedemption")}
+              onClick={handleRedeemPoints}
               className={`p-4 rounded-2xl flex flex-col h-full min-h-[120px] ${
-                !hasMeters ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+                isActionDisabled() ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
               }`}
               style={{
                 background: "radial-gradient(185.83% 225.47% at 148.19% -135.83%, #D3D3D3 0%, #58595B 100%)",
@@ -172,9 +213,9 @@ export default function QuickActions() {
             </div>
 
             <div
-              onClick={() => openModal("referOwner")}
+              onClick={() => !isActionDisabled() && openModal("referOwner")}
               className={`p-4 rounded-2xl flex flex-col h-full min-h-[120px] ${
-                !hasMeters ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+                isActionDisabled() ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
               }`}
               style={{
                 background: "radial-gradient(60% 119.12% at 114.01% -10%, #00B4AE 0%, #004E4B 100%)",
@@ -191,84 +232,69 @@ export default function QuickActions() {
 
         <div className="col-span-1 lg:col-span-2">
           <h2 className={pageTitle}>Rewards</h2>
-          <div className="bg-white rounded-2xl p-6 space-y-1 shadow h-full min-h-[248px]">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center">
-                <span className={labelClass}>Current Points Balance</span>
+          <div className="bg-white rounded-2xl p-6 shadow flex flex-col justify-between" style={{ minHeight: '248px' }}>
+            <div className="space-y-5">
+              <div className="pb-3 border-b border-gray-100">
+                <div className="flex justify-between items-center">
+                  <span className="text-[#6B7280] text-xs font-medium uppercase tracking-wide">Current Points Balance</span>
+                  <span className="text-2xl font-bold text-[#039994]">
+                    {walletLoading ? "..." : `${currentPoints.toLocaleString()}`}
+                  </span>
+                </div>
+                <span className="text-[10px] text-[#9CA3AF] mt-1 block">Total accumulated points</span>
               </div>
-              <span className="text-[#1E1E1E] font-bold">
-                {walletLoading ? "Loading..." : `${currentPoints.toLocaleString()}pts`}
-              </span>
+
+              <div className="space-y-3">
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm font-semibold text-[#1E1E1E]">Redemption Progress</span>
+                    <span className="text-lg font-bold text-[#039994]">{redemptionPct}%</span>
+                  </div>
+                  <div className="relative w-full h-3 bg-gradient-to-r from-[#F3F4F6] to-[#E5E7EB] rounded-full overflow-hidden shadow-inner">
+                    <div 
+                      className="h-full rounded-full transition-all duration-500 ease-out"
+                      style={{ 
+                        background: "linear-gradient(90deg, #039994 0%, #069B96 100%)",
+                        width: `${redemptionPct}%`,
+                        boxShadow: "0 2px 4px rgba(3, 153, 148, 0.3)"
+                      }} 
+                    />
+                  </div>
+                  <div className="flex justify-between mt-1">
+                    <span className="text-[10px] text-[#9CA3AF]">0 pts</span>
+                    <span className="text-[10px] text-[#9CA3AF]">{redemptionThreshold.toLocaleString()} pts</span>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm font-semibold text-[#1E1E1E]">Referral Bonus Count</span>
+                    <span className="text-lg font-bold text-[#1E1E1E]">
+                      {referralLoading ? "..." : `${referralCount}/${referralThreshold}`}
+                    </span>
+                  </div>
+                  <div className="relative w-full h-3 bg-gradient-to-r from-[#F3F4F6] to-[#E5E7EB] rounded-full overflow-hidden shadow-inner">
+                    <div 
+                      className="h-full rounded-full transition-all duration-500 ease-out"
+                      style={{ 
+                        background: "linear-gradient(90deg, #1E1E1E 0%, #3F3F46 100%)",
+                        width: `${referralPct}%`,
+                        boxShadow: "0 2px 4px rgba(30, 30, 30, 0.3)"
+                      }} 
+                    />
+                  </div>
+                  <div className="flex justify-between mt-1">
+                    <span className="text-[10px] text-[#9CA3AF]">0 referrals</span>
+                    <span className="text-[10px] text-[#9CA3AF]">{referralThreshold} referrals</span>
+                  </div>
+                </div>
+              </div>
             </div>
-
-            {walletData && (
-              <>
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center">
-                      <span className={labelClass}>Redemption progress</span>
-                    </div>
-                    <span className="text-[#039994] font-semibold">{redemption.done.toLocaleString()}/{redemption.total.toLocaleString()}pts</span>
-                  </div>
-                  <div className="w-full h-2 bg-[#EEEEEE] rounded-full overflow-hidden">
-                    <div className="h-full rounded-full" style={{ backgroundColor: "#039994", width: `${redemptionPct}%` }} />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center">
-                      <span className={labelClass}>Referral bonus progress</span>
-                    </div>
-                    <span className="text-[#1E1E1E] font-semibold">{referral.done.toLocaleString()}/{referral.total.toLocaleString()}pts</span>
-                  </div>
-                  <div className="w-full h-2 bg-[#D4D4D4] rounded-full overflow-hidden">
-                    <div className="h-full rounded-full" style={{ backgroundColor: "#1E1E1E", width: `${referralPct}%` }} />
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-4 pt-1">
-                  <div className="flex items-center space-x-1">
-                    <span className="block w-2 h-2 bg-[#D4D4D4] rounded-full" />
-                    <span className={noteText}>Bronze Tier</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <span className="block w-2 h-2 bg-[#A37C50] rounded-full" />
-                    <span className={noteText}>Silver Tier</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <span className="block w-2 h-2 bg-[#FFD700] rounded-full" />
-                    <span className={noteText}>Gold Tier</span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 pt-2">
-                  <div className="bg-[#069B9621] p-2 rounded-md">
-                    <span className="font-sfpro text-[11px] text-[#1E1E1E] block">
-                      Total Commission
-                    </span>
-                    <span className="font-sfpro font-semibold text-[12px] text-[#039994]">
-                      ${walletData.totalCommission.toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="bg-[#069B9621] p-2 rounded-md">
-                    <span className="font-sfpro text-[11px] text-[#1E1E1E] block">
-                      Pending Payout
-                    </span>
-                    <span className="font-sfpro font-semibold text-[12px] text-[#039994]">
-                      ${walletData.pendingPayout.toFixed(2)}
-                    </span>
-                  </div>
-                </div>
-              </>
-            )}
           </div>
         </div>
       </div>
 
       <AddResidenceModal isOpen={modal === "addResidence"} onClose={closeModal} />
-      <UploadDocumentsModal isOpen={modal === "uploadDocuments"} onClose={closeModal} />
-      <RequestRedemptionModal isOpen={modal === "requestRedemption"} onClose={closeModal} />
       <ReferOwnerModal isOpen={modal === "referOwner"} onClose={closeModal} />
     </div>
   );
