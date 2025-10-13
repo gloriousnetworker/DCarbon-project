@@ -112,8 +112,8 @@ const SubmitInvoice = ({ onBack, onInvoiceSubmitted }) => {
       return;
     }
 
-    if (!formData.quarter) {
-      showToast('Please select a quarter first', 'error');
+    if (!formData.quarter || !formData.invoiceNumber) {
+      showToast('Please select quarter and year first', 'error');
       return;
     }
 
@@ -127,11 +127,10 @@ const SubmitInvoice = ({ onBack, onInvoiceSubmitted }) => {
         return;
       }
 
-      const fileTypeName = `q${formData.quarter}`;
       const formDataUpload = new FormData();
       formDataUpload.append('file', selectedFile);
 
-      const response = await fetch(`https://services.dcarbon.solutions/api/file-storage/upload/${fileTypeName}`, {
+      const response = await fetch(`https://services.dcarbon.solutions/api/file-storage/upload/${formData.invoiceNumber}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${authToken}`,
@@ -182,7 +181,7 @@ const SubmitInvoice = ({ onBack, onInvoiceSubmitted }) => {
         userId: userId,
         amount: parseFloat(formData.amount),
         userType: 'COMMERCIAL',
-        invoiceId: formData.invoiceNumber
+        invoiceId: uploadedFileUrl
       };
 
       const response = await fetch('https://services.dcarbon.solutions/api/payout-request/request', {
