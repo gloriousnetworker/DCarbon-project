@@ -27,6 +27,27 @@ const REPORT_OPTIONS = [
   { label: "Commission Statement", value: "commission" }
 ];
 
+const removeDuplicateReferrals = (referrals) => {
+  const emailMap = new Map();
+  
+  referrals.forEach(referral => {
+    const email = referral.inviteeEmail;
+    if (!emailMap.has(email)) {
+      emailMap.set(email, referral);
+    } else {
+      const existing = emailMap.get(email);
+      const hasCompleteData = referral.name && referral.customerType && referral.role;
+      const existingHasCompleteData = existing.name && existing.customerType && existing.role;
+      
+      if (hasCompleteData && !existingHasCompleteData) {
+        emailMap.set(email, referral);
+      }
+    }
+  });
+  
+  return Array.from(emailMap.values());
+};
+
 export default function CustomerReport({ onNavigate }) {
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
@@ -115,10 +136,11 @@ export default function CustomerReport({ onNavigate }) {
         );
         
         let { referrals, metadata } = res.data.data;
-        setAllReferrals(referrals);
+        const uniqueReferrals = removeDuplicateReferrals(referrals);
+        setAllReferrals(uniqueReferrals);
         setTotalPages(metadata.totalPages);
         
-        const acceptedUsers = referrals.filter(user => user.status === 'ACCEPTED');
+        const acceptedUsers = uniqueReferrals.filter(user => user.status === 'ACCEPTED');
         for (const user of acceptedUsers) {
           if (user.inviteeEmail && !acceptedUsersCache[user.inviteeEmail]) {
             fetchAcceptedUserDetails(user.inviteeEmail);
@@ -272,7 +294,7 @@ export default function CustomerReport({ onNavigate }) {
       }
 
       return (
-        <tr key={ref.id || idx} className="border-b border-gray-200 hover:bg-gray-50">
+        <tr key={ref.id} className="border-b border-gray-200 hover:bg-gray-50">
           <td className="py-2 px-2 text-xs font-medium text-center">{(currentPage - 1) * LIMIT + idx + 1}</td>
           <td className="py-2 px-2 text-xs" title={name}>{truncateText(name, 12)}</td>
           <td className="py-2 px-2 text-xs" title={ref.inviteeEmail}>{truncateText(ref.inviteeEmail, 18)}</td>

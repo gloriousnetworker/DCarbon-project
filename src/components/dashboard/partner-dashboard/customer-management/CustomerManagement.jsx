@@ -64,6 +64,27 @@ export default function PartnerCustomerReport() {
   const [assignedStatusSort, setAssignedStatusSort] = useState('all');
   const [isAssignedSortOpen, setIsAssignedSortOpen] = useState(false);
 
+  const removeDuplicateReferrals = (referrals) => {
+    const emailMap = new Map();
+    
+    referrals.forEach(referral => {
+      const email = referral.inviteeEmail;
+      if (!emailMap.has(email)) {
+        emailMap.set(email, referral);
+      } else {
+        const existing = emailMap.get(email);
+        const hasCompleteData = referral.name && referral.customerType && referral.role;
+        const existingHasCompleteData = existing.name && existing.customerType && existing.role;
+        
+        if (hasCompleteData && !existingHasCompleteData) {
+          emailMap.set(email, referral);
+        }
+      }
+    });
+    
+    return Array.from(emailMap.values());
+  };
+
   useEffect(() => {
     checkPartnerType();
   }, []);
@@ -176,11 +197,12 @@ export default function PartnerCustomerReport() {
       if (response?.data?.status === 'success') {
         if (isInstaller) {
           const referrals = response.data.data || [];
-          setTableData(referrals);
+          const uniqueReferrals = removeDuplicateReferrals(referrals);
+          setTableData(uniqueReferrals);
           setCurrentPage(1);
           setTotalPages(1);
 
-          const acceptedUsers = referrals.filter(user => user.status === 'ACCEPTED');
+          const acceptedUsers = uniqueReferrals.filter(user => user.status === 'ACCEPTED');
           for (const user of acceptedUsers) {
             if (user.inviteeEmail && !acceptedUsersCache[user.inviteeEmail]) {
               fetchAcceptedUserDetails(user.inviteeEmail);
@@ -190,11 +212,12 @@ export default function PartnerCustomerReport() {
           const { referrals } = response.data.data;
           const metadata = response.data.data.metadata;
 
-          setTableData(referrals || []);
+          const uniqueReferrals = removeDuplicateReferrals(referrals || []);
+          setTableData(uniqueReferrals);
           setCurrentPage(metadata.page || 1);
           setTotalPages(metadata.totalPages || 1);
 
-          const acceptedUsers = referrals.filter(user => user.status === 'ACCEPTED');
+          const acceptedUsers = uniqueReferrals.filter(user => user.status === 'ACCEPTED');
           for (const user of acceptedUsers) {
             if (user.inviteeEmail && !acceptedUsersCache[user.inviteeEmail]) {
               fetchAcceptedUserDetails(user.inviteeEmail);
@@ -527,7 +550,7 @@ export default function PartnerCustomerReport() {
         
         return (
           <tr 
-            key={item.id || index} 
+            key={item.id} 
             className="border-b hover:bg-gray-50 cursor-pointer text-xs"
             onClick={() => handleRowClick(item)}
           >
@@ -563,7 +586,7 @@ export default function PartnerCustomerReport() {
       } else {
         return (
           <tr 
-            key={item.id || index} 
+            key={item.id} 
             className="border-b hover:bg-gray-50 cursor-pointer text-xs"
             onClick={() => handleRowClick(item)}
           >
