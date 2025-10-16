@@ -22,9 +22,9 @@ const MONTHS = [
 const YEARS = ["2023", "2024", "2025"];
 
 const REPORT_OPTIONS = [
-  { label: "Customer Report", value: "customer" },
+  { label: "Partner Report", value: "customer" },
   { label: "Generation Report", value: "generation" },
-  { label: "Commission Statement", value: "commission" }
+  { label: "Earnings Statement", value: "commission" }
 ];
 
 const removeDuplicateReferrals = (referrals) => {
@@ -360,7 +360,7 @@ export default function CustomerReport({ onNavigate }) {
               onClick={() => setShowReportDropdown(!showReportDropdown)}
               className="flex items-center text-2xl font-semibold text-[#039994]"
             >
-              Customer Report
+              Partner Report
               <svg className={`ml-2 w-5 h-5 transition-transform ${showReportDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>

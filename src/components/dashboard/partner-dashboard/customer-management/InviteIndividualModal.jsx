@@ -278,7 +278,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
   const partnerRoles = [
     { value: "SALES_AGENT", label: "Sales Agent" },
     { value: "FINANCE_COMPANY", label: "Finance Company" },
-    { value: "INSTALLER", label: "Installer" }
+    { value: "INSTALLER", label: "Contractor/EPC" }
   ];
 
   const commercialRoles = [

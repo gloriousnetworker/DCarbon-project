@@ -512,7 +512,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
   const partnerRoles = [
     { value: "SALES_AGENT", label: "Sales Agent" },
     { value: "FINANCE_COMPANY", label: "Finance Company" },
-    { value: "INSTALLER", label: "Installer" }
+    { value: "INSTALLER", label: "Contractor/EPC" }
   ];
 
   const commercialRoles = [
@@ -887,7 +887,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
               d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
             />
           </svg>
-          CSV should contain columns: name, email, phoneNumber, customerType (RESIDENTIAL/COMMERCIAL/PARTNER), role (OWNER/OPERATOR/BOTH/SALES_AGENT/FINANCE_COMPANY/INSTALLER), message, address1, address2, city, state, zipCode
+          CSV should contain columns: name, email, phoneNumber, customerType (RESIDENTIAL/COMMERCIAL/PARTNER), role (OWNER/OPERATOR/BOTH/SALES_AGENT/FINANCE_COMPANY/CONTRACTOR/EPC), message, address1, address2, city, state, zipCode
         </div>
       </div>
     </div>

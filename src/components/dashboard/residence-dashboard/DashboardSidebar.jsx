@@ -226,7 +226,7 @@ const DashboardSidebar = ({
           }`}
         >
           <FiHelpCircle className={iconBase} color={isActive("helpCenter") ? "#FFFFFF" : "#039994"} />
-          <span>FAQs</span>
+          <span>Help & Tutorials</span>
         </button>
         <button
           onClick={() => onSectionChange("contactSupport")}

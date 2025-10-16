@@ -11,7 +11,7 @@ export default function ExportReportModal({
   const [loading, setLoading] = useState(false);
 
   const generateCSV = (data) => {
-    const headers = ["S/N", "Name", "Email", "Customer Type", "Role", "Commissions", "Date Registered", "Status"];
+    const headers = ["S/N", "Name", "Email", "Partner Type", "Role", "Commissions", "Date Registered", "Status"];
     
     let csvContent = headers.join(",") + "\n";
     

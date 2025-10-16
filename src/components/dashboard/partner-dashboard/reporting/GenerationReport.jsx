@@ -11,9 +11,9 @@ import {
 import ExportReportModal from "./ExportReportModal";
 
 const REPORT_OPTIONS = [
-  { label: "Customer Report", value: "customer" },
+  { label: "Partner Report", value: "customer" },
   { label: "Generation Report", value: "generation" },
-  { label: "Commission Statement", value: "commission" }
+  { label: "Earnings Statement", value: "commission" }
 ];
 
 export default function GenerationReport({ onNavigate }) {

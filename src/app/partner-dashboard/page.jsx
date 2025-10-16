@@ -32,10 +32,10 @@ export default function UserDashboard() {
   const sectionDisplayMap = {
     overview: 'Overview',
     reporting: 'Reporting',
-    customerManagement: 'Customer Management',
+    customerManagement: 'Partner Management',
     myAccount: 'My Account',
     notifications: 'Notification',
-    helpCenter: 'Help Centre (FAQs)',
+    helpCenter: 'Help & Tutorials',
     contactSupport: 'Contact Support',
     logout: 'Log Out',
   };

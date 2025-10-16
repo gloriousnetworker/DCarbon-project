@@ -625,7 +625,7 @@ export default function PartnerCustomerReport() {
 
   return (
     <div className={`rounded-md shadow-md p-6 w-full ${mainContainer}`}>
-      <h2 className={`${pageTitle} text-left mb-6 text-2xl text-[#039994]`}>Customer Management</h2>
+      <h2 className={`${pageTitle} text-left mb-6 text-2xl text-[#039994]`}>Partner Management</h2>
       
       <div className="w-full flex flex-col md:flex-row items-start md:items-center justify-between mb-4">
         <div className="flex items-center space-x-3">
@@ -806,7 +806,7 @@ export default function PartnerCustomerReport() {
               <th className="py-2 px-1 text-left" style={{ fontSize: '10px', width: '70px' }}>Name</th>
               <th className="py-2 px-1 text-left" style={{ fontSize: '10px', width: '90px' }}>Email</th>
               <th className="py-2 px-1 text-left" style={{ fontSize: '10px', width: '50px' }}>Role</th>
-              <th className="py-2 px-1 text-left" style={{ fontSize: '10px', width: '70px' }}>Customer Type</th>
+              <th className="py-2 px-1 text-left" style={{ fontSize: '10px', width: '70px' }}>Partner Type</th>
               <th className="py-2 px-1 text-left" style={{ fontSize: '10px', width: '60px' }}>Status</th>
               <th className="py-2 px-1 text-left" style={{ fontSize: '10px', width: '80px' }}>Document Status</th>
               <th className="py-2 px-1 text-left" style={{ fontSize: '10px', width: '70px' }}>Assigned Status</th>

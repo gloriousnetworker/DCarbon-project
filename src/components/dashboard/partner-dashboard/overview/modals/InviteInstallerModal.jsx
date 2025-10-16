@@ -100,7 +100,7 @@ export default function InviteInstallerModal({ isOpen, onClose }) {
       );
 
       if (response.data.status === "success") {
-        toast.success("Installer invitation sent successfully");
+        toast.success("Contractor/EPC invitation sent successfully");
         resetForm();
         onClose();
       } else {
@@ -158,7 +158,7 @@ export default function InviteInstallerModal({ isOpen, onClose }) {
             />
           </div>
 
-          <h2 className={`text-base font-semibold ${pageTitle} text-center`}>Invite an Installer</h2>
+          <h2 className={`text-base font-semibold ${pageTitle} text-center`}>Invite Contractor/EPC</h2>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-2 mt-3">
@@ -170,7 +170,7 @@ export default function InviteInstallerModal({ isOpen, onClose }) {
               value={formData.name}
               onChange={handleChange}
               className={`${inputClass} text-xs`}
-              placeholder="Enter installer's name"
+              placeholder="Enter Contractor/EPC's name"
               required
             />
           </div>
@@ -226,7 +226,7 @@ export default function InviteInstallerModal({ isOpen, onClose }) {
               className={`flex-1 ${buttonPrimary} flex items-center justify-center py-1 text-xs`}
               disabled={loading}
             >
-              Invite Installer
+              Invite Contractor/EPC
             </button>
           </div>
         </form>

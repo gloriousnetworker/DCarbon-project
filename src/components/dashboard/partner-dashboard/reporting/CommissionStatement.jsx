@@ -26,9 +26,9 @@ const MONTHS = [
 ];
 
 const REPORT_OPTIONS = [
-  { label: "Customer Report", value: "customer" },
+  { label: "Partner Report", value: "customer" },
   { label: "Generation Report", value: "generation" },
-  { label: "Commission Statement", value: "commission" }
+  { label: "Earnings Statement", value: "commission" }
 ];
 
 export default function CommissionStatement({ onNavigate }) {
@@ -260,7 +260,7 @@ export default function CommissionStatement({ onNavigate }) {
               onClick={() => setShowReportDropdown(!showReportDropdown)}
               className="flex items-center text-2xl font-semibold text-[#039994]"
             >
-              Commission Statement
+              Earnings Statement
               <svg 
                 className={`ml-2 w-5 h-5 transition-transform ${showReportDropdown ? 'rotate-180' : ''}`}
                 fill="none" 
@@ -400,7 +400,7 @@ export default function CommissionStatement({ onNavigate }) {
 
         <div className="bg-[#039994] text-white p-4 rounded-lg mb-8">
           <div className="flex justify-between items-center">
-            <span className="text-lg font-semibold">Total Commission Payable</span>
+            <span className="text-lg font-semibold">Total Earning Payable</span>
             <span className="text-xl font-bold">{commissionData.totalCommission}</span>
           </div>
         </div>

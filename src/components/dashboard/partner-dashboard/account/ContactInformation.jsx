@@ -23,6 +23,9 @@ const ContactInformation = ({ userData }) => {
   const [signatureUrl, setSignatureUrl] = useState("");
   const [territory, setTerritory] = useState([]);
   const [partnerData, setPartnerData] = useState(null);
+  const [companyName, setCompanyName] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [address, setAddress] = useState("");
 
   const baseUrl = "https://services.dcarbon.solutions";
 
@@ -51,7 +54,7 @@ const ContactInformation = ({ userData }) => {
         setFirstName(user.firstName || "");
         setLastName(user.lastName || "");
         setEmail(user.email || "");
-        setUserType(user.userType || "");
+        setUserType((user.userType || "").toLowerCase());
         setReferralCode(user.referralCode || "");
 
         const partnerResponse = await axios.get(
@@ -64,9 +67,13 @@ const ContactInformation = ({ userData }) => {
         );
         
         if (partnerResponse.data?.data) {
-          setPartnerData(partnerResponse.data.data);
-          setPartnerType(partnerResponse.data.data.partnerType);
-          setTerritory(partnerResponse.data.data.territory || []);
+          const partner = partnerResponse.data.data;
+          setPartnerData(partner);
+          setPartnerType((partner.partnerType || "").toLowerCase());
+          setTerritory(partner.territory || []);
+          setCompanyName(partner.name || "");
+          setPhoneNumber(partner.phoneNumber || "");
+          setAddress(partner.address || "");
         }
 
         const agreementResponse = await axios.get(
@@ -119,7 +126,10 @@ const ContactInformation = ({ userData }) => {
 
       if (partnerData) {
         const partnerPayload = {
-          territory: territory
+          territory: territory,
+          name: companyName,
+          phoneNumber: phoneNumber,
+          address: address
         };
 
         await axios.put(
@@ -405,6 +415,42 @@ const ContactInformation = ({ userData }) => {
               className={inputClass}
               style={inputStyle}
               placeholder="Email"
+            />
+          </div>
+
+          <div>
+            <label className={labelClass}>Phone Number</label>
+            <input
+              type="text"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+              className={inputClass}
+              style={inputStyle}
+              placeholder="Phone Number"
+            />
+          </div>
+
+          <div>
+            <label className={labelClass}>Company Name</label>
+            <input
+              type="text"
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
+              className={inputClass}
+              style={inputStyle}
+              placeholder="Company Name"
+            />
+          </div>
+
+          <div>
+            <label className={labelClass}>Address</label>
+            <input
+              type="text"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              className={inputClass}
+              style={inputStyle}
+              placeholder="Address"
             />
           </div>
 

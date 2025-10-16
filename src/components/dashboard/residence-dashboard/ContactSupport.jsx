@@ -126,7 +126,7 @@ const DashboardContactSupport = () => {
 
       <div className="w-full max-w-3xl bg-white p-8 rounded-lg shadow-md">
         <h2 className="mb-6 font-sfpro text-[24px] leading-[100%] tracking-[-0.05em] font-[600] text-[#1E1E1E]">
-          How can DCarbon be of service today?
+          Reach out and we will get back to you shortly
         </h2>
         
         <form onSubmit={handleSubmit} className="w-full max-w-md space-y-6">
@@ -151,15 +151,15 @@ const DashboardContactSupport = () => {
             <select
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#626060]"
+              className={selectClass}
               required
             >
               <option value="">Choose reason</option>
-              <option value="Billing">Billing</option>
-              <option value="Technical Support">Technical Support</option>
-              <option value="Feedback">Feedback</option>
-              <option value="New Feature Suggestion">New Feature Suggestion</option>
-              <option value="Other">Other</option>
+              <option value="Registration Support">Registration Support</option>
+              <option value="Payment Support">Payment Support</option>
+              <option value="Technical Assistance">Technical Assistance</option>
+              <option value="Feature Suggestion">Feature Suggestion</option>
+              <option value="Other Comments">Other Comments</option>
             </select>
           </div>
 

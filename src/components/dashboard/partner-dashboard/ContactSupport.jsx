@@ -82,7 +82,7 @@ const DashboardContactSupport = () => {
 
       <div className="w-full max-w-3xl bg-white p-8 rounded-lg shadow-md">
         <h2 className="mb-6 font-sfpro text-[24px] leading-[100%] tracking-[-0.05em] font-[600] text-[#1E1E1E]">
-          How can DCarbon be of service today?
+          Reach out and we will get back to you shortly
         </h2>
         
         <form onSubmit={handleSubmit} className={formWrapper}>
@@ -113,10 +113,11 @@ const DashboardContactSupport = () => {
               required
             >
               <option value="">Choose reason</option>
-              <option value="Billing">Billing</option>
-              <option value="Technical Support">Technical Support</option>
-              <option value="Feedback">Feedback</option>
-              <option value="Other">Other</option>
+              <option value="Registration Support">Registration Support</option>
+              <option value="Payment Support">Payment Support</option>
+              <option value="Technical Assistance">Technical Assistance</option>
+              <option value="Feature Suggestion">Feature Suggestion</option>
+              <option value="Other Comments">Other Comments</option>
             </select>
           </div>
 
@@ -138,7 +139,7 @@ const DashboardContactSupport = () => {
           {/* Optional File Upload */}
           <div>
             <label className={labelClass}>
-              Attachments (Optional)
+              Screen Capture Image or Supporting Document (Optional)
             </label>
             <div className={uploadFieldWrapper}>
               <label className={uploadInputLabel}>
