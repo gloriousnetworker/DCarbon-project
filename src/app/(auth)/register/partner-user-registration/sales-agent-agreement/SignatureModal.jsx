@@ -412,7 +412,7 @@ export default function SignatureModal({ isOpen, onClose, onComplete }) {
                   Saving...
                 </>
               ) : (
-                'Sign Agreement'
+                'Add Signature'
               )}
             </button>
           </div>

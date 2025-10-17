@@ -158,9 +158,6 @@ export default function PartnerInstallerAgreement() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${authToken}`,
           },
-          body: JSON.stringify({
-            signature: signatureUrl
-          }),
         }
       );
 
@@ -182,21 +179,16 @@ export default function PartnerInstallerAgreement() {
     }
   };
 
-  const handleSignFirst = () => {
-    if (!isChecked) {
-      toast.error("Please accept the agreement first");
-      return;
-    }
+  const handleSignatureClick = () => {
     setShowSignatureModal(true);
   };
 
-  const handleSignatureComplete = async (signatureData) => {
+  const handleSignatureComplete = async () => {
     setShowSignatureModal(false);
     setHasSigned(true);
-    setSignatureUrl(signatureData);
-    const success = await acceptUserAgreement();
-    if (success) {
-      setRegistrationModalOpen(true);
+    const agreementData = await fetchUserAgreement();
+    if (agreementData && agreementData.signature) {
+      setSignatureUrl(agreementData.signature);
     }
   };
 
@@ -211,7 +203,7 @@ export default function PartnerInstallerAgreement() {
     }
 
     if (!hasSigned) {
-      toast.error("Please add your signature");
+      toast.error("Please add your signature first");
       return;
     }
 
@@ -275,12 +267,12 @@ export default function PartnerInstallerAgreement() {
     doc.setFontSize(14);
     doc.setTextColor(3, 153, 148);
     doc.setFont('helvetica', 'bold');
-    doc.text('PROGRAM PARTNER AGREEMENT', 105, 20, { align: 'center' });
+    doc.text('DCARBON SOLUTIONS PROGRAM PARTNER AGREEMENT', 105, 20, { align: 'center' });
     doc.setFontSize(10);
     doc.setTextColor(0, 0, 0);
     
     const agreementText = [
-      "This Program Partner Agreement ('Agreement') is made between DCarbon Solutions ('Company')",
+      "This DCarbon Solutions Program Partner Agreement ('Agreement') is made between DCarbon Solutions ('Company')",
       "and the undersigned Partner ('Partner').",
       "",
       "1. Partner Responsibilities: Partner agrees to install, maintain, and service renewable energy",
@@ -323,7 +315,7 @@ export default function PartnerInstallerAgreement() {
     yPosition += 15;
     doc.setFontSize(10);
     doc.setTextColor(0, 0, 0);
-    doc.text('By signing below, I acknowledge that I have read and agree to the Program Partner', 105, yPosition, { align: 'center' });
+    doc.text('By signing below, I acknowledge that I have read and agree to the DCarbon Solutions Program Partner', 105, yPosition, { align: 'center' });
     yPosition += 7;
     doc.text('Agreement presented in this document.', 105, yPosition, { align: 'center' });
     yPosition += 20;
@@ -353,7 +345,7 @@ export default function PartnerInstallerAgreement() {
     doc.text('Company Name: _________________________', 40, yPosition + 20);
     doc.text('Partner ID: _______', 40, yPosition + 30);
     
-    doc.save("DCarbon_Partner_Agreement.pdf");
+    doc.save("DCarbon_Solutions_Program_Partner_Agreement.pdf");
   };
 
   return (
@@ -376,7 +368,7 @@ export default function PartnerInstallerAgreement() {
 
           <div className="flex justify-between items-center mb-6">
             <h1 className="font-[600] text-[36px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro">
-              Program Partner Agreement
+              DCarbon Solutions Program Partner Agreement
             </h1>
             <button onClick={handleDownload} className="text-[#15104D] hover:opacity-80">
               <FaDownload size={20} />
@@ -391,14 +383,14 @@ export default function PartnerInstallerAgreement() {
               className="mt-1 w-4 h-4 text-[#039994] border-gray-300 rounded focus:ring-[#039994] accent-[#039994]"
             />
             <label className="ml-3 font-sfpro font-[400] text-[14px] leading-[150%] text-[#039994] cursor-pointer">
-              I agree to the Program Partner Agreement <span className="text-red-500">*</span>
+              I agree to the DCarbon Solutions Program Partner Agreement <span className="text-red-500">*</span>
             </label>
           </div>
 
           <div className="h-[400px] overflow-y-auto mb-6 font-sfpro text-[12px] leading-[150%] font-[400] text-[#1E1E1E] p-6 bg-gray-50 rounded-lg">
-            <h3 className="font-bold text-[#039994] mb-4">PROGRAM PARTNER AGREEMENT</h3>
+            <h3 className="font-bold text-[#039994] mb-4">DCARBON SOLUTIONS PROGRAM PARTNER AGREEMENT</h3>
             <p className="mb-4">
-              This Program Partner Agreement ("Agreement") is made between DCarbon Solutions ("Company") and the undersigned Partner ("Partner").
+              This DCarbon Solutions Program Partner Agreement ("Agreement") is made between DCarbon Solutions ("Company") and the undersigned Partner ("Partner").
             </p>
             <p className="mb-3"><strong>1. Partner Responsibilities:</strong> Partner agrees to install, maintain, and service renewable energy systems in accordance with Company standards and specifications.</p>
             <p className="mb-3"><strong>2. Compensation:</strong> Company shall pay Partner according to the agreed-upon rate schedule for completed installations that meet quality standards.</p>
@@ -414,28 +406,29 @@ export default function PartnerInstallerAgreement() {
             <h3 className="block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]">
               Signature <span className="text-red-500">*</span>
             </h3>
-            {signatureUrl ? (
-              <div className="border border-gray-300 rounded p-4 mb-4 text-gray-700">
+            <div 
+              onClick={handleSignatureClick}
+              className={`border ${signatureUrl ? 'border-gray-300' : 'border-dashed border-gray-300'} rounded p-4 mb-4 ${signatureUrl ? 'text-gray-700 cursor-default' : 'text-gray-500 italic cursor-pointer hover:border-[#039994] hover:bg-gray-50'} font-sfpro transition-colors`}
+            >
+              {signatureUrl ? (
                 <img src={signatureUrl} alt="Partner signature" className="max-w-full h-auto" />
-              </div>
-            ) : (
-              <div className="border border-dashed border-gray-300 rounded p-4 mb-4 text-gray-500 italic font-sfpro">
-                No signature yet
-              </div>
-            )}
+              ) : (
+                "Click to add your signature"
+              )}
+            </div>
           </div>
 
           <div className="flex justify-between gap-4">
             <button
-              onClick={handleSignFirst}
-              disabled={!isChecked || loading}
+              onClick={handleSubmit}
+              disabled={!isChecked || !hasSigned || loading}
               className={`flex-1 rounded-md text-white font-semibold py-3 focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] transition-colors ${
-                isChecked && !loading
+                isChecked && hasSigned && !loading
                   ? "bg-[#039994] hover:bg-[#02857f]"
                   : "bg-gray-400 cursor-not-allowed"
               }`}
             >
-              {loading ? "Processing..." : hasSigned ? "Accepted" : "Accept Agreement"}
+              {loading ? "Processing..." : "Accept Agreement"}
             </button>
             <button
               onClick={handleDeclineClick}

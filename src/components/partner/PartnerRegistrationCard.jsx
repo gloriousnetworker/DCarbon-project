@@ -44,17 +44,65 @@ export default function StepOneCard() {
     }
   }, []);
 
+  const getCompanyNameLabel = () => {
+    switch(partnerType) {
+      case 'sales_agent':
+        return 'Sales Agent Name';
+      case 'installer':
+        return 'Contractor/EPC Company Name';
+      case 'finance_company':
+      default:
+        return 'Company Name';
+    }
+  };
+
+  const getCompanyNamePlaceholder = () => {
+    switch(partnerType) {
+      case 'sales_agent':
+        return 'Sales agent name';
+      case 'installer':
+        return 'Contractor/EPC company name';
+      case 'finance_company':
+      default:
+        return 'Company name';
+    }
+  };
+
+  const getEmailLabel = () => {
+    switch(partnerType) {
+      case 'sales_agent':
+        return 'Sales Agent Email';
+      case 'installer':
+        return 'Contractor/EPC Company Email';
+      case 'finance_company':
+      default:
+        return 'Company Email';
+    }
+  };
+
+  const getEmailPlaceholder = () => {
+    switch(partnerType) {
+      case 'sales_agent':
+        return 'salesagent@domain.com';
+      case 'installer':
+        return 'contractor@domain.com';
+      case 'finance_company':
+      default:
+        return 'name@domain.com';
+    }
+  };
+
   const validateField = (name, value) => {
     const newErrors = { ...errors };
 
     switch (name) {
       case 'partnerName':
         if (!value.trim()) {
-          newErrors.partnerName = 'Company name is required';
+          newErrors.partnerName = `${getCompanyNameLabel()} is required`;
         } else if (value.trim().length < 2) {
-          newErrors.partnerName = 'Company name must be at least 2 characters';
+          newErrors.partnerName = `${getCompanyNameLabel()} must be at least 2 characters`;
         } else if (value.trim().length > 100) {
-          newErrors.partnerName = 'Company name must be less than 100 characters';
+          newErrors.partnerName = `${getCompanyNameLabel()} must be less than 100 characters`;
         } else {
           delete newErrors.partnerName;
         }
@@ -63,7 +111,7 @@ export default function StepOneCard() {
       case 'email':
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!value.trim()) {
-          newErrors.email = 'Email address is required';
+          newErrors.email = `${getEmailLabel()} is required`;
         } else if (!emailRegex.test(value.trim())) {
           newErrors.email = 'Please enter a valid email address';
         } else if (value.trim().length > 254) {
@@ -424,13 +472,13 @@ export default function StepOneCard() {
 
           <div>
             <label className="block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]">
-              Company Name <span className="text-red-500">*</span>
+              {getCompanyNameLabel()} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               value={partnerName}
               onChange={handleInputChange(setPartnerName, 'partnerName')}
-              placeholder="Company name"
+              placeholder={getCompanyNamePlaceholder()}
               className={getInputClassName('partnerName')}
               required
               maxLength={100}
@@ -459,13 +507,13 @@ export default function StepOneCard() {
 
           <div>
             <label className="block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]">
-              Partner Company Email <span className="text-red-500">*</span>
+              {getEmailLabel()} <span className="text-red-500">*</span>
             </label>
             <input
               type="email"
               value={email}
               onChange={handleInputChange(setEmail, 'email')}
-              placeholder="name@domain.com"
+              placeholder={getEmailPlaceholder()}
               className={getInputClassName('email')}
               required
               maxLength={254}

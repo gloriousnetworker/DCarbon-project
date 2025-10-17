@@ -36,7 +36,6 @@ function RegisterCardContent() {
   const [hoveredButton, setHoveredButton] = useState(null);
   const [isOperatorType, setIsOperatorType] = useState(false);
   const [partnerType, setPartnerType] = useState('');
-  const [showPartnerRoles, setShowPartnerRoles] = useState(false);
 
   const searchParams = useSearchParams();
 
@@ -183,16 +182,10 @@ function RegisterCardContent() {
       return;
     }
     setUserCategory(category);
-    if (category === 'Partner') {
-      setShowPartnerRoles(true);
-    } else {
-      setShowPartnerRoles(false);
-    }
   };
 
   const handlePartnerRoleSelect = (role) => {
     setPartnerType(role);
-    setShowPartnerRoles(false);
   };
 
   const toggleReferralField = () => {
@@ -336,40 +329,30 @@ function RegisterCardContent() {
               <label htmlFor="email" className={labelClass}>
                 Email Address <span className="text-red-500">*</span>
               </label>
-              <div className="relative">
-                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[#1E1E1E] text-[14px]">@</span>
-                <input
-                  type="email"
-                  id="email"
-                  placeholder="name@domain.com"
-                  className={`${inputClass} ${grayPlaceholder} pl-10`}
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
+              <input
+                type="email"
+                id="email"
+                placeholder="name@domain.com"
+                className={`${inputClass} ${grayPlaceholder}`}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
             </div>
 
             <div>
               <label htmlFor="phone" className={labelClass}>
                 Phone Number <span className="text-red-500">*</span>
               </label>
-              <div className="relative">
-                <img
-                  src="/vectors/phone.png"
-                  alt="Phone icon"
-                  className="absolute w-[24px] h-[24px] top-1/2 left-2 -translate-y-1/2"
-                />
-                <input
-                  type="tel"
-                  id="phone"
-                  placeholder="+1 000-000-0000"
-                  className={`${inputClass} ${grayPlaceholder} pl-10`}
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  required
-                />
-              </div>
+              <input
+                type="tel"
+                id="phone"
+                placeholder="+1 000-000-0000"
+                className={`${inputClass} ${grayPlaceholder}`}
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                required
+              />
             </div>
 
             <div>
@@ -430,7 +413,7 @@ function RegisterCardContent() {
 
             <div>
               <label className={labelClass}>
-                Solar System Type <span className="text-red-500">*</span>
+                Are you a Solar Owner or a DCarbon Partner? <span className="text-red-500">*</span>
               </label>
               <div className="flex gap-4">
                 {availableUserCategories.map((category) => (
@@ -461,7 +444,7 @@ function RegisterCardContent() {
               </div>
             </div>
 
-            {showPartnerRoles && (
+            {userCategory === 'Partner' && (
               <div className="mt-4">
                 <label className={labelClass}>
                   Partner Role <span className="text-red-500">*</span>
@@ -501,6 +484,21 @@ function RegisterCardContent() {
                     Finance Company
                   </button>
                 </div>
+                {!isCategoryDisabled('Partner') && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUserCategory('');
+                      setPartnerType('');
+                    }}
+                    className="mt-3 flex items-center gap-2 text-[#039994] text-sm font-sfpro hover:underline"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    Back to Solar Owner Options
+                  </button>
+                )}
               </div>
             )}
 
@@ -513,7 +511,7 @@ function RegisterCardContent() {
                   type={passwordVisible ? 'text' : 'password'}
                   id="password"
                   className={`${inputClass} ${grayPlaceholder} pr-10`}
-                  placeholder="|**"
+                  placeholder="Enter password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -549,7 +547,7 @@ function RegisterCardContent() {
                   type={confirmPasswordVisible ? 'text' : 'password'}
                   id="confirmPassword"
                   className={`${inputClass} ${grayPlaceholder} pr-10`}
-                  placeholder="|**"
+                  placeholder="Re-enter password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required

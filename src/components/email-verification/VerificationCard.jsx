@@ -1,41 +1,25 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import axios from 'axios';
+import Loader from '../../components/loader/Loader';
+import EmailVerificationModal from '../../components/modals/EmailVerificationModal';
+import toast, { Toaster } from 'react-hot-toast';
 
-const mainContainer = "min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-teal-50 to-white px-4 py-8";
-const headingContainer = "mb-4";
-const pageTitle = "text-3xl font-bold text-gray-800 text-center font-sfpro";
-const inputClass = "w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-sm";
-const buttonPrimary = "w-full bg-[#039994] text-white py-3 rounded-lg font-medium hover:bg-[#027d73] transition-colors font-sfpro";
-const spinnerOverlay = "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50";
-
-function Loader() {
-  return (
-    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
-  );
-}
-
-function EmailVerificationModal({ closeModal }) {
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
-      <div className="bg-white rounded-lg p-8 max-w-md w-full text-center">
-        <div className="mb-4">
-          <svg className="w-16 h-16 mx-auto text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
-        </div>
-        <h2 className="text-2xl font-bold mb-2 text-gray-800">Email Verified!</h2>
-        <p className="text-gray-600 mb-6">Your email has been successfully verified.</p>
-        <button
-          onClick={closeModal}
-          className="bg-[#039994] text-white px-6 py-2 rounded-lg hover:bg-[#027d73] transition-colors"
-        >
-          Continue
-        </button>
-      </div>
-    </div>
-  );
-}
+import {
+  mainContainer,
+  headingContainer,
+  pageTitle,
+  progressContainer,
+  progressBarWrapper,
+  progressBarActive,
+  progressStepText,
+  inputClass,
+  buttonPrimary,
+  spinnerOverlay,
+  noteText,
+  termsTextContainer
+} from './styles';
 
 export default function EmailVerificationCard() {
   const [loading, setLoading] = useState(false);
@@ -44,26 +28,12 @@ export default function EmailVerificationCard() {
   const [showModal, setShowModal] = useState(false);
   const [userEmail, setUserEmail] = useState('');
   const [isEditingEmail, setIsEditingEmail] = useState(false);
-  const [toasts, setToasts] = useState([]);
 
   const otpInputs = useRef([]);
 
-  const toast = {
-    success: (message) => {
-      const id = Date.now();
-      setToasts(prev => [...prev, { id, message, type: 'success' }]);
-      setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3000);
-    },
-    error: (message) => {
-      const id = Date.now();
-      setToasts(prev => [...prev, { id, message, type: 'error' }]);
-      setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3000);
-    }
-  };
-
   useEffect(() => {
-    const storedEmail = 'awamaaronvictor+installedcus@gmail.com';
-    setUserEmail(storedEmail);
+    const storedEmail = localStorage.getItem('userEmail');
+    if (storedEmail) setUserEmail(storedEmail);
   }, []);
 
   useEffect(() => {
@@ -109,19 +79,15 @@ export default function EmailVerificationCard() {
       return;
     }
     try {
-      const response = await fetch('https://services.dcarbon.solutions/api/user/verify-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: userEmail, otp: Number(enteredOtp) })
-      });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'OTP verification failed');
-      }
+      await axios.post(
+        'https://services.dcarbon.solutions/api/user/verify-otp',
+        { email: userEmail, otp: Number(enteredOtp) },
+        { headers: { 'Content-Type': 'application/json' } }
+      );
       toast.success('Email verified successfully');
       setShowModal(true);
     } catch (err) {
-      toast.error(err.message || 'OTP verification failed');
+      toast.error(err.response?.data?.message || 'OTP verification failed');
     } finally {
       setLoading(false);
     }
@@ -135,21 +101,18 @@ export default function EmailVerificationCard() {
     }
     setLoading(true);
     try {
-      const response = await fetch('https://services.dcarbon.solutions/api/user/resend-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: userEmail })
-      });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Resend OTP failed');
-      }
+      await axios.post(
+        'https://services.dcarbon.solutions/api/user/resend-otp',
+        { email: userEmail },
+        { headers: { 'Content-Type': 'application/json' } }
+      );
       toast.success('OTP resent successfully');
+      localStorage.setItem('userEmail', userEmail);
       setOtp(Array(6).fill(''));
       setTimeLeft(300);
       otpInputs.current[0]?.focus();
     } catch (err) {
-      toast.error(err.message || 'Resend OTP failed');
+      toast.error(err.response?.data?.message || 'Resend OTP failed');
     } finally {
       setLoading(false);
     }
@@ -161,18 +124,7 @@ export default function EmailVerificationCard() {
 
   return (
     <>
-      <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 space-y-2">
-        {toasts.map(t => (
-          <div
-            key={t.id}
-            className={`px-6 py-3 rounded-lg shadow-lg ${
-              t.type === 'success' ? 'bg-green-500' : 'bg-red-500'
-            } text-white font-medium animate-fade-in`}
-          >
-            {t.message}
-          </div>
-        ))}
-      </div>
+      <Toaster position="top-center" reverseOrder={false} />
 
       {loading && (
         <div className={spinnerOverlay}>
@@ -181,97 +133,97 @@ export default function EmailVerificationCard() {
       )}
 
       <div className={mainContainer}>
-        <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8">
-          <div className="mb-6">
-            <img
-              src="/auth_images/Login_logo.png"
-              alt="DCarbon Logo"
-              className="h-10 object-contain mx-auto"
-            />
+        <div className="mb-6">
+          <img
+            src="/auth_images/Login_logo.png"
+            alt="DCarbon Logo"
+            className="h-10 object-contain"
+          />
+        </div>
+
+        <div className={headingContainer}>
+          <h1 className={pageTitle}>
+            Let's verify your email
+          </h1>
+        </div>
+
+        <div className={progressContainer}>
+          <div className={progressBarWrapper}>
+            <div className={progressBarActive} />
+          </div>
+          <span className={progressStepText}>01/05</span>
+        </div>
+
+        <p className="text-center text-sm text-gray-600 mb-6 font-sfpro">
+          Please enter the 6-digit code sent to your email.
+        </p>
+
+        <div className="w-full max-w-md mb-4">
+          <input
+            type="text"
+            value={userEmail}
+            onChange={(e) => setUserEmail(e.target.value)}
+            readOnly={!isEditingEmail}
+            className={`${inputClass} text-center bg-[#E8E8E8]`}
+            placeholder="Enter your email address"
+          />
+        </div>
+
+        <div className="w-full max-w-md">
+          <div className="flex justify-center items-center space-x-2 mb-4">
+            {otp.map((digit, index) => (
+              <input
+                key={index}
+                id={`otp-${index}`}
+                type="text"
+                maxLength={1}
+                value={digit}
+                onChange={(e) => handleOtpChange(e, index)}
+                onKeyDown={(e) => handleKeyDown(e, index)}
+                ref={(el) => (otpInputs.current[index] = el)}
+                className="w-12 h-12 text-center text-xl font-medium border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro"
+              />
+            ))}
           </div>
 
-          <div className={headingContainer}>
-            <h1 className={pageTitle}>
-              Let's verify your email
-            </h1>
+          <div className="flex items-center justify-center text-sm text-gray-600 mb-6 font-sfpro">
+            <span>OTP expires in</span>
+            <span className="ml-1 font-semibold text-[#FF0000]">
+              {formatTime(timeLeft)}
+            </span>
           </div>
 
-          <p className="text-center text-sm text-gray-600 mb-6 font-sfpro">
-            Please enter the 6-digit code sent to your email.
-          </p>
-
-          <div className="w-full mb-4">
-            <input
-              type="text"
-              value={userEmail}
-              onChange={(e) => setUserEmail(e.target.value)}
-              readOnly={!isEditingEmail}
-              className={`${inputClass} text-center ${isEditingEmail ? 'bg-white' : 'bg-gray-100'} break-all`}
-              style={{
-                wordBreak: 'break-all',
-                overflowWrap: 'break-word',
-                whiteSpace: 'normal',
-                lineHeight: '1.5',
-                minHeight: '3rem'
-              }}
-            />
-          </div>
-
-          <div className="w-full">
-            <div className="flex justify-center items-center space-x-2 mb-4 flex-wrap gap-y-2">
-              {otp.map((digit, index) => (
-                <input
-                  key={index}
-                  type="text"
-                  maxLength={1}
-                  value={digit}
-                  onChange={(e) => handleOtpChange(e, index)}
-                  onKeyDown={(e) => handleKeyDown(e, index)}
-                  ref={(el) => (otpInputs.current[index] = el)}
-                  className="w-12 h-12 text-center text-xl font-medium border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro"
-                />
-              ))}
-            </div>
-
-            <div className="flex items-center justify-center text-sm text-gray-600 mb-6 font-sfpro flex-wrap text-center gap-1">
-              <span>OTP expires in</span>
-              <span className="font-semibold text-[#FF0000]">
-                {formatTime(timeLeft)}
-              </span>
-            </div>
-
-            <div className="flex flex-col items-center text-sm text-gray-500 mb-6 space-y-2 font-sfpro">
-              <button
-                type="button"
-                className="hover:underline text-center"
-                onClick={handleResendEmail}
-              >
-                Did not receive an email? <span className="text-[#039994]">Resend email</span>
-              </button>
-              <button
-                type="button"
-                className="hover:underline text-center"
-                onClick={handleToggleEditEmail}
-              >
-                Not the correct email? <span className="text-[#039994]">Change email address</span>
-              </button>
-            </div>
-
+          <div className="flex flex-col items-center text-sm text-gray-500 mb-6 space-y-2 font-sfpro">
             <button
               type="button"
-              onClick={handleVerifyEmail}
-              className={buttonPrimary}
+              className="hover:underline text-center"
+              onClick={handleToggleEditEmail}
             >
-              Verify Email Address
+              Not the correct email? <span className="text-[#039994]">Change email address</span>
             </button>
-
-            <p className="mt-6 text-center text-sm text-gray-600 font-sfpro">
-              Already have an account?{' '}
-              <a href="/login" className="text-[#039994] hover:underline font-medium">
-                Sign in
-              </a>
-            </p>
+            <button
+              type="button"
+              className="hover:underline text-center"
+              onClick={handleResendEmail}
+            >
+              Did not receive an email? <span className="text-[#039994]">Resend email</span>
+            </button>
           </div>
+
+          <button
+            type="button"
+            onClick={handleVerifyEmail}
+            className={buttonPrimary}
+          >
+            Verify Email Address
+          </button>
+
+          <p className="mt-6 text-center text-sm text-gray-600 font-sfpro">
+            Already have an account?{' '}
+            <a href="/login" className="text-[#039994] hover:underline font-medium">
+              Sign in
+            </a>
+          </p>
         </div>
       </div>
 
