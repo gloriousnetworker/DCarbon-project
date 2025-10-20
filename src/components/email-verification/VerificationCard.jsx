@@ -27,7 +27,6 @@ export default function EmailVerificationCard() {
   const [timeLeft, setTimeLeft] = useState(300);
   const [showModal, setShowModal] = useState(false);
   const [userEmail, setUserEmail] = useState('');
-  const [isEditingEmail, setIsEditingEmail] = useState(false);
 
   const otpInputs = useRef([]);
 
@@ -118,8 +117,8 @@ export default function EmailVerificationCard() {
     }
   };
 
-  const handleToggleEditEmail = () => {
-    setIsEditingEmail(true);
+  const handleGoBack = () => {
+    window.history.back();
   };
 
   return (
@@ -133,7 +132,15 @@ export default function EmailVerificationCard() {
       )}
 
       <div className={mainContainer}>
-        <div className="mb-6">
+        <div className="flex justify-start mb-6">
+          <button
+            onClick={handleGoBack}
+            className="text-[#039994] hover:text-[#027772] transition-colors mr-4"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
           <img
             src="/auth_images/Login_logo.png"
             alt="DCarbon Logo"
@@ -162,9 +169,8 @@ export default function EmailVerificationCard() {
           <input
             type="text"
             value={userEmail}
-            onChange={(e) => setUserEmail(e.target.value)}
-            readOnly={!isEditingEmail}
-            className={`${inputClass} text-center bg-[#E8E8E8]`}
+            readOnly
+            className={`${inputClass} text-center bg-[#E8E8E8] cursor-not-allowed`}
             placeholder="Enter your email address"
           />
         </div>
@@ -194,13 +200,6 @@ export default function EmailVerificationCard() {
           </div>
 
           <div className="flex flex-col items-center text-sm text-gray-500 mb-6 space-y-2 font-sfpro">
-            <button
-              type="button"
-              className="hover:underline text-center"
-              onClick={handleToggleEditEmail}
-            >
-              Not the correct email? <span className="text-[#039994]">Change email address</span>
-            </button>
             <button
               type="button"
               className="hover:underline text-center"
