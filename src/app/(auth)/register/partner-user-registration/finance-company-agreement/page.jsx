@@ -382,7 +382,7 @@ export default function FinanceCompanyAgreement() {
               className="mt-1 w-4 h-4 text-[#039994] border-gray-300 rounded focus:ring-[#039994] accent-[#039994]"
             />
             <label className="ml-3 font-sfpro font-[400] text-[14px] leading-[150%] text-[#039994] cursor-pointer">
-              I agree to the DCarbon Solutions Program Partner Agreement <span className="text-red-500">*</span>
+              I have read the DCarbon Solutions Program Partner Agreement and Understand the terms <span className="text-red-500">*</span>
             </label>
           </div>
 

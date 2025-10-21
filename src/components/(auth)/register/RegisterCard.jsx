@@ -66,6 +66,20 @@ function RegisterCardContent() {
     }
   }, [searchParams]);
 
+  const formatPhoneNumber = (value) => {
+    const numbers = value.replace(/\D/g, '');
+    
+    if (numbers.length === 0) return '';
+    if (numbers.length <= 3) return `(${numbers}`;
+    if (numbers.length <= 6) return `(${numbers.slice(0, 3)})${numbers.slice(3)}`;
+    return `(${numbers.slice(0, 3)})${numbers.slice(3, 6)}-${numbers.slice(6, 10)}`;
+  };
+
+  const handlePhoneNumberChange = (e) => {
+    const formatted = formatPhoneNumber(e.target.value);
+    setPhoneNumber(formatted);
+  };
+
   const userTypeMapping = {
     Residential: 'RESIDENTIAL',
     Commercial: 'COMMERCIAL',
@@ -107,9 +121,9 @@ function RegisterCardContent() {
       setError('Please enter a valid email address.');
       return false;
     }
-    const phoneRegex = /^\+?[0-9]{7,}$/;
+    const phoneRegex = /^\(\d{3}\)\d{3}-\d{4}$/;
     if (!phoneRegex.test(phoneNumber)) {
-      setError('Please enter a valid phone number starting with + followed by country code.');
+      setError('Please enter a valid phone number in format (111)111-1111.');
       return false;
     }
     if (password.length < 6) {
@@ -347,10 +361,10 @@ function RegisterCardContent() {
               <input
                 type="tel"
                 id="phone"
-                placeholder="+1 000-000-0000"
+                placeholder="(111)111-1111"
                 className={`${inputClass} ${grayPlaceholder}`}
                 value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
+                onChange={handlePhoneNumberChange}
                 required
               />
             </div>
