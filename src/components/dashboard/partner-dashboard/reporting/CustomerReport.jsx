@@ -64,48 +64,10 @@ export default function CustomerReport({ onNavigate }) {
   const [tableData, setTableData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [acceptedUsersCache, setAcceptedUsersCache] = useState({});
-  const [commissionsData, setCommissionsData] = useState({});
   const [allReferrals, setAllReferrals] = useState([]);
 
   const LIMIT = 10;
   const baseUrl = "https://services.dcarbon.solutions";
-
-  const fetchAcceptedUserDetails = async (email) => {
-    try {
-      const token = localStorage.getItem("authToken");
-      const response = await axios.get(
-        `${baseUrl}/api/user/${email}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      if (response.data.status === 'success') {
-        setAcceptedUsersCache(prev => ({
-          ...prev,
-          [email]: response.data.data
-        }));
-      }
-    } catch (error) {
-      console.error('Error fetching accepted user details:', error);
-    }
-  };
-
-  const fetchCommissionsData = async (userId) => {
-    try {
-      const token = localStorage.getItem("authToken");
-      const response = await axios.get(
-        `${baseUrl}/api/commissions/user/${userId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      if (response.data.status === 'success') {
-        setCommissionsData(prev => ({
-          ...prev,
-          [userId]: response.data.data.totalCommissions
-        }));
-      }
-    } catch (error) {
-      console.error('Error fetching commissions data:', error);
-    }
-  };
 
   useEffect(() => {
     const fetchReferrals = async () => {
@@ -113,7 +75,7 @@ export default function CustomerReport({ onNavigate }) {
       setError(null);
       try {
         const token = localStorage.getItem("authToken");
-        const userId = localStorage.getItem("userId") || "8b14b23d-3082-4846-9216-2c2e9f1e96bf";
+        const userId = localStorage.getItem("userId") || "3893baaf-d43f-4c45-96ca-ed58f743ca45";
         const params = new URLSearchParams();
         
         if (yearFilter && monthFilter) {
@@ -140,16 +102,6 @@ export default function CustomerReport({ onNavigate }) {
         setAllReferrals(uniqueReferrals);
         setTotalPages(metadata.totalPages);
         
-        const acceptedUsers = uniqueReferrals.filter(user => user.status === 'ACCEPTED');
-        for (const user of acceptedUsers) {
-          if (user.inviteeEmail && !acceptedUsersCache[user.inviteeEmail]) {
-            fetchAcceptedUserDetails(user.inviteeEmail);
-          }
-          if (user.id && !commissionsData[user.id]) {
-            fetchCommissionsData(user.id);
-          }
-        }
-        
       } catch (err) {
         console.error(err);
         setError(err.message || "Failed to load data");
@@ -169,12 +121,7 @@ export default function CustomerReport({ onNavigate }) {
       }
       
       if (filters.customerType) {
-        filteredData = filteredData.filter(item => {
-          if (item.status === 'ACCEPTED' && acceptedUsersCache[item.inviteeEmail]) {
-            return acceptedUsersCache[item.inviteeEmail].userType === filters.customerType;
-          }
-          return item.customerType === filters.customerType;
-        });
+        filteredData = filteredData.filter(item => item.customerType === filters.customerType);
       }
       
       filteredData.sort((a, b) => {
@@ -193,7 +140,7 @@ export default function CustomerReport({ onNavigate }) {
     if (allReferrals.length > 0) {
       filterData();
     }
-  }, [allReferrals, filters, currentPage, acceptedUsersCache]);
+  }, [allReferrals, filters, currentPage]);
 
   const getFilteredExportData = () => {
     let filteredData = [...allReferrals];
@@ -203,12 +150,7 @@ export default function CustomerReport({ onNavigate }) {
     }
     
     if (filters.customerType) {
-      filteredData = filteredData.filter(item => {
-        if (item.status === 'ACCEPTED' && acceptedUsersCache[item.inviteeEmail]) {
-          return acceptedUsersCache[item.inviteeEmail].userType === filters.customerType;
-        }
-        return item.customerType === filters.customerType;
-      });
+      filteredData = filteredData.filter(item => item.customerType === filters.customerType);
     }
     
     filteredData.sort((a, b) => {
@@ -217,30 +159,7 @@ export default function CustomerReport({ onNavigate }) {
       return filters.time === "Newest" ? db - da : da - db;
     });
     
-    return filteredData.map(ref => {
-      const acceptedUserDetails = acceptedUsersCache[ref.inviteeEmail];
-      const commissions = commissionsData[ref.id] || 0;
-      
-      let name = ref.name || "Name";
-      let customerType = ref.customerType || "RESIDENTIAL";
-      let role = ref.role || "CUSTOMER";
-      
-      if (ref.status === 'ACCEPTED' && acceptedUserDetails) {
-        name = `${acceptedUserDetails.firstName || ''} ${acceptedUserDetails.lastName || ''}`.trim() || name;
-        customerType = acceptedUserDetails.userType || customerType;
-        role = acceptedUserDetails.role || role;
-      }
-
-      return {
-        name,
-        inviteeEmail: ref.inviteeEmail,
-        customerType,
-        role,
-        commissions: commissions.toFixed(2),
-        createdAt: ref.createdAt,
-        status: ref.status
-      };
-    });
+    return filteredData;
   };
 
   const handleOpenFilterModal = () => setShowFilterModal(true);
@@ -280,30 +199,17 @@ export default function CustomerReport({ onNavigate }) {
 
   const renderTableRows = () => {
     return tableData.map((ref, idx) => {
-      const acceptedUserDetails = acceptedUsersCache[ref.inviteeEmail];
-      const commissions = commissionsData[ref.id] || 0;
-      
-      let name = ref.name || "Name";
-      let customerType = ref.customerType || "RESIDENTIAL";
-      let role = ref.role || "CUSTOMER";
-      
-      if (ref.status === 'ACCEPTED' && acceptedUserDetails) {
-        name = `${acceptedUserDetails.firstName || ''} ${acceptedUserDetails.lastName || ''}`.trim() || name;
-        customerType = acceptedUserDetails.userType || customerType;
-        role = acceptedUserDetails.role || role;
-      }
-
       return (
         <tr key={ref.id} className="border-b border-gray-200 hover:bg-gray-50">
           <td className="py-2 px-2 text-xs font-medium text-center">{(currentPage - 1) * LIMIT + idx + 1}</td>
-          <td className="py-2 px-2 text-xs" title={name}>{truncateText(name, 12)}</td>
-          <td className="py-2 px-2 text-xs" title={ref.inviteeEmail}>{truncateText(ref.inviteeEmail, 18)}</td>
-          <td className="py-2 px-2 text-xs text-center">{customerType === "RESIDENTIAL" ? "RES" : customerType === "COMMERCIAL" ? "COM" : "IND"}</td>
-          <td className="py-2 px-2 text-xs text-center">{role === "CUSTOMER" ? "CUST" : role}</td>
-          <td className="py-2 px-2 text-xs font-semibold text-right">${commissions.toFixed(2)}</td>
+          <td className="py-2 px-2 text-xs" title={ref.name}>{truncateText(ref.name, 20)}</td>
+          <td className="py-2 px-2 text-xs" title={ref.inviteeEmail}>{truncateText(ref.inviteeEmail, 25)}</td>
+          <td className="py-2 px-2 text-xs text-center">{ref.customerType || "-"}</td>
+          <td className="py-2 px-2 text-xs text-center">{ref.role || "-"}</td>
+          <td className="py-2 px-2 text-xs text-center">{ref.phoneNumber || "-"}</td>
           <td className="py-2 px-2 text-xs text-center">
             {new Date(ref.createdAt).toLocaleDateString('en-GB', {
-              day: '2-digit', month: '2-digit', year: '2-digit'
+              day: '2-digit', month: '2-digit', year: 'numeric'
             })}
           </td>
           <td className="py-2 px-2 text-center">{renderStatusTag(ref.status)}</td>
@@ -396,18 +302,18 @@ export default function CustomerReport({ onNavigate }) {
           ) : tableData.length === 0 ? (
             <p className="text-center text-gray-500 py-8">No records found with these filters</p>
           ) : (
-            <div className="w-full">
-              <table className="w-full table-fixed border-collapse">
+            <div className="w-full overflow-x-auto">
+              <table className="w-full border-collapse">
                 <thead>
                   <tr className="border-b border-gray-300 bg-gray-50">
-                    <th className="w-12 py-3 px-2 text-left text-xs font-bold text-gray-700">S/N</th>
-                    <th className="w-32 py-3 px-2 text-left text-xs font-bold text-gray-700">Name</th>
-                    <th className="w-48 py-3 px-2 text-left text-xs font-bold text-gray-700">Email</th>
-                    <th className="w-20 py-3 px-2 text-center text-xs font-bold text-gray-700">Type</th>
-                    <th className="w-20 py-3 px-2 text-center text-xs font-bold text-gray-700">Role</th>
-                    <th className="w-24 py-3 px-2 text-right text-xs font-bold text-gray-700">Commission</th>
-                    <th className="w-24 py-3 px-2 text-center text-xs font-bold text-gray-700">Date</th>
-                    <th className="w-24 py-3 px-2 text-center text-xs font-bold text-gray-700">Status</th>
+                    <th className="py-3 px-2 text-left text-xs font-bold text-gray-700 whitespace-nowrap">S/N</th>
+                    <th className="py-3 px-2 text-left text-xs font-bold text-gray-700 whitespace-nowrap">Name</th>
+                    <th className="py-3 px-2 text-left text-xs font-bold text-gray-700 whitespace-nowrap">Email</th>
+                    <th className="py-3 px-2 text-center text-xs font-bold text-gray-700 whitespace-nowrap">Customer Type</th>
+                    <th className="py-3 px-2 text-center text-xs font-bold text-gray-700 whitespace-nowrap">Role</th>
+                    <th className="py-3 px-2 text-center text-xs font-bold text-gray-700 whitespace-nowrap">Phone Number</th>
+                    <th className="py-3 px-2 text-center text-xs font-bold text-gray-700 whitespace-nowrap">Date Registered</th>
+                    <th className="py-3 px-2 text-center text-xs font-bold text-gray-700 whitespace-nowrap">Status</th>
                   </tr>
                 </thead>
                 <tbody>{renderTableRows()}</tbody>

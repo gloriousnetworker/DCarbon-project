@@ -9,24 +9,37 @@ const SendReminderModal = ({ isOpen, onClose, initialEmail = '' }) => {
   const [singleEmail, setSingleEmail] = useState(initialEmail);
   const [bulkEmails, setBulkEmails] = useState(['']);
   const [reminderReason, setReminderReason] = useState('Registration');
-  const [reminderDescription, setReminderDescription] = useState('You have a pending registration with DCarbon. Please complete your registration to access our services.');
+  const [reminderDescription, setReminderDescription] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [emailStatuses, setEmailStatuses] = useState([]);
   const [showResults, setShowResults] = useState(false);
+
+  const reminderMessages = {
+    Registration: 'You have a pending registration with DCarbon. Please complete your registration to access our services.',
+    'Document Upload': 'Please upload the required documents to complete your verification process with DCarbon.',
+    'Document Verification': 'Your documents are pending verification. Please ensure all documents are clear and valid for processing.'
+  };
 
   useEffect(() => {
     if (isOpen && initialEmail) {
       setSingleEmail(initialEmail);
       setRangeType('individual');
     }
+    if (isOpen) {
+      setReminderDescription(reminderMessages[reminderReason]);
+    }
   }, [isOpen, initialEmail]);
+
+  useEffect(() => {
+    setReminderDescription(reminderMessages[reminderReason]);
+  }, [reminderReason]);
 
   const resetForm = () => {
     setRangeType('individual');
     setSingleEmail(initialEmail);
     setBulkEmails(['']);
     setReminderReason('Registration');
-    setReminderDescription('You have a pending registration with DCarbon. Please complete your registration to access our services.');
+    setReminderDescription(reminderMessages['Registration']);
     setEmailStatuses([]);
     setShowResults(false);
   };
@@ -52,16 +65,6 @@ const SendReminderModal = ({ isOpen, onClose, initialEmail = '' }) => {
     return emails.every(email => emailRegex.test(email));
   };
 
-  const showEmailStatusToasts = (emailStatuses) => {
-    emailStatuses.forEach(status => {
-      if (status.canSendReminder) {
-        toast.success(`Reminder sent to: ${status.email}`);
-      } else {
-        toast.error(`No referral found for: ${status.email}`);
-      }
-    });
-  };
-
   const handleSendReminder = async () => {
     const emails = rangeType === 'individual' 
       ? [singleEmail] 
@@ -82,6 +85,13 @@ const SendReminderModal = ({ isOpen, onClose, initialEmail = '' }) => {
 
     try {
       const authToken = localStorage.getItem('authToken');
+      const userId = localStorage.getItem('userId');
+      
+      if (!authToken || !userId) {
+        toast.error('Authentication required');
+        return;
+      }
+
       const body = {
         emails,
         reason: reminderReason,
@@ -89,7 +99,7 @@ const SendReminderModal = ({ isOpen, onClose, initialEmail = '' }) => {
       };
 
       const response = await axios.post(
-        'https://services.dcarbon.solutions/api/user/referral-reminders',
+        `https://services.dcarbon.solutions/api/user/referral-reminders/${userId}`,
         body,
         {
           headers: {
@@ -99,15 +109,22 @@ const SendReminderModal = ({ isOpen, onClose, initialEmail = '' }) => {
       );
 
       if (response?.data?.status === 'success') {
-        const { emailStatuses, summary } = response.data.data;
+        const { emailStatuses, summary, remindersSent } = response.data.data;
         setEmailStatuses(emailStatuses);
         setShowResults(true);
-        showEmailStatusToasts(emailStatuses);
+        
+        emailStatuses.forEach(status => {
+          if (status.canSendReminder) {
+            toast.success(`Reminder sent to: ${status.email}`);
+          } else {
+            toast.error(`No pending referral found for: ${status.email}`);
+          }
+        });
 
-        if (summary.processedEmails > 0) {
-          toast.success(`Reminder sent successfully`);
+        if (remindersSent > 0) {
+          toast.success(`Reminders sent successfully! ${remindersSent} email(s) processed.`);
         } else {
-          toast.error('No valid referrals found');
+          toast.error('No valid referrals found for the provided emails');
         }
       } else {
         toast.error('Failed to send reminders');

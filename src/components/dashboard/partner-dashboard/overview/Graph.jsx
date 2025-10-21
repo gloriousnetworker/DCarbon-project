@@ -47,17 +47,27 @@ export default function ReferredAndCommissionDashboard() {
   const [loadingCommission, setLoadingCommission] = useState(false);
   const [downloadingReport, setDownloadingReport] = useState(false);
 
-  // Fetch referral statistics
+  const formatNumber = (num) => {
+    return new Intl.NumberFormat().format(num);
+  };
+
+  const formatCurrency = (num) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(num);
+  };
+
   useEffect(() => {
     const fetchReferralStats = async () => {
       try {
         setLoadingRefData(true);
         
-        // Get authentication details from localStorage
         const token = localStorage.getItem("authToken");
         const userId = localStorage.getItem("userId") || "33385a49-a036-4a8f-a6de-5534ad69601c";
         
-        // Make API call - replace with your actual API endpoint
         const res = await axios.get(
           `https://services.dcarbon.solutions/api/user/referral-statistics/${userId}`,
           { headers: { Authorization: `Bearer ${token}` } }
@@ -73,7 +83,6 @@ export default function ReferredAndCommissionDashboard() {
             totalExpired,
           });
           
-          // Generate chart data with only current month's data (no dummy data)
           const currentMonth = new Date().getMonth();
           const data = MONTHS.map((month, index) => ({
             month,
@@ -92,7 +101,6 @@ export default function ReferredAndCommissionDashboard() {
         setLoadingRefData(false);
       } catch (e) {
         console.error(e);
-        // Fallback to mock data if API fails (for demo purposes)
         const mockStats = {
           totalInvited: 18,
           totalPending: 5,
@@ -120,31 +128,22 @@ export default function ReferredAndCommissionDashboard() {
     fetchReferralStats();
   }, []);
 
-  // Generate commission data
   useEffect(() => {
     setLoadingCommission(true);
     
-    // Generate realistic commission data for the selected year
     setTimeout(() => {
       const data = MONTHS.map((month, index) => {
-        // Base value with some variation
-        const baseValue = 30 + Math.floor(Math.random() * 40);
+        const baseValue = 30000 + Math.floor(Math.random() * 40000);
+        const seasonal = Math.sin((index / 11) * Math.PI * 2) * 15000;
+        const trend = (index / 11) * 20000;
         
-        // Add a seasonal pattern
-        const seasonal = Math.sin((index / 11) * Math.PI * 2) * 15;
-        
-        // Add slight upward trend
-        const trend = (index / 11) * 20;
-        
-        // Combine factors with some random noise
-        let value = Math.floor(baseValue + seasonal + trend + (Math.random() * 10 - 5));
-        
-        // Ensure value stays within reasonable range
-        value = Math.max(15, Math.min(90, value));
+        let value = Math.floor(baseValue + seasonal + trend + (Math.random() * 10000 - 5000));
+        value = Math.max(15000, Math.min(90000, value));
         
         return {
           month,
-          value
+          value,
+          formattedValue: formatCurrency(value)
         };
       });
       setCommissionData(data);
@@ -152,12 +151,10 @@ export default function ReferredAndCommissionDashboard() {
     }, 600);
   }, [commissionYear]);
 
-  // Custom bar component that shows all 4 statuses stacked
   const CustomBar = (props) => {
     const { x, y, width, height } = props;
     const monthData = chartData[props.index];
     
-    // If no data for this month, just render an empty bar
     if (!monthData.active) {
       return (
         <rect
@@ -175,14 +172,12 @@ export default function ReferredAndCommissionDashboard() {
     const total = monthData.invited;
     if (total === 0) return null;
     
-    // Calculate heights for each status
     const registeredHeight = (monthData.registered / total) * height;
     const pendingHeight = (monthData.pending / total) * height;
     const expiredHeight = (monthData.expired / total) * height;
     
     return (
       <g>
-        {/* Base bar (Invited) */}
         <rect
           x={x}
           y={y}
@@ -193,7 +188,6 @@ export default function ReferredAndCommissionDashboard() {
           ry={props.index === activeMonth ? 0 : 6}
         />
         
-        {/* Registered portion */}
         {monthData.registered > 0 && (
           <rect
             x={x}
@@ -206,7 +200,6 @@ export default function ReferredAndCommissionDashboard() {
           />
         )}
         
-        {/* Pending portion */}
         {monthData.pending > 0 && (
           <rect
             x={x}
@@ -219,7 +212,6 @@ export default function ReferredAndCommissionDashboard() {
           />
         )}
         
-        {/* Expired portion */}
         {monthData.expired > 0 && (
           <rect
             x={x}
@@ -247,18 +239,15 @@ export default function ReferredAndCommissionDashboard() {
     try {
       setDownloadingReport(true);
       
-      // Simulate download delay
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Create CSV content
-      const csvHeader = "Month,Commission (k)\n";
+      const csvHeader = "Month,Commission\n";
       const csvContent = commissionData
-        .map(item => `${item.month},${item.value}`)
+        .map(item => `${item.month},${formatCurrency(item.value)}`)
         .join('\n');
       
       const fullCsvContent = csvHeader + csvContent;
       
-      // Create and download CSV file
       const blob = new Blob([fullCsvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       const url = URL.createObjectURL(blob);
@@ -281,9 +270,38 @@ export default function ReferredAndCommissionDashboard() {
     }
   };
 
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-3 border rounded-lg shadow-lg text-xs">
+          <p className="font-semibold mb-1">{label}</p>
+          {payload.map((entry, index) => (
+            <p key={index} style={{ color: entry.color }}>
+              {entry.name}: {formatNumber(entry.value)}
+            </p>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const CommissionTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-3 border rounded-lg shadow-lg text-xs">
+          <p className="font-semibold mb-1">{label}</p>
+          <p style={{ color: payload[0].color }}>
+            Commission: {formatCurrency(payload[0].value)}
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {/* Referred Customers */}
       <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col">
         <div className="flex justify-between items-center">
           <h3 className="text-lg font-semibold flex items-center">
@@ -356,24 +374,9 @@ export default function ReferredAndCommissionDashboard() {
                   tick={{ fontSize: 10 }}
                   axisLine={false}
                   tickLine={false}
+                  tickFormatter={formatNumber}
                 />
-                <Tooltip
-                  content={({ active, payload }) => {
-                    if (active && payload && payload.length) {
-                      const data = payload[0].payload;
-                      return (
-                        <div className="bg-white p-2 border rounded shadow text-xs">
-                          <p>Month: {data.month}</p>
-                          <p style={{ color: COLORS.invited }}>Invited: {data.invited}</p>
-                          <p style={{ color: COLORS.registered }}>Registered: {data.registered}</p>
-                          <p style={{ color: COLORS.pending }}>Pending: {data.pending}</p>
-                          <p style={{ color: COLORS.expired }}>Expired: {data.expired}</p>
-                        </div>
-                      );
-                    }
-                    return null;
-                  }}
-                />
+                <Tooltip content={<CustomTooltip />} />
                 <Bar
                   dataKey="invited"
                   shape={<CustomBar />}
@@ -411,7 +414,6 @@ export default function ReferredAndCommissionDashboard() {
         )}
       </div>
 
-      {/* Commission */}
       <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col">
         <div className="flex justify-between items-center">
           <h3 className="text-lg font-semibold flex items-center">
@@ -478,17 +480,14 @@ export default function ReferredAndCommissionDashboard() {
                   tickLine={false}
                 />
                 <YAxis
-                  ticks={[0, 25, 50, 75, 100]}
-                  domain={[0, 100]}
-                  tickFormatter={(v) => `${v}k`}
+                  ticks={[0, 25000, 50000, 75000, 100000]}
+                  domain={[0, 100000]}
+                  tickFormatter={(v) => formatCurrency(v)}
                   tick={{ fontSize: 10 }}
                   axisLine={false}
                   tickLine={false}
                 />
-                <Tooltip
-                  formatter={(v) => `${v}k`}
-                  labelFormatter={(label) => `Month: ${label}`}
-                />
+                <Tooltip content={<CommissionTooltip />} />
                 <Line
                   type="monotone"
                   dataKey="value"
@@ -508,7 +507,7 @@ export default function ReferredAndCommissionDashboard() {
                   className="w-3 h-3 block"
                   style={{ backgroundColor: "#039994" }}
                 />
-                <span>Commission (k)</span>
+                <span>Commission</span>
               </div>
             </div>
           </>

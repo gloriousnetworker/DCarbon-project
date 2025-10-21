@@ -10,20 +10,7 @@ const mainContainer = "w-full min-h-screen bg-white p-4 md:p-8";
 const headingContainer = "flex items-center mb-6";
 const backArrow = "mr-4 cursor-pointer text-[#039994]";
 const pageTitle = "text-2xl font-bold text-[#039994]";
-const progressContainer = "w-full max-w-3xl mb-4";
-const progressBarWrapper = "w-full h-2 bg-gray-200 rounded-full overflow-hidden";
-const progressBarActive = "h-full bg-[#039994] rounded-full";
-const progressStepText = "text-xs text-[#626060]";
 const buttonPrimary = "bg-[#039994] text-white rounded-md hover:bg-[#02827D] transition-colors";
-
-const progressSteps = [
-  { label: 'Invitation sent', color: '#000000' },
-  { label: 'Documents Pending', color: '#FFB200' },
-  { label: 'Documents Rejected', color: '#7CABDE' },
-  { label: 'Registration Complete', color: '#056C69' },
-  { label: 'Active', color: '#00B4AE' },
-  { label: 'Terminated', color: '#FF0000' },
-];
 
 export default function CustomerDetails({ customer, onBack }) {
   const [customerDetails, setCustomerDetails] = useState(null);
@@ -425,8 +412,6 @@ export default function CustomerDetails({ customer, onBack }) {
     ));
   };
 
-  const progressPercent = 40;
-
   const handleFacilityClick = (facility) => {
     setSelectedFacility(facility);
   };
@@ -509,23 +494,6 @@ export default function CustomerDetails({ customer, onBack }) {
           <HiOutlineArrowLeft size={24} />
         </div>
         <h1 className={pageTitle}>Customer Details</h1>
-      </div>
-
-      <div className={progressContainer}>
-        <div className={progressBarWrapper}>
-          <div
-            className={progressBarActive}
-            style={{ width: `${progressPercent}%` }}
-          />
-        </div>
-      </div>
-      <div className="flex flex-wrap items-center space-x-4 mb-8">
-        {progressSteps.map(s => (
-          <div key={s.label} className="flex items-center space-x-1">
-            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: s.color }} />
-            <span className={progressStepText}>{s.label}</span>
-          </div>
-        ))}
       </div>
 
       <div className="w-full border border-[#039994] bg-[#069B960D] rounded-lg p-6 mb-8">
