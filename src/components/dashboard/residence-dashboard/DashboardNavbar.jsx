@@ -106,7 +106,14 @@ const DashboardNavbar = ({
         }
       );
       const result = await response.json();
-      return result.status === 'success' && result.data?.length > 0;
+      
+      if (result.status === 'success' && result.data && result.data.length > 0) {
+        const userMeterData = result.data[0];
+        return userMeterData.meters !== null && 
+               userMeterData.meters?.meters && 
+               userMeterData.meters.meters.length > 0;
+      }
+      return false;
     } catch (error) {
       return false;
     }

@@ -706,7 +706,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
 
                 <div>
                   <label className={labelClass}>
-                    System Capacity (kW) <span className="text-gray-500 text-xs">(optional)</span>
+                    (kW AC) (must exactly match value on Utilities Permission to Operate (PTO) letter or email, skip if unknown) ​ <span className="text-gray-500 text-xs">(optional)</span>
                   </label>
                   <input
                     type="number"

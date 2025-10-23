@@ -24,6 +24,7 @@ export default function FacilityCardView() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [facilityProgress, setFacilityProgress] = useState({});
   const [isLoadingProgress, setIsLoadingProgress] = useState(false);
+  const [facilityDetails, setFacilityDetails] = useState({});
 
   const checkStage2Completion = async (userId, authToken) => {
     try {
@@ -83,6 +84,54 @@ export default function FacilityCardView() {
     return facility.status && facility.status.toLowerCase() === 'verified';
   };
 
+  const checkStage6Completion = (facility) => {
+    const requiredFields = [
+      facility.commercialOperationDate,
+      facility.eiaPlantId,
+      facility.energyStorageCapacity,
+      facility.hasOnSiteLoad,
+      facility.hasNetMetering,
+      facility.interconnectedUtilityId,
+      facility.rpsId,
+      facility.wregisEligibilityDate,
+      facility.wregisId
+    ];
+
+    return requiredFields.every(field => {
+      if (field === null || field === undefined || field === '' || field === 'N/A') {
+        return false;
+      }
+      if (typeof field === 'boolean') return true;
+      if (typeof field === 'string') return field.trim() !== '';
+      if (typeof field === 'number') return true;
+      return true;
+    });
+  };
+
+  const fetchFacilityDetails = async (facilityId) => {
+    const authToken = localStorage.getItem("authToken");
+    if (!authToken) return null;
+
+    try {
+      const response = await axios.get(
+        `https://services.dcarbon.solutions/api/residential-facility/get-one-residential-facility/${facilityId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`
+          }
+        }
+      );
+
+      if (response.data.status === "success") {
+        return response.data.data;
+      }
+      return null;
+    } catch (error) {
+      console.error("Error fetching facility details:", error);
+      return null;
+    }
+  };
+
   const checkUserProgress = async () => {
     try {
       setIsLoadingProgress(true);
@@ -114,11 +163,18 @@ export default function FacilityCardView() {
       }
 
       const progressData = {};
-      facilities.forEach(facility => {
+      const detailsData = {};
+
+      for (const facility of facilities) {
+        const facilityDetail = await fetchFacilityDetails(facility.id);
+        if (facilityDetail) {
+          detailsData[facility.id] = facilityDetail;
+        }
+
         const facilityCompletedStages = [...newCompletedStages];
         let facilityCurrentStage = highestCompletedStage;
 
-        const stage5Completed = checkStage5Completion(facility);
+        const stage5Completed = checkStage5Completion(facilityDetail || facility);
         if (stage5Completed) {
           facilityCompletedStages.push(5);
           facilityCurrentStage = 5;
@@ -126,13 +182,22 @@ export default function FacilityCardView() {
           facilityCurrentStage = 5;
         }
 
+        const stage6Completed = checkStage6Completion(facilityDetail || facility);
+        if (stage6Completed) {
+          facilityCompletedStages.push(6);
+          facilityCurrentStage = 6;
+        } else if (facilityCurrentStage === 5) {
+          facilityCurrentStage = 6;
+        }
+
         progressData[facility.id] = {
           completedStages: facilityCompletedStages,
-          currentStage: facilityCurrentStage < 5 ? facilityCurrentStage + 1 : 5
+          currentStage: facilityCurrentStage < 6 ? facilityCurrentStage + 1 : 6
         };
-      });
+      }
 
       setFacilityProgress(progressData);
+      setFacilityDetails(detailsData);
     } catch (error) {
       console.error('Error checking user progress:', error);
     } finally {
@@ -251,6 +316,7 @@ const filteredFacilities = facilities
               f.id === updatedFacility.id ? updatedFacility : f
             ));
             setSelectedFacility(updatedFacility);
+            checkUserProgress();
           }}
           onDelete={async () => {
             try {
@@ -297,6 +363,7 @@ const filteredFacilities = facilities
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {filteredFacilities.map(facility => {
             const progress = facilityProgress[facility.id] || { completedStages: [1], currentStage: 2 };
+            const facilityDetail = facilityDetails[facility.id] || facility;
             
             return (
               <div
@@ -306,7 +373,7 @@ const filteredFacilities = facilities
                 <div>
                   <div className="flex justify-between items-start mb-1">
                     <h3 className="font-semibold text-base text-[#039994]">
-                      {facility.facilityName || "N/A"}
+                      {facilityDetail.facilityName || "N/A"}
                     </h3>
                     <div className="flex space-x-2">
                       <button
@@ -322,6 +389,12 @@ const filteredFacilities = facilities
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-y-1 text-xs">
+                    <span className="font-medium">Facility ID:</span>
+                    <span className="font-mono text-xs">{facility.id || "N/A"}</span>
+
+                    <span className="font-medium">Current Tier:</span>
+                    <span className="font-semibold">{facilityDetail.currentTier || "N/A"}</span>
+
                     <span className="font-medium">Address:</span>
                     <span>{facility.address || "N/A"}</span>
 
@@ -354,14 +427,14 @@ const filteredFacilities = facilities
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-xs font-medium text-gray-600">Onboarding Progress</span>
                     <span className="text-xs font-medium text-[#039994]">
-                      Stage {progress.currentStage} of 5
+                      Stage {progress.currentStage} of 6
                     </span>
                   </div>
                   <div className="flex justify-between items-center mb-2 px-1">
-                    {[1, 2, 3, 4, 5].map((stage) => (
+                    {[1, 2, 3, 4, 5, 6].map((stage) => (
                       <div key={stage} className="flex flex-col items-center">
                         <div
-                          className={`w-5 h-5 rounded-full flex items-center justify-center border-2 text-xs ${
+                          className={`w-4 h-4 rounded-full flex items-center justify-center border-2 text-xs ${
                             progress.completedStages.includes(stage)
                               ? "bg-[#039994] border-[#039994] text-white"
                               : stage === progress.currentStage
@@ -375,10 +448,10 @@ const filteredFacilities = facilities
                     ))}
                   </div>
                   <div className="flex justify-between px-1 -mt-1">
-                    {[1, 2, 3, 4].map((stage) => (
+                    {[1, 2, 3, 4, 5].map((stage) => (
                       <div
                         key={stage}
-                        className={`h-0.5 flex-1 mx-1 ${
+                        className={`h-0.5 flex-1 mx-0.5 ${
                           progress.completedStages.includes(stage + 1) ? "bg-[#039994]" : "bg-gray-200"
                         }`}
                       />

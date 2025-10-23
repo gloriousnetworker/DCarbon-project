@@ -6,31 +6,48 @@ import { jsPDF } from "jspdf";
 export default function ResidenceTermsAndAgreementModal({ isOpen, onClose }) {
   const [isChecked1, setIsChecked1] = useState(false);
   const [isChecked2, setIsChecked2] = useState(false);
-  const [scrolledToBottom, setScrolledToBottom] = useState(false);
+  const [scrolledToBottom1, setScrolledToBottom1] = useState(false);
+  const [scrolledToBottom2, setScrolledToBottom2] = useState(false);
   const [showSignatureModal, setShowSignatureModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [hasSigned, setHasSigned] = useState(false);
   const [showIframe, setShowIframe] = useState(false);
   const [iframeUrl, setIframeUrl] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const contentRef = useRef(null);
+  const [scale, setScale] = useState(1);
+  const contentRef1 = useRef(null);
+  const contentRef2 = useRef(null);
 
   useEffect(() => {
-    const handleScroll = () => {
-      if (contentRef.current) {
-        const { scrollTop, scrollHeight, clientHeight } = contentRef.current;
+    const handleScroll1 = () => {
+      if (contentRef1.current) {
+        const { scrollTop, scrollHeight, clientHeight } = contentRef1.current;
         const isBottom = scrollTop + clientHeight >= scrollHeight - 10;
-        setScrolledToBottom(isBottom);
+        setScrolledToBottom1(isBottom);
       }
     };
 
-    if (contentRef.current) {
-      contentRef.current.addEventListener("scroll", handleScroll);
+    const handleScroll2 = () => {
+      if (contentRef2.current) {
+        const { scrollTop, scrollHeight, clientHeight } = contentRef2.current;
+        const isBottom = scrollTop + clientHeight >= scrollHeight - 10;
+        setScrolledToBottom2(isBottom);
+      }
+    };
+
+    if (contentRef1.current) {
+      contentRef1.current.addEventListener("scroll", handleScroll1);
+    }
+    if (contentRef2.current) {
+      contentRef2.current.addEventListener("scroll", handleScroll2);
     }
 
     return () => {
-      if (contentRef.current) {
-        contentRef.current.removeEventListener("scroll", handleScroll);
+      if (contentRef1.current) {
+        contentRef1.current.removeEventListener("scroll", handleScroll1);
+      }
+      if (contentRef2.current) {
+        contentRef2.current.removeEventListener("scroll", handleScroll2);
       }
     };
   }, []);
@@ -82,7 +99,7 @@ export default function ResidenceTermsAndAgreementModal({ isOpen, onClose }) {
 
     if (!userEmail || !authToken || !userId) {
       toast.error('Authentication required. Please log in again.');
-      return;
+      return false;
     }
 
     setIsLoading(true);
@@ -104,13 +121,18 @@ export default function ResidenceTermsAndAgreementModal({ isOpen, onClose }) {
       const data = await response.json();
       
       if (data.status === 'success') {
+        toast.success('Utility authorization initiated successfully!');
         setIframeUrl('https://utilityapi.com/authorize/DCarbon_Solutions');
         setShowIframe(true);
+        setScale(1);
+        return true;
       } else {
         toast.error('Failed to initiate utility authorization');
+        return false;
       }
     } catch (error) {
       toast.error('Failed to initiate utility authorization');
+      return false;
     } finally {
       setIsLoading(false);
     }
@@ -127,8 +149,8 @@ export default function ResidenceTermsAndAgreementModal({ isOpen, onClose }) {
   const handleSignatureComplete = async () => {
     setShowSignatureModal(false);
     setHasSigned(true);
-    const success = await acceptUserAgreementTerms();
-    if (success) {
+    const termsAccepted = await acceptUserAgreementTerms();
+    if (termsAccepted) {
       await initiateUtilityAuth();
     }
   };
@@ -150,6 +172,25 @@ export default function ResidenceTermsAndAgreementModal({ isOpen, onClose }) {
       return () => window.removeEventListener('message', handleIframeMessage);
     }
   }, [showIframe]);
+
+  const zoomIn = () => {
+    setScale(prev => Math.min(prev + 0.25, 3));
+  };
+
+  const zoomOut = () => {
+    setScale(prev => Math.max(prev - 0.25, 0.5));
+  };
+
+  const resetZoom = () => {
+    setScale(1);
+  };
+
+  const handleIframeClose = () => {
+    setShowIframe(false);
+    setScale(1);
+    onClose();
+    window.location.reload();
+  };
 
   const handleDownload = () => {
     const doc = new jsPDF({
@@ -201,7 +242,6 @@ export default function ResidenceTermsAndAgreementModal({ isOpen, onClose }) {
       yPosition += 7;
     });
 
-    // Second Agreement
     doc.addPage();
     yPosition = 20;
     
@@ -244,7 +284,6 @@ export default function ResidenceTermsAndAgreementModal({ isOpen, onClose }) {
       yPosition += 7;
     });
 
-    // Signature Page
     doc.addPage();
     yPosition = 30;
     
@@ -292,31 +331,89 @@ export default function ResidenceTermsAndAgreementModal({ isOpen, onClose }) {
   if (showIframe) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-        <div className="relative w-full max-w-4xl h-[90vh] bg-white rounded-2xl overflow-hidden">
+        <div className="relative w-full max-w-6xl h-[90vh] bg-white rounded-2xl overflow-hidden flex flex-col">
           <div className="flex items-center justify-between p-4 border-b">
             <h3 className="text-lg font-semibold text-[#039994]">Utility Authorization Portal</h3>
-            <button
-              onClick={handleCloseModal}
-              className="text-red-500 hover:text-red-700"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
+            <div className="flex items-center gap-4">
+              <div className="flex gap-2">
+                <button
+                  onClick={zoomOut}
+                  className="bg-gray-500 text-white px-3 py-1 rounded-md text-sm hover:bg-gray-600 flex items-center gap-1"
+                  disabled={scale <= 0.5}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                  Zoom Out
+                </button>
+                <button
+                  onClick={resetZoom}
+                  className="bg-gray-500 text-white px-3 py-1 rounded-md text-sm hover:bg-gray-600 flex items-center gap-1"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M15 3H21V9M21 3L15 9M9 21H3V15M3 21L9 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  Reset
+                </button>
+                <button
+                  onClick={zoomIn}
+                  className="bg-gray-500 text-white px-3 py-1 rounded-md text-sm hover:bg-gray-600 flex items-center gap-1"
+                  disabled={scale >= 3}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                  Zoom In
+                </button>
+              </div>
+              <button
+                onClick={handleIframeClose}
+                className="text-red-500 hover:text-red-700"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+            </div>
           </div>
-          <div className="p-4 bg-yellow-50 border-b border-yellow-200">
-            <p className="text-sm text-yellow-700">
-              <strong>Step 1:</strong> Enter the email of your DCarbon account you are authorizing for, then choose your utility provider.
+          
+          <div className="p-4 bg-blue-50 border-b border-blue-200">
+            <p className="text-sm text-blue-700">
+              <strong>Step 1:</strong> Enter the email of your DCarbon account you are authorizing for.
             </p>
-            <p className="text-sm text-yellow-700 mt-1">
-              <strong>Step 2:</strong> Enter your Utility Account credentials and authorize access when prompted.
+            <p className="text-sm text-blue-700 mt-1">
+              <strong>Step 2:</strong> Enter the credentials (username and password) you use to login to your utility billing portal. This data is secure and not stored on our servers per utility regulations.
             </p>
           </div>
-          <iframe
-            src={iframeUrl}
-            className="w-full h-full"
-            title="Utility Authorization"
-          />
+
+          <div className="flex-1 p-4 bg-gray-100 overflow-hidden">
+            <div className="w-full h-full bg-white rounded-lg overflow-auto">
+              <div 
+                className="w-full h-full origin-top-left"
+                style={{ 
+                  transform: `scale(${scale})`,
+                  width: `${100/scale}%`,
+                  height: `${100/scale}%`
+                }}
+              >
+                <iframe
+                  src={iframeUrl}
+                  className="w-full h-full border-0"
+                  title="Utility Authorization"
+                  sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="p-3 border-t bg-gray-50 flex justify-between items-center">
+            <span className="text-sm text-gray-600">
+              Zoom: {Math.round(scale * 100)}%
+            </span>
+            <span className="text-sm text-gray-600">
+              Use scroll to navigate when zoomed in
+            </span>
+          </div>
         </div>
       </div>
     );
@@ -354,85 +451,100 @@ export default function ResidenceTermsAndAgreementModal({ isOpen, onClose }) {
     <>
       {isOpen && !showSignatureModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-          <div className="relative w-full max-w-2xl bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
-            <button onClick={handleCloseModal} className="absolute top-4 right-4 z-10 w-6 h-6 flex items-center justify-center text-red-500 hover:text-red-700">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
-
-            <div className="border-b border-gray-300 mt-4"></div>
-
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-4">
+          <div className="relative w-full max-w-4xl bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
+            <div className="flex-shrink-0 p-6 border-b border-gray-200">
+              <div className="flex justify-between items-center">
                 <h2 className="font-[600] text-[20px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sans">
                   Terms of Agreement
                 </h2>
                 <div className="flex items-center gap-4">
-                  <button onClick={handleDownload} className="text-[#15104D] hover:opacity-80">
+                  <button onClick={handleDownload} className="text-[#039994] hover:text-[#02857f] transition-colors">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M12 16L12 4M12 16L8 12M12 16L16 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M4 20H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </button>
+                  <button onClick={handleCloseModal} className="text-red-500 hover:text-red-700">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M7 6V4C7 3.46957 7.21071 2.96086 7.58579 2.58579C7.96086 2.21071 8.46957 2 9 2H15C15.5304 2 16.0391 2.21071 16.4142 2.58579C16.7893 2.96086 17 3.46957 17 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                   </button>
                 </div>
               </div>
+            </div>
 
-              <div className="border-b border-gray-300 mb-4"></div>
-
-              <div className="space-y-4 mb-4">
-                <div className="flex items-start">
-                  <input
-                    type="checkbox"
-                    id="agreementCheckbox1"
-                    checked={isChecked1}
-                    onChange={(e) => setIsChecked1(e.target.checked)}
-                    className="mt-1 w-4 h-4 text-[#039994] border-gray-300 rounded focus:ring-[#039994] accent-[#039994]"
-                  />
-                  <label htmlFor="agreementCheckbox1" className="ml-3 font-sans font-[400] text-[14px] leading-[150%] text-[#039994] cursor-pointer">
-                    Residential REC Agreement
-                  </label>
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="space-y-8">
+                <div className="space-y-4">
+                  <h3 className="font-bold text-[16px] text-[#039994]">RESIDENTIAL REC AGREEMENT</h3>
+                  <div
+                    ref={contentRef1}
+                    className="agreement-content h-[180px] overflow-y-auto font-sans text-[12px] leading-[150%] font-[400] text-[#1E1E1E] p-4 bg-gray-50 rounded-lg border border-gray-200"
+                  >
+                    <p className="mb-4">
+                      This Residential Renewable Energy Certificate (REC) Agreement (the "Agreement") is made between DCarbon Solutions ("Company") and the undersigned customer ("Customer").
+                    </p>
+                    <p className="mb-2"><strong>1. REC Ownership:</strong> Customer agrees to transfer all rights, title, and interest in the RECs generated by their renewable energy system to Company.</p>
+                    <p className="mb-2"><strong>2. Term:</strong> This Agreement shall commence on the date of execution and continue for a period of 12 months, automatically renewing for successive 12-month terms unless terminated.</p>
+                    <p className="mb-2"><strong>3. Compensation:</strong> Company shall pay Customer $0.02 per kWh for all verified RECs generated by Customer's system.</p>
+                    <p className="mb-2"><strong>4. Metering:</strong> Customer agrees to provide Company with access to energy production data from their renewable energy system.</p>
+                    <p className="mb-2"><strong>5. Representations:</strong> Customer represents they have the authority to enter this Agreement and transfer RECs.</p>
+                    <p className="mb-2"><strong>6. Governing Law:</strong> This Agreement shall be governed by the laws of the state where the system is located.</p>
+                    <p className="mb-2"><strong>7. Termination:</strong> Either party may terminate this Agreement with 30 days written notice.</p>
+                    <p className="mb-2"><strong>8. Confidentiality:</strong> Both parties agree to maintain the confidentiality of proprietary information.</p>
+                    <p className="mb-2"><strong>9. Indemnification:</strong> Customer agrees to indemnify Company against any claims arising from system operation.</p>
+                    <p className="mb-2"><strong>10. Entire Agreement:</strong> This document constitutes the entire agreement between the parties.</p>
+                  </div>
+                  <div className="flex items-start">
+                    <input
+                      type="checkbox"
+                      id="agreementCheckbox1"
+                      checked={isChecked1}
+                      onChange={(e) => setIsChecked1(e.target.checked)}
+                      className="mt-1 w-4 h-4 text-[#039994] border-gray-300 rounded focus:ring-[#039994] accent-[#039994]"
+                    />
+                    <label htmlFor="agreementCheckbox1" className="ml-3 font-sans font-[400] text-[14px] leading-[150%] text-[#039994] cursor-pointer">
+                      I have read and understand the Residential REC Agreement
+                    </label>
+                  </div>
                 </div>
-                <div className="flex items-start">
-                  <input
-                    type="checkbox"
-                    id="agreementCheckbox2"
-                    checked={isChecked2}
-                    onChange={(e) => setIsChecked2(e.target.checked)}
-                    className="mt-1 w-4 h-4 text-[#039994] border-gray-300 rounded focus:ring-[#039994] accent-[#039994]"
-                  />
-                  <label htmlFor="agreementCheckbox2" className="ml-3 font-sans font-[400] text-[14px] leading-[150%] text-[#039994] cursor-pointer">
-                    Information Release Authorization
-                  </label>
+
+                <div className="space-y-4">
+                  <h3 className="font-bold text-[16px] text-[#039994]">RESIDENTIAL INFORMATION RELEASE AUTHORIZATION</h3>
+                  <div
+                    ref={contentRef2}
+                    className="agreement-content h-[180px] overflow-y-auto font-sans text-[12px] leading-[150%] font-[400] text-[#1E1E1E] p-4 bg-gray-50 rounded-lg border border-gray-200"
+                  >
+                    <p className="mb-4">
+                      This Residential Information Release Authorization ("Authorization") permits DCarbon Solutions to access and use Customer's utility data.
+                    </p>
+                    <p className="mb-2"><strong>1. Authorization:</strong> Customer authorizes Company to access their utility account data for the purpose of REC verification and energy management services.</p>
+                    <p className="mb-2"><strong>2. Data Use:</strong> Company may use this data to calculate REC production, verify system performance, and provide energy reports.</p>
+                    <p className="mb-2"><strong>3. Third Parties:</strong> Customer authorizes their utility provider to release consumption and generation data to Company.</p>
+                    <p className="mb-2"><strong>4. Duration:</strong> This Authorization remains in effect until revoked in writing by Customer.</p>
+                    <p className="mb-2"><strong>5. Security:</strong> Company agrees to maintain appropriate safeguards to protect Customer's data.</p>
+                    <p className="mb-2"><strong>6. Data Retention:</strong> Company will retain utility data only for as long as necessary to provide services.</p>
+                    <p className="mb-2"><strong>7. Customer Rights:</strong> Customer has the right to request access to their data and request deletion.</p>
+                    <p className="mb-2"><strong>8. Purpose Limitation:</strong> Data will only be used for the purposes outlined in this Authorization.</p>
+                    <p className="mb-2"><strong>9. Revocation:</strong> Customer may revoke this Authorization at any time by providing written notice.</p>
+                    <p className="mb-2"><strong>10. Compliance:</strong> Company agrees to comply with all applicable data protection laws and regulations.</p>
+                  </div>
+                  <div className="flex items-start">
+                    <input
+                      type="checkbox"
+                      id="agreementCheckbox2"
+                      checked={isChecked2}
+                      onChange={(e) => setIsChecked2(e.target.checked)}
+                      className="mt-1 w-4 h-4 text-[#039994] border-gray-300 rounded focus:ring-[#039994] accent-[#039994]"
+                    />
+                    <label htmlFor="agreementCheckbox2" className="ml-3 font-sans font-[400] text-[14px] leading-[150%] text-[#039994] cursor-pointer">
+                      I have read and understand the Residential Information Release Authorization
+                    </label>
+                  </div>
                 </div>
               </div>
 
-              <div
-                ref={contentRef}
-                className="agreement-content h-[300px] overflow-y-auto mb-6 font-sans text-[12px] leading-[150%] font-[400] text-[#1E1E1E] p-4 bg-gray-50 rounded-lg"
-              >
-                <h3 className="font-bold text-[#039994] mb-2">RESIDENTIAL REC AGREEMENT</h3>
-                <p className="mb-4">
-                  This Residential Renewable Energy Certificate (REC) Agreement (the "Agreement") is made between DCarbon Solutions ("Company") and the undersigned customer ("Customer").
-                </p>
-                <p className="mb-2"><strong>1. REC Ownership:</strong> Customer agrees to transfer all rights, title, and interest in the RECs generated by their renewable energy system to Company.</p>
-                <p className="mb-2"><strong>2. Term:</strong> This Agreement shall commence on the date of execution and continue for a period of 12 months, automatically renewing for successive 12-month terms unless terminated.</p>
-                <p className="mb-2"><strong>3. Compensation:</strong> Company shall pay Customer $0.02 per kWh for all verified RECs generated by Customer's system.</p>
-                <p className="mb-2"><strong>4. Metering:</strong> Customer agrees to provide Company with access to energy production data from their renewable energy system.</p>
-                <p className="mb-4"><strong>5. Representations:</strong> Customer represents they have the authority to enter this Agreement and transfer RECs.</p>
-
-                <h3 className="font-bold text-[#039994] mb-2">RESIDENTIAL INFORMATION RELEASE AUTHORIZATION</h3>
-                <p className="mb-4">
-                  This Residential Information Release Authorization ("Authorization") permits DCarbon Solutions to access and use Customer's utility data.
-                </p>
-                <p className="mb-2"><strong>1. Authorization:</strong> Customer authorizes Company to access their utility account data for the purpose of REC verification and energy management services.</p>
-                <p className="mb-2"><strong>2. Data Use:</strong> Company may use this data to calculate REC production, verify system performance, and provide energy reports.</p>
-                <p className="mb-2"><strong>3. Third Parties:</strong> Customer authorizes their utility provider to release consumption and generation data to Company.</p>
-                <p className="mb-2"><strong>4. Duration:</strong> This Authorization remains in effect until revoked in writing by Customer.</p>
-                <p className="mb-2"><strong>5. Security:</strong> Company agrees to maintain appropriate safeguards to protect Customer's data.</p>
-              </div>
-
-              <div className="flex justify-between gap-4">
+              <div className="flex justify-between gap-4 mt-8">
                 <button
                   onClick={handleSignFirst}
                   disabled={!isChecked1 || !isChecked2 || isLoading}

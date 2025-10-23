@@ -453,9 +453,9 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
               className={`${selectClass} text-xs`}
               required
             >
-              <option value="RESIDENTIAL">Residential</option>
-              <option value="COMMERCIAL">Commercial</option>
-              {isSalesAgent && <option value="PARTNER">Partner</option>}
+              <option value="RESIDENTIAL">Residential Owner</option>
+              <option value="COMMERCIAL">Commercial Owner</option>
+              {isSalesAgent && <option value="PARTNER">Industry Partner</option>}
             </select>
           </div>
 

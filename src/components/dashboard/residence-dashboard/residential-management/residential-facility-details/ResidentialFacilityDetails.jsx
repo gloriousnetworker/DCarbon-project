@@ -16,19 +16,29 @@ import ResidentialDocumentsModal, { PDFViewerModal, DocumentUploadModal } from "
 const spinnerOverlay = "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50";
 const spinner = "animate-spin rounded-full h-8 w-8 border-b-2 border-white";
 
+const DOCUMENT_TYPES = {
+  sitePhoto: { label: "Site Photo", mandatory: true, statusField: "sitePhotoStatus" },
+  interconnectionAgreement: { label: "Interconnection Agreement", mandatory: true, statusField: "interconnectionAgreementStatus" },
+  utilityBill: { label: "Utility Bill", mandatory: true, statusField: "utilityBillStatus" },
+  financeAgreement: { label: "Finance Agreement", mandatory: false, statusField: "financeAgreementStatus" },
+  permit: { label: "Permit", mandatory: true, statusField: "permitStatus" },
+  installationPhoto: { label: "Installation Photo", mandatory: true, statusField: "installationPhotoStatus" }
+};
+
 const ProgressTracker = ({ currentStage, completedStages }) => {
   const stages = [
     { id: 1, name: "Dashboard Access", tooltip: "Welcome to your dashboard" },
     { id: 2, name: "Financial Info", tooltip: "Complete financial information" },
     { id: 3, name: "Agreements", tooltip: "Sign terms and conditions" },
     { id: 4, name: "Utility Auth", tooltip: "Authorize utility access" },
-    { id: 5, name: "Documents", tooltip: "Upload and verify documents" }
+    { id: 5, name: "Documents", tooltip: "Upload and verify documents" },
+    { id: 6, name: "Facility Details", tooltip: "Complete facility information" }
   ];
 
   return (
     <div className="w-full bg-white rounded-lg shadow-sm p-4 mb-6">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-semibold text-gray-800">Onboarding Progress</h2>
+        <h2 className="text-lg font-semibold text-gray-800">Facility Onboarding</h2>
         <span className="text-sm font-medium text-[#039994]">
           Stage {currentStage} of {stages.length}
         </span>
@@ -151,31 +161,32 @@ export default function ResidentialFacilityDetails({ facility, onBack, onFacilit
     }
   };
 
-  const checkStage5Completion = async (facilityId, authToken) => {
-    try {
-      const response = await axios.get(
-        `https://services.dcarbon.solutions/api/residential-facility/residential-docs/${facilityId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${authToken}`
-          }
-        }
-      );
+  const checkStage5Completion = (facility) => {
+    return facility.status === 'verified' || facility.status === 'VERIFIED';
+  };
 
-      if (response.data.status !== "success") return false;
+  const checkStage6Completion = (facility) => {
+    const requiredFields = [
+      { field: facility.commercialOperationDate, name: 'Commercial Operation Date' },
+      { field: facility.interconnectedUtilityId, name: 'Interconnected Utility ID' },
+      { field: facility.eiaPlantId, name: 'EIA Plant ID' },
+      { field: facility.energyStorageCapacity, name: 'Energy Storage Capacity' },
+      { field: facility.hasOnSiteLoad, name: 'On-site Load' },
+      { field: facility.hasNetMetering, name: 'Net-Metering' },
+      { field: facility.wregisEligibilityDate, name: 'WREGIS Eligibility Date' },
+      { field: facility.rpsId, name: 'RPS ID' }
+    ];
 
-      const docData = response.data.data;
-      const requiredDocs = Object.keys(DOCUMENT_TYPES).filter(key => 
-        DOCUMENT_TYPES[key].mandatory && !(key === 'financeAgreement' && financeType === 'Cash')
-      );
-
-      return requiredDocs.every(key => {
-        const docType = DOCUMENT_TYPES[key];
-        return docData[docType.statusField] === "APPROVED";
-      });
-    } catch (error) {
-      return false;
-    }
+    return requiredFields.every(item => {
+      const value = item.field;
+      if (value === null || value === undefined || value === '' || value === 'N/A') {
+        return false;
+      }
+      if (typeof value === 'boolean') return true;
+      if (typeof value === 'string') return value.trim() !== '';
+      if (typeof value === 'number') return true;
+      return true;
+    });
   };
 
   const checkUserProgress = async () => {
@@ -207,14 +218,20 @@ export default function ResidentialFacilityDetails({ facility, onBack, onFacilit
         highestCompletedStage = 4;
       }
 
-      const stage5Completed = await checkStage5Completion(facilityData.id, authToken);
+      const stage5Completed = checkStage5Completion(facilityData);
       if (stage5Completed) {
         newCompletedStages.push(5);
         highestCompletedStage = 5;
       }
 
+      const stage6Completed = checkStage6Completion(facilityData);
+      if (stage6Completed) {
+        newCompletedStages.push(6);
+        highestCompletedStage = 6;
+      }
+
       setCompletedStages(newCompletedStages);
-      setCurrentStage(highestCompletedStage < 5 ? highestCompletedStage + 1 : 5);
+      setCurrentStage(highestCompletedStage < 6 ? highestCompletedStage + 1 : 6);
     } catch (error) {
       console.error('Error checking user progress:', error);
     }
@@ -382,6 +399,10 @@ export default function ResidentialFacilityDetails({ facility, onBack, onFacilit
     checkUserProgress();
   }, [facilityData?.id]);
 
+  useEffect(() => {
+    checkUserProgress();
+  }, [facilityData]);
+
   const handleDocumentUpload = (updatedDocs) => {
     setDocuments(updatedDocs);
     checkUserProgress();
@@ -403,6 +424,7 @@ export default function ResidentialFacilityDetails({ facility, onBack, onFacilit
       onFacilityUpdated(updatedFacility);
     }
     setShowEditModal(false);
+    checkUserProgress();
   };
 
   return (

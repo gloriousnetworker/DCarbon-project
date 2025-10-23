@@ -12,10 +12,14 @@ const UtilityAuthorizationModal = dynamic(() => import("./modals/createfacility/
 const ProgressTracker = ({ currentStage, completedStages, onStageClick }) => {
   const stages = [
     { id: 1, name: "Dashboard Access", tooltip: "Welcome to your dashboard" },
-    { id: 2, name: "Financial Info", tooltip: "Complete financial information" },
+    { id: 2, name: "Create Solar Facility", tooltip: "Complete creation of Solar Facility" },
     { id: 3, name: "Agreements", tooltip: "Sign terms and conditions" },
     { id: 4, name: "Utility Auth", tooltip: "Authorize utility access" }
   ];
+
+  const isStageClickable = (stageId) => {
+    return completedStages.includes(stageId) || stageId === currentStage;
+  };
 
   return (
     <div className="w-full bg-white rounded-lg shadow-sm p-4 mb-6">
@@ -31,16 +35,18 @@ const ProgressTracker = ({ currentStage, completedStages, onStageClick }) => {
             <div 
               key={stage.id} 
               className="flex flex-col items-center group relative"
-              onClick={() => completedStages.includes(stage.id) ? onStageClick(stage.id) : null}
+              onClick={() => isStageClickable(stage.id) ? onStageClick(stage.id) : null}
             >
               <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center border-2 cursor-pointer ${
+                className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
+                  isStageClickable(stage.id) ? 'cursor-pointer' : 'cursor-not-allowed'
+                } ${
                   completedStages.includes(stage.id)
-                    ? "bg-[#039994] border-[#039994] text-white"
+                    ? "bg-[#039994] border-[#039994] text-white hover:bg-[#028882]"
                     : stage.id === currentStage
                     ? "border-[#039994] text-[#039994]"
                     : "border-gray-300 text-gray-400"
-                } ${completedStages.includes(stage.id) ? 'hover:bg-[#028882]' : ''}`}
+                }`}
               >
                 {stage.id}
               </div>
@@ -53,7 +59,7 @@ const ProgressTracker = ({ currentStage, completedStages, onStageClick }) => {
               >
                 {stage.name}
               </span>
-              {completedStages.includes(stage.id) && (
+              {isStageClickable(stage.id) && (
                 <div className="absolute top-full mt-2 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                   <div className="relative bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
                     {stage.tooltip}
@@ -141,7 +147,14 @@ export default function DashboardOverview({ onSectionChange }) {
         }
       );
       const result = await response.json();
-      return result.status === 'success' && result.data?.length > 0;
+      
+      if (result.status === 'success' && result.data && result.data.length > 0) {
+        const userMeterData = result.data[0];
+        return userMeterData.meters !== null && 
+               userMeterData.meters?.meters && 
+               userMeterData.meters.meters.length > 0;
+      }
+      return false;
     } catch (error) {
       return false;
     }
@@ -194,7 +207,9 @@ export default function DashboardOverview({ onSectionChange }) {
   };
 
   const handleStageClick = (stageId) => {
-    if (stageId === 2) {
+    if (stageId === 1) {
+      return;
+    } else if (stageId === 2) {
       setShowFinanceModal(true);
     } else if (stageId === 3) {
       setShowTermsModal(true);

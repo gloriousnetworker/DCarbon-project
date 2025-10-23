@@ -72,7 +72,6 @@ export default function SignatureModal({ isOpen, onClose, onComplete }) {
     }
 
     setUploadedFile(file);
-    await uploadSignature(file);
   };
 
   const canvasToBlob = () => {
@@ -197,11 +196,7 @@ export default function SignatureModal({ isOpen, onClose, onComplete }) {
           toast.error('Please upload a signature image');
           return;
         }
-        const success = await uploadSignature(uploadedFile);
-        if (success) {
-          onComplete();
-        }
-        return;
+        signatureFile = uploadedFile;
       }
 
       if (signatureFile) {
@@ -360,6 +355,20 @@ export default function SignatureModal({ isOpen, onClose, onComplete }) {
                             </svg>
                           </div>
                           <p className="text-sm text-gray-800 font-sfpro font-medium">Signature uploaded successfully</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {!isUploaded && !isUploading && (
+                      <div className="w-full h-48 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 flex flex-col items-center justify-center">
+                        <div className="text-center">
+                          <div className="text-[#039994] mb-2">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="mx-auto">
+                              <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          </div>
+                          <p className="text-sm text-gray-800 font-sfpro font-medium">{uploadedFile.name}</p>
+                          <p className="text-xs text-gray-500 font-sfpro mt-1">Ready to upload</p>
                         </div>
                       </div>
                     )}

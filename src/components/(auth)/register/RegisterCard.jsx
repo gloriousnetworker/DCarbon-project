@@ -36,6 +36,8 @@ function RegisterCardContent() {
   const [hoveredButton, setHoveredButton] = useState(null);
   const [isOperatorType, setIsOperatorType] = useState(false);
   const [partnerType, setPartnerType] = useState('');
+  const [isResidentialType, setIsResidentialType] = useState(false);
+  const [isCommercialType, setIsCommercialType] = useState(false);
 
   const searchParams = useSearchParams();
 
@@ -50,18 +52,25 @@ function RegisterCardContent() {
     }
     
     if (type) {
-      if (type.toLowerCase() === 'operator') {
+      const lowerType = type.toLowerCase();
+      if (lowerType === 'operator') {
         setIsOperatorType(true);
         setUserCategory('Operator');
-      } else if (type.toLowerCase().includes('installer')) {
+      } else if (lowerType.includes('installer')) {
         setPartnerType('installer');
         setUserCategory('Partner');
-      } else if (type.toLowerCase().includes('sales-agent')) {
+      } else if (lowerType.includes('sales-agent')) {
         setPartnerType('sales-agent');
         setUserCategory('Partner');
-      } else if (type.toLowerCase().includes('finance-company')) {
+      } else if (lowerType.includes('finance-company')) {
         setPartnerType('finance-company');
         setUserCategory('Partner');
+      } else if (lowerType === 'residential') {
+        setIsResidentialType(true);
+        setUserCategory('Residential');
+      } else if (lowerType === 'commercial') {
+        setIsCommercialType(true);
+        setUserCategory('Commercial');
       }
     }
   }, [searchParams]);
@@ -96,6 +105,8 @@ function RegisterCardContent() {
   const getAvailableUserCategories = () => {
     if (isOperatorType) return ['Operator'];
     if (partnerType) return ['Partner'];
+    if (isResidentialType) return ['Residential'];
+    if (isCommercialType) return ['Commercial'];
     if (urlReferralCode && !partnerType) return ['Residential', 'Commercial'];
     return ['Residential', 'Commercial', 'Partner'];
   };
@@ -192,7 +203,10 @@ function RegisterCardContent() {
   const toggleConfirmPasswordVisibility = () => setConfirmPasswordVisible((prev) => !prev);
   
   const handleUserCategory = (category) => {
-    if ((isOperatorType && category !== 'Operator') || (partnerType && category !== 'Partner')) {
+    if ((isOperatorType && category !== 'Operator') || 
+        (partnerType && category !== 'Partner') ||
+        (isResidentialType && category !== 'Residential') ||
+        (isCommercialType && category !== 'Commercial')) {
       return;
     }
     setUserCategory(category);
@@ -237,7 +251,17 @@ function RegisterCardContent() {
   };
 
   const isCategoryDisabled = (category) => {
-    return (isOperatorType && category !== 'Operator') || (partnerType && category !== 'Partner');
+    return (isOperatorType && category !== 'Operator') || 
+           (partnerType && category !== 'Partner') ||
+           (isResidentialType && category !== 'Residential') ||
+           (isCommercialType && category !== 'Commercial');
+  };
+
+  const getCategoryLabel = () => {
+    if (isResidentialType || isCommercialType) {
+      return 'What type of Solar System do you own?';
+    }
+    return 'Are you a Solar Owner or a DCarbon Partner?';
   };
 
   const availableUserCategories = getAvailableUserCategories();
@@ -275,7 +299,7 @@ function RegisterCardContent() {
             </div>
           )}
 
-          {(isOperatorType || partnerType) && (
+          {(isOperatorType || partnerType || isResidentialType || isCommercialType) && (
             <div className="mb-4 p-3 bg-blue-100 text-blue-800 rounded-md text-sm">
               {isOperatorType && (
                 <>You have been invited to register as an <strong>Operator</strong></>
@@ -288,6 +312,12 @@ function RegisterCardContent() {
               )}
               {partnerType === 'finance-company' && (
                 <>You have been invited to register as a <strong>Finance Company</strong></>
+              )}
+              {isResidentialType && (
+                <>You have been invited to register as a <strong>Residential</strong> solar owner</>
+              )}
+              {isCommercialType && (
+                <>You have been invited to register as a <strong>Commercial</strong> solar owner</>
               )}
             </div>
           )}
@@ -427,7 +457,7 @@ function RegisterCardContent() {
 
             <div>
               <label className={labelClass}>
-                Are you a Solar Owner or a DCarbon Partner? <span className="text-red-500">*</span>
+                {getCategoryLabel()} <span className="text-red-500">*</span>
               </label>
               <div className="flex gap-4">
                 {availableUserCategories.map((category) => (
