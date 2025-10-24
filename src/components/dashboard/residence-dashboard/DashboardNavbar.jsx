@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { FaBars, FaSearch, FaBell, FaHeadset, FaComments } from "react-icons/fa";
+import { FaBars, FaBell, FaHeadset, FaComments } from "react-icons/fa";
 import FinanceAndInstallerModal from "./overview/modals/createfacility/FinanceAndInstallerModal";
 import ResidenceTermsAndAgreementModal from "./overview/modals/createfacility/ResidenceTermsAndAgreementModal";
 import UtilityAuthorizationModal from "./overview/modals/createfacility/UtilityAuthorizationModal";
@@ -256,18 +256,7 @@ const DashboardNavbar = ({
           </div>
 
           <div className="flex-1 flex justify-center mx-4">
-            <div className="relative w-full max-w-md">
-              <span className="absolute inset-y-0 left-0 flex items-center">
-                <div className="bg-[#039994] h-full px-3 flex items-center justify-center rounded-l-md">
-                  <FaSearch className="text-white" size={14} />
-                </div>
-              </span>
-              <input
-                type="text"
-                placeholder="Search"
-                className="w-full pl-12 pr-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#039994]"
-              />
-            </div>
+            
           </div>
 
           <div className="flex items-center space-x-6">
