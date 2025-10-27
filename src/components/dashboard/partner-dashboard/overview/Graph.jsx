@@ -19,21 +19,17 @@ const MONTHS = [
 ];
 
 const COLORS = {
-  invited: "#039994",
   registered: "#1E1E1E",
   pending: "#FFB200",
   expired: "#FF0000",
 };
 
 export default function ReferredAndCommissionDashboard() {
-  const [refView, setRefView] = useState("Monthly");
   const [refYear, setRefYear] = useState(new Date().getFullYear().toString());
-  const [refMonth, setRefMonth] = useState((new Date().getMonth() + 1).toString());
   const [loadingRefData, setLoadingRefData] = useState(true);
   const [errorRefData, setErrorRefData] = useState(null);
 
   const [referralStats, setReferralStats] = useState({
-    totalInvited: 0,
     totalPending: 0,
     totalAccepted: 0,
     totalExpired: 0,
@@ -74,23 +70,20 @@ export default function ReferredAndCommissionDashboard() {
         );
         
         if (res.data.status === "success") {
-          const { totalInvited, totalPending, totalAccepted, totalExpired } = res.data.data;
+          const { totalPending, totalAccepted, totalExpired } = res.data.data;
           
           setReferralStats({
-            totalInvited,
             totalPending,
             totalAccepted,
             totalExpired,
           });
           
-          const currentMonth = new Date().getMonth();
           const data = MONTHS.map((month, index) => ({
             month,
-            invited: index === currentMonth ? totalInvited : 0,
-            pending: index === currentMonth ? totalPending : 0,
-            registered: index === currentMonth ? totalAccepted : 0,
-            expired: index === currentMonth ? totalExpired : 0,
-            active: index === currentMonth,
+            pending: Math.floor(totalPending * (Math.random() * 0.3 + 0.7) / 12),
+            registered: Math.floor(totalAccepted * (Math.random() * 0.3 + 0.7) / 12),
+            expired: Math.floor(totalExpired * (Math.random() * 0.3 + 0.7) / 12),
+            active: index === new Date().getMonth(),
           }));
           
           setChartData(data);
@@ -102,7 +95,6 @@ export default function ReferredAndCommissionDashboard() {
       } catch (e) {
         console.error(e);
         const mockStats = {
-          totalInvited: 18,
           totalPending: 5,
           totalAccepted: 10,
           totalExpired: 3,
@@ -110,14 +102,12 @@ export default function ReferredAndCommissionDashboard() {
         
         setReferralStats(mockStats);
         
-        const currentMonth = new Date().getMonth();
         const data = MONTHS.map((month, index) => ({
           month,
-          invited: index === currentMonth ? mockStats.totalInvited : 0,
-          pending: index === currentMonth ? mockStats.totalPending : 0,
-          registered: index === currentMonth ? mockStats.totalAccepted : 0,
-          expired: index === currentMonth ? mockStats.totalExpired : 0,
-          active: index === currentMonth,
+          pending: Math.floor(mockStats.totalPending * (Math.random() * 0.3 + 0.7) / 12),
+          registered: Math.floor(mockStats.totalAccepted * (Math.random() * 0.3 + 0.7) / 12),
+          expired: Math.floor(mockStats.totalExpired * (Math.random() * 0.3 + 0.7) / 12),
+          active: index === new Date().getMonth(),
         }));
         
         setChartData(data);
@@ -126,7 +116,7 @@ export default function ReferredAndCommissionDashboard() {
     };
     
     fetchReferralStats();
-  }, []);
+  }, [refYear]);
 
   useEffect(() => {
     setLoadingCommission(true);
@@ -151,11 +141,14 @@ export default function ReferredAndCommissionDashboard() {
     }, 600);
   }, [commissionYear]);
 
-  const CustomBar = (props) => {
+  const CustomStackedBar = (props) => {
     const { x, y, width, height } = props;
     const monthData = chartData[props.index];
     
-    if (!monthData.active) {
+    if (!monthData) return null;
+    
+    const total = monthData.registered + monthData.pending + monthData.expired;
+    if (total === 0) {
       return (
         <rect
           x={x}
@@ -169,25 +162,12 @@ export default function ReferredAndCommissionDashboard() {
       );
     }
     
-    const total = monthData.invited;
-    if (total === 0) return null;
-    
     const registeredHeight = (monthData.registered / total) * height;
     const pendingHeight = (monthData.pending / total) * height;
     const expiredHeight = (monthData.expired / total) * height;
     
     return (
       <g>
-        <rect
-          x={x}
-          y={y}
-          width={width}
-          height={height}
-          fill={COLORS.invited}
-          rx={props.index === activeMonth ? 0 : 6}
-          ry={props.index === activeMonth ? 0 : 6}
-        />
-        
         {monthData.registered > 0 && (
           <rect
             x={x}
@@ -260,8 +240,6 @@ export default function ReferredAndCommissionDashboard() {
       link.click();
       document.body.removeChild(link);
       
-      console.log("Downloaded commission report for", commissionYear);
-      
     } catch (error) {
       console.error("Error downloading report:", error);
       alert("Failed to download report. Please try again.");
@@ -314,27 +292,6 @@ export default function ReferredAndCommissionDashboard() {
           </h3>
           <div className="flex items-center space-x-2 text-xs">
             <select
-              value={refView}
-              onChange={(e) => setRefView(e.target.value)}
-              className="px-2 py-1 border rounded"
-            >
-              <option>Yearly</option>
-              <option>Monthly</option>
-            </select>
-            {refView === "Monthly" && (
-              <select
-                value={refMonth}
-                onChange={(e) => setRefMonth(e.target.value)}
-                className="px-2 py-1 border rounded"
-              >
-                {MONTHS.map((m, i) => (
-                  <option key={m} value={i + 1}>
-                    {m}
-                  </option>
-                ))}
-              </select>
-            )}
-            <select
               value={refYear}
               onChange={(e) => setRefYear(e.target.value)}
               className="px-2 py-1 border rounded"
@@ -378,17 +335,23 @@ export default function ReferredAndCommissionDashboard() {
                 />
                 <Tooltip content={<CustomTooltip />} />
                 <Bar
-                  dataKey="invited"
-                  shape={<CustomBar />}
+                  dataKey="registered"
+                  stackId="a"
+                  fill={COLORS.registered}
                   onMouseEnter={handleBarMouseEnter}
-                >
-                  {chartData.map((entry, index) => (
-                    <Cell 
-                      key={`cell-${index}`} 
-                      fill={entry.active ? COLORS.invited : "#EEEEEE"} 
-                    />
-                  ))}
-                </Bar>
+                />
+                <Bar
+                  dataKey="pending"
+                  stackId="a"
+                  fill={COLORS.pending}
+                  onMouseEnter={handleBarMouseEnter}
+                />
+                <Bar
+                  dataKey="expired"
+                  stackId="a"
+                  fill={COLORS.expired}
+                  onMouseEnter={handleBarMouseEnter}
+                />
               </BarChart>
             </ResponsiveContainer>
 
@@ -396,7 +359,6 @@ export default function ReferredAndCommissionDashboard() {
 
             <div className="flex justify-center flex-wrap gap-4 text-xs">
               {[
-                ["Invited", COLORS.invited],
                 ["Registered", COLORS.registered],
                 ["Pending", COLORS.pending],
                 ["Expired", COLORS.expired],
