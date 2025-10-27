@@ -44,6 +44,44 @@ export default function StepOneCard() {
     }
   }, []);
 
+  const formatPhoneNumber = (value) => {
+    if (value === '+1 ') return '';
+    
+    const numbers = value.replace(/\D/g, '');
+    
+    if (numbers.length === 0) return '';
+    if (numbers.length <= 1) return `+1 ${numbers}`;
+    if (numbers.length <= 4) return `+1 ${numbers.slice(1)}`;
+    if (numbers.length <= 7) return `+1 ${numbers.slice(1, 4)}-${numbers.slice(4)}`;
+    return `+1 ${numbers.slice(1, 4)}-${numbers.slice(4, 7)}-${numbers.slice(7, 11)}`;
+  };
+
+  const handlePhoneNumberChange = (e) => {
+    const input = e.target.value;
+    
+    if (input.length < phoneNumber.length) {
+      setPhoneNumber(input);
+      return;
+    }
+
+    const formatted = formatPhoneNumber(input);
+    setPhoneNumber(formatted);
+  };
+
+  const handlePhoneKeyDown = (e) => {
+    if (e.key === 'Backspace') {
+      const selectionStart = e.target.selectionStart;
+      const selectionEnd = e.target.selectionEnd;
+      
+      if (selectionStart === selectionEnd) {
+        if (selectionStart === 4 || selectionStart === 8 || selectionStart === 12) {
+          e.preventDefault();
+          e.target.setSelectionRange(selectionStart - 1, selectionStart - 1);
+        }
+      }
+    }
+  };
+
   const getCompanyNameLabel = () => {
     switch(partnerType) {
       case 'sales_agent':
@@ -122,12 +160,11 @@ export default function StepOneCard() {
         break;
 
       case 'phoneNumber':
-        const phoneRegex = /^(\+?1[-.\s]?)?\(?([0-9]{3})\)?[-.\s]?([0-9]{3})[-.\s]?([0-9]{4})$/;
-        const cleanPhone = value.replace(/\D/g, '');
+        const phoneRegex = /^\+1 \d{3}-\d{3}-\d{4}$/;
         if (!value.trim()) {
           newErrors.phoneNumber = 'Phone number is required';
-        } else if (!phoneRegex.test(value.trim()) && cleanPhone.length !== 10 && cleanPhone.length !== 11) {
-          newErrors.phoneNumber = 'Please enter a valid phone number';
+        } else if (!phoneRegex.test(value.trim())) {
+          newErrors.phoneNumber = 'Please enter a valid phone number in format +1 000-000-0000';
         } else {
           delete newErrors.phoneNumber;
         }
@@ -495,8 +532,9 @@ export default function StepOneCard() {
             <input
               type="tel"
               value={phoneNumber}
-              onChange={handleInputChange(setPhoneNumber, 'phoneNumber')}
-              placeholder="(123) 456-7890"
+              onChange={handlePhoneNumberChange}
+              onKeyDown={handlePhoneKeyDown}
+              placeholder="+1 000-000-0000"
               className={getInputClassName('phoneNumber')}
               required
             />

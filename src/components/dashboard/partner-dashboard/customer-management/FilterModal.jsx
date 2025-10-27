@@ -81,6 +81,7 @@ const FilterModal = ({ isOpen, onClose, onApply, initialFilters = {} }) => {
             <option value="">All Types</option>
             <option value="RESIDENTIAL">Residential</option>
             <option value="COMMERCIAL">Commercial</option>
+            <option value="PARTNER">Partner</option>
           </select>
         </div>
 

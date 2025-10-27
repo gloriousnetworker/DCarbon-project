@@ -76,17 +76,41 @@ function RegisterCardContent() {
   }, [searchParams]);
 
   const formatPhoneNumber = (value) => {
+    if (value === '+1 ') return '';
+    
     const numbers = value.replace(/\D/g, '');
     
     if (numbers.length === 0) return '';
-    if (numbers.length <= 3) return `(${numbers}`;
-    if (numbers.length <= 6) return `(${numbers.slice(0, 3)})${numbers.slice(3)}`;
-    return `(${numbers.slice(0, 3)})${numbers.slice(3, 6)}-${numbers.slice(6, 10)}`;
+    if (numbers.length <= 1) return `+1 ${numbers}`;
+    if (numbers.length <= 4) return `+1 ${numbers.slice(1)}`;
+    if (numbers.length <= 7) return `+1 ${numbers.slice(1, 4)}-${numbers.slice(4)}`;
+    return `+1 ${numbers.slice(1, 4)}-${numbers.slice(4, 7)}-${numbers.slice(7, 11)}`;
   };
 
   const handlePhoneNumberChange = (e) => {
-    const formatted = formatPhoneNumber(e.target.value);
+    const input = e.target.value;
+    
+    if (input.length < phoneNumber.length) {
+      setPhoneNumber(input);
+      return;
+    }
+
+    const formatted = formatPhoneNumber(input);
     setPhoneNumber(formatted);
+  };
+
+  const handlePhoneKeyDown = (e) => {
+    if (e.key === 'Backspace') {
+      const selectionStart = e.target.selectionStart;
+      const selectionEnd = e.target.selectionEnd;
+      
+      if (selectionStart === selectionEnd) {
+        if (selectionStart === 4 || selectionStart === 8 || selectionStart === 12) {
+          e.preventDefault();
+          e.target.setSelectionRange(selectionStart - 1, selectionStart - 1);
+        }
+      }
+    }
   };
 
   const userTypeMapping = {
@@ -132,9 +156,9 @@ function RegisterCardContent() {
       setError('Please enter a valid email address.');
       return false;
     }
-    const phoneRegex = /^\(\d{3}\)\d{3}-\d{4}$/;
+    const phoneRegex = /^\+1 \d{3}-\d{3}-\d{4}$/;
     if (!phoneRegex.test(phoneNumber)) {
-      setError('Please enter a valid phone number in format (111)111-1111.');
+      setError('Please enter a valid phone number in format +1 000-000-0000.');
       return false;
     }
     if (password.length < 6) {
@@ -391,10 +415,11 @@ function RegisterCardContent() {
               <input
                 type="tel"
                 id="phone"
-                placeholder="(111)111-1111"
+                placeholder="+1 000-000-0000"
                 className={`${inputClass} ${grayPlaceholder}`}
                 value={phoneNumber}
                 onChange={handlePhoneNumberChange}
+                onKeyDown={handlePhoneKeyDown}
                 required
               />
             </div>
@@ -540,7 +565,7 @@ function RegisterCardContent() {
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                     </svg>
-                    Back to Solar Owner Options
+                    Reset Customer type Selection
                   </button>
                 )}
               </div>
