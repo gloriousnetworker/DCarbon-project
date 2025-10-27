@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 export default function StepOneCard() {
   const [loading, setLoading] = useState(false);
   const [partnerName, setPartnerName] = useState('');
+  const [salesAgentName, setSalesAgentName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [email, setEmail] = useState('');
   const [address1, setAddress1] = useState('');
@@ -43,6 +44,49 @@ export default function StepOneCard() {
       setIsPartnerTypeLocked(true);
     }
   }, []);
+
+  const handleBackClick = async () => {
+    const userId = localStorage.getItem('userId');
+    const authToken = localStorage.getItem('authToken');
+
+    if (!userId || !authToken) {
+      router.back();
+      return;
+    }
+
+    try {
+      const response = await axios.get(
+        `https://services.dcarbon.solutions/api/user/partner/user/${userId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
+          timeout: 30000
+        }
+      );
+
+      if (response.data && response.data.status === 'success' && response.data.data) {
+        const partnerId = response.data.data.id;
+        
+        await axios.delete(
+          `https://services.dcarbon.solutions/api/user/partner/${partnerId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${authToken}`,
+            },
+            timeout: 30000
+          }
+        );
+        
+        toast.success('Partner registration cancelled');
+      }
+    } catch (error) {
+      console.error('Error deleting partner:', error);
+    } finally {
+      localStorage.removeItem('partnerType');
+      router.back();
+    }
+  };
 
   const formatPhoneNumber = (value) => {
     if (value === '+1 ') return '';
@@ -85,7 +129,7 @@ export default function StepOneCard() {
   const getCompanyNameLabel = () => {
     switch(partnerType) {
       case 'sales_agent':
-        return 'Sales Agent Name';
+        return 'Sales Agent Company Name';
       case 'installer':
         return 'Contractor/EPC Company Name';
       case 'finance_company':
@@ -97,7 +141,7 @@ export default function StepOneCard() {
   const getCompanyNamePlaceholder = () => {
     switch(partnerType) {
       case 'sales_agent':
-        return 'Sales agent name';
+        return 'Sales agent company name';
       case 'installer':
         return 'Contractor/EPC company name';
       case 'finance_company':
@@ -109,7 +153,7 @@ export default function StepOneCard() {
   const getEmailLabel = () => {
     switch(partnerType) {
       case 'sales_agent':
-        return 'Sales Agent Email';
+        return 'Sales Agent Company Email';
       case 'installer':
         return 'Contractor/EPC Company Email';
       case 'finance_company':
@@ -121,7 +165,7 @@ export default function StepOneCard() {
   const getEmailPlaceholder = () => {
     switch(partnerType) {
       case 'sales_agent':
-        return 'salesagent@domain.com';
+        return 'company@domain.com';
       case 'installer':
         return 'contractor@domain.com';
       case 'finance_company':
@@ -143,6 +187,14 @@ export default function StepOneCard() {
           newErrors.partnerName = `${getCompanyNameLabel()} must be less than 100 characters`;
         } else {
           delete newErrors.partnerName;
+        }
+        break;
+
+      case 'salesAgentName':
+        if (partnerType === 'sales_agent' && value.trim().length > 100) {
+          newErrors.salesAgentName = 'Sales agent name must be less than 100 characters';
+        } else {
+          delete newErrors.salesAgentName;
         }
         break;
 
@@ -264,6 +316,11 @@ export default function StepOneCard() {
       isValid = false;
     }
 
+    if (partnerType === 'sales_agent' && salesAgentName.trim().length > 100) {
+      newErrors.salesAgentName = 'Sales agent name must be less than 100 characters';
+      isValid = false;
+    }
+
     setErrors(newErrors);
     return isValid && Object.keys(newErrors).length === 0;
   };
@@ -340,6 +397,10 @@ export default function StepOneCard() {
         address: addressParts.join(', '),
         territory: territory
       };
+
+      if (partnerType === 'sales_agent' && salesAgentName.trim()) {
+        payload.salesAgentName = salesAgentName.trim();
+      }
 
       const response = await axios.post(
         `https://services.dcarbon.solutions/api/user/create-partner/${userId}`,
@@ -452,7 +513,7 @@ export default function StepOneCard() {
 
       <div className="min-h-screen w-full flex flex-col items-center justify-center py-8 px-4 bg-white">
         <div className="relative w-full flex flex-col items-center mb-2">
-          <div className="absolute left-4 top-0 text-[#039994] cursor-pointer z-10" onClick={() => router.back()}>
+          <div className="absolute left-4 top-0 text-[#039994] cursor-pointer z-10" onClick={handleBackClick}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className="h-6 w-6"
@@ -524,6 +585,25 @@ export default function StepOneCard() {
               <p className="mt-1 text-sm text-red-500 font-sfpro">{errors.partnerName}</p>
             )}
           </div>
+
+          {partnerType === 'sales_agent' && (
+            <div>
+              <label className="block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]">
+                Sales Agent Name
+              </label>
+              <input
+                type="text"
+                value={salesAgentName}
+                onChange={handleInputChange(setSalesAgentName, 'salesAgentName')}
+                placeholder="Enter sales agent name"
+                className={getInputClassName('salesAgentName')}
+                maxLength={100}
+              />
+              {errors.salesAgentName && (
+                <p className="mt-1 text-sm text-red-500 font-sfpro">{errors.salesAgentName}</p>
+              )}
+            </div>
+          )}
 
           <div>
             <label className="block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]">
