@@ -26,6 +26,9 @@ const ContactInformation = ({ userData }) => {
   const [companyName, setCompanyName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [address, setAddress] = useState("");
+  const [companyEmail, setCompanyEmail] = useState("");
+  const [salesAgentName, setSalesAgentName] = useState("");
+  const [userPhoneNumber, setUserPhoneNumber] = useState("");
 
   const baseUrl = "https://services.dcarbon.solutions";
 
@@ -56,6 +59,7 @@ const ContactInformation = ({ userData }) => {
         setEmail(user.email || "");
         setUserType((user.userType || "").toLowerCase());
         setReferralCode(user.referralCode || "");
+        setUserPhoneNumber(user.phoneNumber || "");
 
         const partnerResponse = await axios.get(
           `${baseUrl}/api/user/partner/user/${userId}`,
@@ -74,6 +78,8 @@ const ContactInformation = ({ userData }) => {
           setCompanyName(partner.name || "");
           setPhoneNumber(partner.phoneNumber || "");
           setAddress(partner.address || "");
+          setCompanyEmail(partner.email || "");
+          setSalesAgentName(partner.salesAgentName || "");
         }
 
         const agreementResponse = await axios.get(
@@ -129,8 +135,13 @@ const ContactInformation = ({ userData }) => {
           territory: territory,
           name: companyName,
           phoneNumber: phoneNumber,
-          address: address
+          address: address,
+          email: companyEmail
         };
+
+        if (partnerType === "sales_agent") {
+          partnerPayload.salesAgentName = salesAgentName;
+        }
 
         await axios.put(
           `${baseUrl}/api/user/partner/${partnerData.id}`,
@@ -422,37 +433,123 @@ const ContactInformation = ({ userData }) => {
             <label className={labelClass}>Phone Number</label>
             <input
               type="text"
-              value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
+              value={userPhoneNumber}
+              onChange={(e) => setUserPhoneNumber(e.target.value)}
               className={inputClass}
               style={inputStyle}
               placeholder="Phone Number"
             />
           </div>
 
-          <div>
-            <label className={labelClass}>Company Name</label>
-            <input
-              type="text"
-              value={companyName}
-              onChange={(e) => setCompanyName(e.target.value)}
-              className={inputClass}
-              style={inputStyle}
-              placeholder="Company Name"
-            />
-          </div>
+          {partnerData && (
+            <>
+              <div className="border-t pt-4 mt-4">
+                <h3 className="text-md font-semibold text-[#039994] mb-4">Company Information</h3>
+                
+                <div>
+                  <label className={labelClass}>Company Name</label>
+                  <input
+                    type="text"
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                    className={inputClass}
+                    style={inputStyle}
+                    placeholder="Company Name"
+                  />
+                </div>
 
-          <div>
-            <label className={labelClass}>Address</label>
-            <input
-              type="text"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              className={inputClass}
-              style={inputStyle}
-              placeholder="Address"
-            />
-          </div>
+                <div>
+                  <label className={labelClass}>Company Email</label>
+                  <input
+                    type="email"
+                    value={companyEmail}
+                    onChange={(e) => setCompanyEmail(e.target.value)}
+                    className={inputClass}
+                    style={inputStyle}
+                    placeholder="Company Email"
+                  />
+                </div>
+
+                <div>
+                  <label className={labelClass}>Company Phone Number</label>
+                  <input
+                    type="text"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    className={inputClass}
+                    style={inputStyle}
+                    placeholder="Company Phone Number"
+                  />
+                </div>
+
+                <div>
+                  <label className={labelClass}>Address</label>
+                  <input
+                    type="text"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    className={inputClass}
+                    style={inputStyle}
+                    placeholder="Address"
+                  />
+                </div>
+
+                {partnerType === "sales_agent" && (
+                  <div>
+                    <label className={labelClass}>Sales Agent Name</label>
+                    <input
+                      type="text"
+                      value={salesAgentName}
+                      onChange={(e) => setSalesAgentName(e.target.value)}
+                      className={inputClass}
+                      style={inputStyle}
+                      placeholder="Sales Agent Name"
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <label className={labelClass}>Partner Type</label>
+                  <div className="w-full px-3 py-2 bg-[#1e1e1e] text-white rounded font-sfpro text-[14px] leading-[100%] tracking-[-0.05em]">
+                    {partnerType}
+                  </div>
+                </div>
+
+                {territory.length > 0 && (
+                  <div>
+                    <label className={labelClass}>Territories</label>
+                    <div className="space-y-2">
+                      {territory.map((terr, index) => (
+                        <div key={index} className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={terr}
+                            onChange={(e) => handleTerritoryChange(index, e.target.value)}
+                            className={inputClass}
+                            placeholder="Enter territory"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeTerritory(index)}
+                            className="bg-red-500 text-white px-3 py-2 rounded hover:bg-red-600"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={addTerritory}
+                        className="bg-[#039994] text-white px-4 py-2 rounded hover:bg-[#02857f]"
+                      >
+                        Add Territory
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -476,48 +573,6 @@ const ContactInformation = ({ userData }) => {
               />
             </div>
           </div>
-
-          {partnerType && (
-            <div>
-              <label className={labelClass}>Partner Type</label>
-              <div className="w-full px-3 py-2 bg-[#1e1e1e] text-white rounded font-sfpro text-[14px] leading-[100%] tracking-[-0.05em]">
-                {partnerType}
-              </div>
-            </div>
-          )}
-
-          {territory.length > 0 && (
-            <div>
-              <label className={labelClass}>Territories</label>
-              <div className="space-y-2">
-                {territory.map((terr, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={terr}
-                      onChange={(e) => handleTerritoryChange(index, e.target.value)}
-                      className={inputClass}
-                      placeholder="Enter territory"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeTerritory(index)}
-                      className="bg-red-500 text-white px-3 py-2 rounded hover:bg-red-600"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  onClick={addTerritory}
-                  className="bg-[#039994] text-white px-4 py-2 rounded hover:bg-[#02857f]"
-                >
-                  Add Territory
-                </button>
-              </div>
-            </div>
-          )}
 
           <div className="grid grid-cols-2 gap-4">
             <button
