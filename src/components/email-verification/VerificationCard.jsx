@@ -16,9 +16,7 @@ import {
   progressStepText,
   inputClass,
   buttonPrimary,
-  spinnerOverlay,
-  noteText,
-  termsTextContainer
+  spinnerOverlay
 } from './styles';
 
 export default function EmailVerificationCard() {
@@ -28,7 +26,6 @@ export default function EmailVerificationCard() {
   const [showModal, setShowModal] = useState(false);
   const [userEmail, setUserEmail] = useState('');
   const [isFrom423, setIsFrom423] = useState(false);
-
   const otpInputs = useRef([]);
 
   useEffect(() => {
@@ -81,23 +78,18 @@ export default function EmailVerificationCard() {
       return;
     }
     try {
+      await axios.post(
+        'https://services.dcarbon.solutions/api/user/verify-otp',
+        { email: userEmail, otp: Number(enteredOtp) },
+        { headers: { 'Content-Type': 'application/json' } }
+      );
       if (isFrom423) {
-        await axios.post(
-          'https://services.dcarbon.solutions/api/user/verify-otp',
-          { email: userEmail, otp: enteredOtp },
-          { headers: { 'Content-Type': 'application/json' } }
-        );
         toast.success('Account verified successfully');
         localStorage.removeItem('from423Status');
         setTimeout(() => {
           window.location.href = '/login';
         }, 1500);
       } else {
-        await axios.post(
-          'https://services.dcarbon.solutions/api/user/verify-otp',
-          { email: userEmail, otp: Number(enteredOtp) },
-          { headers: { 'Content-Type': 'application/json' } }
-        );
         toast.success('Email verified successfully');
         setShowModal(true);
       }
@@ -116,28 +108,18 @@ export default function EmailVerificationCard() {
     }
     setLoading(true);
     try {
-      if (isFrom423) {
-        await axios.post(
-          'https://services.dcarbon.solutions/api/auth/send-otp',
-          { email: userEmail },
-          { headers: { 'Content-Type': 'application/json' } }
-        );
-        toast.success('OTP resent successfully');
-        setOtp(Array(6).fill(''));
-        setTimeLeft(300);
-        otpInputs.current[0]?.focus();
-      } else {
-        await axios.post(
-          'https://services.dcarbon.solutions/api/user/resend-otp',
-          { email: userEmail },
-          { headers: { 'Content-Type': 'application/json' } }
-        );
-        toast.success('OTP resent successfully');
-        localStorage.setItem('userEmail', userEmail);
-        setOtp(Array(6).fill(''));
-        setTimeLeft(300);
-        otpInputs.current[0]?.focus();
-      }
+      const endpoint = isFrom423
+        ? 'https://services.dcarbon.solutions/api/auth/send-otp'
+        : 'https://services.dcarbon.solutions/api/user/resend-otp';
+      await axios.post(
+        endpoint,
+        { email: userEmail },
+        { headers: { 'Content-Type': 'application/json' } }
+      );
+      toast.success('OTP resent successfully');
+      setOtp(Array(6).fill(''));
+      setTimeLeft(300);
+      otpInputs.current[0]?.focus();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Resend OTP failed');
     } finally {
@@ -152,13 +134,11 @@ export default function EmailVerificationCard() {
   return (
     <>
       <Toaster position="top-center" reverseOrder={false} />
-
       {loading && (
         <div className={spinnerOverlay}>
           <Loader />
         </div>
       )}
-
       <div className={mainContainer}>
         <div className="flex justify-start mb-6">
           <button
@@ -175,24 +155,18 @@ export default function EmailVerificationCard() {
             className="h-10 object-contain"
           />
         </div>
-
         <div className={headingContainer}>
-          <h1 className={pageTitle}>
-            Let's verify your email
-          </h1>
+          <h1 className={pageTitle}>Let's verify your email</h1>
         </div>
-
         <div className={progressContainer}>
           <div className={progressBarWrapper}>
             <div className={progressBarActive} />
           </div>
           <span className={progressStepText}>01/05</span>
         </div>
-
         <p className="text-center text-sm text-gray-600 mb-6 font-sfpro">
           Please enter the 6-digit code sent to your email.
         </p>
-
         <div className="w-full max-w-md mb-4">
           <input
             type="text"
@@ -202,7 +176,6 @@ export default function EmailVerificationCard() {
             placeholder="Enter your email address"
           />
         </div>
-
         <div className="w-full max-w-md">
           <div className="flex justify-center items-center space-x-2 mb-4">
             {otp.map((digit, index) => (
@@ -219,14 +192,12 @@ export default function EmailVerificationCard() {
               />
             ))}
           </div>
-
           <div className="flex items-center justify-center text-sm text-gray-600 mb-6 font-sfpro">
             <span>OTP expires in</span>
             <span className="ml-1 font-semibold text-[#FF0000]">
               {formatTime(timeLeft)}
             </span>
           </div>
-
           <div className="flex flex-col items-center text-sm text-gray-500 mb-6 space-y-2 font-sfpro">
             <button
               type="button"
@@ -236,7 +207,6 @@ export default function EmailVerificationCard() {
               Did not receive an email? <span className="text-[#039994]">Resend email</span>
             </button>
           </div>
-
           <button
             type="button"
             onClick={handleVerifyEmail}
@@ -244,7 +214,6 @@ export default function EmailVerificationCard() {
           >
             Verify Email Address
           </button>
-
           <p className="mt-6 text-center text-sm text-gray-600 font-sfpro">
             Already have an account?{' '}
             <a href="/login" className="text-[#039994] hover:underline font-medium">
@@ -253,7 +222,6 @@ export default function EmailVerificationCard() {
           </p>
         </div>
       </div>
-
       {showModal && <EmailVerificationModal closeModal={() => setShowModal(false)} />}
     </>
   );
