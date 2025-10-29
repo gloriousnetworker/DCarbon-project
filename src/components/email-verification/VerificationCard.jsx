@@ -83,7 +83,7 @@ export default function EmailVerificationCard() {
     try {
       if (isFrom423) {
         await axios.post(
-          'https://services.dcarbon.solutions/api/auth/verify-account',
+          'https://services.dcarbon.solutions/api/auth/verify-otp',
           { email: userEmail, otp: enteredOtp },
           { headers: { 'Content-Type': 'application/json' } }
         );
