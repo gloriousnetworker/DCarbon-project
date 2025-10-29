@@ -27,12 +27,15 @@ export default function EmailVerificationCard() {
   const [timeLeft, setTimeLeft] = useState(300);
   const [showModal, setShowModal] = useState(false);
   const [userEmail, setUserEmail] = useState('');
+  const [isFrom423, setIsFrom423] = useState(false);
 
   const otpInputs = useRef([]);
 
   useEffect(() => {
     const storedEmail = localStorage.getItem('userEmail');
+    const from423 = localStorage.getItem('from423Status');
     if (storedEmail) setUserEmail(storedEmail);
+    if (from423 === 'true') setIsFrom423(true);
   }, []);
 
   useEffect(() => {
@@ -78,13 +81,26 @@ export default function EmailVerificationCard() {
       return;
     }
     try {
-      await axios.post(
-        'https://services.dcarbon.solutions/api/user/verify-otp',
-        { email: userEmail, otp: Number(enteredOtp) },
-        { headers: { 'Content-Type': 'application/json' } }
-      );
-      toast.success('Email verified successfully');
-      setShowModal(true);
+      if (isFrom423) {
+        await axios.post(
+          'https://services.dcarbon.solutions/api/auth/verify-account',
+          { email: userEmail, otp: enteredOtp },
+          { headers: { 'Content-Type': 'application/json' } }
+        );
+        toast.success('Account verified successfully');
+        localStorage.removeItem('from423Status');
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 1500);
+      } else {
+        await axios.post(
+          'https://services.dcarbon.solutions/api/user/verify-otp',
+          { email: userEmail, otp: Number(enteredOtp) },
+          { headers: { 'Content-Type': 'application/json' } }
+        );
+        toast.success('Email verified successfully');
+        setShowModal(true);
+      }
     } catch (err) {
       toast.error(err.response?.data?.message || 'OTP verification failed');
     } finally {
@@ -100,16 +116,28 @@ export default function EmailVerificationCard() {
     }
     setLoading(true);
     try {
-      await axios.post(
-        'https://services.dcarbon.solutions/api/user/resend-otp',
-        { email: userEmail },
-        { headers: { 'Content-Type': 'application/json' } }
-      );
-      toast.success('OTP resent successfully');
-      localStorage.setItem('userEmail', userEmail);
-      setOtp(Array(6).fill(''));
-      setTimeLeft(300);
-      otpInputs.current[0]?.focus();
+      if (isFrom423) {
+        await axios.post(
+          'https://services.dcarbon.solutions/api/auth/send-otp',
+          { email: userEmail },
+          { headers: { 'Content-Type': 'application/json' } }
+        );
+        toast.success('OTP resent successfully');
+        setOtp(Array(6).fill(''));
+        setTimeLeft(300);
+        otpInputs.current[0]?.focus();
+      } else {
+        await axios.post(
+          'https://services.dcarbon.solutions/api/user/resend-otp',
+          { email: userEmail },
+          { headers: { 'Content-Type': 'application/json' } }
+        );
+        toast.success('OTP resent successfully');
+        localStorage.setItem('userEmail', userEmail);
+        setOtp(Array(6).fill(''));
+        setTimeLeft(300);
+        otpInputs.current[0]?.focus();
+      }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Resend OTP failed');
     } finally {

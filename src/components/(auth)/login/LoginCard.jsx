@@ -80,6 +80,13 @@ export default function LoginCard() {
       }
 
     } catch (err) {
+      if (err.response?.status === 423) {
+        toast.error(err.response?.data?.message || 'Account not active');
+        localStorage.setItem('userEmail', email.toLowerCase());
+        localStorage.setItem('from423Status', 'true');
+        window.location.href = '/register/email-verification';
+        return;
+      }
       toast.error(err.response?.data?.message || 'Login failed');
     } finally {
       setLoading(false);
