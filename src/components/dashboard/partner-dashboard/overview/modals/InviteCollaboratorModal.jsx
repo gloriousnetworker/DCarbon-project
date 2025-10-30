@@ -311,61 +311,68 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
 
     const inviterUserType = getInviterUserType();
 
-    const payload = {
-      invitees: [
-        {
-          name,
-          email,
-          phoneNumber: phoneNumber.replace(/\D/g, ''),
-          customerType,
-          role,
-          inviterUserType,
-          ...(message && { message })
-        }
-      ]
-    };
-
     try {
-      const userResponse = await axios.post(
-        `https://services.dcarbon.solutions/api/user/invite-user/${userId}`,
-        payload,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${authToken}`
-          }
-        }
-      );
-
-      if (userResponse.data.status === "success") {
-        toast.success("Customer invitation sent successfully");
+      if (formData.epcMode) {
+        const facilitySuccess = await sendFacilityInvite(userId, authToken);
         
-        if (!isSalesAgent) {
-          const facilitySuccess = await sendFacilityInvite(userId, authToken);
-          
-          if (epcMode && installerId) {
-            const selectedInstaller = installers.find(inst => inst.id === installerId);
-            if (selectedInstaller) {
-              const installerAssignmentSuccess = await assignInstallerToCustomer(
-                userId, 
-                authToken, 
-                selectedInstaller.inviteeEmail, 
-                selectedInstaller.name || selectedInstaller.inviteeEmail
-              );
+        if (facilitySuccess && installerId) {
+          const selectedInstaller = installers.find(inst => inst.id === installerId);
+          if (selectedInstaller) {
+            const installerAssignmentSuccess = await assignInstallerToCustomer(
+              userId, 
+              authToken, 
+              selectedInstaller.inviteeEmail, 
+              selectedInstaller.name || selectedInstaller.inviteeEmail
+            );
 
-              if (installerAssignmentSuccess) {
-                toast.success("Installer assigned successfully");
-              } else {
-                toast.error("Failed to assign installer");
-              }
+            if (installerAssignmentSuccess) {
+              toast.success("Installer assigned successfully");
+            } else {
+              toast.error("Failed to assign installer");
             }
           }
         }
         
-        resetForm();
-        onClose();
+        if (facilitySuccess) {
+          toast.success("EPC invitation sent successfully");
+          resetForm();
+          onClose();
+        } else {
+          throw new Error("Failed to send EPC invitation");
+        }
       } else {
-        throw new Error(userResponse.data.message || "Failed to send invitation");
+        const payload = {
+          invitees: [
+            {
+              name,
+              email,
+              phoneNumber: phoneNumber.replace(/\D/g, ''),
+              customerType,
+              role,
+              inviterUserType,
+              ...(message && { message })
+            }
+          ]
+        };
+
+        const userResponse = await axios.post(
+          `https://services.dcarbon.solutions/api/user/invite-user/${userId}`,
+          payload,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${authToken}`
+            }
+          }
+        );
+
+        if (userResponse.data.status === "success") {
+          toast.success("Customer invitation sent successfully");
+          resetForm();
+          onClose();
+        } else {
+          throw new Error(userResponse.data.message || "Failed to send invitation");
+        }
       }
     } catch (error) {
       console.error("Error sending invitation:", error);
