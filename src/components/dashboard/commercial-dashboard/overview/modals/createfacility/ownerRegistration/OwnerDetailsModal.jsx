@@ -31,7 +31,8 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
     city: "",
     state: "",
     zipCode: "",
-    ownerWebsite: ""
+    ownerWebsite: "",
+    companyName: ""
   }]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -98,7 +99,7 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
         if (commercialUser.multipleUsers && commercialUser.multipleUsers.length > 0) {
           setIsMultipleOwners(true);
           setAdditionalOwners(commercialUser.multipleUsers.map(user => {
-            const userAddressParts = user.ownerAddress ? user.ownerAddress.split(', ') : [];
+            const userAddressParts = user.address ? user.address.split(', ') : [];
             return {
               fullName: user.fullName || "",
               email: user.email || "",
@@ -109,7 +110,8 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
               city: userAddressParts[2] || "",
               state: userAddressParts[3] || "",
               zipCode: userAddressParts[4] || "",
-              ownerWebsite: user.ownerWebsite || ""
+              ownerWebsite: user.companyWebsite || "",
+              companyName: user.companyName || ""
             };
           }));
         }
@@ -152,21 +154,57 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
     }
   };
 
+  const formatPhoneNumber = (value) => {
+    if (!value) return '';
+    
+    const numbers = value.replace(/\D/g, '');
+    
+    if (numbers.length === 0) return '';
+    
+    if (numbers.startsWith('1')) {
+      const rest = numbers.slice(1);
+      if (rest.length <= 3) return `+1 ${rest}`;
+      if (rest.length <= 6) return `+1 ${rest.slice(0, 3)}-${rest.slice(3)}`;
+      return `+1 ${rest.slice(0, 3)}-${rest.slice(3, 6)}-${rest.slice(6, 10)}`;
+    } else {
+      if (numbers.length <= 3) return `+1 ${numbers}`;
+      if (numbers.length <= 6) return `+1 ${numbers.slice(0, 3)}-${numbers.slice(3)}`;
+      return `+1 ${numbers.slice(0, 3)}-${numbers.slice(3, 6)}-${numbers.slice(6, 10)}`;
+    }
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setOwnerDetails(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    if (name === 'phoneNumber') {
+      const formattedValue = formatPhoneNumber(value);
+      setOwnerDetails(prev => ({
+        ...prev,
+        [name]: formattedValue
+      }));
+    } else {
+      setOwnerDetails(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
   const handleAdditionalOwnerChange = (index, e) => {
     const { name, value } = e.target;
     const updatedOwners = [...additionalOwners];
-    updatedOwners[index] = {
-      ...updatedOwners[index],
-      [name]: value
-    };
+    
+    if (name === 'phoneNumber') {
+      const formattedValue = formatPhoneNumber(value);
+      updatedOwners[index] = {
+        ...updatedOwners[index],
+        [name]: formattedValue
+      };
+    } else {
+      updatedOwners[index] = {
+        ...updatedOwners[index],
+        [name]: value
+      };
+    }
 
     if (name === 'ownershipPercentage' && autoCalculate) {
       const newValue = parseFloat(value) || 0;
@@ -196,7 +234,8 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
       city: "",
       state: "",
       zipCode: "",
-      ownerWebsite: ""
+      ownerWebsite: "",
+      companyName: ""
     };
 
     if (autoCalculate) {
@@ -283,7 +322,8 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
         city: "",
         state: "",
         zipCode: "",
-        ownerWebsite: ""
+        ownerWebsite: "",
+        companyName: ""
       }]);
     }
   };
@@ -319,24 +359,27 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
         ownerFullName: ownerDetails.ownerFullName,
         phoneNumber: ownerDetails.phoneNumber,
         ownerAddress: ownerAddress,
-        ownerWebsite: ownerDetails.ownerWebsite
+        ownerWebsite: ownerDetails.ownerWebsite || ""
       };
 
       if (isMultipleOwners) {
-        payload.ownershipPercentage = ownerDetails.ownershipPercentage;
-        
         if (additionalOwners.length > 0) {
           payload.multipleUsers = additionalOwners.filter(owner => 
             owner.fullName.trim() !== "" || owner.email.trim() !== ""
           ).map(owner => ({
-            ...owner,
-            ownerAddress: [
+            fullName: owner.fullName,
+            email: owner.email,
+            companyName: owner.companyName || "",
+            address: [
               owner.address1,
               owner.address2,
               owner.city,
               owner.state,
               owner.zipCode
-            ].filter(Boolean).join(', ')
+            ].filter(Boolean).join(', '),
+            ownershipPercentage: owner.ownershipPercentage,
+            phoneNumber: owner.phoneNumber,
+            companyWebsite: owner.ownerWebsite || ""
           }));
         }
       }
@@ -575,7 +618,7 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
                   name="phoneNumber"
                   value={ownerDetails.phoneNumber}
                   onChange={handleInputChange}
-                  placeholder="Phone Number"
+                  placeholder="+1 000-0000-000"
                   className={`${styles.inputClass} ${styles.grayPlaceholder}`}
                   required
                 />
@@ -665,7 +708,7 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
                   name="ownerWebsite"
                   value={ownerDetails.ownerWebsite}
                   onChange={handleInputChange}
-                  placeholder="http://"
+                  placeholder="https://example.com"
                   className={`${styles.inputClass} ${styles.grayPlaceholder}`}
                 />
               </div>
@@ -673,7 +716,7 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
               <div>
                 <div className="flex items-center justify-between">
                   <label className={styles.labelClass}>
-                    Multiple Owners?
+                    Is there more than one Owner of the Solar generator asset?
                   </label>
                   <div className="flex items-center space-x-4">
                     <label className="flex items-center">
@@ -818,11 +861,25 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
                                 name="phoneNumber"
                                 value={owner.phoneNumber}
                                 onChange={(e) => handleAdditionalOwnerChange(index, e)}
-                                placeholder="Phone Number *"
+                                placeholder="+1 000-0000-000 *"
                                 className={`${styles.inputClass} ${styles.grayPlaceholder}`}
                                 required
                               />
                             </div>
+                          </div>
+
+                          <div>
+                            <label className={styles.labelClass}>
+                              Company Name
+                            </label>
+                            <input
+                              type="text"
+                              name="companyName"
+                              value={owner.companyName}
+                              onChange={(e) => handleAdditionalOwnerChange(index, e)}
+                              placeholder="Company name"
+                              className={`${styles.inputClass} ${styles.grayPlaceholder}`}
+                            />
                           </div>
 
                           <div>
@@ -905,7 +962,7 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
                               name="ownerWebsite"
                               value={owner.ownerWebsite}
                               onChange={(e) => handleAdditionalOwnerChange(index, e)}
-                              placeholder="Website"
+                              placeholder="https://example.com"
                               className={`${styles.inputClass} ${styles.grayPlaceholder}`}
                             />
                           </div>

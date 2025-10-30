@@ -19,6 +19,8 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
   const [showInviteOperatorModal, setShowInviteOperatorModal] = useState(false);
   const [hasFacilities, setHasFacilities] = useState(false);
   const [updatingRole, setUpdatingRole] = useState(false);
+  const [showOwnerTooltip, setShowOwnerTooltip] = useState(false);
+  const [showOwnerOperatorTooltip, setShowOwnerOperatorTooltip] = useState(false);
 
   const checkUserFacilities = async (userId, authToken) => {
     try {
@@ -470,12 +472,18 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
                   ) : (
                     <>
                       <div className="mb-3">
-                        <label className={`flex items-start justify-between p-3 border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50 ${
-                          selectedRole === 'Owner' ? 'bg-white' : 'bg-[#F0F0F0]'
-                        }`}>
+                        <label 
+                          className={`flex items-start justify-between p-3 border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50 ${
+                            selectedRole === 'Owner' ? 'bg-white' : 'bg-[#F0F0F0]'
+                          } relative`}
+                          onMouseEnter={() => setShowOwnerTooltip(true)}
+                          onMouseLeave={() => setShowOwnerTooltip(false)}
+                        >
                           <div className="flex-1 pr-3">
-                            <div className="font-sfpro font-[600] text-[14px] leading-[100%] tracking-[-0.05em] text-[#1E1E1E] mb-1">
-                              Owner
+                            <div className="flex items-center gap-2 mb-1">
+                              <div className="font-sfpro font-[600] text-[14px] leading-[100%] tracking-[-0.05em] text-[#1E1E1E]">
+                                Owner
+                              </div>
                             </div>
                             {selectedRole === 'Owner' && (
                               <div className="font-sfpro text-[12px] leading-[130%] tracking-[-0.02em] font-[400] text-[#626060]">
@@ -491,16 +499,31 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
                             onChange={(e) => setSelectedRole(e.target.value)}
                             className="mt-1 w-4 h-4 text-[#039994] border-gray-300 focus:ring-[#039994] flex-shrink-0"
                           />
+                          {showOwnerTooltip && (
+                            <div className="absolute left-1/2 transform -translate-x-1/2 bottom-full mb-2 w-80 p-3 bg-gray-800 text-white text-xs rounded-md shadow-lg z-50">
+                              <div className="font-sfpro font-[600] mb-1">Owner Role</div>
+                              <div className="font-sfpro">
+                                You own a solar generator asset and/or facility, but you do not Operate the asset, or the company which owns the solar asset does not pay the electric utilities billing related to the facility. A third-party tenant or management company pays the utilities accounts.
+                              </div>
+                              <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
+                            </div>
+                          )}
                         </label>
                       </div>
 
                       <div className="mb-6">
-                        <label className={`flex items-start justify-between p-3 border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50 ${
-                          selectedRole === 'Owner & Operator' ? 'bg-white' : 'bg-[#F0F0F0]'
-                        }`}>
+                        <label 
+                          className={`flex items-start justify-between p-3 border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50 ${
+                            selectedRole === 'Owner & Operator' ? 'bg-white' : 'bg-[#F0F0F0]'
+                          } relative`}
+                          onMouseEnter={() => setShowOwnerOperatorTooltip(true)}
+                          onMouseLeave={() => setShowOwnerOperatorTooltip(false)}
+                        >
                           <div className="flex-1 pr-3">
-                            <div className="font-sfpro font-[600] text-[14px] leading-[100%] tracking-[-0.05em] text-[#1E1E1E] mb-1">
-                              Owner & Operator
+                            <div className="flex items-center gap-2 mb-1">
+                              <div className="font-sfpro font-[600] text-[14px] leading-[100%] tracking-[-0.05em] text-[#1E1E1E]">
+                                Owner & Operator
+                              </div>
                             </div>
                             {selectedRole === 'Owner & Operator' && (
                               <div className="font-sfpro text-[12px] leading-[130%] tracking-[-0.02em] font-[400] text-[#626060]">
@@ -516,6 +539,15 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
                             onChange={(e) => setSelectedRole(e.target.value)}
                             className="mt-1 w-4 h-4 text-[#039994] border-gray-300 focus:ring-[#039994] flex-shrink-0"
                           />
+                          {showOwnerOperatorTooltip && (
+                            <div className="absolute left-1/2 transform -translate-x-1/2 bottom-full mb-2 w-80 p-3 bg-gray-800 text-white text-xs rounded-md shadow-lg z-50">
+                              <div className="font-sfpro font-[600] mb-1">Owner & Operator Role</div>
+                              <div className="font-sfpro">
+                                You both own the solar generator asset, and the same owner or company also pays the electric utilities billing related to the facility.
+                              </div>
+                              <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
+                            </div>
+                          )}
                         </label>
                       </div>
                     </>
