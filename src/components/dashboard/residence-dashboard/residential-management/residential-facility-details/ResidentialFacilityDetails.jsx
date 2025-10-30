@@ -106,6 +106,7 @@ export default function ResidentialFacilityDetails({ facility, onBack, onFacilit
   const [currentStage, setCurrentStage] = useState(1);
   const [completedStages, setCompletedStages] = useState([]);
   const [facilityData, setFacilityData] = useState(facility);
+  const [isFacilityComplete, setIsFacilityComplete] = useState(false);
 
   const checkStage2Completion = async (userId, authToken) => {
     try {
@@ -177,7 +178,7 @@ export default function ResidentialFacilityDetails({ facility, onBack, onFacilit
       { field: facility.rpsId, name: 'RPS ID' }
     ];
 
-    return requiredFields.every(item => {
+    const isComplete = requiredFields.every(item => {
       const value = item.field;
       if (value === null || value === undefined || value === '' || value === 'N/A') {
         return false;
@@ -187,6 +188,9 @@ export default function ResidentialFacilityDetails({ facility, onBack, onFacilit
       if (typeof value === 'number') return true;
       return true;
     });
+
+    setIsFacilityComplete(isComplete);
+    return isComplete;
   };
 
   const checkUserProgress = async () => {
@@ -271,6 +275,7 @@ export default function ResidentialFacilityDetails({ facility, onBack, onFacilit
 
       if (response.data.status === "success") {
         setFacilityData(response.data.data);
+        checkStage6Completion(response.data.data);
       } else {
         throw new Error(response.data.message || "Failed to fetch facility details");
       }
@@ -451,18 +456,22 @@ export default function ResidentialFacilityDetails({ facility, onBack, onFacilit
         </div>
         <div className="flex space-x-3">
           <button
+            onClick={() => setShowEditModal(true)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium ${
+              isFacilityComplete 
+                ? "bg-[#1E1E1E] text-white hover:bg-black"
+                : "bg-green-500 text-white hover:bg-green-600 animate-pulse shadow-lg"
+            }`}
+          >
+            <FiEdit size={14} />
+            <span>{isFacilityComplete ? "Edit Facility Details" : "Complete Facility Details"}</span>
+          </button>
+          <button
             onClick={downloadCSV}
             className="flex items-center gap-2 bg-[#1E1E1E] text-white px-3 py-1.5 rounded-md text-sm hover:bg-black"
           >
             <FiDownload size={14} />
             <span>Download CSV</span>
-          </button>
-          <button
-            onClick={() => setShowEditModal(true)}
-            className="flex items-center gap-2 bg-[#1E1E1E] text-white px-3 py-1.5 rounded-md text-sm hover:bg-black"
-          >
-            <FiEdit size={14} />
-            <span>Edit</span>
           </button>
           <button
             onClick={() => {
@@ -503,8 +512,18 @@ export default function ResidentialFacilityDetails({ facility, onBack, onFacilit
             </div>
           </div>
 
-          <div className="bg-white border border-gray-200 rounded-lg p-4">
-            <h3 className="text-[#039994] mb-3">Additional Facility Details</h3>
+          <div className="bg-white border border-gray-200 rounded-lg p-4 relative">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-[#039994]">Additional Facility Details</h3>
+              {!isFacilityComplete && (
+                <div className="absolute -top-2 -right-2">
+                  <div className="relative">
+                    <div className="animate-ping absolute inline-flex h-4 w-4 rounded-full bg-green-400 opacity-75"></div>
+                    <div className="relative inline-flex rounded-full h-4 w-4 bg-green-500"></div>
+                  </div>
+                </div>
+              )}
+            </div>
             <div className="grid grid-cols-2 gap-y-2 gap-x-4">
               {[
                 ["Commercial Operation Date", formatDate(facilityData.commercialOperationDate)],
@@ -525,6 +544,16 @@ export default function ResidentialFacilityDetails({ facility, onBack, onFacilit
                 </React.Fragment>
               ))}
             </div>
+            {!isFacilityComplete && (
+              <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                <div className="flex items-center">
+                  <FiAlertCircle className="text-yellow-500 mr-2" />
+                  <span className="text-yellow-700 text-sm">
+                    Complete all facility details to finish onboarding
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
