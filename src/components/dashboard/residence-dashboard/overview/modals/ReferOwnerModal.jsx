@@ -9,8 +9,6 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
     name: "",
     email: "",
     phoneNumber: "",
-    customerType: "RESIDENTIAL",
-    role: "OWNER",
     message: ""
   });
   const [loading, setLoading] = useState(false);
@@ -28,8 +26,6 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
       name: "",
       email: "",
       phoneNumber: "",
-      customerType: "RESIDENTIAL",
-      role: "OWNER",
       message: ""
     });
   };
@@ -47,7 +43,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
       return;
     }
 
-    const { name, email, phoneNumber, customerType, role, message } = formData;
+    const { name, email, phoneNumber, message } = formData;
 
     if (!email) {
       toast.error("Please enter an email address");
@@ -61,8 +57,8 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
           name,
           email,
           phoneNumber,
-          customerType,
-          role,
+          customerType: "RESIDENTIAL",
+          role: "OWNER",
           inviterUserType: "RESIDENTIAL_USER",
           ...(message && { message })
         }
@@ -183,41 +179,23 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
           </div>
 
           <div>
-            <label className={`${labelClass} text-xs`}>Customer Type <span className="text-red-500">*</span></label>
-            <select
-              name="customerType"
-              value={formData.customerType}
-              onChange={handleChange}
-              className={`${selectClass} text-xs`}
-              required
-            >
-              <option value="RESIDENTIAL">Residential</option>
-              <option value="COMMERCIAL">Commercial</option>
-            </select>
+            <label className={`${labelClass} text-xs`}>Customer Type</label>
+            <input
+              type="text"
+              value="Residential"
+              disabled
+              className={`${inputClass} bg-gray-100 text-xs cursor-not-allowed`}
+            />
           </div>
 
           <div>
-            <label className={`${labelClass} text-xs`}>Role <span className="text-red-500">*</span></label>
-            {formData.customerType === "COMMERCIAL" ? (
-              <select
-                name="role"
-                value={formData.role}
-                onChange={handleChange}
-                className={`${selectClass} text-xs`}
-                required
-              >
-                <option value="OWNER">Owner</option>
-                <option value="OPERATOR">Operator</option>
-                <option value="BOTH">Both</option>
-              </select>
-            ) : (
-              <input
-                type="text"
-                value="Owner"
-                disabled
-                className={`${inputClass} bg-gray-100 text-xs cursor-not-allowed`}  
-              />
-            )}
+            <label className={`${labelClass} text-xs`}>Role</label>
+            <input
+              type="text"
+              value="Owner"
+              disabled
+              className={`${inputClass} bg-gray-100 text-xs cursor-not-allowed`}
+            />
           </div>
 
           <div>

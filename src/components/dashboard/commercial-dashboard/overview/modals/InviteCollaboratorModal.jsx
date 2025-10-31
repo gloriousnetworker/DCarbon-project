@@ -178,3 +178,5 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
     </div>
   );
 }
+
+
