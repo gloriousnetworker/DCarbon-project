@@ -23,14 +23,14 @@ const styles = {
   buttonPrimary: 'w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro',
   spinnerOverlay: 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20',
   spinner: 'h-12 w-12 border-4 border-t-4 border-gray-300 border-t-[#039994] rounded-full animate-spin',
-  termsTextContainer: 'mt-6 text-center font-sfpro text-[10px] font-[800] leading-[100%] tracking-[-0.05em] underline text-[#1E1E1E]',
   uploadHeading: 'block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]',
   uploadFieldWrapper: 'flex items-center space-x-3',
   uploadInputLabel: 'relative flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-500 bg-gray-50 focus-within:outline-none focus-within:ring-2 focus-within:ring-[#039994] cursor-pointer font-sfpro',
   uploadIconContainer: 'absolute right-3 top-1/2 -translate-y-1/2 text-gray-400',
   uploadButtonStyle: 'px-4 py-2 bg-[#039994] text-white rounded-md hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro',
   uploadNoteStyle: 'mt-2 font-sfpro text-[12px] leading-[100%] tracking-[-0.05em] font-[300] italic text-[#1E1E1E]',
-  closeButton: 'absolute top-6 right-6 text-red-500 hover:text-red-700 cursor-pointer z-50'
+  closeButton: 'absolute top-6 right-6 text-red-500 hover:text-red-700 cursor-pointer z-50',
+  dateInput: 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E] bg-[#E8E8E8]'
 };
 
 export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
@@ -364,6 +364,63 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     }
     else {
       setFormData(prev => ({ ...prev, [name]: value }));
+    }
+  };
+
+  const handleSystemSizeChange = (e) => {
+    let value = e.target.value.replace(/[^0-9.]/g, '');
+    
+    if (value && !value.includes('.')) {
+      value = value + '.0';
+    }
+    
+    const decimalCount = (value.match(/\./g) || []).length;
+    if (decimalCount <= 1) {
+      setFormData(prev => ({ ...prev, systemSize: value }));
+    }
+  };
+
+  const handleDateChange = (e) => {
+    let value = e.target.value.replace(/[^0-9/]/g, '');
+    
+    if (value.length === 2 && !value.includes('/')) {
+      const month = parseInt(value);
+      if (month > 12) value = '12';
+      if (month === 0) value = '01';
+      value = value + '/';
+    } else if (value.length === 5) {
+      const parts = value.split('/');
+      if (parts.length === 2) {
+        let day = parseInt(parts[1]);
+        const month = parseInt(parts[0]);
+        
+        const daysInMonth = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+        const maxDay = month >= 1 && month <= 12 ? daysInMonth[month - 1] : 31;
+        
+        if (day > maxDay) day = maxDay;
+        if (day === 0) day = 1;
+        
+        value = parts[0] + '/' + (day < 10 && day > 0 ? '0' + day : day) + '/';
+      }
+    } else if (value.length === 10) {
+      const parts = value.split('/');
+      if (parts.length === 3) {
+        let day = parseInt(parts[1]);
+        const month = parseInt(parts[0]);
+        const year = parts[2];
+        
+        const daysInMonth = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+        const maxDay = month >= 1 && month <= 12 ? daysInMonth[month - 1] : 31;
+        
+        if (day > maxDay) day = maxDay;
+        if (day === 0) day = 1;
+        
+        value = parts[0] + '/' + (day < 10 && day > 0 ? '0' + day : day) + '/' + year;
+      }
+    }
+    
+    if (value.length <= 10) {
+      setFormData(prev => ({ ...prev, cod: value }));
     }
   };
 
@@ -728,11 +785,11 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                   <label className={styles.labelClass}>
                     Select installer
                   </label>
-                  <div className="group relative">
+                  <div className="group relative flex justify-center">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <div className="absolute hidden group-hover:block bg-white p-2 rounded shadow-lg border border-gray-200 text-xs w-64 z-10 -left-32 -top-20">
+                    <div className="absolute hidden group-hover:block bg-white p-2 rounded shadow-lg border border-gray-200 text-xs w-64 z-10 left-8 -top-20">
                       Select your installer who can submit installation documents if needed. If not listed or unavailable, choose "Not Yet Available" and your finance company can invite them later.
                     </div>
                   </div>
@@ -785,8 +842,8 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                     type="text"
                     name="systemSize"
                     value={formData.systemSize}
-                    onChange={handleInputChange}
-                    placeholder="Input system size in kW"
+                    onChange={handleSystemSizeChange}
+                    placeholder="e.g., 26.0"
                     className={`${styles.inputClass} ${styles.grayPlaceholder}`}
                   />
                   <p className={styles.noteText}>The system size should match your utility PTO authorization letter</p>
@@ -800,9 +857,9 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                     type="text"
                     name="cod"
                     value={formData.cod}
-                    onChange={handleInputChange}
+                    onChange={handleDateChange}
                     placeholder="MM/DD/YYYY"
-                    className={`${styles.inputClass} ${styles.grayPlaceholder}`}
+                    className={styles.dateInput}
                   />
                   <p className={styles.noteText}>The COD should match your utility PTO authorization letter</p>
                 </div>
@@ -823,12 +880,6 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                     'Next'
                   )}
                 </button>
-              </div>
-
-              <div className={styles.termsTextContainer}>
-                <span>Terms and Conditions</span>
-                <span className="mx-2">•</span>
-                <span>Privacy Policy</span>
               </div>
             </form>
           </div>
