@@ -86,18 +86,13 @@ export default function PartnerCustomerReport() {
   };
 
   useEffect(() => {
-    checkPartnerType();
+    fetchPrimaryData();
   }, []);
 
   useEffect(() => {
-    if (isInstaller !== null) {
-      fetchTableData(1);
-      fetchStatistics();
+    if (tableData.length > 0) {
+      applyAssignedStatusSort();
     }
-  }, [filters, isInstaller]);
-
-  useEffect(() => {
-    applyAssignedStatusSort();
   }, [tableData, assignedStatusSort]);
 
   const applyAssignedStatusSort = () => {
@@ -116,15 +111,65 @@ export default function PartnerCustomerReport() {
     setFilteredData(sortedData);
   };
 
-  const checkPartnerType = async () => {
+  const fetchPrimaryData = async () => {
     try {
+      setLoadingTable(true);
+      setLoadingStats(true);
+      
       const userId = localStorage.getItem('userId');
       const authToken = localStorage.getItem('authToken');
 
       if (!userId || !authToken) {
         console.error('User credentials not found in localStorage');
+        setLoadingTable(false);
+        setLoadingStats(false);
         return;
       }
+
+      const primaryResponse = await axios.get(
+        `https://services.dcarbon.solutions/api/user/get-users-referrals/${userId}`,
+        {
+          params: {
+            page: 1,
+            limit: 10,
+          },
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
+        }
+      );
+
+      if (primaryResponse?.data?.status === 'success') {
+        const { referrals } = primaryResponse.data.data;
+        const metadata = primaryResponse.data.data.metadata;
+
+        const uniqueReferrals = removeDuplicateReferrals(referrals || []);
+        setTableData(uniqueReferrals);
+        setCurrentPage(metadata.page || 1);
+        setTotalPages(metadata.totalPages || 1);
+
+        const acceptedUsers = uniqueReferrals.filter(user => user.status === 'ACCEPTED');
+        for (const user of acceptedUsers) {
+          if (user.inviteeEmail && !acceptedUsersCache[user.inviteeEmail]) {
+            fetchAcceptedUserDetails(user.inviteeEmail);
+          }
+        }
+
+        await checkPartnerType();
+        await fetchStatistics();
+      }
+    } catch (error) {
+      console.error('Error fetching primary data:', error);
+    } finally {
+      setLoadingTable(false);
+      setLoadingStats(false);
+    }
+  };
+
+  const checkPartnerType = async () => {
+    try {
+      const userId = localStorage.getItem('userId');
+      const authToken = localStorage.getItem('authToken');
 
       const response = await axios.get(
         `https://services.dcarbon.solutions/api/user/partner/user/${userId}`,
@@ -201,13 +246,6 @@ export default function PartnerCustomerReport() {
           setTableData(uniqueReferrals);
           setCurrentPage(1);
           setTotalPages(1);
-
-          const acceptedUsers = uniqueReferrals.filter(user => user.status === 'ACCEPTED');
-          for (const user of acceptedUsers) {
-            if (user.inviteeEmail && !acceptedUsersCache[user.inviteeEmail]) {
-              fetchAcceptedUserDetails(user.inviteeEmail);
-            }
-          }
         } else {
           const { referrals } = response.data.data;
           const metadata = response.data.data.metadata;
@@ -216,12 +254,12 @@ export default function PartnerCustomerReport() {
           setTableData(uniqueReferrals);
           setCurrentPage(metadata.page || 1);
           setTotalPages(metadata.totalPages || 1);
+        }
 
-          const acceptedUsers = uniqueReferrals.filter(user => user.status === 'ACCEPTED');
-          for (const user of acceptedUsers) {
-            if (user.inviteeEmail && !acceptedUsersCache[user.inviteeEmail]) {
-              fetchAcceptedUserDetails(user.inviteeEmail);
-            }
+        const acceptedUsers = tableData.filter(user => user.status === 'ACCEPTED');
+        for (const user of acceptedUsers) {
+          if (user.inviteeEmail && !acceptedUsersCache[user.inviteeEmail]) {
+            fetchAcceptedUserDetails(user.inviteeEmail);
           }
         }
       }
@@ -287,13 +325,11 @@ export default function PartnerCustomerReport() {
 
   const fetchStatistics = async () => {
     try {
-      setLoadingStats(true);
       const userId = localStorage.getItem('userId');
       const authToken = localStorage.getItem('authToken');
 
       if (!userId || !authToken) {
         console.error('User credentials not found in localStorage');
-        setLoadingStats(false);
         return;
       }
 
@@ -320,8 +356,6 @@ export default function PartnerCustomerReport() {
       }
     } catch (error) {
       console.error('Error fetching statistics:', error);
-    } finally {
-      setLoadingStats(false);
     }
   };
 
