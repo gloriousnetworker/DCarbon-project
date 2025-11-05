@@ -102,6 +102,35 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
   const [showPDFModal, setShowPDFModal] = useState(false);
   const [currentPDF, setCurrentPDF] = useState({ url: "", title: "" });
   const [meterId, setMeterId] = useState(null);
+  const [isFacilityComplete, setIsFacilityComplete] = useState(false);
+
+  const checkFacilityCompletion = (facility) => {
+    const requiredFields = [
+      { field: facility.commercialOperationDate, name: 'Commercial Operation Date' },
+      { field: facility.interconnectedUtilityId, name: 'Interconnected Utility ID' },
+      { field: facility.eiaPlantId, name: 'EIA Plant ID' },
+      { field: facility.energyStorageCapacity, name: 'Energy Storage Capacity' },
+      { field: facility.hasOnSiteLoad, name: 'On-site Load' },
+      { field: facility.hasNetMetering, name: 'Net-Metering' },
+      { field: facility.wregisEligibilityDate, name: 'WREGIS Eligibility Date' },
+      { field: facility.wregisId, name: 'WREGIS ID' },
+      { field: facility.rpsId, name: 'RPS ID' }
+    ];
+
+    const isComplete = requiredFields.every(item => {
+      const value = item.field;
+      if (value === null || value === undefined || value === '' || value === 'N/A') {
+        return false;
+      }
+      if (typeof value === 'boolean') return true;
+      if (typeof value === 'string') return value.trim() !== '';
+      if (typeof value === 'number') return true;
+      return true;
+    });
+
+    setIsFacilityComplete(isComplete);
+    return isComplete;
+  };
 
   useEffect(() => {
     const checkUserProgress = async () => {
@@ -200,7 +229,8 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
     };
 
     checkUserProgress();
-  }, [facilityData.status]);
+    checkFacilityCompletion(facilityData);
+  }, [facilityData]);
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
@@ -478,10 +508,14 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
             )}
             <button
               onClick={() => setShowEditModal(true)}
-              className="flex items-center space-x-1 bg-[#1E1E1E] text-white px-3 py-1.5 rounded text-xs hover:bg-black transition-colors"
+              className={`flex items-center space-x-1 px-3 py-1.5 rounded text-xs transition-colors ${
+                isFacilityComplete 
+                  ? "bg-[#1E1E1E] text-white hover:bg-black"
+                  : "bg-green-500 text-white hover:bg-green-600 animate-pulse shadow-lg"
+              }`}
             >
               <FiEdit size={12} />
-              <span>Edit Facility Details</span>
+              <span>{isFacilityComplete ? "Edit Facility Details" : "Complete Facility Details"}</span>
             </button>
           </div>
         </div>
@@ -537,8 +571,18 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
               </div>
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
-              <h3 className="text-sm font-semibold text-[#039994] mb-3">Additional Facility Details</h3>
+            <div className="bg-white border border-gray-200 rounded-lg p-4 relative">
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-sm font-semibold text-[#039994]">Additional Facility Details</h3>
+                {!isFacilityComplete && (
+                  <div className="absolute -top-2 -right-2">
+                    <div className="relative">
+                      <div className="animate-ping absolute inline-flex h-4 w-4 rounded-full bg-green-400 opacity-75"></div>
+                      <div className="relative inline-flex rounded-full h-4 w-4 bg-green-500"></div>
+                    </div>
+                  </div>
+                )}
+              </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <span className={`${labelClass} text-xs`}>Commercial Operation Date</span>
@@ -577,6 +621,16 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
                   <span className="text-gray-600 text-xs">{facilityData.rpsId || "N/A"}</span>
                 </div>
               </div>
+              {!isFacilityComplete && (
+                <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                  <div className="flex items-center">
+                    <FiAlertCircle className="text-yellow-500 mr-2" size={14} />
+                    <span className="text-yellow-700 text-xs">
+                      Complete all facility details to finish onboarding
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -631,6 +685,7 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
           onClose={() => setShowEditModal(false)}
           onSave={(updatedFacility) => {
             setFacilityData(updatedFacility);
+            checkFacilityCompletion(updatedFacility);
             onFacilityUpdated?.(updatedFacility);
             setShowEditModal(false);
           }}
