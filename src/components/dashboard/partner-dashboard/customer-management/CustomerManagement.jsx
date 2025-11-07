@@ -536,7 +536,7 @@ export default function PartnerCustomerReport() {
     if (loadingTable) {
       return (
         <tr>
-          <td colSpan={isInstaller ? "9" : "8"} className="py-4 text-center">
+          <td colSpan={isInstaller ? "8" : "8"} className="py-4 text-center">
             Loading...
           </td>
         </tr>
@@ -546,7 +546,7 @@ export default function PartnerCustomerReport() {
     if (dataToRender.length === 0) {
       return (
         <tr>
-          <td colSpan={isInstaller ? "9" : "8"} className="py-4 text-center">
+          <td colSpan={isInstaller ? "8" : "8"} className="py-4 text-center">
             No records found
           </td>
         </tr>
@@ -578,78 +578,37 @@ export default function PartnerCustomerReport() {
       const status = item.status || 'N/A';
       const assignedStatus = item.assignedStatus || 'UNASSIGNED';
 
-      if (isInstaller) {
-        const financeCompany = item.inviter ? `${item.inviter.firstName} ${item.inviter.lastName}` : 'N/A';
-        const financeEmail = item.inviter?.email || 'N/A';
-        
-        return (
-          <tr 
-            key={item.id} 
-            className="border-b hover:bg-gray-50 cursor-pointer text-xs"
-            onClick={() => handleRowClick(item)}
-          >
-            <td className="py-2 px-1" style={{ fontSize: '10px' }}>{sn}</td>
-            <td className="py-2 px-1" style={{ fontSize: '10px', maxWidth: '70px' }}>
-              <div className="truncate" title={nameToShow}>{nameToShow}</div>
-            </td>
-            <td className="py-2 px-1" style={{ fontSize: '10px', maxWidth: '90px' }}>
-              <div className="truncate" title={email}>{email}</div>
-            </td>
-            <td className="py-2 px-1" style={{ fontSize: '10px', maxWidth: '50px' }}>
-              <div className="truncate font-medium" title={role}>{role}</div>
-            </td>
-            <td className="py-2 px-1" style={{ fontSize: '10px', maxWidth: '70px' }}>
-              <div className="truncate font-medium" title={customerType}>{customerType}</div>
-            </td>
-            <td className="py-2 px-1" style={{ maxWidth: '60px' }}>
-              <span
-                className="text-white px-1 py-0.5 rounded whitespace-nowrap"
-                style={{ backgroundColor: getStatusStyle(status), fontSize: '10px' }}
-              >
-                {status}
-              </span>
-            </td>
-            <td className="py-2 px-1" style={{ maxWidth: '80px' }}>{renderDocStatus(item.documentStatus)}</td>
-            <td className="py-2 px-1" style={{ maxWidth: '70px' }}>{renderAssignedStatus(assignedStatus)}</td>
-            <td className="py-2 px-1" style={{ fontSize: '10px', maxWidth: '90px' }}>
-              <div className="truncate" title={financeCompany}>{financeCompany}</div>
-              <div className="truncate text-gray-500" title={financeEmail}>{financeEmail}</div>
-            </td>
-          </tr>
-        );
-      } else {
-        return (
-          <tr 
-            key={item.id} 
-            className="border-b hover:bg-gray-50 cursor-pointer text-xs"
-            onClick={() => handleRowClick(item)}
-          >
-            <td className="py-2 px-1" style={{ fontSize: '10px' }}>{sn}</td>
-            <td className="py-2 px-1" style={{ fontSize: '10px', maxWidth: '80px' }}>
-              <div className="truncate" title={nameToShow}>{nameToShow}</div>
-            </td>
-            <td className="py-2 px-1" style={{ fontSize: '10px', maxWidth: '100px' }}>
-              <div className="truncate" title={email}>{email}</div>
-            </td>
-            <td className="py-2 px-1" style={{ fontSize: '10px', maxWidth: '60px' }}>
-              <div className="truncate font-medium" title={role}>{role}</div>
-            </td>
-            <td className="py-2 px-1" style={{ fontSize: '10px', maxWidth: '80px' }}>
-              <div className="truncate font-medium" title={customerType}>{customerType}</div>
-            </td>
-            <td className="py-2 px-1" style={{ maxWidth: '70px' }}>
-              <span
-                className="text-white px-1 py-0.5 rounded whitespace-nowrap"
-                style={{ backgroundColor: getStatusStyle(status), fontSize: '10px' }}
-              >
-                {status}
-              </span>
-            </td>
-            <td className="py-2 px-1" style={{ maxWidth: '90px' }}>{renderDocStatus(item.documentStatus)}</td>
-            <td className="py-2 px-1" style={{ maxWidth: '80px' }}>{renderAssignedStatus(assignedStatus)}</td>
-          </tr>
-        );
-      }
+      return (
+        <tr 
+          key={item.id} 
+          className="border-b hover:bg-gray-50 cursor-pointer text-xs"
+          onClick={() => handleRowClick(item)}
+        >
+          <td className="py-2 px-1" style={{ fontSize: '10px' }}>{sn}</td>
+          <td className="py-2 px-1" style={{ fontSize: '10px', maxWidth: isInstaller ? '70px' : '80px' }}>
+            <div className="truncate" title={nameToShow}>{nameToShow}</div>
+          </td>
+          <td className="py-2 px-1" style={{ fontSize: '10px', maxWidth: isInstaller ? '90px' : '100px' }}>
+            <div className="truncate" title={email}>{email}</div>
+          </td>
+          <td className="py-2 px-1" style={{ fontSize: '10px', maxWidth: isInstaller ? '50px' : '60px' }}>
+            <div className="truncate font-medium" title={role}>{role}</div>
+          </td>
+          <td className="py-2 px-1" style={{ fontSize: '10px', maxWidth: isInstaller ? '70px' : '80px' }}>
+            <div className="truncate font-medium" title={customerType}>{customerType}</div>
+          </td>
+          <td className="py-2 px-1" style={{ maxWidth: isInstaller ? '60px' : '70px' }}>
+            <span
+              className="text-white px-1 py-0.5 rounded whitespace-nowrap"
+              style={{ backgroundColor: getStatusStyle(status), fontSize: '10px' }}
+            >
+              {status}
+            </span>
+          </td>
+          <td className="py-2 px-1" style={{ maxWidth: isInstaller ? '80px' : '90px' }}>{renderDocStatus(item.documentStatus)}</td>
+          <td className="py-2 px-1" style={{ maxWidth: isInstaller ? '70px' : '80px' }}>{renderAssignedStatus(assignedStatus)}</td>
+        </tr>
+      );
     });
   };
 
@@ -837,16 +796,13 @@ export default function PartnerCustomerReport() {
           <thead>
             <tr className="border-b">
               <th className="py-2 px-1 text-left" style={{ fontSize: '10px', width: '30px' }}>S/N</th>
-              <th className="py-2 px-1 text-left" style={{ fontSize: '10px', width: '70px' }}>Name</th>
-              <th className="py-2 px-1 text-left" style={{ fontSize: '10px', width: '90px' }}>Email</th>
-              <th className="py-2 px-1 text-left" style={{ fontSize: '10px', width: '50px' }}>Role</th>
-              <th className="py-2 px-1 text-left" style={{ fontSize: '10px', width: '70px' }}>Partner Type</th>
-              <th className="py-2 px-1 text-left" style={{ fontSize: '10px', width: '60px' }}>Status</th>
-              <th className="py-2 px-1 text-left" style={{ fontSize: '10px', width: '80px' }}>Document Status</th>
-              <th className="py-2 px-1 text-left" style={{ fontSize: '10px', width: '70px' }}>Assigned Status</th>
-              {isInstaller && (
-                <th className="py-2 px-1 text-left" style={{ fontSize: '10px', width: '90px' }}>Finance Company</th>
-              )}
+              <th className="py-2 px-1 text-left" style={{ fontSize: '10px', width: isInstaller ? '70px' : '80px' }}>Name</th>
+              <th className="py-2 px-1 text-left" style={{ fontSize: '10px', width: isInstaller ? '90px' : '100px' }}>Email</th>
+              <th className="py-2 px-1 text-left" style={{ fontSize: '10px', width: isInstaller ? '50px' : '60px' }}>Role</th>
+              <th className="py-2 px-1 text-left" style={{ fontSize: '10px', width: isInstaller ? '70px' : '80px' }}>Partner Type</th>
+              <th className="py-2 px-1 text-left" style={{ fontSize: '10px', width: isInstaller ? '60px' : '70px' }}>Status</th>
+              <th className="py-2 px-1 text-left" style={{ fontSize: '10px', width: isInstaller ? '80px' : '90px' }}>Document Status</th>
+              <th className="py-2 px-1 text-left" style={{ fontSize: '10px', width: isInstaller ? '70px' : '80px' }}>Assigned Status</th>
             </tr>
           </thead>
           <tbody>{renderRows()}</tbody>

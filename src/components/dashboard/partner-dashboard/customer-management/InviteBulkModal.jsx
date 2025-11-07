@@ -17,7 +17,9 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
       address2: "",
       city: "",
       state: "",
-      zipCode: ""
+      zipCode: "",
+      epcMode: false,
+      installerId: ""
     }
   ]);
   const [loading, setLoading] = useState(false);
@@ -28,6 +30,8 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
   const [isFinanceCompany, setIsFinanceCompany] = useState(false);
   const [isInstaller, setIsInstaller] = useState(false);
   const [userLoaded, setUserLoaded] = useState(false);
+  const [installers, setInstallers] = useState([]);
+  const [installersLoading, setInstallersLoading] = useState(false);
   const [partnerType, setPartnerType] = useState("");
   const fileInputRef = useRef(null);
   const [states] = useState([
@@ -76,6 +80,46 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
 
     if (isOpen) checkUserRole();
   }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen && isFinanceCompany) {
+      fetchInstallers();
+    }
+  }, [isOpen, isFinanceCompany]);
+
+  const fetchInstallers = async () => {
+    const userId = localStorage.getItem("userId");
+    const authToken = localStorage.getItem("authToken");
+
+    if (!userId || !authToken) return;
+
+    setInstallersLoading(true);
+    try {
+      const response = await axios.get(
+        `https://services.dcarbon.solutions/api/user/get-users-referrals/${userId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`
+          }
+        }
+      );
+
+      if (response.data.status === "success") {
+        const filteredInstallers = response.data.data.referrals.filter(
+          referral => 
+            referral.customerType === "PARTNER" &&
+            referral.role === "INSTALLER" &&
+            referral.status === "ACCEPTED"
+        );
+        setInstallers(filteredInstallers);
+      }
+    } catch (error) {
+      console.error("Error fetching installers:", error);
+      toast.error("Failed to load installers");
+    } finally {
+      setInstallersLoading(false);
+    }
+  };
 
   const getInviterUserType = () => {
     if (partnerType === "sales_agent") return "SALES_AGENT";
@@ -144,6 +188,16 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
     setInvitees(newInvitees);
   };
 
+  const toggleEpcMode = (index) => {
+    const newInvitees = [...invitees];
+    newInvitees[index] = {
+      ...newInvitees[index],
+      epcMode: !newInvitees[index].epcMode,
+      installerId: ""
+    };
+    setInvitees(newInvitees);
+  };
+
   const addInvitee = () => {
     if (invitees.length >= MAX_INVITEES) {
       toast.error(`Maximum ${MAX_INVITEES} invitees allowed per submission`);
@@ -162,7 +216,9 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
         address2: "",
         city: "",
         state: "",
-        zipCode: ""
+        zipCode: "",
+        epcMode: false,
+        installerId: ""
       }
     ]);
     setPhoneErrors([...phoneErrors, ""]);
@@ -200,7 +256,9 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
         address2: "",
         city: "",
         state: "",
-        zipCode: ""
+        zipCode: "",
+        epcMode: false,
+        installerId: ""
       }
     ]);
     setPhoneErrors([""]);
@@ -292,7 +350,9 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
             address2: "",
             city: "",
             state: "",
-            zipCode: ""
+            zipCode: "",
+            epcMode: false,
+            installerId: ""
           };
           
           headers.forEach((header, index) => {
@@ -395,6 +455,44 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
     }
   };
 
+  const assignInstallerToCustomer = async (userId, authToken, installerEmail, installerName, customerEmail) => {
+    try {
+      const installerResponse = await axios.get(
+        `https://services.dcarbon.solutions/api/user/${installerEmail}`,
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`
+          }
+        }
+      );
+
+      if (installerResponse.data.status === "success") {
+        const installerId = installerResponse.data.data.id;
+        
+        const assignResponse = await axios.put(
+          `https://services.dcarbon.solutions/api/user/referral/assign-installer/${userId}`,
+          {
+            inviteeEmail: customerEmail,
+            installerId: installerId,
+            installerName: installerName
+          },
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${authToken}`
+            }
+          }
+        );
+
+        return assignResponse.data.status === "success";
+      }
+      return false;
+    } catch (error) {
+      console.error("Error assigning installer:", error);
+      return false;
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -430,6 +528,15 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
     
     if (missingRequiredFields.length > 0) {
       toast.error("Please fill in all required fields for all invitees");
+      return;
+    }
+
+    const epcModeMissingInstallers = invitees.filter(invitee => 
+      invitee.epcMode && !invitee.installerId
+    );
+    
+    if (epcModeMissingInstallers.length > 0) {
+      toast.error("Please select installers for EPC mode invitees");
       return;
     }
 
@@ -471,16 +578,46 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
       );
 
       if (userResponse.data.status === "success") {
+        const epcModeInvitees = invitees.filter(invitee => invitee.epcMode);
+        const regularInvitees = invitees.filter(invitee => !invitee.epcMode);
+
         const facilityInviteResults = await Promise.all(
-          invitees.map(invitee => sendFacilityInvite(invitee, userId, authToken))
+          regularInvitees.map(invitee => sendFacilityInvite(invitee, userId, authToken))
         );
         
-        const successfulFacilityInvites = facilityInviteResults.filter(result => result).length;
+        const epcAssignResults = await Promise.all(
+          epcModeInvitees.map(async (invitee) => {
+            const facilitySuccess = await sendFacilityInvite(invitee, userId, authToken);
+            if (facilitySuccess && invitee.installerId) {
+              const selectedInstaller = installers.find(inst => inst.id === invitee.installerId);
+              if (selectedInstaller) {
+                const installerAssignmentSuccess = await assignInstallerToCustomer(
+                  userId, 
+                  authToken, 
+                  selectedInstaller.inviteeEmail, 
+                  selectedInstaller.name || selectedInstaller.inviteeEmail,
+                  invitee.email
+                );
+                return installerAssignmentSuccess;
+              }
+            }
+            return facilitySuccess;
+          })
+        );
         
-        if (successfulFacilityInvites === invitees.length) {
-          toast.success(`Successfully sent ${invitees.length} invitation${invitees.length > 1 ? 's' : ''} with facility details`);
+        const successfulRegularInvites = facilityInviteResults.filter(result => result).length;
+        const successfulEpcInvites = epcAssignResults.filter(result => result).length;
+        
+        if (successfulRegularInvites === regularInvitees.length && successfulEpcInvites === epcModeInvitees.length) {
+          if (epcModeInvitees.length > 0) {
+            toast.success(`Successfully sent ${invitees.length} invitation${invitees.length > 1 ? 's' : ''} (${epcModeInvitees.length} with EPC mode)`);
+          } else {
+            toast.success(`Successfully sent ${invitees.length} invitation${invitees.length > 1 ? 's' : ''} with facility details`);
+          }
         } else {
-          toast(`Sent user invitations but ${invitees.length - successfulFacilityInvites} facility invitations failed`, {
+          const failedRegular = regularInvitees.length - successfulRegularInvites;
+          const failedEpc = epcModeInvitees.length - successfulEpcInvites;
+          toast(`Sent user invitations but ${failedRegular + failedEpc} facility/installer assignments failed`, {
             icon: "⚠️",
             style: {
               background: "#FEF3C7",
@@ -617,7 +754,9 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
           {invitees.map((invitee, index) => (
             <div key={index} className="border rounded-lg p-3 relative">
               <div className="flex justify-between items-center mb-2 pb-2 border-b">
-                <h3 className="font-medium text-sm">Invitee #{index + 1}</h3>
+                <h3 className={`font-medium text-sm ${invitee.epcMode ? "text-green-600" : ""}`}>
+                  Invitee #{index + 1} {invitee.epcMode && "(EPC Mode)"}
+                </h3>
                 {invitees.length > 1 && (
                   <button
                     type="button"
@@ -642,6 +781,26 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
                   </button>
                 )}
               </div>
+
+              {isFinanceCompany && (
+                <div className="flex items-center justify-center my-3">
+                  <label className="flex items-center cursor-pointer">
+                    <div className="mr-3 text-xs font-medium text-gray-700">
+                      EPC Assisted Mode
+                    </div>
+                    <div className="relative">
+                      <input
+                        type="checkbox"
+                        className="sr-only"
+                        checked={invitee.epcMode}
+                        onChange={() => toggleEpcMode(index)}
+                      />
+                      <div className={`w-14 h-7 rounded-full ${invitee.epcMode ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                      <div className={`absolute left-1 top-1 bg-white w-5 h-5 rounded-full transition-transform ${invitee.epcMode ? 'transform translate-x-7' : ''}`}></div>
+                    </div>
+                  </label>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 <div>
@@ -813,6 +972,35 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
                     />
                   )}
                 </div>
+
+                {invitee.epcMode && (
+                  <div className="md:col-span-2">
+                    <label className={`${labelClass} text-xs`}>Select Installer <span className="text-red-500">*</span></label>
+                    {installersLoading ? (
+                      <div className="flex justify-center">
+                        <Loader size="small" />
+                      </div>
+                    ) : (
+                      <select
+                        name="installerId"
+                        value={invitee.installerId}
+                        onChange={(e) => handleChange(index, e)}
+                        className={`${selectClass} text-xs`}
+                        required={invitee.epcMode}
+                      >
+                        <option value="">Select an installer</option>
+                        {installers.map((installer) => (
+                          <option key={installer.id} value={installer.id}>
+                            {installer.name || installer.inviteeEmail}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                    {installers.length === 0 && !installersLoading && (
+                      <p className="text-red-500 text-xs mt-1">No registered installers found</p>
+                    )}
+                  </div>
+                )}
 
                 <div className="md:col-span-2">
                   <label className={`${labelClass} text-xs`}>Message</label>
