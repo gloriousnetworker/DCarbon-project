@@ -14,6 +14,7 @@ export default function OwnerTermsAndAgreementModal({ isOpen, onClose }) {
   const [signatureUrl, setSignatureUrl] = useState(null);
   const [showIframe, setShowIframe] = useState(false);
   const [iframeUrl, setIframeUrl] = useState("");
+  const [scale, setScale] = useState(1);
   const contentRef = useRef(null);
 
   useEffect(() => {
@@ -131,6 +132,7 @@ export default function OwnerTermsAndAgreementModal({ isOpen, onClose }) {
       if (response.data.status === 'success') {
         setIframeUrl('https://utilityapi.com/authorize/DCarbon_Solutions');
         setShowIframe(true);
+        setScale(1);
       } else {
         toast.error('Failed to initiate utility authorization');
       }
@@ -327,21 +329,74 @@ export default function OwnerTermsAndAgreementModal({ isOpen, onClose }) {
     doc.save("DCarbon_Operator_Owner_Agreements.pdf");
   };
 
+  const zoomIn = () => {
+    setScale(prev => Math.min(prev + 0.25, 3));
+  };
+
+  const zoomOut = () => {
+    setScale(prev => Math.max(prev - 0.25, 0.5));
+  };
+
+  const resetZoom = () => {
+    setScale(1);
+  };
+
+  const handleIframeClose = () => {
+    setShowIframe(false);
+    setScale(1);
+    onClose();
+    window.location.reload();
+  };
+
   if (showIframe) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-        <div className="relative w-full max-w-4xl h-[90vh] bg-white rounded-2xl overflow-hidden">
+        <div className="relative w-full max-w-6xl h-[90vh] bg-white rounded-2xl overflow-hidden flex flex-col">
           <div className="flex items-center justify-between p-4 border-b">
             <h3 className="text-lg font-semibold text-[#039994]">Utility Authorization Portal</h3>
-            <button
-              onClick={handleModalClose}
-              className="text-red-500 hover:text-red-700"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
+            <div className="flex items-center gap-4">
+              <div className="flex gap-2">
+                <button
+                  onClick={zoomOut}
+                  className="bg-gray-500 text-white px-3 py-1 rounded-md text-sm hover:bg-gray-600 flex items-center gap-1"
+                  disabled={scale <= 0.5}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                  Zoom Out
+                </button>
+                <button
+                  onClick={resetZoom}
+                  className="bg-gray-500 text-white px-3 py-1 rounded-md text-sm hover:bg-gray-600 flex items-center gap-1"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M15 3H21V9M21 3L15 9M9 21H3V15M3 21L9 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  Reset
+                </button>
+                <button
+                  onClick={zoomIn}
+                  className="bg-gray-500 text-white px-3 py-1 rounded-md text-sm hover:bg-gray-600 flex items-center gap-1"
+                  disabled={scale >= 3}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                  Zoom In
+                </button>
+              </div>
+              <button
+                onClick={handleIframeClose}
+                className="text-red-500 hover:text-red-700"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+            </div>
           </div>
+          
           <div className="p-4 bg-yellow-50 border-b border-yellow-200">
             <p className="text-sm text-yellow-700">
               <strong>Step 1:</strong> Enter the email of your DCarbon account you are authorizing for, then choose your utility provider.
@@ -350,11 +405,35 @@ export default function OwnerTermsAndAgreementModal({ isOpen, onClose }) {
               <strong>Step 2:</strong> Enter your Utility Account credentials and authorize access when prompted.
             </p>
           </div>
-          <iframe
-            src={iframeUrl}
-            className="w-full h-full"
-            title="Utility Authorization"
-          />
+
+          <div className="flex-1 p-4 bg-gray-100 overflow-hidden">
+            <div className="w-full h-full bg-white rounded-lg overflow-auto">
+              <div 
+                className="w-full h-full origin-top-left"
+                style={{ 
+                  transform: `scale(${scale})`,
+                  width: `${100/scale}%`,
+                  height: `${100/scale}%`
+                }}
+              >
+                <iframe
+                  src={iframeUrl}
+                  className="w-full h-full border-0"
+                  title="Utility Authorization"
+                  sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="p-3 border-t bg-gray-50 flex justify-between items-center">
+            <span className="text-sm text-gray-600">
+              Zoom: {Math.round(scale * 100)}%
+            </span>
+            <span className="text-sm text-gray-600">
+              Use scroll to navigate when zoomed in
+            </span>
+          </div>
         </div>
       </div>
     );
@@ -406,6 +485,23 @@ export default function OwnerTermsAndAgreementModal({ isOpen, onClose }) {
                     Operator Owner REC Agreement
                   </label>
                 </div>
+
+                <div
+                  ref={contentRef}
+                  className="agreement-content h-[120px] overflow-y-auto mb-4 font-sans text-[12px] leading-[150%] font-[400] text-[#1E1E1E] p-4 bg-gray-50 rounded-lg"
+                >
+                  <h3 className="font-bold text-[#039994] mb-2">OPERATOR OWNER REC AGREEMENT</h3>
+                  <p className="mb-4">
+                    This Operator Owner Renewable Energy Certificate (REC) Agreement (the "Agreement") is made between DCarbon Solutions ("Company") and the undersigned operator property owner ("Owner").
+                  </p>
+                  <p className="mb-2"><strong>1. REC Ownership:</strong> Owner agrees to transfer all rights, title, and interest in the RECs generated by the operator renewable energy system to Company.</p>
+                  <p className="mb-2"><strong>2. Term:</strong> This Agreement shall commence on the date of execution and continue for 12 months, automatically renewing for successive 12-month terms unless terminated.</p>
+                  <p className="mb-2"><strong>3. Compensation:</strong> Company shall pay Owner $0.03 per kWh for all verified RECs generated by the operator system.</p>
+                  <p className="mb-2"><strong>4. Metering:</strong> Owner agrees to provide Company with access to energy production data from the operator renewable energy system.</p>
+                  <p className="mb-2"><strong>5. Representations:</strong> Owner represents they have authority to enter this Agreement and transfer RECs for the operator property.</p>
+                  <p className="mb-4"><strong>6. Governing Law:</strong> This Agreement shall be governed by the laws of the state where the operator property is located.</p>
+                </div>
+
                 <div className="flex items-start">
                   <input
                     type="checkbox"
@@ -418,32 +514,20 @@ export default function OwnerTermsAndAgreementModal({ isOpen, onClose }) {
                     Information Release Authorization
                   </label>
                 </div>
-              </div>
 
-              <div
-                ref={contentRef}
-                className="agreement-content h-[300px] overflow-y-auto mb-6 font-sans text-[12px] leading-[150%] font-[400] text-[#1E1E1E] p-4 bg-gray-50 rounded-lg"
-              >
-                <h3 className="font-bold text-[#039994] mb-2">OPERATOR OWNER REC AGREEMENT</h3>
-                <p className="mb-4">
-                  This Operator Owner Renewable Energy Certificate (REC) Agreement (the "Agreement") is made between DCarbon Solutions ("Company") and the undersigned operator property owner ("Owner").
-                </p>
-                <p className="mb-2"><strong>1. REC Ownership:</strong> Owner agrees to transfer all rights, title, and interest in the RECs generated by the operator renewable energy system to Company.</p>
-                <p className="mb-2"><strong>2. Term:</strong> This Agreement shall commence on the date of execution and continue for 12 months, automatically renewing for successive 12-month terms unless terminated.</p>
-                <p className="mb-2"><strong>3. Compensation:</strong> Company shall pay Owner $0.03 per kWh for all verified RECs generated by the operator system.</p>
-                <p className="mb-2"><strong>4. Metering:</strong> Owner agrees to provide Company with access to energy production data from the operator renewable energy system.</p>
-                <p className="mb-2"><strong>5. Representations:</strong> Owner represents they have authority to enter this Agreement and transfer RECs for the operator property.</p>
-                <p className="mb-4"><strong>6. Governing Law:</strong> This Agreement shall be governed by the laws of the state where the operator property is located.</p>
-
-                <h3 className="font-bold text-[#039994] mb-2">OPERATOR OWNER INFORMATION RELEASE AUTHORIZATION</h3>
-                <p className="mb-4">
-                  This Operator Owner Information Release Authorization ("Authorization") permits DCarbon Solutions to access and use Owner's operator utility data.
-                </p>
-                <p className="mb-2"><strong>1. Authorization:</strong> Owner authorizes Company to access utility account data for the operator property for REC verification and energy management services.</p>
-                <p className="mb-2"><strong>2. Data Use:</strong> Company may use this data to calculate REC production, verify system performance, and provide operator energy reports.</p>
-                <p className="mb-2"><strong>3. Third Parties:</strong> Owner authorizes their utility provider to release consumption and generation data to Company for the operator property.</p>
-                <p className="mb-2"><strong>4. Duration:</strong> This Authorization remains in effect until revoked in writing by Owner.</p>
-                <p className="mb-2"><strong>5. Security:</strong> Company agrees to maintain appropriate safeguards to protect Owner's data.</p>
+                <div
+                  className="agreement-content h-[120px] overflow-y-auto mb-6 font-sans text-[12px] leading-[150%] font-[400] text-[#1E1E1E] p-4 bg-gray-50 rounded-lg"
+                >
+                  <h3 className="font-bold text-[#039994] mb-2">OPERATOR OWNER INFORMATION RELEASE AUTHORIZATION</h3>
+                  <p className="mb-4">
+                    This Operator Owner Information Release Authorization ("Authorization") permits DCarbon Solutions to access and use Owner's operator utility data.
+                  </p>
+                  <p className="mb-2"><strong>1. Authorization:</strong> Owner authorizes Company to access utility account data for the operator property for REC verification and energy management services.</p>
+                  <p className="mb-2"><strong>2. Data Use:</strong> Company may use this data to calculate REC production, verify system performance, and provide operator energy reports.</p>
+                  <p className="mb-2"><strong>3. Third Parties:</strong> Owner authorizes their utility provider to release consumption and generation data to Company for the operator property.</p>
+                  <p className="mb-2"><strong>4. Duration:</strong> This Authorization remains in effect until revoked in writing by Owner.</p>
+                  <p className="mb-2"><strong>5. Security:</strong> Company agrees to maintain appropriate safeguards to protect Owner's data.</p>
+                </div>
               </div>
 
               <div className="flex justify-between gap-4">

@@ -654,7 +654,6 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
 
   const commercialRoles = [
     { value: "OWNER", label: "Owner" },
-    { value: "OPERATOR", label: "Operator" },
     { value: "BOTH", label: "Both" }
   ];
 

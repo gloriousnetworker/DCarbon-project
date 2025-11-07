@@ -7,6 +7,7 @@ const Graph = dynamic(() => import("./Graph"), { ssr: false });
 const RecentRecSales = dynamic(() => import("./RecentRecSales"), { ssr: false });
 const WelcomeModal = dynamic(() => import("./modals/WelcomeModal"), { ssr: false });
 const AddUtilityProvider = dynamic(() => import("./modals/AddUtilityProvider"), { ssr: false });
+const CommercialRegistrationModal = dynamic(() => import("./modals/createfacility/CommercialRegistrationModal"), { ssr: false });
 
 const ProgressTracker = ({ currentStage, completedStages, onStageClick }) => {
   const stages = [
@@ -15,6 +16,16 @@ const ProgressTracker = ({ currentStage, completedStages, onStageClick }) => {
     { id: 3, name: "Agreement", tooltip: "Terms and conditions signed" },
     { id: 4, name: "Meters", tooltip: "Utility meters connected" }
   ];
+
+  const handleClick = (stageId) => {
+    if (completedStages.includes(stageId) || stageId === currentStage) {
+      onStageClick(stageId);
+    }
+  };
+
+  const isClickable = (stageId) => {
+    return completedStages.includes(stageId) || stageId === currentStage;
+  };
 
   return (
     <div className="w-full bg-white rounded-lg shadow-sm p-4 mb-6">
@@ -29,37 +40,28 @@ const ProgressTracker = ({ currentStage, completedStages, onStageClick }) => {
           {stages.map((stage) => (
             <div 
               key={stage.id} 
-              className="flex flex-col items-center group relative"
-              onClick={() => completedStages.includes(stage.id) ? onStageClick(stage.id) : null}
+              className={`flex flex-col items-center group relative ${isClickable(stage.id) ? 'cursor-pointer' : 'cursor-default'}`}
+              onClick={() => handleClick(stage.id)}
             >
               <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center border-2 cursor-pointer ${
-                  completedStages.includes(stage.id)
-                    ? "bg-[#039994] border-[#039994] text-white"
-                    : stage.id === currentStage
-                    ? "border-[#039994] text-[#039994]"
-                    : "border-gray-300 text-gray-400"
-                } ${completedStages.includes(stage.id) ? 'hover:bg-[#028882]' : ''}`}
+                className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                  completedStages.includes(stage.id) ? "bg-[#039994] text-white" : 
+                  stage.id === currentStage ? "bg-[#039994] text-white" : 
+                  "bg-gray-200 text-gray-600"
+                } ${isClickable(stage.id) ? 'hover:bg-[#028a85]' : ''}`}
               >
                 {stage.id}
               </div>
               <span
                 className={`text-xs mt-1 text-center ${
-                  completedStages.includes(stage.id) || stage.id === currentStage
-                    ? "text-[#039994] font-medium"
-                    : "text-gray-500"
+                  completedStages.includes(stage.id) || stage.id === currentStage ? "text-[#039994] font-medium" : "text-gray-500"
                 }`}
               >
                 {stage.name}
               </span>
-              {completedStages.includes(stage.id) && (
-                <div className="absolute top-full mt-2 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                  <div className="relative bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
-                    {stage.tooltip}
-                    <span className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-800 rotate-45"></span>
-                  </div>
-                </div>
-              )}
+              <div className="absolute top-full mt-2 hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap z-10">
+                {stage.tooltip}
+              </div>
             </div>
           ))}
         </div>
@@ -81,6 +83,7 @@ const ProgressTracker = ({ currentStage, completedStages, onStageClick }) => {
 export default function DashboardOverview() {
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [showAddUtilityModal, setShowAddUtilityModal] = useState(false);
+  const [showRegistrationModal, setShowRegistrationModal] = useState(false);
   const [userData, setUserData] = useState({
     userFirstName: "",
     userId: ""
@@ -92,6 +95,7 @@ export default function DashboardOverview() {
   const [meterCheckInterval, setMeterCheckInterval] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [hideProgressTracker, setHideProgressTracker] = useState(false);
+  const [clickedStage, setClickedStage] = useState(1);
 
   const checkStage1Completion = async (userId, authToken) => {
     const response = await fetch(
@@ -228,9 +232,17 @@ export default function DashboardOverview() {
   };
 
   const handleStageClick = (stageId) => {
+    setClickedStage(stageId);
     if (stageId === 4) {
       setShowAddUtilityModal(true);
+    } else {
+      setShowRegistrationModal(true);
     }
+  };
+
+  const handleCloseRegistrationModal = () => {
+    setShowRegistrationModal(false);
+    checkUserProgress();
   };
 
   const checkCommercialUserStatus = async (userId) => {
@@ -355,18 +367,32 @@ export default function DashboardOverview() {
       <RecentRecSales />
 
       {showWelcomeModal && (
-        <WelcomeModal 
-          isOpen 
-          onClose={handleCloseWelcomeModal}
-          userData={userData}
-        />
+        <div className="fixed inset-0 z-[100]">
+          <WelcomeModal 
+            isOpen 
+            onClose={handleCloseWelcomeModal}
+            userData={userData}
+          />
+        </div>
       )}
 
       {showAddUtilityModal && (
-        <AddUtilityProvider 
-          isOpen={showAddUtilityModal}
-          onClose={handleCloseAddUtilityModal}
-        />
+        <div className="fixed inset-0 z-[100]">
+          <AddUtilityProvider 
+            isOpen={showAddUtilityModal}
+            onClose={handleCloseAddUtilityModal}
+          />
+        </div>
+      )}
+
+      {showRegistrationModal && (
+        <div className="fixed inset-0 z-[100]">
+          <CommercialRegistrationModal
+            isOpen={showRegistrationModal}
+            onClose={handleCloseRegistrationModal}
+            currentStep={clickedStage}
+          />
+        </div>
       )}
     </div>
   );
