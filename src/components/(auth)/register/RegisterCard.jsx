@@ -528,7 +528,7 @@ function RegisterCardContent() {
                         : 'bg-transparent text-[#039994] border border-[#039994] hover:bg-[#02857f] hover:text-white'
                     }`}
                   >
-                    Installer
+                    EPC/Installer
                   </button>
                   <button
                     type="button"

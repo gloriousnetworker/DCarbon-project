@@ -42,15 +42,21 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const [loadingUtilityProviders, setLoadingUtilityProviders] = useState(false);
   const [loadingFinanceCompanies, setLoadingFinanceCompanies] = useState(false);
   const [showRequestModal, setShowRequestModal] = useState(false);
+  const [showUtilityRequestModal, setShowUtilityRequestModal] = useState(false);
   const [requestingFinanceType, setRequestingFinanceType] = useState(false);
+  const [requestingUtility, setRequestingUtility] = useState(false);
   const [requestedFinanceTypeName, setRequestedFinanceTypeName] = useState('');
+  const [requestedUtilityName, setRequestedUtilityName] = useState('');
+  const [requestedUtilityWebsite, setRequestedUtilityWebsite] = useState('');
   const [showIframe, setShowIframe] = useState(false);
   const [iframeUrl, setIframeUrl] = useState("");
+  const [scale, setScale] = useState(1);
   const [file, setFile] = useState(null);
   const [facilityNickname, setFacilityNickname] = useState('');
   const [utilityProviders, setUtilityProviders] = useState([]);
   const [financeCompanies, setFinanceCompanies] = useState([]);
   const [commercialRole, setCommercialRole] = useState('both');
+  const [selectedUtilityProvider, setSelectedUtilityProvider] = useState(null);
 
   const [formData, setFormData] = useState({
     financeType: "",
@@ -71,11 +77,22 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const [financeTypes, setFinanceTypes] = useState([]);
   const [installers, setInstallers] = useState([]);
 
+  const greenButtonUtilityIds = ['PG&E', 'SCE', 'SDG&E'];
   const isCashType = formData.financeType.toLowerCase() === 'cash';
   const showUploadField = !isCashType && formData.financeType !== '';
   const showFinanceCompany = !isCashType && formData.financeType !== '';
   const showCustomInstaller = formData.installer === 'others';
   const noInstallerSelected = formData.installer === 'not_available';
+
+  const greenButtonProviders = utilityProviders.filter(provider => 
+    greenButtonUtilityIds.includes(provider.id)
+  );
+  const otherProviders = utilityProviders.filter(provider => 
+    !greenButtonUtilityIds.includes(provider.id)
+  );
+
+  const selectedProvider = utilityProviders.find(provider => provider.name === formData.utilityProvider);
+  const isGreenButtonUtility = selectedProvider && greenButtonUtilityIds.includes(selectedProvider.id);
 
   const fetchCommercialRole = async () => {
     try {
@@ -295,6 +312,34 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     }
   };
 
+  const handleRequestUtility = async () => {
+    if (!requestedUtilityName.trim()) {
+      toast.error('Please enter a utility provider name');
+      return;
+    }
+    setRequestingUtility(true);
+    try {
+      const userId = localStorage.getItem('userId');
+      const token = localStorage.getItem('authToken');
+      const response = await axios.post(
+        `https://services.dcarbon.solutions/api/user/request-utility-provider/${userId}`,
+        { 
+          name: requestedUtilityName.trim(),
+          website: requestedUtilityWebsite.trim() || "https://example.com"
+        },
+        { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } }
+      );
+      toast.success(response.data.message || 'Utility provider request submitted successfully!');
+      setShowUtilityRequestModal(false);
+      setRequestedUtilityName('');
+      setRequestedUtilityWebsite('');
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to submit request');
+    } finally {
+      setRequestingUtility(false);
+    }
+  };
+
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
     if (!selectedFile) return;
@@ -356,6 +401,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     }
     else if (name === "utilityProvider") {
       const selectedUtilityProvider = utilityProviders.find(provider => provider.name === value);
+      setSelectedUtilityProvider(selectedUtilityProvider);
       setFormData(prev => ({
         ...prev,
         utilityProvider: value,
@@ -424,6 +470,12 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     }
   };
 
+  const initiateGreenButtonAuth = async () => {
+    setIframeUrl('https://www.greenbuttondata.org/index.html');
+    setShowIframe(true);
+    setScale(1);
+  };
+
   const initiateUtilityAuth = async () => {
     const userEmail = localStorage.getItem('userEmail');
     const authToken = localStorage.getItem('authToken');
@@ -439,6 +491,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
       if (response.data.status === 'success') {
         setIframeUrl('https://utilityapi.com/authorize/DCarbon_Solutions');
         setShowIframe(true);
+        setScale(1);
       } else {
         toast.error('Failed to initiate utility authorization');
       }
@@ -464,6 +517,25 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     }
   }, [showIframe]);
 
+  const zoomIn = () => {
+    setScale(prev => Math.min(prev + 0.25, 3));
+  };
+
+  const zoomOut = () => {
+    setScale(prev => Math.max(prev - 0.25, 0.5));
+  };
+
+  const resetZoom = () => {
+    setScale(1);
+  };
+
+  const handleIframeClose = () => {
+    setShowIframe(false);
+    setScale(1);
+    onClose();
+    window.location.reload();
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.financeType) return toast.error('Please select a finance type');
@@ -485,7 +557,12 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
 
       toast.dismiss(toastId);
       toast.success('Facility created successfully!');
-      await initiateUtilityAuth();
+      
+      if (isGreenButtonUtility) {
+        await initiateGreenButtonAuth();
+      } else {
+        await initiateUtilityAuth();
+      }
     } catch (err) {
       toast.error(err.response?.data?.message || err.message || 'Operation failed', { id: toastId });
     } finally {
@@ -512,6 +589,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     setFacilityNickname('');
     setFile(null);
     setUploadSuccess(false);
+    setSelectedUtilityProvider(null);
     onClose();
     window.location.reload();
   };
@@ -521,31 +599,96 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   if (showIframe) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-        <div className="relative w-full max-w-4xl h-[90vh] bg-white rounded-2xl overflow-hidden">
+        <div className="relative w-full max-w-6xl h-[90vh] bg-white rounded-2xl overflow-hidden flex flex-col">
           <div className="flex items-center justify-between p-4 border-b">
-            <h3 className="text-lg font-semibold text-[#039994]">Utility Authorization Portal</h3>
-            <button
-              onClick={handleCloseModal}
-              className="text-red-500 hover:text-red-700 cursor-pointer"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
+            <h3 className="text-lg font-semibold text-[#039994]">
+              {isGreenButtonUtility ? "Green Button Authorization" : "Utility Authorization Portal"}
+            </h3>
+            <div className="flex items-center gap-4">
+              <div className="flex gap-2">
+                <button
+                  onClick={zoomOut}
+                  className="bg-gray-500 text-white px-3 py-1 rounded-md text-sm hover:bg-gray-600 flex items-center gap-1"
+                  disabled={scale <= 0.5}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                  Zoom Out
+                </button>
+                <button
+                  onClick={resetZoom}
+                  className="bg-gray-500 text-white px-3 py-1 rounded-md text-sm hover:bg-gray-600 flex items-center gap-1"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M15 3H21V9M21 3L15 9M9 21H3V15M3 21L9 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  Reset
+                </button>
+                <button
+                  onClick={zoomIn}
+                  className="bg-gray-500 text-white px-3 py-1 rounded-md text-sm hover:bg-gray-600 flex items-center gap-1"
+                  disabled={scale >= 3}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                  Zoom In
+                </button>
+              </div>
+              <button
+                onClick={handleIframeClose}
+                className="text-red-500 hover:text-red-700"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+            </div>
           </div>
-          <div className="p-4 bg-yellow-50 border-b border-yellow-200">
-            <p className="text-sm text-yellow-700">
-              <strong>Step 1:</strong> Enter the email of your DCarbon account you are authorizing for, then choose your utility provider.
+          
+          <div className={`p-4 border-b ${isGreenButtonUtility ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}>
+            <p className={`text-sm ${isGreenButtonUtility ? 'text-green-700' : 'text-yellow-700'}`}>
+              <strong>Step 1:</strong> {isGreenButtonUtility ? 'Follow the steps on the Green Button portal to securely share your utility data.' : 'Enter the email of your DCarbon account you are authorizing for, then choose your utility provider.'}
             </p>
-            <p className="text-sm text-yellow-700 mt-1">
-              <strong>Step 2:</strong> Enter your Utility Account credentials and authorize access when prompted.
+            <p className={`text-sm ${isGreenButtonUtility ? 'text-green-700' : 'text-yellow-700'} mt-1`}>
+              <strong>Step 2:</strong> {isGreenButtonUtility ? 'Complete the authorization process when prompted.' : 'Enter your Utility Account credentials and authorize access when prompted.'}
             </p>
+            {isGreenButtonUtility && selectedUtilityProvider && (
+              <p className="text-sm text-green-700 mt-1">
+                <strong>Selected Utility:</strong> {selectedUtilityProvider.name}
+              </p>
+            )}
           </div>
-          <iframe
-            src={iframeUrl}
-            className="w-full h-full"
-            title="Utility Authorization"
-          />
+
+          <div className="flex-1 p-4 bg-gray-100 overflow-hidden">
+            <div className="w-full h-full bg-white rounded-lg overflow-auto">
+              <div 
+                className="w-full h-full origin-top-left"
+                style={{ 
+                  transform: `scale(${scale})`,
+                  width: `${100/scale}%`,
+                  height: `${100/scale}%`
+                }}
+              >
+                <iframe
+                  src={iframeUrl}
+                  className="w-full h-full border-0"
+                  title={isGreenButtonUtility ? "Green Button Authorization" : "Utility Authorization"}
+                  sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="p-3 border-t bg-gray-50 flex justify-between items-center">
+            <span className="text-sm text-gray-600">
+              Zoom: {Math.round(scale * 100)}%
+            </span>
+            <span className="text-sm text-gray-600">
+              Use scroll to navigate when zoomed in
+            </span>
+          </div>
         </div>
       </div>
     );
@@ -592,6 +735,59 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                 className="flex-1 px-4 py-2 bg-[#039994] text-white rounded-md hover:bg-[#028882] disabled:opacity-50"
               >
                 {requestingFinanceType ? 'Submitting...' : 'Submit Request'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showUtilityRequestModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-semibold mb-4">Request Utility Provider</h3>
+            <div className="mb-4">
+              <label className={styles.labelClass}>
+                Utility Provider Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={requestedUtilityName}
+                onChange={(e) => setRequestedUtilityName(e.target.value)}
+                placeholder="Enter utility provider name"
+                className={styles.inputClass}
+                required
+              />
+            </div>
+            <div className="mb-4">
+              <label className={styles.labelClass}>
+                Utility Website
+              </label>
+              <input
+                type="url"
+                value={requestedUtilityWebsite}
+                onChange={(e) => setRequestedUtilityWebsite(e.target.value)}
+                placeholder="https://example.com"
+                className={styles.inputClass}
+              />
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowUtilityRequestModal(false);
+                  setRequestedUtilityName('');
+                  setRequestedUtilityWebsite('');
+                }}
+                className="flex-1 px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+                disabled={requestingUtility}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRequestUtility}
+                disabled={requestingUtility}
+                className="flex-1 px-4 py-2 bg-[#039994] text-white rounded-md hover:bg-[#028882] disabled:opacity-50"
+              >
+                {requestingUtility ? 'Submitting...' : 'Submit Request'}
               </button>
             </div>
           </div>
@@ -670,16 +866,55 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                     disabled={loadingUtilityProviders}
                   >
                     <option value="">{loadingUtilityProviders ? 'Loading...' : 'Choose provider'}</option>
-                    {utilityProviders.map((provider) => (
-                      <option key={provider.id} value={provider.name}>{provider.name}</option>
-                    ))}
+                    
+                    {greenButtonProviders.length > 0 && (
+                      <optgroup label="Green Button Utilities" className="bg-green-50">
+                        {greenButtonProviders.map((provider) => (
+                          <option 
+                            key={provider.id} 
+                            value={provider.name}
+                            className="text-green-700 font-semibold"
+                          >
+                            {provider.name} ✓
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
+
+                    {otherProviders.length > 0 && (
+                      <optgroup label="Other Utilities">
+                        {otherProviders.map((provider) => (
+                          <option key={provider.id} value={provider.name}>
+                            {provider.name}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
                   </select>
+                  {isGreenButtonUtility && (
+                    <div className="absolute inset-0 border-2 border-green-500 rounded-lg animate-pulse pointer-events-none"></div>
+                  )}
                   <div className={styles.uploadIconContainer}>
                     <svg className="w-5 h-5 text-gray-400 pointer-events-none absolute top-1/2 right-3 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                     </svg>
                   </div>
                 </div>
+                {isGreenButtonUtility && (
+                  <p className="text-xs text-green-600 mt-1 flex items-center">
+                    <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    Selected utility supports Green Button authorization.
+                  </p>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setShowUtilityRequestModal(true)}
+                  className="text-[#039994] text-xs hover:underline mt-1"
+                >
+                  Not on the list?
+                </button>
               </div>
 
               <div>

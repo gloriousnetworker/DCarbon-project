@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import axios from "axios";
 import ResidenceTermsAndAgreementModal from "./ResidenceTermsAndAgreementModal";
+import GreenButtonTermsAndCondition from "./GreenButtonTermsAndCondition";
 import {
   mainContainer,
   headingContainer,
@@ -42,9 +43,15 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const [loadingFinanceCompanies, setLoadingFinanceCompanies] = useState(false);
   const [loadingReferrer, setLoadingReferrer] = useState(false);
   const [showRequestModal, setShowRequestModal] = useState(false);
+  const [showUtilityRequestModal, setShowUtilityRequestModal] = useState(false);
   const [requestingFinanceType, setRequestingFinanceType] = useState(false);
+  const [requestingUtility, setRequestingUtility] = useState(false);
   const [requestedFinanceTypeName, setRequestedFinanceTypeName] = useState('');
+  const [requestedUtilityName, setRequestedUtilityName] = useState('');
+  const [requestedUtilityWebsite, setRequestedUtilityWebsite] = useState('');
   const [showAgreementModal, setShowAgreementModal] = useState(false);
+  const [showGreenButtonModal, setShowGreenButtonModal] = useState(false);
+  const [selectedUtilityProvider, setSelectedUtilityProvider] = useState(null);
   const [file, setFile] = useState(null);
   const [currentStep, setCurrentStep] = useState(1);
   const [totalSteps] = useState(4);
@@ -67,6 +74,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const [financeTypes, setFinanceTypes] = useState([]);
   const [installers, setInstallers] = useState([]);
 
+  const greenButtonUtilityIds = ['PG&E', 'SCE', 'SDG&E'];
   const isCashType = formData.financeType.toLowerCase() === 'cash';
   const showUploadField = !isCashType && formData.financeType !== '';
   const showFinanceCompany = !isCashType && formData.financeType !== '';
@@ -76,6 +84,16 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const filteredFinanceCompanies = isReferredByFinanceCompany 
     ? financeCompanies.filter(company => company.name === referrerFinanceCompany.name)
     : financeCompanies;
+
+  const greenButtonProviders = utilityProviders.filter(provider => 
+    greenButtonUtilityIds.includes(provider.id)
+  );
+  const otherProviders = utilityProviders.filter(provider => 
+    !greenButtonUtilityIds.includes(provider.id)
+  );
+
+  const selectedProvider = utilityProviders.find(provider => provider.name === formData.utilityProvider);
+  const isGreenButtonUtility = selectedProvider && greenButtonUtilityIds.includes(selectedProvider.id);
 
   const generateUniqueMeterId = () => {
     const timestamp = Date.now();
@@ -301,6 +319,34 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     }
   };
 
+  const handleRequestUtility = async () => {
+    if (!requestedUtilityName.trim()) {
+      toast.error('Please enter a utility provider name');
+      return;
+    }
+    setRequestingUtility(true);
+    try {
+      const userId = localStorage.getItem('userId');
+      const token = localStorage.getItem('authToken');
+      const response = await axios.post(
+        `https://services.dcarbon.solutions/api/user/request-utility-provider/${userId}`,
+        { 
+          name: requestedUtilityName.trim(),
+          website: requestedUtilityWebsite.trim() || "https://example.com"
+        },
+        { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } }
+      );
+      toast.success(response.data.message || 'Utility provider request submitted successfully!');
+      setShowUtilityRequestModal(false);
+      setRequestedUtilityName('');
+      setRequestedUtilityWebsite('');
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to submit request');
+    } finally {
+      setRequestingUtility(false);
+    }
+  };
+
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
     if (!selectedFile) return;
@@ -336,6 +382,16 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    
+    if (name === "utilityProvider") {
+      const selectedProvider = utilityProviders.find(provider => provider.name === value);
+      setSelectedUtilityProvider(selectedProvider);
+      setFormData(prev => ({
+        ...prev,
+        utilityProviderNamingCode: selectedProvider?.namingCode || ""
+      }));
+    }
+    
     if (name === "financeType") {
       const selectedFinanceType = financeTypes.find(type => type.name === value);
       setFormData(prev => ({
@@ -343,18 +399,12 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
         financeNamingCode: selectedFinanceType?.namingCode || ""
       }));
     }
+    
     if (name === "installer") {
       const selectedInstaller = installers.find(installer => installer.name === value);
       setFormData(prev => ({
         ...prev,
         installerNamingCode: selectedInstaller?.namingCode || ""
-      }));
-    }
-    if (name === "utilityProvider") {
-      const selectedUtilityProvider = utilityProviders.find(provider => provider.name === value);
-      setFormData(prev => ({
-        ...prev,
-        utilityProviderNamingCode: selectedUtilityProvider?.namingCode || ""
       }));
     }
   };
@@ -381,7 +431,12 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
 
       toast.success(`Residential facility created successfully: ${response.data.facilityName}`, { id: toastId });
       setCurrentStep(4);
-      setShowAgreementModal(true);
+      
+      if (isGreenButtonUtility) {
+        setShowGreenButtonModal(true);
+      } else {
+        setShowAgreementModal(true);
+      }
     } catch (err) {
       if (err.response?.data?.message?.includes('Meter ID is already registered')) {
         toast.error('Facility creation failed due to duplicate meter ID. Please try again.', { id: toastId });
@@ -413,6 +468,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     setFile(null);
     setUploadSuccess(false);
     setCurrentStep(1);
+    setSelectedUtilityProvider(null);
     onClose();
     window.location.reload();
   };
@@ -466,7 +522,60 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
         </div>
       )}
 
-      {!showAgreementModal && !showRequestModal && (
+      {showUtilityRequestModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-semibold mb-4">Request Utility Provider</h3>
+            <div className="mb-4">
+              <label className={labelClass}>
+                Utility Provider Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={requestedUtilityName}
+                onChange={(e) => setRequestedUtilityName(e.target.value)}
+                placeholder="Enter utility provider name"
+                className={inputClass}
+                required
+              />
+            </div>
+            <div className="mb-4">
+              <label className={labelClass}>
+                Utility Website
+              </label>
+              <input
+                type="url"
+                value={requestedUtilityWebsite}
+                onChange={(e) => setRequestedUtilityWebsite(e.target.value)}
+                placeholder="https://example.com"
+                className={inputClass}
+              />
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowUtilityRequestModal(false);
+                  setRequestedUtilityName('');
+                  setRequestedUtilityWebsite('');
+                }}
+                className="flex-1 px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+                disabled={requestingUtility}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRequestUtility}
+                disabled={requestingUtility}
+                className={`flex-1 px-4 py-2 ${buttonPrimary}`}
+              >
+                {requestingUtility ? 'Submitting...' : 'Submit Request'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!showAgreementModal && !showGreenButtonModal && !showRequestModal && !showUtilityRequestModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
           <div className="relative w-full max-w-lg bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
             <div className="relative p-6 pb-4">
@@ -541,11 +650,50 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                       disabled={loadingUtilityProviders}
                     >
                       <option value="">{loadingUtilityProviders ? 'Loading...' : 'Choose provider'}</option>
-                      {utilityProviders.map((provider) => (
-                        <option key={provider.id} value={provider.name}>{provider.name}</option>
-                      ))}
+                      
+                      {greenButtonProviders.length > 0 && (
+                        <optgroup label="Green Button Utilities" className="bg-green-50">
+                          {greenButtonProviders.map((provider) => (
+                            <option 
+                              key={provider.id} 
+                              value={provider.name}
+                              className="text-green-700 font-semibold"
+                            >
+                              {provider.name} ✓
+                            </option>
+                          ))}
+                        </optgroup>
+                      )}
+
+                      {otherProviders.length > 0 && (
+                        <optgroup label="Other Utilities">
+                          {otherProviders.map((provider) => (
+                            <option key={provider.id} value={provider.name}>
+                              {provider.name}
+                            </option>
+                          ))}
+                        </optgroup>
+                      )}
                     </select>
+                    {isGreenButtonUtility && (
+                      <div className="absolute inset-0 border-2 border-green-500 rounded-lg animate-pulse pointer-events-none"></div>
+                    )}
                   </div>
+                  {isGreenButtonUtility && (
+                    <p className="text-xs text-green-600 mt-1 flex items-center">
+                      <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                      Selected utility supports Green Button authorization.
+                    </p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setShowUtilityRequestModal(true)}
+                    className="text-[#039994] text-xs hover:underline mt-1"
+                  >
+                    Not on the list?
+                  </button>
                 </div>
 
                 <div>
@@ -757,6 +905,19 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
             setShowAgreementModal(false);
             handleCloseModal();
           }}
+          selectedUtilityProvider={selectedUtilityProvider}
+          isGreenButtonUtility={isGreenButtonUtility}
+        />
+      )}
+
+      {showGreenButtonModal && (
+        <GreenButtonTermsAndCondition
+          isOpen={showGreenButtonModal}
+          onClose={() => {
+            setShowGreenButtonModal(false);
+            handleCloseModal();
+          }}
+          selectedUtilityProvider={selectedUtilityProvider}
         />
       )}
     </>
