@@ -1,16 +1,17 @@
 import React, { useState } from "react";
 import { toast } from "react-hot-toast";
 import axios from "axios";
-import {
-  buttonPrimary,
-  spinnerOverlay,
-  spinner,
-  labelClass,
-  inputClass,
-  termsTextContainer
-} from '../../styles.js';
 
-export default function InviteOperatorModal({ isOpen, onClose, onBack, onDashboardRefresh }) {
+const styles = {
+  buttonPrimary: 'w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-sm',
+  spinnerOverlay: 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20',
+  spinner: 'h-10 w-10 border-4 border-t-4 border-gray-300 border-t-[#039994] rounded-full animate-spin',
+  labelClass: 'block mb-1 font-sfpro text-[12px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]',
+  inputClass: 'w-full rounded-md border border-gray-300 px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[12px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]',
+  termsTextContainer: 'text-center mt-2'
+};
+
+export default function InviteOperatorModal({ isOpen, onClose, onBack, selectedUtilityProvider, isGreenButtonUtility }) {
   const [loading, setLoading] = useState(false);
   const [currentModal, setCurrentModal] = useState('invite');
   const [formData, setFormData] = useState({
@@ -130,14 +131,7 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, onDashboa
     setFormData({ name: "", email: "", message: "Please join our platform!" });
     setCurrentModal('invite');
     onClose();
-    if (onDashboardRefresh) {
-      onDashboardRefresh();
-    }
     window.location.reload();
-  };
-
-  const getUserFirstName = () => {
-    return localStorage.getItem('userFirstName') || 'User';
   };
 
   if (!isOpen) return null;
@@ -145,27 +139,27 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, onDashboa
   return (
     <>
       {loading && (
-        <div className={spinnerOverlay}>
-          <div className={spinner}></div>
+        <div className={styles.spinnerOverlay}>
+          <div className={styles.spinner}></div>
         </div>
       )}
 
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-        <div className="relative w-full max-w-md bg-white rounded-2xl overflow-hidden">
+        <div className="relative w-full max-w-sm bg-white rounded-xl overflow-hidden max-h-[85vh] flex flex-col">
           {currentModal === 'invite' && (
-            <div className="relative p-6">
+            <div className="relative p-4 flex-1 overflow-y-auto">
               {onBack && (
                 <button
                   onClick={handleBackClick}
                   disabled={loading}
-                  className={`absolute left-6 top-6 text-[#039994] hover:text-[#02857f] transition-colors ${
+                  className={`absolute left-4 top-4 text-[#039994] hover:text-[#02857f] transition-colors ${
                     loading ? 'opacity-50 cursor-not-allowed' : ''
                   }`}
                   aria-label="Go back"
                 >
                   <svg 
-                    width="20" 
-                    height="20" 
+                    width="16" 
+                    height="16" 
                     viewBox="0 0 24 24" 
                     fill="none" 
                     xmlns="http://www.w3.org/2000/svg"
@@ -184,14 +178,14 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, onDashboa
               <button
                 onClick={handleClose}
                 disabled={loading}
-                className={`absolute top-6 right-6 text-red-500 hover:text-red-700 transition-colors ${
+                className={`absolute top-4 right-4 text-red-500 hover:text-red-700 transition-colors ${
                   loading ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
                 aria-label="Close modal"
               >
                 <svg 
-                  width="20" 
-                  height="20" 
+                  width="16" 
+                  height="16" 
                   viewBox="0 0 24 24" 
                   fill="none" 
                   xmlns="http://www.w3.org/2000/svg"
@@ -206,11 +200,11 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, onDashboa
                 </svg>
               </button>
 
-              <div className="flex flex-col items-center mt-8 mb-8">
-                <div className="mb-4">
+              <div className="flex flex-col items-center mt-6 mb-4">
+                <div className="mb-3">
                   <svg 
-                    width="48" 
-                    height="48" 
+                    width="36" 
+                    height="36" 
                     viewBox="0 0 24 24" 
                     fill="none" 
                     xmlns="http://www.w3.org/2000/svg"
@@ -239,14 +233,42 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, onDashboa
                   </svg>
                 </div>
 
-                <h2 className="font-[600] text-[20px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro text-center">
+                <h2 className="font-[600] text-[16px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro text-center">
                   Invite an Operator
                 </h2>
+
+                {selectedUtilityProvider && (
+                  <div className={`mt-3 p-2 rounded-lg text-center w-full ${
+                    isGreenButtonUtility ? 'bg-green-50 border border-green-200' : 'bg-blue-50 border border-blue-200'
+                  }`}>
+                    <p className={`text-xs font-medium ${
+                      isGreenButtonUtility ? 'text-green-700' : 'text-blue-700'
+                    }`}>
+                      {isGreenButtonUtility ? (
+                        <>
+                          <span className="flex items-center justify-center gap-1">
+                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                            Green Button Utility
+                          </span>
+                          <span className="text-[10px] mt-0.5 block">
+                            Invite operator to authorize utility data
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          Utility: <strong>{selectedUtilityProvider.name}</strong>
+                        </>
+                      )}
+                    </p>
+                  </div>
+                )}
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className={`${labelClass} text-sm`}>
+                  <label className={`${styles.labelClass} text-xs`}>
                     Operator's name
                   </label>
                   <input
@@ -255,14 +277,14 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, onDashboa
                     value={formData.name}
                     onChange={handleInputChange}
                     placeholder="Enter operator's name"
-                    className={inputClass}
+                    className={styles.inputClass}
                     disabled={loading}
                     required
                   />
                 </div>
 
                 <div>
-                  <label className={`${labelClass} text-sm`}>
+                  <label className={`${styles.labelClass} text-xs`}>
                     Operator's email address
                   </label>
                   <input
@@ -271,14 +293,14 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, onDashboa
                     value={formData.email}
                     onChange={handleInputChange}
                     placeholder="Enter operator's email address"
-                    className={inputClass}
+                    className={styles.inputClass}
                     disabled={loading}
                     required
                   />
                 </div>
 
                 <div>
-                  <label className={`${labelClass} text-sm`}>
+                  <label className={`${styles.labelClass} text-xs`}>
                     Custom message
                   </label>
                   <textarea
@@ -286,15 +308,15 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, onDashboa
                     value={formData.message}
                     onChange={handleInputChange}
                     placeholder="Enter your custom invitation message"
-                    className={`${inputClass} min-h-[80px] resize-none`}
+                    className={`${styles.inputClass} min-h-[60px] resize-none`}
                     disabled={loading}
                     required
-                    rows={3}
+                    rows={2}
                   />
                 </div>
 
-                <div className={termsTextContainer}>
-                  <p className="text-xs text-gray-500">
+                <div className={styles.termsTextContainer}>
+                  <p className="text-[10px] text-gray-500">
                     By inviting an operator, you agree to our{' '}
                     <a 
                       href="/terms" 
@@ -309,7 +331,7 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, onDashboa
 
                 <button 
                   type="submit" 
-                  className={`${buttonPrimary} ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  className={`${styles.buttonPrimary} ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                   disabled={loading}
                 >
                   {loading ? 'Sending...' : 'Send Invitation'}
@@ -319,15 +341,15 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, onDashboa
           )}
 
           {currentModal === 'emailSent' && (
-            <div className="relative p-6">
+            <div className="relative p-4 flex-1 overflow-y-auto">
               <button
                 onClick={handleClose}
-                className="absolute top-6 right-6 text-red-500 hover:text-red-700 transition-colors"
+                className="absolute top-4 right-4 text-red-500 hover:text-red-700 transition-colors"
                 aria-label="Close modal"
               >
                 <svg 
-                  width="20" 
-                  height="20" 
+                  width="16" 
+                  height="16" 
                   viewBox="0 0 24 24" 
                   fill="none" 
                   xmlns="http://www.w3.org/2000/svg"
@@ -342,11 +364,11 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, onDashboa
                 </svg>
               </button>
 
-              <div className="flex flex-col items-center mt-8 mb-8">
-                <div className="mb-6">
+              <div className="flex flex-col items-center mt-6 mb-4">
+                <div className="mb-4">
                   <svg 
-                    width="48" 
-                    height="48" 
+                    width="36" 
+                    height="36" 
                     viewBox="0 0 24 24" 
                     fill="none" 
                     xmlns="http://www.w3.org/2000/svg"
@@ -368,17 +390,17 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, onDashboa
                   </svg>
                 </div>
 
-                <h2 className="font-[600] text-[20px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro text-center mb-4">
-                  Email Invitation sent
+                <h2 className="font-[600] text-[16px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro text-center mb-3">
+                  Email Sent
                 </h2>
 
-                <p className="text-sm text-gray-600 text-center mb-8 max-w-xs">
-                  An email invite has been sent to your operator connected to this account.
+                <p className="text-xs text-gray-600 text-center mb-6 max-w-xs">
+                  Invitation sent to your operator. They'll complete the authorization process.
                 </p>
 
                 <button 
                   onClick={handleCompleteRegistration}
-                  className={`${buttonPrimary} w-full`}
+                  className={`${styles.buttonPrimary} w-full`}
                 >
                   Complete Registration
                 </button>
@@ -387,15 +409,15 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, onDashboa
           )}
 
           {currentModal === 'registrationSuccess' && (
-            <div className="relative p-6">
+            <div className="relative p-4 flex-1 overflow-y-auto">
               <button
                 onClick={handleClose}
-                className="absolute top-6 right-6 text-red-500 hover:text-red-700 transition-colors"
+                className="absolute top-4 right-4 text-red-500 hover:text-red-700 transition-colors"
                 aria-label="Close modal"
               >
                 <svg 
-                  width="20" 
-                  height="20" 
+                  width="16" 
+                  height="16" 
                   viewBox="0 0 24 24" 
                   fill="none" 
                   xmlns="http://www.w3.org/2000/svg"
@@ -410,11 +432,11 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, onDashboa
                 </svg>
               </button>
 
-              <div className="flex flex-col items-center mt-8 mb-8">
-                <div className="mb-6">
+              <div className="flex flex-col items-center mt-6 mb-4">
+                <div className="mb-4">
                   <svg 
-                    width="48" 
-                    height="48" 
+                    width="36" 
+                    height="36" 
                     viewBox="0 0 24 24" 
                     fill="none" 
                     xmlns="http://www.w3.org/2000/svg"
@@ -436,17 +458,17 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, onDashboa
                   </svg>
                 </div>
 
-                <h2 className="font-[600] text-[20px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro text-center mb-4">
+                <h2 className="font-[600] text-[16px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro text-center mb-3">
                   Almost Ready!
                 </h2>
 
-                <p className="text-sm text-gray-600 text-center mb-8 max-w-xs">
-                  Your Operator will authorize Utility API access to generate your facilities. You're one step away from starting with DCarbon.
+                <p className="text-xs text-gray-600 text-center mb-6 max-w-xs">
+                  Your operator will authorize utility access. You're one step away from starting with DCarbon.
                 </p>
 
                 <button 
                   onClick={handleGoToDashboard}
-                  className={`${buttonPrimary} w-full`}
+                  className={`${styles.buttonPrimary} w-full`}
                 >
                   Go to Dashboard
                 </button>

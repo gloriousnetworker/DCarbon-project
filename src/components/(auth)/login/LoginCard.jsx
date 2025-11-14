@@ -53,6 +53,10 @@ export default function LoginCard() {
         localStorage.setItem('partnerType', user.partnerType);
       }
 
+      if (user.isPartnerOperator === true && user.userType === 'COMMERCIAL') {
+        localStorage.setItem('operatorDetails', JSON.stringify(response.data));
+      }
+
       toast.success('Login successful');
 
       if (user.userType === 'COMMERCIAL' && user.isPartnerOperator) {

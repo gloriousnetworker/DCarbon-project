@@ -78,9 +78,9 @@ export default function UserDashboard() {
   }
 
   return (
-    <div className="min-h-screen flex bg-gray-100">
-      {/* Desktop Sidebar */}
-      <aside className="hidden md:flex flex-col w-64 bg-white border-r h-screen fixed">
+    <div className="min-h-screen flex bg-gray-100 relative">
+      {/* Desktop Sidebar - FIXED: Added z-index for proper layering */}
+      <aside className="hidden md:flex flex-col w-64 bg-white border-r h-screen fixed z-10">
         <DashboardSidebar
           selectedSection={activeSection}
           onSectionChange={handleSectionChange}
@@ -88,18 +88,18 @@ export default function UserDashboard() {
       </aside>
 
       {/* Main Area */}
-      <div className="md:ml-64 flex-1 flex flex-col">
+      <div className="md:ml-64 flex-1 flex flex-col relative z-0">
         {/* Top Navbar with dynamic title */}
         <DashboardNavbar
           toggleSidebar={toggleSidebar}
           selectedSection={activeSection}
           sectionDisplayMap={sectionDisplayMap}
-          onSectionChange={handleSectionChange} // Pass the handler
+          onSectionChange={handleSectionChange}
         />
 
-        {/* Mobile Sidebar Overlay */}
+        {/* Mobile Sidebar Overlay - FIXED: Lower z-index than profile modal */}
         {sidebarOpen && (
-          <div className="fixed inset-0 z-50 flex md:hidden">
+          <div className="fixed inset-0 z-[9000] flex md:hidden">
             {/* Overlay backdrop */}
             <div
               className="absolute inset-0 bg-black bg-opacity-50"
@@ -116,8 +116,8 @@ export default function UserDashboard() {
           </div>
         )}
 
-        {/* Main Content */}
-        <main className="flex-1">
+        {/* Main Content - FIXED: Lower z-index than modals */}
+        <main className="flex-1 relative z-0">
           <div className="max-w-7xl mx-auto p-6">
             {activeSection === 'logout' ? (
               <DashboardLogout 

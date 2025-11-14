@@ -21,6 +21,35 @@ export default function FacilityCardView() {
   const [selectedFacility, setSelectedFacility] = useState(null);
   const [facilityProgress, setFacilityProgress] = useState({});
   const [isLoadingProgress, setIsLoadingProgress] = useState(false);
+  const [authorizingFacility, setAuthorizingFacility] = useState(null);
+  const [showIframe, setShowIframe] = useState(false);
+  const [iframeUrl, setIframeUrl] = useState("");
+  const [scale, setScale] = useState(1);
+  const [currentFacility, setCurrentFacility] = useState(null);
+
+  const greenButtonUtilities = ['San Diego Gas and Electric', 'Pacific Gas and Electric', 'Southern California Edison'];
+
+  const isGreenButtonUtility = (utilityProvider) => {
+    return greenButtonUtilities.includes(utilityProvider);
+  };
+
+  const authorizeFacility = async (facility, e) => {
+    e.stopPropagation();
+    setAuthorizingFacility(facility.id);
+    setCurrentFacility(facility);
+    
+    const isGreenButton = isGreenButtonUtility(facility.utilityProvider);
+    
+    if (isGreenButton) {
+      setIframeUrl('https://www.greenbuttondata.org/index.html');
+    } else {
+      setIframeUrl('https://utilityapi.com/authorize/DCarbon_Solutions');
+    }
+    
+    setShowIframe(true);
+    setScale(1);
+    setAuthorizingFacility(null);
+  };
 
   const checkStage2Completion = async (userId, authToken) => {
     try {
@@ -231,6 +260,24 @@ export default function FacilityCardView() {
     })
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
+  const zoomIn = () => {
+    setScale(prev => Math.min(prev + 0.25, 3));
+  };
+
+  const zoomOut = () => {
+    setScale(prev => Math.max(prev - 0.25, 0.5));
+  };
+
+  const resetZoom = () => {
+    setScale(1);
+  };
+
+  const handleIframeClose = () => {
+    setShowIframe(false);
+    setScale(1);
+    fetchFacilities();
+  };
+
   if (selectedFacility) {
     return (
       <div className="p-2">
@@ -238,6 +285,106 @@ export default function FacilityCardView() {
           facility={selectedFacility}
           onBack={() => setSelectedFacility(null)}
         />
+      </div>
+    );
+  }
+
+  if (showIframe) {
+    const isGreenButton = currentFacility && isGreenButtonUtility(currentFacility.utilityProvider);
+    
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+        <div className="relative w-full max-w-6xl h-[90vh] bg-white rounded-2xl overflow-hidden flex flex-col">
+          <div className="flex items-center justify-between p-4 border-b">
+            <h3 className="text-lg font-semibold text-[#039994]">
+              {isGreenButton ? "Green Button Authorization" : "Utility Authorization Portal"}
+            </h3>
+            <div className="flex items-center gap-4">
+              <div className="flex gap-2">
+                <button
+                  onClick={zoomOut}
+                  className="bg-gray-500 text-white px-3 py-1 rounded-md text-sm hover:bg-gray-600 flex items-center gap-1"
+                  disabled={scale <= 0.5}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                  Zoom Out
+                </button>
+                <button
+                  onClick={resetZoom}
+                  className="bg-gray-500 text-white px-3 py-1 rounded-md text-sm hover:bg-gray-600 flex items-center gap-1"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M15 3H21V9M21 3L15 9M9 21H3V15M3 21L9 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  Reset
+                </button>
+                <button
+                  onClick={zoomIn}
+                  className="bg-gray-500 text-white px-3 py-1 rounded-md text-sm hover:bg-gray-600 flex items-center gap-1"
+                  disabled={scale >= 3}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                  Zoom In
+                </button>
+              </div>
+              <button
+                onClick={handleIframeClose}
+                className="text-red-500 hover:text-red-700"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          
+          <div className={`p-4 border-b ${isGreenButton ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}>
+            <p className={`text-sm ${isGreenButton ? 'text-green-700' : 'text-yellow-700'}`}>
+              <strong>Step 1:</strong> {isGreenButton ? 'Follow the steps on the Green Button portal to securely share your utility data.' : 'Enter the email of your DCarbon account you are authorizing for, then choose your utility provider.'}
+            </p>
+            <p className={`text-sm ${isGreenButton ? 'text-green-700' : 'text-yellow-700'} mt-1`}>
+              <strong>Step 2:</strong> {isGreenButton ? 'Complete the authorization process when prompted.' : 'Enter your Utility Account credentials and authorize access when prompted.'}
+            </p>
+            {isGreenButton && currentFacility && (
+              <p className="text-sm text-green-700 mt-1">
+                <strong>Selected Utility:</strong> {currentFacility.utilityProvider}
+              </p>
+            )}
+          </div>
+
+          <div className="flex-1 p-4 bg-gray-100 overflow-hidden">
+            <div className="w-full h-full bg-white rounded-lg overflow-auto">
+              <div 
+                className="w-full h-full origin-top-left"
+                style={{ 
+                  transform: `scale(${scale})`,
+                  width: `${100/scale}%`,
+                  height: `${100/scale}%`
+                }}
+              >
+                <iframe
+                  src={iframeUrl}
+                  className="w-full h-full border-0"
+                  title={isGreenButton ? "Green Button Authorization" : "Utility Authorization"}
+                  sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="p-3 border-t bg-gray-50 flex justify-between items-center">
+            <span className="text-sm text-gray-600">
+              Zoom: {Math.round(scale * 100)}%
+            </span>
+            <span className="text-sm text-gray-600">
+              Use scroll to navigate when zoomed in
+            </span>
+          </div>
+        </div>
       </div>
     );
   }
@@ -268,41 +415,91 @@ export default function FacilityCardView() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {filteredFacilities.map(facility => {
             const progress = facilityProgress[facility.id] || { completedStages: [1], currentStage: 2 };
+            const isGreenButton = isGreenButtonUtility(facility.utilityProvider);
+            const hasNoMeterIds = !facility.meterIds || facility.meterIds.length === 0;
+            const isPendingStatus = facility.status && facility.status.toLowerCase() === 'pending';
+            const showAuthorizeButton = hasNoMeterIds && isPendingStatus;
             
             return (
               <div
                 key={facility.id}
-                onClick={() => setSelectedFacility(facility)}
-                className="border border-[#039994] rounded-lg bg-white cursor-pointer hover:shadow transition-shadow flex flex-col justify-between p-2"
+                className={`rounded-lg cursor-pointer hover:shadow-lg transition-all duration-300 flex flex-col justify-between p-2 relative overflow-hidden ${
+                  isGreenButton 
+                    ? 'bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 border-2 border-green-300 shadow-md' 
+                    : 'border border-[#039994] bg-white'
+                }`}
               >
-                <div>
-                  <h3 className="font-semibold text-base text-[#039994] mb-1">
+                {isGreenButton && (
+                  <div className="absolute top-2 right-2">
+                    <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xs px-2 py-1 rounded-full font-semibold flex items-center shadow-sm">
+                      <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                      Green Button
+                    </div>
+                  </div>
+                )}
+                
+                <div onClick={() => setSelectedFacility(facility)}>
+                  <h3 className={`font-semibold text-base mb-1 ${
+                    isGreenButton ? 'text-green-800' : 'text-[#039994]'
+                  }`}>
                     {facility.facilityName}
                   </h3>
                   <div className="grid grid-cols-2 gap-y-1 text-xs">
-                    <span className="font-medium">Role:</span>
+                    <span className={`font-medium ${isGreenButton ? 'text-green-700' : 'text-gray-700'}`}>Role:</span>
                     <span className="capitalize">{facility.commercialRole}</span>
 
-                    <span className="font-medium">Type:</span>
+                    <span className={`font-medium ${isGreenButton ? 'text-green-700' : 'text-gray-700'}`}>Type:</span>
                     <span className="capitalize">{facility.entityType}</span>
 
-                    <span className="font-medium">Utility:</span>
-                    <span>{facility.utilityProvider}</span>
+                    <span className={`font-medium ${isGreenButton ? 'text-green-700' : 'text-gray-700'}`}>Utility:</span>
+                    <span className={isGreenButton ? 'text-green-600 font-semibold' : ''}>
+                      {facility.utilityProvider}
+                      {isGreenButton && (
+                        <svg className="w-3 h-3 ml-1 inline text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </span>
 
-                    <span className="font-medium">Meter ID:</span>
+                    <span className={`font-medium ${isGreenButton ? 'text-green-700' : 'text-gray-700'}`}>Meter ID:</span>
                     <span>{formatMeterIds(facility.meterIds)}</span>
 
-                    <span className="font-medium">Status:</span>
+                    <span className={`font-medium ${isGreenButton ? 'text-green-700' : 'text-gray-700'}`}>Status:</span>
                     <span className="capitalize">{facility.status}</span>
 
-                    <span className="font-medium">Created:</span>
+                    <span className={`font-medium ${isGreenButton ? 'text-green-700' : 'text-gray-700'}`}>Created:</span>
                     <span>{formatDate(facility.createdAt)}</span>
                   </div>
                   
-                  <div className="mt-3 pt-2 border-t border-gray-100">
+                  {showAuthorizeButton && (
+                    <div className="mt-3 pt-2 border-t border-gray-200">
+                      <button
+                        onClick={(e) => authorizeFacility(facility, e)}
+                        disabled={authorizingFacility === facility.id}
+                        className={`w-full py-2 px-3 rounded text-sm font-medium transition-colors ${
+                          isGreenButton 
+                            ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white' 
+                            : 'bg-[#039994] hover:bg-[#028884] text-white'
+                        } disabled:opacity-50 disabled:cursor-not-allowed`}
+                      >
+                        {authorizingFacility === facility.id ? (
+                          <div className="flex items-center justify-center">
+                            <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+                            Authorizing...
+                          </div>
+                        ) : (
+                          "AUTHORIZE THIS FACILITY"
+                        )}
+                      </button>
+                    </div>
+                  )}
+                  
+                  <div className="mt-3 pt-2 border-t border-gray-200">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-medium text-gray-600">Progress</span>
-                      <span className="text-xs font-medium text-[#039994]">
+                      <span className={`text-xs font-medium ${isGreenButton ? 'text-green-700' : 'text-gray-600'}`}>Progress</span>
+                      <span className={`text-xs font-medium ${isGreenButton ? 'text-green-700' : 'text-[#039994]'}`}>
                         Step {progress.currentStage} of 6
                       </span>
                     </div>
@@ -311,14 +508,21 @@ export default function FacilityCardView() {
                     </div>
                   </div>
                 </div>
+                
                 <div
-                  className="flex items-center justify-between mt-2 px-1 py-1"
-                  style={{ backgroundColor: "#069B9621" }}
+                  className={`flex items-center justify-between mt-2 px-1 py-1 rounded transition-colors ${
+                    isGreenButton 
+                      ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700' 
+                      : 'bg-[#069B9621] hover:bg-[#069B9633]'
+                  }`}
+                  onClick={() => setSelectedFacility(facility)}
                 >
-                  <span className="text-[#039994] text-xs font-medium">
+                  <span className={`text-xs font-medium ${
+                    isGreenButton ? 'text-white' : 'text-[#039994]'
+                  }`}>
                     View details
                   </span>
-                  <FiChevronRight size={16} className="text-[#039994]" />
+                  <FiChevronRight size={16} className={isGreenButton ? "text-white" : "text-[#039994]"} />
                 </div>
               </div>
             );

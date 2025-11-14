@@ -189,49 +189,65 @@ export default function WelcomeModal({ isOpen, onClose, userData }) {
         throw new Error('Authentication token not found');
       }
 
-      const response = await fetch(`https://services.dcarbon.solutions/api/user/referral/by-inviter-code/${referralCode}`, {
+      const referralResponse = await fetch(`https://services.dcarbon.solutions/api/user/referral/by-inviter-code/${referralCode}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${authToken}`
         }
       });
 
-      const result = await response.json();
+      const referralResult = await referralResponse.json();
 
-      if (result.status === 'success' && result.statusCode === 200) {
-        localStorage.setItem('referralResponse', JSON.stringify(result));
-        localStorage.setItem('ownerReferralCode', referralCode);
-        localStorage.setItem('userId', result.data.inviterId);
-        localStorage.setItem('userRole', result.data.role);
-        localStorage.setItem('customerType', result.data.customerType);
-        localStorage.setItem('inviteeEmail', result.data.inviteeEmail);
-        localStorage.setItem('referralStatus', result.data.status);
-        localStorage.setItem('inviteeName', result.data.name);
-        localStorage.setItem('referralId', result.data.id);
-        localStorage.setItem('generatedReferralCode', result.data.referralCode);
+      if (referralResult.status === 'success' && referralResult.statusCode === 200) {
+        const inviterId = referralResult.data.inviterId;
         
-        if (result.data.phoneNumber) {
-          localStorage.setItem('phoneNumber', result.data.phoneNumber);
-        }
-        
-        const updatedLoginResponse = {
-          ...loginResponse,
-          data: {
-            ...loginResponse.data,
-            user: {
-              ...loginResponse.data.user,
-              id: result.data.inviterId,
-              role: result.data.role,
-              customerType: result.data.customerType
-            }
+        const ownerResponse = await fetch(`https://services.dcarbon.solutions/api/user/get-one-user/${inviterId}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
           }
-        };
-        
-        localStorage.setItem('loginResponse', JSON.stringify(updatedLoginResponse));
-        toast.success(result.message);
-        setCurrentStep('agreement');
+        });
+
+        const ownerResult = await ownerResponse.json();
+
+        if (ownerResult.status === 'success' && ownerResult.data) {
+          localStorage.setItem('referralResponse', JSON.stringify(referralResult));
+          localStorage.setItem('ownersDetails', JSON.stringify(ownerResult.data));
+          localStorage.setItem('ownerReferralCode', referralCode);
+          localStorage.setItem('userId', referralResult.data.inviterId);
+          localStorage.setItem('userRole', referralResult.data.role);
+          localStorage.setItem('customerType', referralResult.data.customerType);
+          localStorage.setItem('inviteeEmail', referralResult.data.inviteeEmail);
+          localStorage.setItem('referralStatus', referralResult.data.status);
+          localStorage.setItem('inviteeName', referralResult.data.name);
+          localStorage.setItem('referralId', referralResult.data.id);
+          localStorage.setItem('generatedReferralCode', referralResult.data.referralCode);
+          
+          if (referralResult.data.phoneNumber) {
+            localStorage.setItem('phoneNumber', referralResult.data.phoneNumber);
+          }
+          
+          const updatedLoginResponse = {
+            ...loginResponse,
+            data: {
+              ...loginResponse.data,
+              user: {
+                ...loginResponse.data.user,
+                id: referralResult.data.inviterId,
+                role: referralResult.data.role,
+                customerType: referralResult.data.customerType
+              }
+            }
+          };
+          
+          localStorage.setItem('loginResponse', JSON.stringify(updatedLoginResponse));
+          toast.success(referralResult.message);
+          setCurrentStep('agreement');
+        } else {
+          throw new Error(ownerResult.message || 'Failed to fetch owner details');
+        }
       } else {
-        throw new Error(result.message || 'Invalid referral code');
+        throw new Error(referralResult.message || 'Invalid referral code');
       }
     } catch (error) {
       toast.error(error.message || 'Failed to validate referral code');

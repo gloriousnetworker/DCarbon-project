@@ -9,13 +9,19 @@ const WelcomeModal = dynamic(() => import("./modals/WelcomeModal"), { ssr: false
 const AddUtilityProvider = dynamic(() => import("./modals/AddUtilityProvider"), { ssr: false });
 const CommercialRegistrationModal = dynamic(() => import("./modals/createfacility/CommercialRegistrationModal"), { ssr: false });
 
-const ProgressTracker = ({ currentStage, completedStages, onStageClick }) => {
+const ProgressTracker = ({ currentStage, completedStages, onStageClick, selectedFacility, facilities, onFacilityChange, onAuthorizeFacility }) => {
   const stages = [
     { id: 1, name: "Registration", tooltip: "Commercial registration completed" },
     { id: 2, name: "Referral", tooltip: "Owner referral code verified" },
     { id: 3, name: "Agreement", tooltip: "Terms and conditions signed" },
     { id: 4, name: "Meters", tooltip: "Utility meters connected" }
   ];
+
+  const greenButtonUtilities = ['San Diego Gas and Electric', 'Pacific Gas and Electric', 'Southern California Edison'];
+
+  const isGreenButtonUtility = (utilityProvider) => {
+    return greenButtonUtilities.includes(utilityProvider);
+  };
 
   const handleClick = (stageId) => {
     if (completedStages.includes(stageId) || stageId === currentStage) {
@@ -27,6 +33,9 @@ const ProgressTracker = ({ currentStage, completedStages, onStageClick }) => {
     return completedStages.includes(stageId) || stageId === currentStage;
   };
 
+  const selectedFacilityData = facilities.find(f => f.id === selectedFacility);
+  const isGreenButton = selectedFacilityData ? isGreenButtonUtility(selectedFacilityData.utilityProvider) : false;
+
   return (
     <div className="w-full bg-white rounded-lg shadow-sm p-4 mb-6">
       <div className="flex justify-between items-center mb-4">
@@ -35,6 +44,64 @@ const ProgressTracker = ({ currentStage, completedStages, onStageClick }) => {
           Stage {currentStage} of {stages.length}
         </span>
       </div>
+      
+      {facilities.length > 0 && (
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Select Facility
+          </label>
+          <div className="flex gap-2">
+            <select
+              value={selectedFacility || ""}
+              onChange={(e) => onFacilityChange(e.target.value)}
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] focus:border-transparent"
+            >
+              <option value="">Select a facility</option>
+              {facilities.map((facility) => {
+                const isGreenButton = isGreenButtonUtility(facility.utilityProvider);
+                return (
+                  <option key={facility.id} value={facility.id} className={isGreenButton ? "text-green-600 font-medium" : ""}>
+                    {facility.facilityName} - {facility.utilityProvider}
+                    {isGreenButton && " ✓"}
+                  </option>
+                );
+              })}
+            </select>
+            {selectedFacilityData && (
+              <button
+                onClick={() => onAuthorizeFacility(selectedFacilityData)}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  isGreenButton 
+                    ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white' 
+                    : 'bg-[#039994] hover:bg-[#028884] text-white'
+                }`}
+              >
+                {isGreenButton ? 'Authorize Green Button' : 'Utility Authorization'}
+              </button>
+            )}
+          </div>
+          {selectedFacilityData && (
+            <div className="mt-2 flex items-center text-xs text-gray-500">
+              {isGreenButton ? (
+                <div className="flex items-center">
+                  <div className="w-3 h-3 bg-green-500 rounded-full mr-1 flex items-center justify-center">
+                    <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <span className="text-green-600 font-medium">Green Button Utility</span>
+                </div>
+              ) : (
+                <div className="flex items-center">
+                  <div className="w-3 h-3 bg-gray-400 rounded-full mr-1"></div>
+                  <span>Standard Utility</span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="relative">
         <div className="flex justify-between mb-2">
           {stages.map((stage) => (
@@ -80,10 +147,143 @@ const ProgressTracker = ({ currentStage, completedStages, onStageClick }) => {
   );
 };
 
+const AuthorizationModal = ({ isOpen, onClose, facility, onAuthorizationComplete }) => {
+  const [scale, setScale] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const greenButtonUtilities = ['San Diego Gas and Electric', 'Pacific Gas and Electric', 'Southern California Edison'];
+  
+  const isGreenButtonUtility = (utilityProvider) => {
+    return greenButtonUtilities.includes(utilityProvider);
+  };
+
+  const isGreenButton = facility ? isGreenButtonUtility(facility.utilityProvider) : false;
+  const iframeUrl = isGreenButton ? 'https://www.greenbuttondata.org/index.html' : 'https://utilityapi.com/authorize/DCarbon_Solutions';
+
+  const zoomIn = () => {
+    setScale(prev => Math.min(prev + 0.25, 3));
+  };
+
+  const zoomOut = () => {
+    setScale(prev => Math.max(prev - 0.25, 0.5));
+  };
+
+  const resetZoom = () => {
+    setScale(1);
+  };
+
+  const handleIframeClose = () => {
+    onClose();
+    setScale(1);
+    if (onAuthorizationComplete) {
+      onAuthorizationComplete();
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[9500] flex items-center justify-center bg-black bg-opacity-50 p-4">
+      <div className="relative w-full max-w-6xl h-[90vh] bg-white rounded-2xl overflow-hidden flex flex-col">
+        <div className="flex items-center justify-between p-4 border-b">
+          <h3 className="text-lg font-semibold text-[#039994]">
+            {isGreenButton ? "Green Button Authorization" : "Utility Authorization Portal"}
+          </h3>
+          <div className="flex items-center gap-4">
+            <div className="flex gap-2">
+              <button
+                onClick={zoomOut}
+                className="bg-gray-500 text-white px-3 py-1 rounded-md text-sm hover:bg-gray-600 flex items-center gap-1"
+                disabled={scale <= 0.5}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+                Zoom Out
+              </button>
+              <button
+                onClick={resetZoom}
+                className="bg-gray-500 text-white px-3 py-1 rounded-md text-sm hover:bg-gray-600 flex items-center gap-1"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M15 3H21V9M21 3L15 9M9 21H3V15M3 21L9 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                Reset
+              </button>
+              <button
+                onClick={zoomIn}
+                className="bg-gray-500 text-white px-3 py-1 rounded-md text-sm hover:bg-gray-600 flex items-center gap-1"
+                disabled={scale >= 3}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+                Zoom In
+              </button>
+            </div>
+            <button
+              onClick={handleIframeClose}
+              className="text-red-500 hover:text-red-700"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        
+        <div className={`p-4 border-b ${isGreenButton ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}>
+          <p className={`text-sm ${isGreenButton ? 'text-green-700' : 'text-yellow-700'}`}>
+            <strong>Step 1:</strong> {isGreenButton ? 'Follow the steps on the Green Button portal to securely share your utility data.' : 'Enter the email of your DCarbon account you are authorizing for, then choose your utility provider.'}
+          </p>
+          <p className={`text-sm ${isGreenButton ? 'text-green-700' : 'text-yellow-700'} mt-1`}>
+            <strong>Step 2:</strong> {isGreenButton ? 'Complete the authorization process when prompted.' : 'Enter your Utility Account credentials and authorize access when prompted.'}
+          </p>
+          {isGreenButton && facility && (
+            <p className="text-sm text-green-700 mt-1">
+              <strong>Selected Utility:</strong> {facility.utilityProvider}
+            </p>
+          )}
+        </div>
+
+        <div className="flex-1 p-4 bg-gray-100 overflow-hidden">
+          <div className="w-full h-full bg-white rounded-lg overflow-auto">
+            <div 
+              className="w-full h-full origin-top-left"
+              style={{ 
+                transform: `scale(${scale})`,
+                width: `${100/scale}%`,
+                height: `${100/scale}%`
+              }}
+            >
+              <iframe
+                src={iframeUrl}
+                className="w-full h-full border-0"
+                title={isGreenButton ? "Green Button Authorization" : "Utility Authorization"}
+                sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="p-3 border-t bg-gray-50 flex justify-between items-center">
+          <span className="text-sm text-gray-600">
+            Zoom: {Math.round(scale * 100)}%
+          </span>
+          <span className="text-sm text-gray-600">
+            Use scroll to navigate when zoomed in
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function DashboardOverview() {
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [showAddUtilityModal, setShowAddUtilityModal] = useState(false);
   const [showRegistrationModal, setShowRegistrationModal] = useState(false);
+  const [showAuthorizationModal, setShowAuthorizationModal] = useState(false);
   const [userData, setUserData] = useState({
     userFirstName: "",
     userId: ""
@@ -94,8 +294,58 @@ export default function DashboardOverview() {
   const [completedStages, setCompletedStages] = useState([]);
   const [meterCheckInterval, setMeterCheckInterval] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [hideProgressTracker, setHideProgressTracker] = useState(false);
+  const [showProgressTracker, setShowProgressTracker] = useState(false);
   const [clickedStage, setClickedStage] = useState(1);
+  const [facilities, setFacilities] = useState([]);
+  const [selectedFacility, setSelectedFacility] = useState("");
+  const [isLoadingFacilities, setIsLoadingFacilities] = useState(false);
+  const [currentAuthorizationFacility, setCurrentAuthorizationFacility] = useState(null);
+
+  const checkOwnersDetails = () => {
+    try {
+      const ownersDetails = localStorage.getItem('ownersDetails');
+      if (ownersDetails) {
+        const parsedDetails = JSON.parse(ownersDetails);
+        if (parsedDetails && parsedDetails.id) {
+          return parsedDetails;
+        }
+      }
+      return null;
+    } catch (error) {
+      return null;
+    }
+  };
+
+  const fetchUserFacilities = async (userId, authToken) => {
+    try {
+      setIsLoadingFacilities(true);
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/facility/get-user-facilities-by-userId/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        }
+      );
+      
+      const result = await response.json();
+      
+      if (result.status === 'success' && result.data?.facilities) {
+        setFacilities(result.data.facilities);
+        if (result.data.facilities.length > 0) {
+          setSelectedFacility(result.data.facilities[0].id);
+        }
+        return result.data.facilities;
+      }
+      return [];
+    } catch (error) {
+      console.error('Error fetching facilities:', error);
+      return [];
+    } finally {
+      setIsLoadingFacilities(false);
+    }
+  };
 
   const checkStage1Completion = async (userId, authToken) => {
     const response = await fetch(
@@ -141,19 +391,37 @@ export default function DashboardOverview() {
   };
 
   const checkStage4Completion = async (userId, authToken) => {
-    const response = await fetch(
-      `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`,
-      {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${authToken}`
+    try {
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        }
+      );
+      const result = await response.json();
+      
+      if (result.status === 'success' && result.data?.length > 0) {
+        for (const meterData of result.data) {
+          if (meterData.meters?.meters && meterData.meters.meters.length > 0) {
+            const hasValidMeters = meterData.meters.meters.some(meter => 
+              meter.base?.meter_numbers && 
+              meter.base.meter_numbers.length > 0 && 
+              meter.base.meter_numbers.some(num => num && num.trim() !== '')
+            );
+            if (hasValidMeters) {
+              return true;
+            }
+          }
         }
       }
-    );
-    const result = await response.json();
-    return result.status === 'success' && 
-           result.data?.length > 0 && 
-           result.data.some(item => item.meters?.meters?.length > 0);
+      return false;
+    } catch (error) {
+      console.error('Error checking stage 4 completion:', error);
+      return false;
+    }
   };
 
   const checkUserProgress = async () => {
@@ -189,20 +457,18 @@ export default function DashboardOverview() {
       const stage4 = await checkStage4Completion(userId, authToken);
       if (stage4) {
         newCompletedStages.push(4);
-        setHideProgressTracker(true);
         if (meterCheckInterval) {
           clearInterval(meterCheckInterval);
           setMeterCheckInterval(null);
         }
       } else {
-        setHideProgressTracker(false);
         if (stage3) {
           if (!meterCheckInterval) {
             const interval = setInterval(async () => {
               const hasMeters = await checkStage4Completion(userId, authToken);
               if (hasMeters) {
                 setCompletedStages(prev => [...prev, 4]);
-                setHideProgressTracker(true);
+                setCurrentStage(4);
                 clearInterval(interval);
                 setMeterCheckInterval(null);
               }
@@ -211,16 +477,6 @@ export default function DashboardOverview() {
           }
         }
       }
-
-      const storageListener = () => {
-        const newReferralCheck = checkStage2Completion();
-        if (newReferralCheck && !newCompletedStages.includes(2)) {
-          setHideProgressTracker(false);
-          checkUserProgress();
-        }
-      };
-
-      window.addEventListener('storage', storageListener);
 
       setCompletedStages(newCompletedStages);
       setCurrentStage(highestCompletedStage);
@@ -238,6 +494,24 @@ export default function DashboardOverview() {
     } else {
       setShowRegistrationModal(true);
     }
+  };
+
+  const handleFacilityChange = (facilityId) => {
+    setSelectedFacility(facilityId);
+  };
+
+  const handleAuthorizeFacility = (facility) => {
+    setCurrentAuthorizationFacility(facility);
+    setShowAuthorizationModal(true);
+  };
+
+  const handleAuthorizationComplete = () => {
+    checkUserProgress();
+  };
+
+  const handleCloseAuthorizationModal = () => {
+    setShowAuthorizationModal(false);
+    setCurrentAuthorizationFacility(null);
   };
 
   const handleCloseRegistrationModal = () => {
@@ -276,7 +550,6 @@ export default function DashboardOverview() {
   const handleCloseWelcomeModal = () => {
     setShowWelcomeModal(false);
     localStorage.setItem("hasVisitedDashboard", "true");
-    setHideProgressTracker(false);
     checkUserProgress();
   };
 
@@ -300,20 +573,33 @@ export default function DashboardOverview() {
         userId: userId
       });
 
+      const ownersDetails = checkOwnersDetails();
+      const hasOwnersDetails = !!ownersDetails;
+      setShowProgressTracker(hasOwnersDetails);
+
       const hasVisitedBefore = localStorage.getItem("hasVisitedDashboard");
       if (!hasVisitedBefore) {
         setIsFirstTimeUser(true);
       }
 
-      await checkCommercialUserStatus(userId);
-      await checkUserProgress();
+      if (hasOwnersDetails && ownersDetails.id) {
+        const authToken = loginResponse?.data?.token;
+        if (authToken) {
+          await fetchUserFacilities(ownersDetails.id, authToken);
+        }
+        await checkCommercialUserStatus(userId);
+        await checkUserProgress();
+      }
     };
 
     loadUserData();
 
     const handleStorageChange = (e) => {
-      if (e.key === 'referralResponse' || e.key === 'ownerReferralCode') {
-        setHideProgressTracker(false);
+      if (e.key === 'referralResponse' || e.key === 'ownerReferralCode' || e.key === 'ownersDetails') {
+        if (e.key === 'ownersDetails') {
+          const hasOwnersDetails = !!checkOwnersDetails();
+          setShowProgressTracker(hasOwnersDetails);
+        }
         checkUserProgress();
       }
     };
@@ -348,11 +634,15 @@ export default function DashboardOverview() {
         </div>
       </div>
 
-      {!hideProgressTracker && (
+      {showProgressTracker && (
         <ProgressTracker 
           currentStage={currentStage} 
           completedStages={completedStages} 
           onStageClick={handleStageClick}
+          selectedFacility={selectedFacility}
+          facilities={facilities}
+          onFacilityChange={handleFacilityChange}
+          onAuthorizeFacility={handleAuthorizeFacility}
         />
       )}
       
@@ -367,7 +657,7 @@ export default function DashboardOverview() {
       <RecentRecSales />
 
       {showWelcomeModal && (
-        <div className="fixed inset-0 z-[100]">
+        <div className="fixed inset-0 z-[9500]">
           <WelcomeModal 
             isOpen 
             onClose={handleCloseWelcomeModal}
@@ -377,7 +667,7 @@ export default function DashboardOverview() {
       )}
 
       {showAddUtilityModal && (
-        <div className="fixed inset-0 z-[100]">
+        <div className="fixed inset-0 z-[9500]">
           <AddUtilityProvider 
             isOpen={showAddUtilityModal}
             onClose={handleCloseAddUtilityModal}
@@ -386,13 +676,22 @@ export default function DashboardOverview() {
       )}
 
       {showRegistrationModal && (
-        <div className="fixed inset-0 z-[100]">
+        <div className="fixed inset-0 z-[9500]">
           <CommercialRegistrationModal
             isOpen={showRegistrationModal}
             onClose={handleCloseRegistrationModal}
             currentStep={clickedStage}
           />
         </div>
+      )}
+
+      {showAuthorizationModal && (
+        <AuthorizationModal
+          isOpen={showAuthorizationModal}
+          onClose={handleCloseAuthorizationModal}
+          facility={currentAuthorizationFacility}
+          onAuthorizationComplete={handleAuthorizationComplete}
+        />
       )}
     </div>
   );

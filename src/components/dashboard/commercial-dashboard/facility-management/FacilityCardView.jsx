@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { FiChevronRight } from "react-icons/fi";
+import { FiChevronRight, FiChevronDown, FiChevronUp } from "react-icons/fi";
 import toast from "react-hot-toast";
 import FilterModal from "./FilterModal";
 import FacilityDetails from "./commercial-facility-details/FacilityDetails";
@@ -21,6 +21,47 @@ export default function FacilityCardView() {
   const [selectedFacility, setSelectedFacility] = useState(null);
   const [facilityProgress, setFacilityProgress] = useState({});
   const [isLoadingProgress, setIsLoadingProgress] = useState(false);
+  const [operators, setOperators] = useState([]);
+  const [expandedOperators, setExpandedOperators] = useState({});
+
+  const greenButtonUtilities = ['San Diego Gas and Electric', 'Pacific Gas and Electric', 'Southern California Edison'];
+
+  const isGreenButtonUtility = (utilityProvider) => {
+    return greenButtonUtilities.includes(utilityProvider);
+  };
+
+  const fetchOperators = async () => {
+    try {
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const userId = loginResponse?.data?.user?.id;
+      const authToken = loginResponse?.data?.token;
+      
+      if (!userId || !authToken) return;
+
+      const response = await axios.get(
+        `https://services.dcarbon.solutions/api/user/get-operators/${userId}`,
+        { headers: { Authorization: `Bearer ${authToken}` } }
+      );
+      
+      if (response.data.status === "success") {
+        setOperators(response.data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching operators:", error);
+    }
+  };
+
+  const toggleOperatorDropdown = (facilityId) => {
+    setExpandedOperators(prev => ({
+      ...prev,
+      [facilityId]: !prev[facilityId]
+    }));
+  };
+
+  const truncateEmail = (email) => {
+    if (email.length <= 20) return email;
+    return email.substring(0, 17) + '...';
+  };
 
   const checkStage2Completion = async (userId, authToken) => {
     try {
@@ -165,8 +206,10 @@ export default function FacilityCardView() {
   };
 
   const fetchFacilities = async () => {
-    const userId = localStorage.getItem('userId');
-    const authToken = localStorage.getItem('authToken');
+    const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+    const userId = loginResponse?.data?.user?.id;
+    const authToken = loginResponse?.data?.token;
+    
     if (!userId || !authToken) {
       toast.error("Authentication required");
       setLoading(false);
@@ -177,8 +220,10 @@ export default function FacilityCardView() {
         `https://services.dcarbon.solutions/api/facility/get-user-facilities-by-userId/${userId}`,
         { headers: { Authorization: `Bearer ${authToken}` } }
       );
-      if (data.status === "success") setFacilities(data.data.facilities);
-      else throw new Error(data.message);
+      if (data.status === "success") {
+        setFacilities(data.data.facilities);
+        await fetchOperators();
+      } else throw new Error(data.message);
     } catch (err) {
       toast.error(err.message || "Failed to load facilities");
     } finally {
@@ -268,41 +313,110 @@ export default function FacilityCardView() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {filteredFacilities.map(facility => {
             const progress = facilityProgress[facility.id] || { completedStages: [1], currentStage: 2 };
+            const isExpanded = expandedOperators[facility.id];
+            const isOwner = facility.commercialRole?.toLowerCase() === 'owner';
+            const isGreenButton = isGreenButtonUtility(facility.utilityProvider);
             
             return (
               <div
                 key={facility.id}
-                onClick={() => setSelectedFacility(facility)}
-                className="border border-[#039994] rounded-lg bg-white cursor-pointer hover:shadow transition-shadow flex flex-col justify-between p-2"
+                className={`rounded-lg cursor-pointer hover:shadow-lg transition-all duration-300 flex flex-col justify-between p-2 relative overflow-hidden ${
+                  isGreenButton 
+                    ? 'bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 border-2 border-green-300 shadow-md' 
+                    : 'border border-[#039994] bg-white'
+                }`}
               >
-                <div>
-                  <h3 className="font-semibold text-base text-[#039994] mb-1">
+                {isGreenButton && (
+                  <div className="absolute top-2 right-2">
+                    <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xs px-2 py-1 rounded-full font-semibold flex items-center shadow-sm">
+                      <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                      Green Button
+                    </div>
+                  </div>
+                )}
+                
+                <div onClick={() => setSelectedFacility(facility)}>
+                  <h3 className={`font-semibold text-base mb-1 ${
+                    isGreenButton ? 'text-green-800' : 'text-[#039994]'
+                  }`}>
                     {facility.facilityName}
                   </h3>
                   <div className="grid grid-cols-2 gap-y-1 text-xs">
-                    <span className="font-medium">Role:</span>
+                    <span className={`font-medium ${isGreenButton ? 'text-green-700' : 'text-gray-700'}`}>Role:</span>
                     <span className="capitalize">{facility.commercialRole}</span>
 
-                    <span className="font-medium">Type:</span>
+                    <span className={`font-medium ${isGreenButton ? 'text-green-700' : 'text-gray-700'}`}>Type:</span>
                     <span className="capitalize">{facility.entityType}</span>
 
-                    <span className="font-medium">Utility:</span>
-                    <span>{facility.utilityProvider}</span>
+                    <span className={`font-medium ${isGreenButton ? 'text-green-700' : 'text-gray-700'}`}>Utility:</span>
+                    <span className={`${isGreenButton ? 'text-green-600 font-semibold' : ''}`}>
+                      {facility.utilityProvider}
+                      {isGreenButton && (
+                        <svg className="w-3 h-3 ml-1 inline text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </span>
 
-                    <span className="font-medium">Meter ID:</span>
+                    <span className={`font-medium ${isGreenButton ? 'text-green-700' : 'text-gray-700'}`}>Meter ID:</span>
                     <span>{formatMeterIds(facility.meterIds)}</span>
 
-                    <span className="font-medium">Status:</span>
+                    <span className={`font-medium ${isGreenButton ? 'text-green-700' : 'text-gray-700'}`}>Status:</span>
                     <span className="capitalize">{facility.status}</span>
 
-                    <span className="font-medium">Created:</span>
+                    <span className={`font-medium ${isGreenButton ? 'text-green-700' : 'text-gray-700'}`}>Created:</span>
                     <span>{formatDate(facility.createdAt)}</span>
                   </div>
                   
-                  <div className="mt-3 pt-2 border-t border-gray-100">
+                  {isOwner && operators.length > 0 && (
+                    <div className="mt-2 pt-2 border-t border-gray-200">
+                      <div 
+                        className={`flex items-center justify-between p-2 rounded cursor-pointer transition-colors ${
+                          isGreenButton ? 'bg-green-100 hover:bg-green-200' : 'bg-gray-50 hover:bg-gray-100'
+                        }`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleOperatorDropdown(facility.id);
+                        }}
+                      >
+                        <span className={`text-sm font-medium ${isGreenButton ? 'text-green-800' : 'text-gray-700'}`}>Your Operator</span>
+                        {isExpanded ? <FiChevronUp className={isGreenButton ? "text-green-600" : "text-gray-500"} /> : <FiChevronDown className={isGreenButton ? "text-green-600" : "text-gray-500"} />}
+                      </div>
+                      
+                      {isExpanded && (
+                        <div className={`mt-2 p-2 rounded border ${
+                          isGreenButton ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'
+                        }`}>
+                          {operators.map((operator, index) => (
+                            <div key={index} className="grid grid-cols-2 gap-y-1 text-xs">
+                              <span className={`font-medium ${isGreenButton ? 'text-green-700' : 'text-gray-700'}`}>Name:</span>
+                              <span className="truncate">{operator.name}</span>
+                              
+                              <span className={`font-medium ${isGreenButton ? 'text-green-700' : 'text-gray-700'}`}>Email:</span>
+                              <span className="truncate" title={operator.inviteeEmail}>
+                                {truncateEmail(operator.inviteeEmail)}
+                              </span>
+                              
+                              <span className={`font-medium ${isGreenButton ? 'text-green-700' : 'text-gray-700'}`}>Status:</span>
+                              <span className={`font-medium ${operator.status === 'ACCEPTED' ? 'text-green-600' : 'text-yellow-600'}`}>
+                                {operator.status === 'ACCEPTED' ? 'Accepted' : 'Pending'}
+                              </span>
+                              
+                              <span className={`font-medium ${isGreenButton ? 'text-green-700' : 'text-gray-700'}`}>Invited:</span>
+                              <span>{formatDate(operator.createdAt)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
+                  <div className="mt-3 pt-2 border-t border-gray-200">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-medium text-gray-600">Progress</span>
-                      <span className="text-xs font-medium text-[#039994]">
+                      <span className={`text-xs font-medium ${isGreenButton ? 'text-green-700' : 'text-gray-600'}`}>Progress</span>
+                      <span className={`text-xs font-medium ${isGreenButton ? 'text-green-700' : 'text-[#039994]'}`}>
                         Step {progress.currentStage} of 6
                       </span>
                     </div>
@@ -312,13 +426,19 @@ export default function FacilityCardView() {
                   </div>
                 </div>
                 <div
-                  className="flex items-center justify-between mt-2 px-1 py-1"
-                  style={{ backgroundColor: "#069B9621" }}
+                  className={`flex items-center justify-between mt-2 px-1 py-1 rounded transition-colors ${
+                    isGreenButton 
+                      ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700' 
+                      : 'bg-[#069B9621] hover:bg-[#069B9633]'
+                  }`}
+                  onClick={() => setSelectedFacility(facility)}
                 >
-                  <span className="text-[#039994] text-xs font-medium">
+                  <span className={`text-xs font-medium ${
+                    isGreenButton ? 'text-white' : 'text-[#039994]'
+                  }`}>
                     View details
                   </span>
-                  <FiChevronRight size={16} className="text-[#039994]" />
+                  <FiChevronRight size={16} className={isGreenButton ? "text-white" : "text-[#039994]"} />
                 </div>
               </div>
             );

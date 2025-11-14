@@ -26,6 +26,12 @@ export default function FacilityCardView() {
   const [isLoadingProgress, setIsLoadingProgress] = useState(false);
   const [facilityDetails, setFacilityDetails] = useState({});
 
+  const greenButtonUtilities = ['San Diego Gas and Electric', 'Pacific Gas and Electric', 'Southern California Edison'];
+
+  const isGreenButtonUtility = (utilityProvider) => {
+    return greenButtonUtilities.includes(utilityProvider);
+  };
+
   const checkStage2Completion = async (userId, authToken) => {
     try {
       const response = await fetch(
@@ -360,73 +366,95 @@ const filteredFacilities = facilities
           No facilities found
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredFacilities.map(facility => {
             const progress = facilityProgress[facility.id] || { completedStages: [1], currentStage: 2 };
             const facilityDetail = facilityDetails[facility.id] || facility;
+            const isGreenButton = isGreenButtonUtility(facility.utilityProvider);
             
             return (
               <div
                 key={facility.id}
-                className="border border-[#039994] rounded-lg bg-white hover:shadow transition-shadow flex flex-col justify-between p-2"
+                className={`rounded-lg hover:shadow-lg transition-all duration-300 flex flex-col justify-between p-3 relative overflow-hidden min-w-[320px] ${
+                  isGreenButton 
+                    ? 'bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 border-2 border-green-300 shadow-md' 
+                    : 'border border-[#039994] bg-white'
+                }`}
               >
-                <div>
-                  <div className="flex justify-between items-start mb-1">
-                    <h3 className="font-semibold text-base text-[#039994]">
-                      {facilityDetail.facilityName || "N/A"}
-                    </h3>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setFacilityToDelete(facility);
-                        }}
-                        className="text-red-500 hover:text-red-700"
-                        title="Delete"
-                      >
-                        <FiTrash2 size={16} />
-                      </button>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-y-1 text-xs">
-                    <span className="font-medium">Facility ID:</span>
-                    <span className="font-mono text-xs">{facility.id || "N/A"}</span>
-
-                    <span className="font-medium">Current Tier:</span>
-                    <span className="font-semibold">{facilityDetail.currentTier || "N/A"}</span>
-
-                    <span className="font-medium">Address:</span>
-                    <span>{facility.address || "N/A"}</span>
-
-                    <span className="font-medium">Utility:</span>
-                    <span>{facility.utilityProvider || "N/A"}</span>
-
-                    <span className="font-medium">Installer:</span>
-                    <span>{facility.installer || "N/A"}</span>
-
-                    <span className="font-medium">Finance Type:</span>
-                    <span className="capitalize">{facility.financeType || "N/A"}</span>
-
-                    <span className="font-medium">Finance Company:</span>
-                    <span>{facility.financeCompany || "N/A"}</span>
-
-                    <span className="font-medium">Meter ID:</span>
-                    <span>{facility.meterId || "N/A"}</span>
-
-                    <span className="font-medium">Zip Code:</span>
-                    <span>{facility.zipCode || "N/A"}</span>
-
-                    <span className="font-medium">Status:</span>
-                    <span className="capitalize">{facility.status || "N/A"}</span>
-
-                    <span className="font-medium">Created:</span>
-                    <span>{formatDate(facility.createdAt)}</span>
+                <div className="flex justify-between items-start mb-1">
+                  <h3 className={`font-semibold text-base ${
+                    isGreenButton ? 'text-green-800' : 'text-[#039994]'
+                  }`}>
+                    {facilityDetail.facilityName || "N/A"}
+                  </h3>
+                  <div className="flex items-center space-x-2">
+                    {isGreenButton && (
+                      <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xs px-2 py-1 rounded-full font-semibold flex items-center shadow-sm mr-2">
+                        <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                        Green Button
+                      </div>
+                    )}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setFacilityToDelete(facility);
+                      }}
+                      className={`${isGreenButton ? 'text-red-600 hover:text-red-800' : 'text-red-500 hover:text-red-700'} transition-colors`}
+                      title="Delete"
+                    >
+                      <FiTrash2 size={18} />
+                    </button>
                   </div>
                 </div>
-                <div className="mt-2 mb-2">
+                
+                <div className="grid grid-cols-2 gap-y-1 text-xs">
+                  <span className={`font-medium ${isGreenButton ? 'text-green-700' : 'text-gray-700'}`}>Facility ID:</span>
+                  <span className="font-mono text-xs">{facility.id || "N/A"}</span>
+
+                  <span className={`font-medium ${isGreenButton ? 'text-green-700' : 'text-gray-700'}`}>Current Tier:</span>
+                  <span className="font-semibold">{facilityDetail.currentTier || "N/A"}</span>
+
+                  <span className={`font-medium ${isGreenButton ? 'text-green-700' : 'text-gray-700'}`}>Address:</span>
+                  <span>{facility.address || "N/A"}</span>
+
+                  <span className={`font-medium ${isGreenButton ? 'text-green-700' : 'text-gray-700'}`}>Utility:</span>
+                  <span className={isGreenButton ? 'text-green-600 font-semibold' : ''}>
+                    {facility.utilityProvider || "N/A"}
+                    {isGreenButton && (
+                      <svg className="w-3 h-3 ml-1 inline text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </span>
+
+                  <span className={`font-medium ${isGreenButton ? 'text-green-700' : 'text-gray-700'}`}>Installer:</span>
+                  <span>{facility.installer || "N/A"}</span>
+
+                  <span className={`font-medium ${isGreenButton ? 'text-green-700' : 'text-gray-700'}`}>Finance Type:</span>
+                  <span className="capitalize">{facility.financeType || "N/A"}</span>
+
+                  <span className={`font-medium ${isGreenButton ? 'text-green-700' : 'text-gray-700'}`}>Finance Company:</span>
+                  <span>{facility.financeCompany || "N/A"}</span>
+
+                  <span className={`font-medium ${isGreenButton ? 'text-green-700' : 'text-gray-700'}`}>Meter ID:</span>
+                  <span>{facility.meterId || "N/A"}</span>
+
+                  <span className={`font-medium ${isGreenButton ? 'text-green-700' : 'text-gray-700'}`}>Zip Code:</span>
+                  <span>{facility.zipCode || "N/A"}</span>
+
+                  <span className={`font-medium ${isGreenButton ? 'text-green-700' : 'text-gray-700'}`}>Status:</span>
+                  <span className="capitalize">{facility.status || "N/A"}</span>
+
+                  <span className={`font-medium ${isGreenButton ? 'text-green-700' : 'text-gray-700'}`}>Created:</span>
+                  <span>{formatDate(facility.createdAt)}</span>
+                </div>
+                
+                <div className="mt-3 mb-2">
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-xs font-medium text-gray-600">Onboarding Progress</span>
-                    <span className="text-xs font-medium text-[#039994]">
+                    <span className={`text-xs font-medium ${isGreenButton ? 'text-green-700' : 'text-gray-600'}`}>Onboarding Progress</span>
+                    <span className={`text-xs font-medium ${isGreenButton ? 'text-green-700' : 'text-[#039994]'}`}>
                       Stage {progress.currentStage} of 6
                     </span>
                   </div>
@@ -458,15 +486,21 @@ const filteredFacilities = facilities
                     ))}
                   </div>
                 </div>
+                
                 <div
                   onClick={() => setSelectedFacility(facility)}
-                  className="flex items-center justify-between mt-2 px-1 py-1 cursor-pointer"
-                  style={{ backgroundColor: "#069B9621" }}
+                  className={`flex items-center justify-between mt-2 px-1 py-1 cursor-pointer rounded transition-colors ${
+                    isGreenButton 
+                      ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700' 
+                      : 'bg-[#069B9621] hover:bg-[#069B9633]'
+                  }`}
                 >
-                  <span className="text-[#039994] text-xs font-medium">
+                  <span className={`text-xs font-medium ${
+                    isGreenButton ? 'text-white' : 'text-[#039994]'
+                  }`}>
                     View details
                   </span>
-                  <FiChevronRight size={16} className="text-[#039994]" />
+                  <FiChevronRight size={16} className={isGreenButton ? "text-white" : "text-[#039994]"} />
                 </div>
               </div>
             );
