@@ -23,6 +23,7 @@ export default function FacilityCardView() {
   const [isLoadingProgress, setIsLoadingProgress] = useState(false);
   const [authorizingFacility, setAuthorizingFacility] = useState(null);
   const [showIframe, setShowIframe] = useState(false);
+  const [showVideoModal, setShowVideoModal] = useState(false);
   const [iframeUrl, setIframeUrl] = useState("");
   const [scale, setScale] = useState(1);
   const [currentFacility, setCurrentFacility] = useState(null);
@@ -33,6 +34,19 @@ export default function FacilityCardView() {
     return greenButtonUtilities.includes(utilityProvider);
   };
 
+  const getUtilityUrl = (utilityName) => {
+    const utilityUrls = {
+      'PG&E': 'https://myaccount.pge.com/myaccount/s/login/?language=en_US',
+      'Pacific Gas and Electric': 'https://myaccount.pge.com/myaccount/s/login/?language=en_US',
+      'San Diego Gas and Electric': 'https://myenergycenter.com/portal/PreLogin/Validate',
+      'SDG&E': 'https://myenergycenter.com/portal/PreLogin/Validate',
+      'SCE': 'https://myaccount.sce.com/myaccount/s/login/?language=en_US',
+      'Southern California Edison': 'https://myaccount.sce.com/myaccount/s/login/?language=en_US'
+    };
+    
+    return utilityUrls[utilityName] || 'https://utilityapi.com/authorize/DCarbon_Solutions';
+  };
+
   const authorizeFacility = async (facility, e) => {
     e.stopPropagation();
     setAuthorizingFacility(facility.id);
@@ -41,14 +55,25 @@ export default function FacilityCardView() {
     const isGreenButton = isGreenButtonUtility(facility.utilityProvider);
     
     if (isGreenButton) {
-      setIframeUrl('https://www.greenbuttondata.org/index.html');
+      setShowVideoModal(true);
     } else {
-      setIframeUrl('https://utilityapi.com/authorize/DCarbon_Solutions');
+      const url = getUtilityUrl(facility.utilityProvider);
+      setIframeUrl(url);
+      setShowIframe(true);
+      setScale(1);
     }
     
-    setShowIframe(true);
-    setScale(1);
     setAuthorizingFacility(null);
+  };
+
+  const handleVideoComplete = () => {
+    setShowVideoModal(false);
+    if (currentFacility) {
+      const url = getUtilityUrl(currentFacility.utilityProvider);
+      setIframeUrl(url);
+      setShowIframe(true);
+      setScale(1);
+    }
   };
 
   const checkStage2Completion = async (userId, authToken) => {
@@ -278,6 +303,72 @@ export default function FacilityCardView() {
     fetchFacilities();
   };
 
+  const handleVideoModalClose = () => {
+    setShowVideoModal(false);
+    setCurrentFacility(null);
+  };
+
+  const VideoModal = ({ isOpen, onClose, facility, onVideoComplete }) => {
+    if (!isOpen) return null;
+
+    return (
+      <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black bg-opacity-50 p-4">
+        <div className="relative w-full max-w-4xl bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
+          <div className="flex-shrink-0 p-6 border-b border-gray-200">
+            <div className="flex justify-between items-center">
+              <h2 className="font-[600] text-[20px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sans">
+                {facility?.utilityProvider} Authorization Instructions
+              </h2>
+              <button onClick={onClose} className="text-red-500 hover:text-red-700">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-6">
+            <div className="bg-gray-100 rounded-lg p-4 mb-6">
+              <p className="text-sm text-gray-700 mb-4">
+                <strong>Important:</strong> Please watch this instructional video to understand how to complete the {facility?.utilityProvider} authorization process.
+              </p>
+              
+              <div className="bg-black rounded-lg aspect-video flex items-center justify-center mb-4">
+                <div className="text-white text-center">
+                  <svg className="w-16 h-16 mx-auto mb-2" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z"/>
+                  </svg>
+                  <p className="text-lg font-semibold">Instructional Video</p>
+                  <p className="text-sm opacity-75">Video demonstration for {facility?.utilityProvider}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-between text-sm text-gray-600">
+                <span>Estimated time: 2-3 minutes</span>
+                <span>Mandatory viewing</span>
+              </div>
+            </div>
+
+            <div className="flex justify-between gap-4 mt-8">
+              <button
+                onClick={onClose}
+                className="flex-1 rounded-md bg-white border border-[#039994] text-[#039994] font-semibold py-3 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#039994] font-sans text-[14px] transition-colors"
+              >
+                Back
+              </button>
+              <button
+                onClick={onVideoComplete}
+                className="flex-1 rounded-md text-white font-semibold py-3 bg-[#039994] hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sans text-[14px] transition-colors"
+              >
+                I've Watched the Video - Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   if (selectedFacility) {
     return (
       <div className="p-2">
@@ -289,15 +380,26 @@ export default function FacilityCardView() {
     );
   }
 
+  if (showVideoModal) {
+    return (
+      <VideoModal
+        isOpen={showVideoModal}
+        onClose={handleVideoModalClose}
+        facility={currentFacility}
+        onVideoComplete={handleVideoComplete}
+      />
+    );
+  }
+
   if (showIframe) {
     const isGreenButton = currentFacility && isGreenButtonUtility(currentFacility.utilityProvider);
     
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-        <div className="relative w-full max-w-6xl h-[90vh] bg-white rounded-2xl overflow-hidden flex flex-col">
+      <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black bg-opacity-50 p-4">
+        <div className="relative w-full max-w-5xl h-[85vh] bg-white rounded-2xl overflow-hidden flex flex-col ml-16">
           <div className="flex items-center justify-between p-4 border-b">
             <h3 className="text-lg font-semibold text-[#039994]">
-              {isGreenButton ? "Green Button Authorization" : "Utility Authorization Portal"}
+              {currentFacility?.utilityProvider} Authorization
             </h3>
             <div className="flex items-center gap-4">
               <div className="flex gap-2">
@@ -344,16 +446,14 @@ export default function FacilityCardView() {
           
           <div className={`p-4 border-b ${isGreenButton ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}>
             <p className={`text-sm ${isGreenButton ? 'text-green-700' : 'text-yellow-700'}`}>
-              <strong>Step 1:</strong> {isGreenButton ? 'Follow the steps on the Green Button portal to securely share your utility data.' : 'Enter the email of your DCarbon account you are authorizing for, then choose your utility provider.'}
+              <strong>{currentFacility?.utilityProvider} Authorization:</strong> Follow the steps to securely share your utility data with DCarbon Solutions.
             </p>
             <p className={`text-sm ${isGreenButton ? 'text-green-700' : 'text-yellow-700'} mt-1`}>
-              <strong>Step 2:</strong> {isGreenButton ? 'Complete the authorization process when prompted.' : 'Enter your Utility Account credentials and authorize access when prompted.'}
+              <strong>Selected Utility:</strong> {currentFacility?.utilityProvider}
             </p>
-            {isGreenButton && currentFacility && (
-              <p className="text-sm text-green-700 mt-1">
-                <strong>Selected Utility:</strong> {currentFacility.utilityProvider}
-              </p>
-            )}
+            <p className={`text-sm ${isGreenButton ? 'text-green-700' : 'text-yellow-700'} mt-1`}>
+              <strong>Authorization URL:</strong> {iframeUrl}
+            </p>
           </div>
 
           <div className="flex-1 p-4 bg-gray-100 overflow-hidden">
@@ -369,7 +469,7 @@ export default function FacilityCardView() {
                 <iframe
                   src={iframeUrl}
                   className="w-full h-full border-0"
-                  title={isGreenButton ? "Green Button Authorization" : "Utility Authorization"}
+                  title={`${currentFacility?.utilityProvider} Authorization`}
                   sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
                 />
               </div>

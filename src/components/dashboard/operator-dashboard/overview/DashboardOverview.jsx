@@ -147,9 +147,83 @@ const ProgressTracker = ({ currentStage, completedStages, onStageClick, selected
   );
 };
 
+const VideoModal = ({ isOpen, onClose, facility, onVideoComplete }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[9500] flex items-center justify-center bg-black bg-opacity-50 p-4">
+      <div className="relative w-full max-w-4xl bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
+        <div className="flex-shrink-0 p-6 border-b border-gray-200">
+          <div className="flex justify-between items-center">
+            <h2 className="font-[600] text-[20px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sans">
+              {facility?.utilityProvider} Authorization Instructions
+            </h2>
+            <button onClick={onClose} className="text-red-500 hover:text-red-700">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-6">
+          <div className="bg-gray-100 rounded-lg p-4 mb-6">
+            <p className="text-sm text-gray-700 mb-4">
+              <strong>Important:</strong> Please watch this instructional video to understand how to complete the {facility?.utilityProvider} authorization process.
+            </p>
+            
+            <div className="bg-black rounded-lg aspect-video flex items-center justify-center mb-4">
+              <div className="text-white text-center">
+                <svg className="w-16 h-16 mx-auto mb-2" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z"/>
+                </svg>
+                <p className="text-lg font-semibold">Instructional Video</p>
+                <p className="text-sm opacity-75">Video demonstration for {facility?.utilityProvider}</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-between text-sm text-gray-600">
+              <span>Estimated time: 2-3 minutes</span>
+              <span>Mandatory viewing</span>
+            </div>
+          </div>
+
+          <div className="flex justify-between gap-4 mt-8">
+            <button
+              onClick={onClose}
+              className="flex-1 rounded-md bg-white border border-[#039994] text-[#039994] font-semibold py-3 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#039994] font-sans text-[14px] transition-colors"
+            >
+              Back
+            </button>
+            <button
+              onClick={onVideoComplete}
+              className="flex-1 rounded-md text-white font-semibold py-3 bg-[#039994] hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sans text-[14px] transition-colors"
+            >
+              I've Watched the Video - Continue
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const AuthorizationModal = ({ isOpen, onClose, facility, onAuthorizationComplete }) => {
   const [scale, setScale] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+
+  const getUtilityUrl = (utilityName) => {
+    const utilityUrls = {
+      'PG&E': 'https://myaccount.pge.com/myaccount/s/login/?language=en_US',
+      'Pacific Gas and Electric': 'https://myaccount.pge.com/myaccount/s/login/?language=en_US',
+      'San Diego Gas and Electric': 'https://myenergycenter.com/portal/PreLogin/Validate',
+      'SDG&E': 'https://myenergycenter.com/portal/PreLogin/Validate',
+      'SCE': 'https://myaccount.sce.com/myaccount/s/login/?language=en_US',
+      'Southern California Edison': 'https://myaccount.sce.com/myaccount/s/login/?language=en_US'
+    };
+    
+    return utilityUrls[utilityName] || 'https://utilityapi.com/authorize/DCarbon_Solutions';
+  };
 
   const greenButtonUtilities = ['San Diego Gas and Electric', 'Pacific Gas and Electric', 'Southern California Edison'];
   
@@ -158,7 +232,7 @@ const AuthorizationModal = ({ isOpen, onClose, facility, onAuthorizationComplete
   };
 
   const isGreenButton = facility ? isGreenButtonUtility(facility.utilityProvider) : false;
-  const iframeUrl = isGreenButton ? 'https://www.greenbuttondata.org/index.html' : 'https://utilityapi.com/authorize/DCarbon_Solutions';
+  const iframeUrl = facility ? getUtilityUrl(facility.utilityProvider) : 'https://utilityapi.com/authorize/DCarbon_Solutions';
 
   const zoomIn = () => {
     setScale(prev => Math.min(prev + 0.25, 3));
@@ -187,7 +261,7 @@ const AuthorizationModal = ({ isOpen, onClose, facility, onAuthorizationComplete
       <div className="relative w-full max-w-6xl h-[90vh] bg-white rounded-2xl overflow-hidden flex flex-col">
         <div className="flex items-center justify-between p-4 border-b">
           <h3 className="text-lg font-semibold text-[#039994]">
-            {isGreenButton ? "Green Button Authorization" : "Utility Authorization Portal"}
+            {facility?.utilityProvider} Authorization
           </h3>
           <div className="flex items-center gap-4">
             <div className="flex gap-2">
@@ -234,16 +308,14 @@ const AuthorizationModal = ({ isOpen, onClose, facility, onAuthorizationComplete
         
         <div className={`p-4 border-b ${isGreenButton ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}>
           <p className={`text-sm ${isGreenButton ? 'text-green-700' : 'text-yellow-700'}`}>
-            <strong>Step 1:</strong> {isGreenButton ? 'Follow the steps on the Green Button portal to securely share your utility data.' : 'Enter the email of your DCarbon account you are authorizing for, then choose your utility provider.'}
+            <strong>{facility?.utilityProvider} Authorization:</strong> Follow the steps to securely share your utility data with DCarbon Solutions.
           </p>
           <p className={`text-sm ${isGreenButton ? 'text-green-700' : 'text-yellow-700'} mt-1`}>
-            <strong>Step 2:</strong> {isGreenButton ? 'Complete the authorization process when prompted.' : 'Enter your Utility Account credentials and authorize access when prompted.'}
+            <strong>Selected Utility:</strong> {facility?.utilityProvider}
           </p>
-          {isGreenButton && facility && (
-            <p className="text-sm text-green-700 mt-1">
-              <strong>Selected Utility:</strong> {facility.utilityProvider}
-            </p>
-          )}
+          <p className={`text-sm ${isGreenButton ? 'text-green-700' : 'text-yellow-700'} mt-1`}>
+            <strong>Authorization URL:</strong> {iframeUrl}
+          </p>
         </div>
 
         <div className="flex-1 p-4 bg-gray-100 overflow-hidden">
@@ -259,7 +331,7 @@ const AuthorizationModal = ({ isOpen, onClose, facility, onAuthorizationComplete
               <iframe
                 src={iframeUrl}
                 className="w-full h-full border-0"
-                title={isGreenButton ? "Green Button Authorization" : "Utility Authorization"}
+                title={`${facility?.utilityProvider} Authorization`}
                 sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
               />
             </div>
@@ -284,6 +356,7 @@ export default function DashboardOverview() {
   const [showAddUtilityModal, setShowAddUtilityModal] = useState(false);
   const [showRegistrationModal, setShowRegistrationModal] = useState(false);
   const [showAuthorizationModal, setShowAuthorizationModal] = useState(false);
+  const [showVideoModal, setShowVideoModal] = useState(false);
   const [userData, setUserData] = useState({
     userFirstName: "",
     userId: ""
@@ -300,6 +373,12 @@ export default function DashboardOverview() {
   const [selectedFacility, setSelectedFacility] = useState("");
   const [isLoadingFacilities, setIsLoadingFacilities] = useState(false);
   const [currentAuthorizationFacility, setCurrentAuthorizationFacility] = useState(null);
+
+  const greenButtonUtilities = ['San Diego Gas and Electric', 'Pacific Gas and Electric', 'Southern California Edison'];
+
+  const isGreenButtonUtility = (utilityProvider) => {
+    return greenButtonUtilities.includes(utilityProvider);
+  };
 
   const checkOwnersDetails = () => {
     try {
@@ -502,6 +581,17 @@ export default function DashboardOverview() {
 
   const handleAuthorizeFacility = (facility) => {
     setCurrentAuthorizationFacility(facility);
+    
+    const isGreenButton = isGreenButtonUtility(facility.utilityProvider);
+    if (isGreenButton) {
+      setShowVideoModal(true);
+    } else {
+      setShowAuthorizationModal(true);
+    }
+  };
+
+  const handleVideoComplete = () => {
+    setShowVideoModal(false);
     setShowAuthorizationModal(true);
   };
 
@@ -511,6 +601,11 @@ export default function DashboardOverview() {
 
   const handleCloseAuthorizationModal = () => {
     setShowAuthorizationModal(false);
+    setCurrentAuthorizationFacility(null);
+  };
+
+  const handleCloseVideoModal = () => {
+    setShowVideoModal(false);
     setCurrentAuthorizationFacility(null);
   };
 
@@ -683,6 +778,15 @@ export default function DashboardOverview() {
             currentStep={clickedStage}
           />
         </div>
+      )}
+
+      {showVideoModal && (
+        <VideoModal
+          isOpen={showVideoModal}
+          onClose={handleCloseVideoModal}
+          facility={currentAuthorizationFacility}
+          onVideoComplete={handleVideoComplete}
+        />
       )}
 
       {showAuthorizationModal && (
