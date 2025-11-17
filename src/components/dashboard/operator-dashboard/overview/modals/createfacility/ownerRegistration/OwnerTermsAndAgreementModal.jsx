@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import SignatureModal from "./SignatureModal";
 import { jsPDF } from "jspdf";
-import axios from "axios";
 
 export default function OwnerTermsAndAgreementModal({ isOpen, onClose }) {
   const [isChecked1, setIsChecked1] = useState(false);
@@ -12,9 +11,6 @@ export default function OwnerTermsAndAgreementModal({ isOpen, onClose }) {
   const [isLoading, setIsLoading] = useState(false);
   const [hasSigned, setHasSigned] = useState(false);
   const [signatureUrl, setSignatureUrl] = useState(null);
-  const [showIframe, setShowIframe] = useState(false);
-  const [iframeUrl, setIframeUrl] = useState("");
-  const [scale, setScale] = useState(1);
   const contentRef = useRef(null);
 
   useEffect(() => {
@@ -117,47 +113,6 @@ export default function OwnerTermsAndAgreementModal({ isOpen, onClose }) {
     setShowSignatureModal(true);
   };
 
-  const initiateUtilityAuth = async () => {
-    const userEmail = localStorage.getItem('userEmail');
-    const authToken = localStorage.getItem('authToken');
-    const userId = localStorage.getItem('userId');
-
-    setIsLoading(true);
-    try {
-      const response = await axios.post(
-        `https://services.dcarbon.solutions/api/auth/initiate-utility-auth/${userId}`,
-        { utilityAuthEmail: userEmail },
-        { headers: { 'Authorization': `Bearer ${authToken}` } }
-      );
-      if (response.data.status === 'success') {
-        setIframeUrl('https://utilityapi.com/authorize/DCarbon_Solutions');
-        setShowIframe(true);
-        setScale(1);
-      } else {
-        toast.error('Failed to initiate utility authorization');
-      }
-    } catch (error) {
-      toast.error('Failed to initiate utility authorization');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleIframeMessage = (event) => {
-    if (event.data && event.data.type === 'utility-auth-complete') {
-      setShowIframe(false);
-      onClose();
-      window.location.reload();
-    }
-  };
-
-  useEffect(() => {
-    if (showIframe) {
-      window.addEventListener('message', handleIframeMessage);
-      return () => window.removeEventListener('message', handleIframeMessage);
-    }
-  }, [showIframe]);
-
   const handleSignatureComplete = async () => {
     setShowSignatureModal(false);
     setHasSigned(true);
@@ -167,7 +122,8 @@ export default function OwnerTermsAndAgreementModal({ isOpen, onClose }) {
     }
     const success = await acceptUserAgreementTerms();
     if (success) {
-      await initiateUtilityAuth();
+      onClose();
+      window.location.reload();
     }
   };
 
@@ -328,116 +284,6 @@ export default function OwnerTermsAndAgreementModal({ isOpen, onClose }) {
     
     doc.save("DCarbon_Operator_Owner_Agreements.pdf");
   };
-
-  const zoomIn = () => {
-    setScale(prev => Math.min(prev + 0.25, 3));
-  };
-
-  const zoomOut = () => {
-    setScale(prev => Math.max(prev - 0.25, 0.5));
-  };
-
-  const resetZoom = () => {
-    setScale(1);
-  };
-
-  const handleIframeClose = () => {
-    setShowIframe(false);
-    setScale(1);
-    onClose();
-    window.location.reload();
-  };
-
-  if (showIframe) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-        <div className="relative w-full max-w-6xl h-[90vh] bg-white rounded-2xl overflow-hidden flex flex-col">
-          <div className="flex items-center justify-between p-4 border-b">
-            <h3 className="text-lg font-semibold text-[#039994]">Utility Authorization Portal</h3>
-            <div className="flex items-center gap-4">
-              <div className="flex gap-2">
-                <button
-                  onClick={zoomOut}
-                  className="bg-gray-500 text-white px-3 py-1 rounded-md text-sm hover:bg-gray-600 flex items-center gap-1"
-                  disabled={scale <= 0.5}
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  </svg>
-                  Zoom Out
-                </button>
-                <button
-                  onClick={resetZoom}
-                  className="bg-gray-500 text-white px-3 py-1 rounded-md text-sm hover:bg-gray-600 flex items-center gap-1"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M15 3H21V9M21 3L15 9M9 21H3V15M3 21L9 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  Reset
-                </button>
-                <button
-                  onClick={zoomIn}
-                  className="bg-gray-500 text-white px-3 py-1 rounded-md text-sm hover:bg-gray-600 flex items-center gap-1"
-                  disabled={scale >= 3}
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  </svg>
-                  Zoom In
-                </button>
-              </div>
-              <button
-                onClick={handleIframeClose}
-                className="text-red-500 hover:text-red-700"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </button>
-            </div>
-          </div>
-          
-          <div className="p-4 bg-yellow-50 border-b border-yellow-200">
-            <p className="text-sm text-yellow-700">
-              <strong>Step 1:</strong> Enter the email of your DCarbon account you are authorizing for, then choose your utility provider.
-            </p>
-            <p className="text-sm text-yellow-700 mt-1">
-              <strong>Step 2:</strong> Enter your Utility Account credentials and authorize access when prompted.
-            </p>
-          </div>
-
-          <div className="flex-1 p-4 bg-gray-100 overflow-hidden">
-            <div className="w-full h-full bg-white rounded-lg overflow-auto">
-              <div 
-                className="w-full h-full origin-top-left"
-                style={{ 
-                  transform: `scale(${scale})`,
-                  width: `${100/scale}%`,
-                  height: `${100/scale}%`
-                }}
-              >
-                <iframe
-                  src={iframeUrl}
-                  className="w-full h-full border-0"
-                  title="Utility Authorization"
-                  sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="p-3 border-t bg-gray-50 flex justify-between items-center">
-            <span className="text-sm text-gray-600">
-              Zoom: {Math.round(scale * 100)}%
-            </span>
-            <span className="text-sm text-gray-600">
-              Use scroll to navigate when zoomed in
-            </span>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   if (!isOpen && !showSignatureModal) return null;
 
