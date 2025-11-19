@@ -103,6 +103,39 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
   const [currentPDF, setCurrentPDF] = useState({ url: "", title: "" });
   const [meterId, setMeterId] = useState(null);
   const [isFacilityComplete, setIsFacilityComplete] = useState(false);
+  const [operators, setOperators] = useState([]);
+  const [expandedOperators, setExpandedOperators] = useState(false);
+
+  const fetchOperators = async () => {
+    try {
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const userId = loginResponse?.data?.user?.id;
+      const authToken = loginResponse?.data?.token;
+      
+      if (!userId || !authToken) return;
+
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/user/get-operators/${userId}`,
+        { headers: { Authorization: `Bearer ${authToken}` } }
+      );
+      
+      const result = await response.json();
+      if (result.status === "success") {
+        setOperators(result.data);
+      }
+    } catch (error) {
+      console.error("Error fetching operators:", error);
+    }
+  };
+
+  const toggleOperatorDropdown = () => {
+    setExpandedOperators(prev => !prev);
+  };
+
+  const truncateEmail = (email) => {
+    if (email.length <= 20) return email;
+    return email.substring(0, 17) + '...';
+  };
 
   const checkFacilityCompletion = (facility) => {
     const requiredFields = [
@@ -230,6 +263,7 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
 
     checkUserProgress();
     checkFacilityCompletion(facilityData);
+    fetchOperators();
   }, [facilityData]);
 
   const formatDate = (dateString) => {
@@ -570,6 +604,42 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
                 </div>
               </div>
             </div>
+
+            {isOwner && operators.length > 0 && (
+              <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <div 
+                  className="flex items-center justify-between p-2 rounded cursor-pointer transition-colors bg-gray-50 hover:bg-gray-100"
+                  onClick={toggleOperatorDropdown}
+                >
+                  <span className="text-sm font-medium text-gray-700">Your Operator</span>
+                  {expandedOperators ? <FiChevronDown className="text-gray-500 transform rotate-180" /> : <FiChevronDown className="text-gray-500" />}
+                </div>
+                
+                {expandedOperators && (
+                  <div className="mt-2 p-2 rounded border bg-gray-50 border-gray-200">
+                    {operators.map((operator, index) => (
+                      <div key={index} className="grid grid-cols-2 gap-y-1 text-xs">
+                        <span className="font-medium text-gray-700">Name:</span>
+                        <span className="truncate">{operator.name}</span>
+                        
+                        <span className="font-medium text-gray-700">Email:</span>
+                        <span className="truncate" title={operator.inviteeEmail}>
+                          {truncateEmail(operator.inviteeEmail)}
+                        </span>
+                        
+                        <span className="font-medium text-gray-700">Status:</span>
+                        <span className={`font-medium ${operator.status === 'ACCEPTED' ? 'text-green-600' : 'text-yellow-600'}`}>
+                          {operator.status === 'ACCEPTED' ? 'Accepted' : 'Pending'}
+                        </span>
+                        
+                        <span className="font-medium text-gray-700">Invited:</span>
+                        <span>{formatDate(operator.createdAt)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="bg-white border border-gray-200 rounded-lg p-4 relative">
               <div className="flex justify-between items-center mb-3">
