@@ -8,7 +8,8 @@ import {
   FiAlertCircle,
   FiRefreshCw,
   FiDownload,
-  FiEdit
+  FiEdit,
+  FiUser
 } from "react-icons/fi";
 import { toast } from 'react-hot-toast';
 import CommercialDetailsGraph from "./CommercialDetailsGraph";
@@ -204,6 +205,24 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
   const [nextStage, setNextStage] = useState(2);
   const [showEditModal, setShowEditModal] = useState(false);
   const [isFacilityComplete, setIsFacilityComplete] = useState(false);
+  const [expandedOwner, setExpandedOwner] = useState(false);
+  const [ownerDetails, setOwnerDetails] = useState(null);
+
+  useEffect(() => {
+    const storedOwnerDetails = localStorage.getItem('ownersDetails');
+    if (storedOwnerDetails) {
+      try {
+        const parsedDetails = JSON.parse(storedOwnerDetails);
+        setOwnerDetails(parsedDetails);
+      } catch (error) {
+        console.error('Error parsing owner details:', error);
+      }
+    }
+  }, []);
+
+  const toggleOwnerDropdown = () => {
+    setExpandedOwner(prev => !prev);
+  };
 
   const checkFacilityCompletion = (facility) => {
     const requiredFields = [
@@ -668,6 +687,43 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
                 </div>
               </div>
             </div>
+
+            {ownerDetails && (
+              <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <div 
+                  className="flex items-center justify-between p-2 rounded cursor-pointer transition-colors bg-gray-50 hover:bg-gray-100"
+                  onClick={toggleOwnerDropdown}
+                >
+                  <span className="text-sm font-medium text-gray-700">Your Owner's Details</span>
+                  {expandedOwner ? <FiChevronDown className="text-gray-500 transform rotate-180" /> : <FiChevronDown className="text-gray-500" />}
+                </div>
+                
+                {expandedOwner && (
+                  <div className="mt-2 p-2 rounded border bg-gray-50 border-gray-200">
+                    <p className="text-xs font-medium text-gray-700 mb-2">You are authorizing this facility for:</p>
+                    <div className="grid grid-cols-2 gap-y-1 text-xs">
+                      <span className="font-medium text-gray-700">Name:</span>
+                      <span>{ownerDetails.firstName} {ownerDetails.lastName}</span>
+                      
+                      <span className="font-medium text-gray-700">Email:</span>
+                      <span className="break-all">{ownerDetails.email}</span>
+                      
+                      <span className="font-medium text-gray-700">Phone:</span>
+                      <span>{ownerDetails.phoneNumber || "N/A"}</span>
+                      
+                      <span className="font-medium text-gray-700">User ID:</span>
+                      <span className="truncate">{ownerDetails.id}</span>
+                      
+                      <span className="font-medium text-gray-700">User Type:</span>
+                      <span>{ownerDetails.userType || "N/A"}</span>
+                      
+                      <span className="font-medium text-gray-700">Registered:</span>
+                      <span>{formatDate(ownerDetails.createdAt)}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="bg-white border border-gray-200 rounded-lg p-4 relative">
               <div className="flex justify-between items-center mb-3">

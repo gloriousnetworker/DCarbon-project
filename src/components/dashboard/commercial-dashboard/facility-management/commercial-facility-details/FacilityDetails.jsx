@@ -132,11 +132,6 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
     setExpandedOperators(prev => !prev);
   };
 
-  const truncateEmail = (email) => {
-    if (email.length <= 20) return email;
-    return email.substring(0, 17) + '...';
-  };
-
   const checkFacilityCompletion = (facility) => {
     const requiredFields = [
       { field: facility.commercialOperationDate, name: 'Commercial Operation Date' },
@@ -623,9 +618,7 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
                         <span className="truncate">{operator.name}</span>
                         
                         <span className="font-medium text-gray-700">Email:</span>
-                        <span className="truncate" title={operator.inviteeEmail}>
-                          {truncateEmail(operator.inviteeEmail)}
-                        </span>
+                        <span className="break-all">{operator.inviteeEmail}</span>
                         
                         <span className="font-medium text-gray-700">Status:</span>
                         <span className={`font-medium ${operator.status === 'ACCEPTED' ? 'text-green-600' : 'text-yellow-600'}`}>
