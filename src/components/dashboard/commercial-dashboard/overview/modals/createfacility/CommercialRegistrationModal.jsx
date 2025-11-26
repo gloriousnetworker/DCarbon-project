@@ -39,6 +39,9 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
       const data = await response.json();
       const facilities = data.data?.facilities || [];
       setUserFacilities(facilities);
+      if (facilities.length > 0) {
+        setSelectedFacility(facilities[0].id);
+      }
       return facilities.length > 0;
     } catch (error) {
       return false;
@@ -471,17 +474,116 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
                   </div>
                 )}
 
+                <div className="mb-6 border border-gray-300 rounded-lg p-4 bg-white">
+                  <div className="mb-4">
+                    <label className="block mb-3 font-sfpro text-[12px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]">
+                      Commercial Role for New Facility
+                    </label>
+                    
+                    <div className="mb-3">
+                      <label 
+                        className={`flex items-start justify-between p-3 border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50 ${
+                          selectedRole === 'Owner' ? 'bg-white' : 'bg-[#F0F0F0]'
+                        } relative`}
+                        onMouseEnter={() => setShowOwnerTooltip(true)}
+                        onMouseLeave={() => setShowOwnerTooltip(false)}
+                      >
+                        <div className="flex-1 pr-3">
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className="font-sfpro font-[600] text-[14px] leading-[100%] tracking-[-0.05em] text-[#1E1E1E]">
+                              Owner
+                            </div>
+                          </div>
+                          {selectedRole === 'Owner' && (
+                            <div className="font-sfpro text-[12px] leading-[130%] tracking-[-0.02em] font-[400] text-[#626060]">
+                              {getRoleDescription('Owner')}
+                            </div>
+                          )}
+                        </div>
+                        <input
+                          type="radio"
+                          name="commercialRole"
+                          value="Owner"
+                          checked={selectedRole === 'Owner'}
+                          onChange={(e) => setSelectedRole(e.target.value)}
+                          className="mt-1 w-4 h-4 text-[#039994] border-gray-300 focus:ring-[#039994] flex-shrink-0"
+                        />
+                        {showOwnerTooltip && (
+                          <div className="absolute left-1/2 transform -translate-x-1/2 bottom-full mb-2 w-80 p-3 bg-gray-800 text-white text-xs rounded-md shadow-lg z-50">
+                            <div className="font-sfpro font-[600] mb-1">Owner Role</div>
+                            <div className="font-sfpro">
+                              You own a solar generator asset and/or facility, but you do not Operate the asset, or the company which owns the solar asset does not pay the electric utilities billing related to the facility. A third-party tenant or management company pays the utilities accounts.
+                            </div>
+                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
+                          </div>
+                        )}
+                      </label>
+                    </div>
+
+                    <div className="mb-4">
+                      <label 
+                        className={`flex items-start justify-between p-3 border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50 ${
+                          selectedRole === 'Owner & Operator' ? 'bg-white' : 'bg-[#F0F0F0]'
+                        } relative`}
+                        onMouseEnter={() => setShowOwnerOperatorTooltip(true)}
+                        onMouseLeave={() => setShowOwnerOperatorTooltip(false)}
+                      >
+                        <div className="flex-1 pr-3">
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className="font-sfpro font-[600] text-[14px] leading-[100%] tracking-[-0.05em] text-[#1E1E1E]">
+                              Owner & Operator
+                            </div>
+                          </div>
+                          {selectedRole === 'Owner & Operator' && (
+                            <div className="font-sfpro text-[12px] leading-[130%] tracking-[-0.02em] font-[400] text-[#626060]">
+                              {getRoleDescription('Owner & Operator')}
+                            </div>
+                          )}
+                        </div>
+                        <input
+                          type="radio"
+                          name="commercialRole"
+                          value="Owner & Operator"
+                          checked={selectedRole === 'Owner & Operator'}
+                          onChange={(e) => setSelectedRole(e.target.value)}
+                          className="mt-1 w-4 h-4 text-[#039994] border-gray-300 focus:ring-[#039994] flex-shrink-0"
+                        />
+                        {showOwnerOperatorTooltip && (
+                          <div className="absolute left-1/2 transform -translate-x-1/2 bottom-full mb-2 w-80 p-3 bg-gray-800 text-white text-xs rounded-md shadow-lg z-50">
+                            <div className="font-sfpro font-[600] mb-1">Owner & Operator Role</div>
+                            <div className="font-sfpro">
+                              You both own the solar generator asset, and the same owner or company also pays the electric utilities billing related to the facility.
+                            </div>
+                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
+                          </div>
+                        )}
+                      </label>
+                    </div>
+
+                    <button
+                      onClick={handleCreateNewFacility}
+                      disabled={loading || isNextButtonDisabled() || updatingRole}
+                      className={`w-full rounded-md text-white font-semibold py-3 focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] ${
+                        loading || isNextButtonDisabled() || updatingRole
+                          ? 'bg-gray-400 cursor-not-allowed' 
+                          : 'bg-[#039994] hover:bg-[#02857f]'
+                      }`}
+                    >
+                      {loading ? 'Loading...' : updatingRole ? 'Updating...' : 'Create New Facility'}
+                    </button>
+                  </div>
+                </div>
+
                 {hasFacilities && userFacilities.length > 0 && (
-                  <div className="mb-4 p-3 bg-blue-50 rounded-md border border-blue-200">
+                  <div className="border border-gray-300 rounded-lg p-4 bg-white mb-4">
                     <div className="font-sfpro font-[600] text-[14px] text-blue-700 mb-2">
                       Existing Facilities ({userFacilities.length})
                     </div>
                     <select 
                       value={selectedFacility}
                       onChange={(e) => setSelectedFacility(e.target.value)}
-                      className="w-full p-2 border border-gray-300 rounded-md text-sm font-sfpro"
+                      className="w-full p-2 border border-gray-300 rounded-md text-sm font-sfpro mb-3"
                     >
-                      <option value="">Select a facility to view details</option>
                       {userFacilities.map((facility) => (
                         <option key={facility.id} value={facility.id}>
                           {facility.nickname || facility.facilityName} - {facility.utilityProvider} ({getFacilityRoleDisplay(facility.commercialRole)})
@@ -489,129 +591,28 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
                       ))}
                     </select>
                     {selectedFacility && (
-                      <div className="mt-2 p-2 bg-white rounded border text-xs font-sfpro">
+                      <div className="mt-2 p-2 bg-gray-50 rounded border text-xs font-sfpro mb-3">
                         {userFacilities.find(f => f.id === selectedFacility)?.status && (
                           <p>Status: <span className="font-semibold">{userFacilities.find(f => f.id === selectedFacility)?.status}</span></p>
                         )}
                       </div>
                     )}
-                  </div>
-                )}
-
-                <div>
-                  <label className="block mb-3 font-sfpro text-[12px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]">
-                    Commercial Role for New Facility
-                  </label>
-                  
-                  <div className="mb-3">
-                    <label 
-                      className={`flex items-start justify-between p-3 border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50 ${
-                        selectedRole === 'Owner' ? 'bg-white' : 'bg-[#F0F0F0]'
-                      } relative`}
-                      onMouseEnter={() => setShowOwnerTooltip(true)}
-                      onMouseLeave={() => setShowOwnerTooltip(false)}
-                    >
-                      <div className="flex-1 pr-3">
-                        <div className="flex items-center gap-2 mb-1">
-                          <div className="font-sfpro font-[600] text-[14px] leading-[100%] tracking-[-0.05em] text-[#1E1E1E]">
-                            Owner
-                          </div>
-                        </div>
-                        {selectedRole === 'Owner' && (
-                          <div className="font-sfpro text-[12px] leading-[130%] tracking-[-0.02em] font-[400] text-[#626060]">
-                            {getRoleDescription('Owner')}
-                          </div>
-                        )}
-                      </div>
-                      <input
-                        type="radio"
-                        name="commercialRole"
-                        value="Owner"
-                        checked={selectedRole === 'Owner'}
-                        onChange={(e) => setSelectedRole(e.target.value)}
-                        className="mt-1 w-4 h-4 text-[#039994] border-gray-300 focus:ring-[#039994] flex-shrink-0"
-                      />
-                      {showOwnerTooltip && (
-                        <div className="absolute left-1/2 transform -translate-x-1/2 bottom-full mb-2 w-80 p-3 bg-gray-800 text-white text-xs rounded-md shadow-lg z-50">
-                          <div className="font-sfpro font-[600] mb-1">Owner Role</div>
-                          <div className="font-sfpro">
-                            You own a solar generator asset and/or facility, but you do not Operate the asset, or the company which owns the solar asset does not pay the electric utilities billing related to the facility. A third-party tenant or management company pays the utilities accounts.
-                          </div>
-                          <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
-                        </div>
-                      )}
-                    </label>
-                  </div>
-
-                  <div className="mb-6">
-                    <label 
-                      className={`flex items-start justify-between p-3 border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50 ${
-                        selectedRole === 'Owner & Operator' ? 'bg-white' : 'bg-[#F0F0F0]'
-                      } relative`}
-                      onMouseEnter={() => setShowOwnerOperatorTooltip(true)}
-                      onMouseLeave={() => setShowOwnerOperatorTooltip(false)}
-                    >
-                      <div className="flex-1 pr-3">
-                        <div className="flex items-center gap-2 mb-1">
-                          <div className="font-sfpro font-[600] text-[14px] leading-[100%] tracking-[-0.05em] text-[#1E1E1E]">
-                            Owner & Operator
-                          </div>
-                        </div>
-                        {selectedRole === 'Owner & Operator' && (
-                          <div className="font-sfpro text-[12px] leading-[130%] tracking-[-0.02em] font-[400] text-[#626060]">
-                            {getRoleDescription('Owner & Operator')}
-                          </div>
-                        )}
-                      </div>
-                      <input
-                        type="radio"
-                        name="commercialRole"
-                        value="Owner & Operator"
-                        checked={selectedRole === 'Owner & Operator'}
-                        onChange={(e) => setSelectedRole(e.target.value)}
-                        className="mt-1 w-4 h-4 text-[#039994] border-gray-300 focus:ring-[#039994] flex-shrink-0"
-                      />
-                      {showOwnerOperatorTooltip && (
-                        <div className="absolute left-1/2 transform -translate-x-1/2 bottom-full mb-2 w-80 p-3 bg-gray-800 text-white text-xs rounded-md shadow-lg z-50">
-                          <div className="font-sfpro font-[600] mb-1">Owner & Operator Role</div>
-                          <div className="font-sfpro">
-                            You both own the solar generator asset, and the same owner or company also pays the electric utilities billing related to the facility.
-                          </div>
-                          <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
-                        </div>
-                      )}
-                    </label>
-                  </div>
-
-                  <button
-                    onClick={handleCreateNewFacility}
-                    disabled={loading || isNextButtonDisabled() || updatingRole}
-                    className={`w-full rounded-md text-white font-semibold py-3 focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] ${
-                      loading || isNextButtonDisabled() || updatingRole
-                        ? 'bg-gray-400 cursor-not-allowed' 
-                        : 'bg-[#039994] hover:bg-[#02857f]'
-                    }`}
-                  >
-                    {loading ? 'Loading...' : updatingRole ? 'Updating...' : hasFacilities ? `Create New Facility (${userFacilities.length} existing)` : 'Next'}
-                  </button>
-
-                  {hasFacilities && (
                     <button
                       onClick={handleContinueRegistration}
                       disabled={loading || updatingRole}
-                      className={`w-full mt-3 rounded-md border border-[#039994] text-[#039994] font-semibold py-3 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] ${
+                      className={`w-full rounded-md border border-[#039994] text-[#039994] font-semibold py-3 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] ${
                         loading || updatingRole ? 'opacity-50 cursor-not-allowed' : ''
                       }`}
                     >
                       {updatingRole ? 'Updating...' : 'Continue Registration'}
                     </button>
-                  )}
-
-                  <div className="mt-4 text-center font-sfpro text-[10px] font-[800] leading-[100%] tracking-[-0.05em] underline text-[#1E1E1E]">
-                    <span>Terms and Conditions</span>
-                    <span className="mx-2">&</span>
-                    <span>Privacy Policy</span>
                   </div>
+                )}
+
+                <div className="mt-4 text-center font-sfpro text-[10px] font-[800] leading-[100%] tracking-[-0.05em] underline text-[#1E1E1E]">
+                  <span>Terms and Conditions</span>
+                  <span className="mx-2">&</span>
+                  <span>Privacy Policy</span>
                 </div>
               </div>
             </div>
