@@ -526,10 +526,17 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const initiateUtilityAuth = () => {
     const utilityName = selectedUtilityProvider?.name;
     const url = getUtilityUrl(utilityName);
-    window.open(url, '_blank');
-    setIframeUrl(url);
-    setShowIframe(true);
-    setScale(1);
+    
+    if (isGreenButtonUtility) {
+      window.open(url, '_blank');
+      setIframeUrl(url);
+      setShowIframe(true);
+      setScale(1);
+    } else {
+      setIframeUrl(url);
+      setShowIframe(true);
+      setScale(1);
+    }
   };
 
   const handleVideoComplete = () => {
@@ -693,61 +700,133 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
 
   if (showIframe) {
     const utilityName = selectedUtilityProvider?.name;
+    const isGreenButton = isGreenButtonUtility;
     
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-        <div className="relative w-full max-w-4xl bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
+        <div className="relative w-full max-w-6xl h-[90vh] bg-white rounded-2xl overflow-hidden flex flex-col">
           <div className="flex items-center justify-between p-4 border-b">
             <h3 className="text-lg font-semibold text-[#039994]">
-              {utilityName} Green Button Authorization
+              {utilityName} Authorization
             </h3>
-            <button
-              onClick={handleIframeClose}
-              className="text-red-500 hover:text-red-700"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
-          </div>
-          
-          <div className="p-4 bg-green-50 border-b border-green-200">
-            <p className="text-sm text-green-700">
-              <strong>Step 1:</strong> A new tab has been opened with {utilityName}'s authorization page. Please complete the authorization process in that tab.
-            </p>
-            <p className="text-sm text-green-700 mt-1">
-              <strong>Step 2:</strong> After completing authorization, enter the email address you used below:
-            </p>
-          </div>
-
-          <div className="flex-1 p-6">
-            <div className={styles.greenButtonFrame}>
-              <div className={styles.greenButtonTitle}>Enter Authorization Email</div>
-              <div className={styles.greenButtonText}>
-                Please enter the email address you used to authorize Green Button access with {utilityName}:
-              </div>
-              <input
-                type="email"
-                value={greenButtonEmail}
-                onChange={(e) => setGreenButtonEmail(e.target.value)}
-                placeholder="Enter the email used for Green Button authorization"
-                className={styles.emailInput}
-              />
+            <div className="flex items-center gap-4">
+              {!isGreenButton && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={zoomOut}
+                    className="bg-gray-500 text-white px-3 py-1 rounded-md text-sm hover:bg-gray-600 flex items-center gap-1"
+                    disabled={scale <= 0.5}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                    </svg>
+                    Zoom Out
+                  </button>
+                  <button
+                    onClick={resetZoom}
+                    className="bg-gray-500 text-white px-3 py-1 rounded-md text-sm hover:bg-gray-600 flex items-center gap-1"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M15 3H21V9M21 3L15 9M9 21H3V15M3 21L9 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    Reset
+                  </button>
+                  <button
+                    onClick={zoomIn}
+                    className="bg-gray-500 text-white px-3 py-1 rounded-md text-sm hover:bg-gray-600 flex items-center gap-1"
+                    disabled={scale >= 3}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                    </svg>
+                    Zoom In
+                  </button>
+                </div>
+              )}
               <button
-                onClick={handleGreenButtonSubmit}
-                disabled={submittingGreenButton || !greenButtonEmail.trim()}
-                className={styles.submitButton}
+                onClick={handleIframeClose}
+                className="text-red-500 hover:text-red-700"
               >
-                {submittingGreenButton ? 'Submitting...' : 'Submit Authorization Email'}
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
               </button>
             </div>
-
-            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-700">
-                <strong>Note:</strong> If you haven't completed the authorization yet, please go to the new tab that opened and complete the {utilityName} Green Button authorization process first.
-              </p>
-            </div>
           </div>
+          
+          <div className={`p-4 border-b ${isGreenButton ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}>
+            <p className={`text-sm ${isGreenButton ? 'text-green-700' : 'text-yellow-700'}`}>
+              <strong>{utilityName} Authorization:</strong> Follow the steps to securely share your utility data with DCarbon Solutions.
+            </p>
+            <p className={`text-sm ${isGreenButton ? 'text-green-700' : 'text-yellow-700'} mt-1`}>
+              <strong>Selected Utility:</strong> {utilityName}
+            </p>
+            <p className={`text-sm ${isGreenButton ? 'text-green-700' : 'text-yellow-700'} mt-1`}>
+              <strong>Authorization URL:</strong> {iframeUrl}
+            </p>
+          </div>
+
+          {isGreenButton ? (
+            <div className="flex-1 p-6">
+              <div className={styles.greenButtonFrame}>
+                <div className={styles.greenButtonTitle}>Enter Authorization Email</div>
+                <div className={styles.greenButtonText}>
+                  Please enter the email address you used to authorize Green Button access with {utilityName}:
+                </div>
+                <input
+                  type="email"
+                  value={greenButtonEmail}
+                  onChange={(e) => setGreenButtonEmail(e.target.value)}
+                  placeholder="Enter the email used for Green Button authorization"
+                  className={styles.emailInput}
+                />
+                <button
+                  onClick={handleGreenButtonSubmit}
+                  disabled={submittingGreenButton || !greenButtonEmail.trim()}
+                  className={styles.submitButton}
+                >
+                  {submittingGreenButton ? 'Submitting...' : 'Submit Authorization Email'}
+                </button>
+              </div>
+
+              <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-700">
+                  <strong>Note:</strong> If you haven't completed the authorization yet, please go to the new tab that opened and complete the {utilityName} Green Button authorization process first.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex-1 p-4 bg-gray-100 overflow-hidden">
+              <div className="w-full h-full bg-white rounded-lg overflow-auto">
+                <div 
+                  className="w-full h-full origin-top-left"
+                  style={{ 
+                    transform: `scale(${scale})`,
+                    width: `${100/scale}%`,
+                    height: `${100/scale}%`
+                  }}
+                >
+                  <iframe
+                    src={iframeUrl}
+                    className="w-full h-full border-0"
+                    title={`${utilityName} Authorization`}
+                    sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {!isGreenButton && (
+            <div className="p-3 border-t bg-gray-50 flex justify-between items-center">
+              <span className="text-sm text-gray-600">
+                Zoom: {Math.round(scale * 100)}%
+              </span>
+              <span className="text-sm text-gray-600">
+                Use scroll to navigate when zoomed in
+              </span>
+            </div>
+          )}
         </div>
       </div>
     );
