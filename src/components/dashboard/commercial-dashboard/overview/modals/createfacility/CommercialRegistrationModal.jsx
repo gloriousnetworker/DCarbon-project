@@ -1,21 +1,28 @@
 import React, { useState, useEffect } from "react";
-import dynamic from "next/dynamic";
-import { toast } from 'react-hot-toast';
+import OwnerDetailsModal from "./ownerRegistration/OwnerDetailsModal";
+import OwnerAndOperatorDetailsModal from "./ownerAndOperatorRegistration/OwnerDetailsModal";
+import OwnerTermsAndAgreementModal from "./ownerRegistration/OwnerTermsAndAgreementModal";
+import OwnerAndOperatorTermsAndAgreementModal from "./ownerAndOperatorRegistration/OwnerAndOperatorTermsAndAgreementModal";
+import FinanceAndInstallerModal from "./ownerRegistration/FinanceAndInstallerModal";
+import OperatorFinanceAndInstallerModal from "./ownerAndOperatorRegistration/FinanceAndInstallerModal";
+import AddCommercialFacilityModal from "./ownerAndOperatorRegistration/AddCommercialFacilityModal";
+import UtilityAuthorizationModal from "./ownerAndOperatorRegistration/UtilityAuthorizationModal";
+import InviteOperatorModal from "./ownerRegistration/InviteOperatorModal";
 
-const QuickActions = dynamic(() => import("./QuickActions"), { ssr: false });
-const Graph = dynamic(() => import("./Graph"), { ssr: false });
-const RecentRecSales = dynamic(() => import("./RecentRecSales"), { ssr: false });
-const WelcomeModal = dynamic(() => import("./modals/WelcomeModal"), { ssr: false });
-const AddUtilityProvider = dynamic(() => import("./modals/AddUtilityProvider"), { ssr: false });
-const CommercialRegistrationModal = dynamic(() => import("./modals/createfacility/CommercialRegistrationModal"), { ssr: false });
-
-const ProgressTracker = ({ currentStage, completedStages, onStageClick, selectedFacility, facilities, onFacilityChange, onAuthorizeFacility }) => {
-  const stages = [
-    { id: 1, name: "Registration", tooltip: "Commercial registration completed" },
-    { id: 2, name: "Referral", tooltip: "Owner referral code verified" },
-    { id: 3, name: "Agreement", tooltip: "Terms and conditions signed" },
-    { id: 4, name: "Meters", tooltip: "Utility meters connected" }
-  ];
+export default function CommercialRegistrationModal({ isOpen, onClose, currentStep }) {
+  const [selectedRole, setSelectedRole] = useState('Owner');
+  const [currentModal, setCurrentModal] = useState(null);
+  const [commercialData, setCommercialData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [currentStage, setCurrentStage] = useState(1);
+  const [nextStage, setNextStage] = useState(2);
+  const [showInviteOperatorModal, setShowInviteOperatorModal] = useState(false);
+  const [hasFacilities, setHasFacilities] = useState(false);
+  const [updatingRole, setUpdatingRole] = useState(false);
+  const [showOwnerTooltip, setShowOwnerTooltip] = useState(false);
+  const [showOwnerOperatorTooltip, setShowOwnerOperatorTooltip] = useState(false);
+  const [userFacilities, setUserFacilities] = useState([]);
+  const [selectedFacility, setSelectedFacility] = useState('');
 
   const greenButtonUtilities = ['San Diego Gas and Electric', 'Pacific Gas and Electric', 'Southern California Edison'];
 
@@ -23,467 +30,34 @@ const ProgressTracker = ({ currentStage, completedStages, onStageClick, selected
     return greenButtonUtilities.includes(utilityProvider);
   };
 
-  const handleClick = (stageId) => {
-    if (completedStages.includes(stageId) || stageId === currentStage) {
-      onStageClick(stageId);
-    }
-  };
-
-  const isClickable = (stageId) => {
-    return completedStages.includes(stageId) || stageId === currentStage;
-  };
-
-  const selectedFacilityData = facilities.find(f => f.id === selectedFacility);
-  const isGreenButton = selectedFacilityData ? isGreenButtonUtility(selectedFacilityData.utilityProvider) : false;
-
-  return (
-    <div className="w-full bg-white rounded-lg shadow-sm p-4 mb-6">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-semibold text-gray-800">Onboarding Progress</h2>
-        <span className="text-sm font-medium text-[#039994]">
-          Stage {currentStage} of {stages.length}
-        </span>
-      </div>
-      
-      {facilities.length > 0 && (
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Select Facility
-          </label>
-          <div className="flex gap-2">
-            <select
-              value={selectedFacility || ""}
-              onChange={(e) => onFacilityChange(e.target.value)}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] focus:border-transparent"
-            >
-              <option value="">Select a facility</option>
-              {facilities.map((facility) => {
-                const isGreenButton = isGreenButtonUtility(facility.utilityProvider);
-                return (
-                  <option key={facility.id} value={facility.id} className={isGreenButton ? "text-green-600 font-medium" : ""}>
-                    {facility.facilityName} - {facility.utilityProvider}
-                    {isGreenButton && " ✓"}
-                  </option>
-                );
-              })}
-            </select>
-            {selectedFacilityData && (
-              <button
-                onClick={() => onAuthorizeFacility(selectedFacilityData)}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  isGreenButton 
-                    ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white' 
-                    : 'bg-[#039994] hover:bg-[#028884] text-white'
-                }`}
-              >
-                {isGreenButton ? 'Authorize Green Button' : 'Utility Authorization'}
-              </button>
-            )}
-          </div>
-          {selectedFacilityData && (
-            <div className="mt-2 flex items-center text-xs text-gray-500">
-              {isGreenButton ? (
-                <div className="flex items-center">
-                  <div className="w-3 h-3 bg-green-500 rounded-full mr-1 flex items-center justify-center">
-                    <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <span className="text-green-600 font-medium">Green Button Utility</span>
-                </div>
-              ) : (
-                <div className="flex items-center">
-                  <div className="w-3 h-3 bg-gray-400 rounded-full mr-1"></div>
-                  <span>Standard Utility</span>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
-      <div className="relative">
-        <div className="flex justify-between mb-2">
-          {stages.map((stage) => (
-            <div 
-              key={stage.id} 
-              className={`flex flex-col items-center group relative ${isClickable(stage.id) ? 'cursor-pointer' : 'cursor-default'}`}
-              onClick={() => handleClick(stage.id)}
-            >
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                  completedStages.includes(stage.id) ? "bg-[#039994] text-white" : 
-                  stage.id === currentStage ? "bg-[#039994] text-white" : 
-                  "bg-gray-200 text-gray-600"
-                } ${isClickable(stage.id) ? 'hover:bg-[#028a85]' : ''}`}
-              >
-                {stage.id}
-              </div>
-              <span
-                className={`text-xs mt-1 text-center ${
-                  completedStages.includes(stage.id) || stage.id === currentStage ? "text-[#039994] font-medium" : "text-gray-500"
-                }`}
-              >
-                {stage.name}
-              </span>
-              <div className="absolute top-full mt-2 hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap z-10">
-                {stage.tooltip}
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="absolute top-4 left-0 right-0 flex justify-between px-4 -z-10">
-          {stages.slice(0, stages.length - 1).map((stage) => (
-            <div
-              key={stage.id}
-              className={`h-1 flex-1 mx-2 ${
-                completedStages.includes(stage.id + 1) ? "bg-[#039994]" : "bg-gray-200"
-              }`}
-            />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const VideoModal = ({ isOpen, onClose, facility, onVideoComplete }) => {
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 z-[9500] flex items-center justify-center bg-black bg-opacity-50 p-4">
-      <div className="relative w-full max-w-4xl bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
-        <div className="flex-shrink-0 p-6 border-b border-gray-200">
-          <div className="flex justify-between items-center">
-            <h2 className="font-[600] text-[20px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sans">
-              {facility?.utilityProvider} Authorization Instructions
-            </h2>
-            <button onClick={onClose} className="text-red-500 hover:text-red-700">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-6">
-          <div className="bg-gray-100 rounded-lg p-4 mb-6">
-            <p className="text-sm text-gray-700 mb-4">
-              <strong>Important:</strong> Please watch this instructional video to understand how to complete the {facility?.utilityProvider} authorization process.
-            </p>
-            
-            <div className="bg-black rounded-lg aspect-video flex items-center justify-center mb-4">
-              <div className="text-white text-center">
-                <svg className="w-16 h-16 mx-auto mb-2" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M8 5v14l11-7z"/>
-                </svg>
-                <p className="text-lg font-semibold">Instructional Video</p>
-                <p className="text-sm opacity-75">Video demonstration for {facility?.utilityProvider}</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center justify-between text-sm text-gray-600">
-              <span>Estimated time: 2-3 minutes</span>
-              <span>Mandatory viewing</span>
-            </div>
-          </div>
-
-          <div className="flex justify-between gap-4 mt-8">
-            <button
-              onClick={onClose}
-              className="flex-1 rounded-md bg-white border border-[#039994] text-[#039994] font-semibold py-3 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#039994] font-sans text-[14px] transition-colors"
-            >
-              Back
-            </button>
-            <button
-              onClick={onVideoComplete}
-              className="flex-1 rounded-md text-white font-semibold py-3 bg-[#039994] hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sans text-[14px] transition-colors"
-            >
-              I've Watched the Video - Continue
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const AuthorizationModal = ({ isOpen, onClose, facility, onAuthorizationComplete }) => {
-  const [scale, setScale] = useState(1);
-  const [isLoading, setIsLoading] = useState(false);
-  const [greenButtonEmail, setGreenButtonEmail] = useState('');
-  const [submittingGreenButton, setSubmittingGreenButton] = useState(false);
-
-  const greenButtonUtilities = ['San Diego Gas and Electric', 'Pacific Gas and Electric', 'Southern California Edison'];
-  
-  const isGreenButtonUtility = (utilityProvider) => {
-    return greenButtonUtilities.includes(utilityProvider);
-  };
-
-  const isGreenButton = facility ? isGreenButtonUtility(facility.utilityProvider) : false;
-
-  const getUtilityUrl = (utilityName) => {
-    const utilityUrls = {
-      'PG&E': 'https://myaccount.pge.com/myaccount/s/login/?language=en_US',
-      'Pacific Gas and Electric': 'https://myaccount.pge.com/myaccount/s/login/?language=en_US',
-      'San Diego Gas and Electric': 'https://myenergycenter.com/portal/PreLogin/Validate',
-      'SDG&E': 'https://myenergycenter.com/portal/PreLogin/Validate',
-      'SCE': 'https://myaccount.sce.com/myaccount/s/login/?language=en_US',
-      'Southern California Edison': 'https://myaccount.sce.com/myaccount/s/login/?language=en_US'
-    };
-    
-    return utilityUrls[utilityName] || 'https://utilityapi.com/authorize/DCarbon_Solutions';
-  };
-
-  const iframeUrl = facility ? getUtilityUrl(facility.utilityProvider) : 'https://utilityapi.com/authorize/DCarbon_Solutions';
-
-  const zoomIn = () => {
-    setScale(prev => Math.min(prev + 0.25, 3));
-  };
-
-  const zoomOut = () => {
-    setScale(prev => Math.max(prev - 0.25, 0.5));
-  };
-
-  const resetZoom = () => {
-    setScale(1);
-  };
-
-  const handleGreenButtonSubmit = async () => {
-    if (!greenButtonEmail.trim()) {
-      toast.error('Please enter the email address used for Green Button authorization');
-      return;
-    }
-
-    setSubmittingGreenButton(true);
+  const checkUserFacilities = async (userId, authToken) => {
     try {
-      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
-      const userId = loginResponse?.data?.user?.id;
-      const authToken = loginResponse?.data?.token;
-
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/user/submit-green-button-email/${userId}`,
+        `https://services.dcarbon.solutions/api/facility/get-user-facilities-by-userId/${userId}`,
         {
-          method: 'POST',
+          method: 'GET',
           headers: {
             'Authorization': `Bearer ${authToken}`,
             'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ 
-            email: greenButtonEmail.trim(),
-            utilityProvider: facility?.utilityProvider
-          })
+          }
         }
       );
-
-      const result = await response.json();
-      
-      if (result.status === 'success') {
-        toast.success('Green Button authorization email submitted successfully!');
-        setGreenButtonEmail('');
-        onClose();
-        if (onAuthorizationComplete) {
-          onAuthorizationComplete();
-        }
-      } else {
-        toast.error(result.message || 'Failed to submit Green Button email');
+      const data = await response.json();
+      const facilities = data.data?.facilities || [];
+      setUserFacilities(facilities);
+      if (facilities.length > 0) {
+        setSelectedFacility(facilities[0].id);
       }
-    } catch (err) {
-      toast.error('Failed to submit Green Button email');
-    } finally {
-      setSubmittingGreenButton(false);
-    }
-  };
-
-  const handleIframeClose = () => {
-    onClose();
-    setScale(1);
-    if (onAuthorizationComplete) {
-      onAuthorizationComplete();
-    }
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 z-[9500] flex items-center justify-center bg-black bg-opacity-50 p-4">
-      <div className="relative w-full max-w-6xl h-[90vh] bg-white rounded-2xl overflow-hidden flex flex-col">
-        <div className="flex items-center justify-between p-4 border-b">
-          <h3 className="text-lg font-semibold text-[#039994]">
-            {facility?.utilityProvider} Authorization
-          </h3>
-          <div className="flex items-center gap-4">
-            {!isGreenButton && (
-              <div className="flex gap-2">
-                <button
-                  onClick={zoomOut}
-                  className="bg-gray-500 text-white px-3 py-1 rounded-md text-sm hover:bg-gray-600 flex items-center gap-1"
-                  disabled={scale <= 0.5}
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  </svg>
-                  Zoom Out
-                </button>
-                <button
-                  onClick={resetZoom}
-                  className="bg-gray-500 text-white px-3 py-1 rounded-md text-sm hover:bg-gray-600 flex items-center gap-1"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M15 3H21V9M21 3L15 9M9 21H3V15M3 21L9 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  Reset
-                </button>
-                <button
-                  onClick={zoomIn}
-                  className="bg-gray-500 text-white px-3 py-1 rounded-md text-sm hover:bg-gray-600 flex items-center gap-1"
-                  disabled={scale >= 3}
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  </svg>
-                  Zoom In
-                </button>
-              </div>
-            )}
-            <button
-              onClick={handleIframeClose}
-              className="text-red-500 hover:text-red-700"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
-          </div>
-        </div>
-        
-        <div className={`p-4 border-b ${isGreenButton ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}>
-          <p className={`text-sm ${isGreenButton ? 'text-green-700' : 'text-yellow-700'}`}>
-            <strong>{facility?.utilityProvider} Authorization:</strong> Follow the steps to securely share your utility data with DCarbon Solutions.
-          </p>
-          <p className={`text-sm ${isGreenButton ? 'text-green-700' : 'text-yellow-700'} mt-1`}>
-            <strong>Selected Utility:</strong> {facility?.utilityProvider}
-          </p>
-          <p className={`text-sm ${isGreenButton ? 'text-green-700' : 'text-yellow-700'} mt-1`}>
-            <strong>Authorization URL:</strong> {iframeUrl}
-          </p>
-        </div>
-
-        {isGreenButton ? (
-          <div className="flex-1 p-6">
-            <div className="mt-4 p-4 border-2 border-green-500 rounded-lg bg-green-50">
-              <div className="font-semibold text-green-700 mb-2">Enter Authorization Email</div>
-              <div className="text-sm text-green-600 mb-3">
-                Please enter the email address you used to authorize Green Button access with {facility?.utilityProvider}:
-              </div>
-              <input
-                type="email"
-                value={greenButtonEmail}
-                onChange={(e) => setGreenButtonEmail(e.target.value)}
-                placeholder="Enter the email used for Green Button authorization"
-                className="w-full rounded-md border border-green-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 font-sfpro mb-2"
-              />
-              <button
-                onClick={handleGreenButtonSubmit}
-                disabled={submittingGreenButton || !greenButtonEmail.trim()}
-                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 font-sfpro"
-              >
-                {submittingGreenButton ? 'Submitting...' : 'Submit Authorization Email'}
-              </button>
-            </div>
-
-            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-700">
-                <strong>Note:</strong> If you haven't completed the authorization yet, please go to the new tab that opened and complete the {facility?.utilityProvider} Green Button authorization process first.
-              </p>
-            </div>
-          </div>
-        ) : (
-          <div className="flex-1 p-4 bg-gray-100 overflow-hidden">
-            <div className="w-full h-full bg-white rounded-lg overflow-auto">
-              <div 
-                className="w-full h-full origin-top-left"
-                style={{ 
-                  transform: `scale(${scale})`,
-                  width: `${100/scale}%`,
-                  height: `${100/scale}%`
-                }}
-              >
-                <iframe
-                  src={iframeUrl}
-                  className="w-full h-full border-0"
-                  title={`${facility?.utilityProvider} Authorization`}
-                  sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {!isGreenButton && (
-          <div className="p-3 border-t bg-gray-50 flex justify-between items-center">
-            <span className="text-sm text-gray-600">
-              Zoom: {Math.round(scale * 100)}%
-            </span>
-            <span className="text-sm text-gray-600">
-              Use scroll to navigate when zoomed in
-            </span>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-export default function DashboardOverview() {
-  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
-  const [showAddUtilityModal, setShowAddUtilityModal] = useState(false);
-  const [showRegistrationModal, setShowRegistrationModal] = useState(false);
-  const [showAuthorizationModal, setShowAuthorizationModal] = useState(false);
-  const [showVideoModal, setShowVideoModal] = useState(false);
-  const [userData, setUserData] = useState({
-    userFirstName: "",
-    userId: ""
-  });
-  const [isFirstTimeUser, setIsFirstTimeUser] = useState(false);
-  const [isCheckingCommercialStatus, setIsCheckingCommercialStatus] = useState(false);
-  const [currentStage, setCurrentStage] = useState(1);
-  const [completedStages, setCompletedStages] = useState([]);
-  const [meterCheckInterval, setMeterCheckInterval] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [showProgressTracker, setShowProgressTracker] = useState(false);
-  const [clickedStage, setClickedStage] = useState(1);
-  const [facilities, setFacilities] = useState([]);
-  const [selectedFacility, setSelectedFacility] = useState("");
-  const [isLoadingFacilities, setIsLoadingFacilities] = useState(false);
-  const [currentAuthorizationFacility, setCurrentAuthorizationFacility] = useState(null);
-
-  const greenButtonUtilities = ['San Diego Gas and Electric', 'Pacific Gas and Electric', 'Southern California Edison'];
-
-  const isGreenButtonUtility = (utilityProvider) => {
-    return greenButtonUtilities.includes(utilityProvider);
-  };
-
-  const checkOwnersDetails = () => {
-    try {
-      const ownersDetails = localStorage.getItem('ownersDetails');
-      if (ownersDetails) {
-        const parsedDetails = JSON.parse(ownersDetails);
-        if (parsedDetails && parsedDetails.id) {
-          return parsedDetails;
-        }
-      }
-      return null;
+      return facilities.length > 0;
     } catch (error) {
-      return null;
+      return false;
     }
   };
 
-  const fetchUserFacilities = async (userId, authToken) => {
+  const checkStage2Completion = async (userId, authToken) => {
     try {
-      setIsLoadingFacilities(true);
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/facility/get-user-facilities-by-userId/${userId}`,
+        `https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`,
         {
           method: 'GET',
           headers: {
@@ -491,69 +65,50 @@ export default function DashboardOverview() {
           }
         }
       );
-      
       const result = await response.json();
-      
-      if (result.status === 'success' && result.data?.facilities) {
-        setFacilities(result.data.facilities);
-        if (result.data.facilities.length > 0) {
-          setSelectedFacility(result.data.facilities[0].id);
-        }
-        return result.data.facilities;
-      }
-      return [];
+      return result.status === 'success' && result.data?.commercialUser?.ownerAddress;
     } catch (error) {
-      console.error('Error fetching facilities:', error);
-      return [];
-    } finally {
-      setIsLoadingFacilities(false);
+      return false;
     }
-  };
-
-  const checkStage1Completion = async (userId, authToken) => {
-    const response = await fetch(
-      `https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`,
-      {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${authToken}`
-        }
-      }
-    );
-    const result = await response.json();
-    return result.status === 'success' && result.data?.commercialUser?.ownerFullName;
-  };
-
-  const checkStage2Completion = () => {
-    const referralResponse = localStorage.getItem('referralResponse');
-    const ownerReferralCode = localStorage.getItem('ownerReferralCode');
-    
-    if (referralResponse && ownerReferralCode) {
-      try {
-        const parsedResponse = JSON.parse(referralResponse);
-        return parsedResponse.status === 'success' && parsedResponse.data?.inviterId;
-      } catch (error) {
-        return false;
-      }
-    }
-    return false;
   };
 
   const checkStage3Completion = async (userId, authToken) => {
-    const response = await fetch(
-      `https://services.dcarbon.solutions/api/user/agreement/${userId}`,
-      {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${authToken}`
+    try {
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/user/agreement/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
         }
-      }
-    );
-    const result = await response.json();
-    return result.status === 'success' && result.data?.termsAccepted;
+      );
+      const result = await response.json();
+      return result.status === 'success' && result.data?.termsAccepted;
+    } catch (error) {
+      return false;
+    }
   };
 
   const checkStage4Completion = async (userId, authToken) => {
+    try {
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/user/financial-info/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        }
+      );
+      const result = await response.json();
+      return result.status === 'success' && result.data?.financialInfo;
+    } catch (error) {
+      return false;
+    }
+  };
+
+  const checkStage5Completion = async (userId, authToken) => {
     try {
       const response = await fetch(
         `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`,
@@ -565,322 +120,534 @@ export default function DashboardOverview() {
         }
       );
       const result = await response.json();
-      
-      if (result.status === 'success' && result.data?.length > 0) {
-        for (const meterData of result.data) {
-          if (meterData.meters?.meters && meterData.meters.meters.length > 0) {
-            const hasValidMeters = meterData.meters.meters.some(meter => 
-              meter.base?.meter_numbers && 
-              meter.base.meter_numbers.length > 0 && 
-              meter.base.meter_numbers.some(num => num && num.trim() !== '')
-            );
-            if (hasValidMeters) {
-              return true;
-            }
-          }
-        }
-      }
-      return false;
+      return result.status === 'success' && result.data?.length > 0 && result.data.some(item => item.meters?.meters?.length > 0);
     } catch (error) {
-      console.error('Error checking stage 4 completion:', error);
       return false;
     }
   };
 
   const checkUserProgress = async () => {
     try {
-      setIsLoading(true);
       const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
       const userId = loginResponse?.data?.user?.id;
       const authToken = loginResponse?.data?.token;
 
       if (!userId || !authToken) return;
 
-      const newCompletedStages = [];
+      const hasFacilitiesResult = await checkUserFacilities(userId, authToken);
+      setHasFacilities(hasFacilitiesResult);
+
+      const stageChecks = [
+        { stage: 2, check: () => checkStage2Completion(userId, authToken) },
+        { stage: 3, check: () => checkStage3Completion(userId, authToken) },
+        { stage: 4, check: () => checkStage4Completion(userId, authToken) },
+        { stage: 5, check: () => checkStage5Completion(userId, authToken) }
+      ];
+
       let highestCompletedStage = 1;
 
-      const stage1 = await checkStage1Completion(userId, authToken);
-      if (stage1) {
-        newCompletedStages.push(1);
-        highestCompletedStage = 2;
-      }
-
-      const stage2 = checkStage2Completion();
-      if (stage2) {
-        newCompletedStages.push(2);
-        highestCompletedStage = 3;
-      }
-
-      const stage3 = await checkStage3Completion(userId, authToken);
-      if (stage3) {
-        newCompletedStages.push(3);
-        highestCompletedStage = 4;
-      }
-
-      const stage4 = await checkStage4Completion(userId, authToken);
-      if (stage4) {
-        newCompletedStages.push(4);
-        if (meterCheckInterval) {
-          clearInterval(meterCheckInterval);
-          setMeterCheckInterval(null);
-        }
-      } else {
-        if (stage3) {
-          if (!meterCheckInterval) {
-            const interval = setInterval(async () => {
-              const hasMeters = await checkStage4Completion(userId, authToken);
-              if (hasMeters) {
-                setCompletedStages(prev => [...prev, 4]);
-                setCurrentStage(4);
-                clearInterval(interval);
-                setMeterCheckInterval(null);
-              }
-            }, 5000);
-            setMeterCheckInterval(interval);
-          }
+      for (const { stage, check } of stageChecks) {
+        const isCompleted = await check();
+        if (isCompleted) {
+          highestCompletedStage = stage;
         }
       }
 
-      setCompletedStages(newCompletedStages);
-      setCurrentStage(highestCompletedStage);
+      const newStage = highestCompletedStage === 5 ? 5 : highestCompletedStage;
+      const newNextStage = highestCompletedStage === 5 ? 5 : highestCompletedStage + 1;
+      
+      setCurrentStage(newStage);
+      setNextStage(newNextStage);
     } catch (error) {
       console.error('Error checking user progress:', error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  const handleStageClick = (stageId) => {
-    setClickedStage(stageId);
-    if (stageId === 4) {
-      setShowAddUtilityModal(true);
-    } else {
-      setShowRegistrationModal(true);
-    }
-  };
+  const updateCommercialRole = async () => {
+    try {
+      setUpdatingRole(true);
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const userId = loginResponse?.data?.user?.id;
+      const authToken = loginResponse?.data?.token;
 
-  const handleFacilityChange = (facilityId) => {
-    setSelectedFacility(facilityId);
-  };
+      if (!userId || !authToken) return;
 
-  const handleAuthorizeFacility = (facility) => {
-    setCurrentAuthorizationFacility(facility);
-    
-    const isGreenButton = isGreenButtonUtility(facility.utilityProvider);
-    if (isGreenButton) {
-      setShowVideoModal(true);
-    } else {
-      setShowAuthorizationModal(true);
-    }
-  };
+      const commercialUserResponse = await fetch(
+        `https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        }
+      );
 
-  const handleVideoComplete = () => {
-    setShowVideoModal(false);
-    setShowAuthorizationModal(true);
-  };
+      const commercialUserData = await commercialUserResponse.json();
+      const entityType = commercialUserData.data?.commercialUser?.entityType || 'individual';
 
-  const handleAuthorizationComplete = () => {
-    checkUserProgress();
-  };
+      const payload = {
+        entityType,
+        commercialRole: selectedRole === 'Owner' ? 'owner' : 'both'
+      };
 
-  const handleCloseAuthorizationModal = () => {
-    setShowAuthorizationModal(false);
-    setCurrentAuthorizationFacility(null);
-  };
+      const updateResponse = await fetch(
+        `https://services.dcarbon.solutions/api/user/commercial-registration/${userId}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        }
+      );
 
-  const handleCloseVideoModal = () => {
-    setShowVideoModal(false);
-    setCurrentAuthorizationFacility(null);
-  };
-
-  const handleCloseRegistrationModal = () => {
-    setShowRegistrationModal(false);
-    checkUserProgress();
-  };
-
-  const checkCommercialUserStatus = async (userId) => {
-    if (!userId) return;
-    
-    setIsCheckingCommercialStatus(true);
-    
-    const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
-    const authToken = loginResponse?.data?.token;
-
-    if (!authToken) return;
-
-    const response = await fetch(`https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${authToken}`
+      const result = await updateResponse.json();
+      if (result.status === 'success') {
+        if (selectedRole === 'Owner') {
+          setCurrentModal('ownerDetails');
+        } else {
+          setCurrentModal('ownerOperatorDetails');
+        }
       }
-    });
-
-    const result = await response.json();
-
-    if (result.statusCode === 422 && result.status === 'fail') {
-      setShowWelcomeModal(true);
-    } else if (result.statusCode !== 200 || result.status !== 'success') {
-      setShowWelcomeModal(true);
+    } catch (error) {
+      console.error('Error updating commercial role:', error);
+    } finally {
+      setUpdatingRole(false);
     }
-    
-    setIsCheckingCommercialStatus(false);
-  };
-
-  const handleCloseWelcomeModal = () => {
-    setShowWelcomeModal(false);
-    localStorage.setItem("hasVisitedDashboard", "true");
-    checkUserProgress();
-  };
-
-  const handleOpenAddUtilityModal = () => {
-    setShowAddUtilityModal(true);
-  };
-
-  const handleCloseAddUtilityModal = () => {
-    setShowAddUtilityModal(false);
-    checkUserProgress();
   };
 
   useEffect(() => {
-    const loadUserData = async () => {
-      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
-      const firstName = loginResponse?.data?.user?.firstName || "User";
-      const userId = loginResponse?.data?.user?.id || "";
+    if (isOpen) {
+      const fetchCommercialData = async () => {
+        setLoading(true);
+        try {
+          const loginResponse = JSON.parse(localStorage.getItem("loginResponse") || '{}');
+          const userId = loginResponse?.data?.user?.id;
+          const authToken = loginResponse?.data?.token;
+          
+          if (userId && authToken) {
+            const response = await fetch(`https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`, {
+              headers: {
+                'Authorization': `Bearer ${authToken}`
+              }
+            });
+            
+            if (response.ok) {
+              const data = await response.json();
+              setCommercialData(data.data);
+              
+              if (data.data?.commercialUser?.commercialRole === 'owner') {
+                setSelectedRole('Owner');
+              } else if (data.data?.commercialUser?.commercialRole === 'both') {
+                setSelectedRole('Owner & Operator');
+              }
+            }
+          }
+          await checkUserProgress();
+        } catch (error) {
+          console.error('Error fetching commercial data:', error);
+        } finally {
+          setLoading(false);
+        }
+      };
       
-      setUserData({
-        userFirstName: firstName,
-        userId: userId
-      });
+      fetchCommercialData();
+    }
+  }, [isOpen]);
 
-      const ownersDetails = checkOwnersDetails();
-      const hasOwnersDetails = !!ownersDetails;
-      setShowProgressTracker(hasOwnersDetails);
-
-      const hasVisitedBefore = localStorage.getItem("hasVisitedDashboard");
-      if (!hasVisitedBefore) {
-        setIsFirstTimeUser(true);
+  useEffect(() => {
+    if (isOpen && currentStep) {
+      if (selectedRole === 'Owner') {
+        handleOwnerFlow(currentStep);
+      } else {
+        handleOwnerOperatorFlow(currentStep);
       }
+    }
+  }, [isOpen, currentStep, selectedRole]);
 
-      if (hasOwnersDetails && ownersDetails.id) {
-        const authToken = loginResponse?.data?.token;
-        if (authToken) {
-          await fetchUserFacilities(ownersDetails.id, authToken);
+  const handleCreateNewFacility = () => {
+    if (commercialData?.commercialUser?.commercialRole) {
+      const currentRole = commercialData.commercialUser.commercialRole;
+      const newRole = selectedRole === 'Owner' ? 'owner' : 'both';
+      
+      if (currentRole !== newRole) {
+        updateCommercialRole();
+      } else {
+        if (selectedRole === 'Owner') {
+          setCurrentModal('ownerDetails');
+        } else {
+          setCurrentModal('ownerOperatorDetails');
         }
-        await checkCommercialUserStatus(userId);
-        await checkUserProgress();
       }
-    };
+    } else {
+      updateCommercialRole();
+    }
+  };
 
-    loadUserData();
+  const handleContinueRegistration = () => {
+    if (selectedRole === 'Owner') {
+      handleOwnerFlow(nextStage);
+    } else {
+      handleOwnerOperatorFlow(nextStage);
+    }
+  };
 
-    const handleStorageChange = (e) => {
-      if (e.key === 'referralResponse' || e.key === 'ownerReferralCode' || e.key === 'ownersDetails') {
-        if (e.key === 'ownersDetails') {
-          const hasOwnersDetails = !!checkOwnersDetails();
-          setShowProgressTracker(hasOwnersDetails);
-        }
-        checkUserProgress();
-      }
-    };
+  const handleOwnerFlow = (stage) => {
+    if (stage === 2) {
+      setCurrentModal('ownerDetails');
+    } else if (stage === 3) {
+      setCurrentModal('ownerTerms');
+    } else if (stage === 4) {
+      setCurrentModal('finance');
+    } else if (stage === 5) {
+      setCurrentModal('utilityNotice');
+    }
+  };
 
-    window.addEventListener('storage', handleStorageChange);
+  const handleOwnerOperatorFlow = (stage) => {
+    if (stage === 2) {
+      setCurrentModal('ownerOperatorDetails');
+    } else if (stage === 3) {
+      setCurrentModal('ownerOperatorTerms');
+    } else if (stage === 4) {
+      setCurrentModal('operatorFinance');
+    } else if (stage === 5) {
+      setCurrentModal('utilityAuthorization');
+    }
+  };
 
-    return () => {
-      if (meterCheckInterval) {
-        clearInterval(meterCheckInterval);
-      }
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, []);
+  const closeAllModals = () => {
+    setCurrentModal(null);
+    onClose();
+    checkUserProgress();
+  };
 
-  if (isCheckingCommercialStatus || isLoading) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-        <div className="flex items-center justify-center">
-          <div className="w-12 h-12 border-4 border-gray-300 border-t-[#039994] rounded-full animate-spin"></div>
-        </div>
-      </div>
-    );
-  }
+  const getHeaderTitle = () => {
+    return selectedRole === 'Owner' ? "Owner's Registration" : "Owner & Operator Registration";
+  };
+
+  const getRoleDescription = (role) => {
+    return role === 'Owner' 
+      ? "Register as a facility owner only" 
+      : "Register as both owner and operator";
+  };
+
+  const isNextButtonDisabled = () => {
+    return false;
+  };
+
+  const getCurrentRoleDisplay = () => {
+    if (!commercialData?.commercialUser?.commercialRole) return '';
+    const role = commercialData.commercialUser.commercialRole;
+    if (role === 'both') return 'Owner & Operator';
+    return role.charAt(0).toUpperCase() + role.slice(1);
+  };
+
+  const getFacilityRoleDisplay = (facilityRole) => {
+    if (facilityRole === 'both') return 'Owner & Operator';
+    return facilityRole.charAt(0).toUpperCase() + facilityRole.slice(1);
+  };
+
+  const handleInviteOperator = () => {
+    setCurrentModal(null);
+    setShowInviteOperatorModal(true);
+  };
+
+  const handleInviteOperatorModalClose = () => {
+    setShowInviteOperatorModal(false);
+    onClose();
+  };
+
+  const renderCurrentModal = () => {
+    switch(currentModal) {
+      case 'ownerDetails':
+        return <OwnerDetailsModal isOpen={true} onClose={closeAllModals} />;
+      case 'ownerOperatorDetails':
+        return <OwnerAndOperatorDetailsModal isOpen={true} onClose={closeAllModals} />;
+      case 'ownerTerms':
+        return <OwnerTermsAndAgreementModal isOpen={true} onClose={closeAllModals} />;
+      case 'ownerOperatorTerms':
+        return <OwnerAndOperatorTermsAndAgreementModal isOpen={true} onClose={closeAllModals} />;
+      case 'finance':
+        return <FinanceAndInstallerModal isOpen={true} onClose={closeAllModals} />;
+      case 'operatorFinance':
+        return <OperatorFinanceAndInstallerModal isOpen={true} onClose={closeAllModals} />;
+      case 'addFacility':
+        return <AddCommercialFacilityModal isOpen={true} onClose={closeAllModals} />;
+      case 'utilityAuthorization':
+        return <UtilityAuthorizationModal isOpen={true} onClose={closeAllModals} />;
+      case 'utilityNotice':
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+            <div className="relative w-full max-w-md bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
+              <button
+                onClick={closeAllModals}
+                className="absolute top-4 right-4 z-10 w-6 h-6 flex items-center justify-center text-red-500 hover:text-red-700"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+
+              <div className="p-6">
+                <h2 className="font-[600] text-[20px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro mb-4">
+                  Owner's Utility Authorization
+                </h2>
+                <p className="font-sfpro text-[14px] leading-[150%] text-gray-700 mb-6">
+                  🎉 Finance information completed! You're one step away from generating your DCarbon facility.
+                  <br /><br />
+                  Next step: Invite your operator to complete the authorization process. Once they're done, you'll be able to add facilities.
+                  <br /><br />
+                  Already invited your operator? You can close this and wait for them to complete their part.
+                </p>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={closeAllModals}
+                    className="flex-1 rounded-md border border-[#039994] text-[#039994] font-semibold py-3 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px]"
+                  >
+                    Close
+                  </button>
+                  <button
+                    onClick={handleInviteOperator}
+                    className="flex-1 rounded-md bg-[#039994] text-white font-semibold py-3 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px]"
+                  >
+                    Invite Operator
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
+  if (!isOpen && !currentModal && !showInviteOperatorModal) return null;
 
   return (
-    <div className="w-full min-h-screen space-y-8 p-4">
-      <div className="flex justify-between items-start mb-4">
-        <div>
-          <h1 className="font-[600] text-[16px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro">
-            Quick Action
-          </h1>
-        </div>
-      </div>
+    <>
+      {isOpen && !currentModal && !showInviteOperatorModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="relative w-full max-w-md bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
+            <button
+              onClick={onClose}
+              className="absolute top-4 right-4 z-10 w-6 h-6 flex items-center justify-center text-red-500 hover:text-red-700"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
 
-      {showProgressTracker && (
-        <ProgressTracker 
-          currentStage={currentStage} 
-          completedStages={completedStages} 
-          onStageClick={handleStageClick}
-          selectedFacility={selectedFacility}
-          facilities={facilities}
-          onFacilityChange={handleFacilityChange}
-          onAuthorizeFacility={handleAuthorizeFacility}
+            <div className="flex-1 overflow-y-auto">
+              <div className="p-6">
+                <h2 className="font-[600] text-[20px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro mb-2">
+                  {getHeaderTitle()}
+                </h2>
+
+                <div className="w-full h-1 bg-gray-200 rounded-full mb-1">
+                  <div className="h-1 bg-[#039994] rounded-full" style={{ width: `${(currentStage-1)*25}%` }}></div>
+                </div>
+                <div className="text-right mb-6">
+                  <span className="text-[12px] font-medium text-gray-500 font-sfpro">{currentStage-1}/4</span>
+                </div>
+
+                {loading && (
+                  <div className="mb-4 p-3 bg-gray-50 rounded-md border border-gray-200">
+                    <div className="animate-pulse">
+                      <div className="h-4 bg-gray-300 rounded w-3/4 mb-2"></div>
+                      <div className="h-3 bg-gray-300 rounded w-full"></div>
+                    </div>
+                  </div>
+                )}
+
+                {!loading && commercialData?.commercialUser && (commercialData?.commercialUser?.commercialRole || commercialData?.commercialUser?.ownerAddress) && (
+                  <div className="mb-4 p-3 bg-gray-50 rounded-md border border-gray-200">
+                    <div>
+                      {commercialData?.commercialUser?.commercialRole && (
+                        <p className="font-sfpro font-[600] text-[14px] text-gray-700">
+                          Current Role: <span className="capitalize">{getCurrentRoleDisplay()}</span>
+                        </p>
+                      )}
+                      {commercialData?.commercialUser?.ownerAddress && (
+                        <p className="font-sfpro text-[12px] text-gray-600 mt-1">
+                          Owner Address: {commercialData?.commercialUser?.ownerAddress}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {hasFacilities && userFacilities.length > 0 && (
+                  <div className="border border-gray-300 rounded-lg p-4 bg-white mb-4">
+                    <div className="font-sfpro font-[600] text-[14px] text-blue-700 mb-2">
+                      Existing Facilities ({userFacilities.length})
+                    </div>
+                    <select 
+                      value={selectedFacility}
+                      onChange={(e) => setSelectedFacility(e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded-md text-sm font-sfpro mb-3"
+                    >
+                      {userFacilities.map((facility) => {
+                        const isGreenButton = isGreenButtonUtility(facility.utilityProvider);
+                        return (
+                          <option key={facility.id} value={facility.id} className={isGreenButton ? "text-green-600 font-medium" : ""}>
+                            {facility.nickname || facility.facilityName} - {facility.utilityProvider}
+                            {isGreenButton && " ✓"} ({getFacilityRoleDisplay(facility.commercialRole)})
+                          </option>
+                        );
+                      })}
+                    </select>
+                    {selectedFacility && (
+                      <div className="mt-2 p-2 bg-gray-50 rounded border text-xs font-sfpro mb-3">
+                        {userFacilities.find(f => f.id === selectedFacility)?.status && (
+                          <p>Status: <span className="font-semibold">{userFacilities.find(f => f.id === selectedFacility)?.status}</span></p>
+                        )}
+                        {isGreenButtonUtility(userFacilities.find(f => f.id === selectedFacility)?.utilityProvider) && (
+                          <div className="flex items-center mt-1">
+                            <div className="w-3 h-3 bg-green-500 rounded-full mr-1 flex items-center justify-center">
+                              <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                            <span className="text-green-600 font-medium">Green Button Utility</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    <button
+                      onClick={handleContinueRegistration}
+                      disabled={loading || updatingRole}
+                      className={`w-full rounded-md border border-[#039994] text-[#039994] font-semibold py-3 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] ${
+                        loading || updatingRole ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
+                    >
+                      {updatingRole ? 'Updating...' : 'Continue Registration'}
+                    </button>
+                  </div>
+                )}
+
+                <div className="mb-6 border border-gray-300 rounded-lg p-4 bg-white">
+                  <div className="mb-4">
+                    <label className="block mb-3 font-sfpro text-[12px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]">
+                      Commercial Role for New Facility
+                    </label>
+                    
+                    <div className="mb-3">
+                      <label 
+                        className={`flex items-start justify-between p-3 border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50 ${
+                          selectedRole === 'Owner' ? 'bg-white' : 'bg-[#F0F0F0]'
+                        } relative`}
+                        onMouseEnter={() => setShowOwnerTooltip(true)}
+                        onMouseLeave={() => setShowOwnerTooltip(false)}
+                      >
+                        <div className="flex-1 pr-3">
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className="font-sfpro font-[600] text-[14px] leading-[100%] tracking-[-0.05em] text-[#1E1E1E]">
+                              Owner
+                            </div>
+                          </div>
+                          {selectedRole === 'Owner' && (
+                            <div className="font-sfpro text-[12px] leading-[130%] tracking-[-0.02em] font-[400] text-[#626060]">
+                              {getRoleDescription('Owner')}
+                            </div>
+                          )}
+                        </div>
+                        <input
+                          type="radio"
+                          name="commercialRole"
+                          value="Owner"
+                          checked={selectedRole === 'Owner'}
+                          onChange={(e) => setSelectedRole(e.target.value)}
+                          className="mt-1 w-4 h-4 text-[#039994] border-gray-300 focus:ring-[#039994] flex-shrink-0"
+                        />
+                        {showOwnerTooltip && (
+                          <div className="absolute left-1/2 transform -translate-x-1/2 bottom-full mb-2 w-80 p-3 bg-gray-800 text-white text-xs rounded-md shadow-lg z-50">
+                            <div className="font-sfpro font-[600] mb-1">Owner Role</div>
+                            <div className="font-sfpro">
+                              You own a solar generator asset and/or facility, but you do not Operate the asset, or the company which owns the solar asset does not pay the electric utilities billing related to the facility. A third-party tenant or management company pays the utilities accounts.
+                            </div>
+                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
+                          </div>
+                        )}
+                      </label>
+                    </div>
+
+                    <div className="mb-4">
+                      <label 
+                        className={`flex items-start justify-between p-3 border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50 ${
+                          selectedRole === 'Owner & Operator' ? 'bg-white' : 'bg-[#F0F0F0]'
+                        } relative`}
+                        onMouseEnter={() => setShowOwnerOperatorTooltip(true)}
+                        onMouseLeave={() => setShowOwnerOperatorTooltip(false)}
+                      >
+                        <div className="flex-1 pr-3">
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className="font-sfpro font-[600] text-[14px] leading-[100%] tracking-[-0.05em] text-[#1E1E1E]">
+                              Owner & Operator
+                            </div>
+                          </div>
+                          {selectedRole === 'Owner & Operator' && (
+                            <div className="font-sfpro text-[12px] leading-[130%] tracking-[-0.02em] font-[400] text-[#626060]">
+                              {getRoleDescription('Owner & Operator')}
+                            </div>
+                          )}
+                        </div>
+                        <input
+                          type="radio"
+                          name="commercialRole"
+                          value="Owner & Operator"
+                          checked={selectedRole === 'Owner & Operator'}
+                          onChange={(e) => setSelectedRole(e.target.value)}
+                          className="mt-1 w-4 h-4 text-[#039994] border-gray-300 focus:ring-[#039994] flex-shrink-0"
+                        />
+                        {showOwnerOperatorTooltip && (
+                          <div className="absolute left-1/2 transform -translate-x-1/2 bottom-full mb-2 w-80 p-3 bg-gray-800 text-white text-xs rounded-md shadow-lg z-50">
+                            <div className="font-sfpro font-[600] mb-1">Owner & Operator Role</div>
+                            <div className="font-sfpro">
+                              You both own the solar generator asset, and the same owner or company also pays the electric utilities billing related to the facility.
+                            </div>
+                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
+                          </div>
+                        )}
+                      </label>
+                    </div>
+
+                    <button
+                      onClick={handleCreateNewFacility}
+                      disabled={loading || isNextButtonDisabled() || updatingRole}
+                      className={`w-full rounded-md text-white font-semibold py-3 focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] ${
+                        loading || isNextButtonDisabled() || updatingRole
+                          ? 'bg-gray-400 cursor-not-allowed' 
+                          : 'bg-[#039994] hover:bg-[#02857f]'
+                      }`}
+                    >
+                      {loading ? 'Loading...' : updatingRole ? 'Updating...' : 'Create New Facility'}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mt-4 text-center font-sfpro text-[10px] font-[800] leading-[100%] tracking-[-0.05em] underline text-[#1E1E1E]">
+                  <span>Terms and Conditions</span>
+                  <span className="mx-2">&</span>
+                  <span>Privacy Policy</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {renderCurrentModal()}
+
+      {showInviteOperatorModal && (
+        <InviteOperatorModal 
+          isOpen={showInviteOperatorModal} 
+          onClose={handleInviteOperatorModalClose}
         />
       )}
-      
-      <QuickActions />
-
-      <hr className="border-gray-300" />
-
-      <Graph />
-
-      <hr className="border-gray-300" />
-
-      <RecentRecSales />
-
-      {showWelcomeModal && (
-        <div className="fixed inset-0 z-[9500]">
-          <WelcomeModal 
-            isOpen 
-            onClose={handleCloseWelcomeModal}
-            userData={userData}
-          />
-        </div>
-      )}
-
-      {showAddUtilityModal && (
-        <div className="fixed inset-0 z-[9500]">
-          <AddUtilityProvider 
-            isOpen={showAddUtilityModal}
-            onClose={handleCloseAddUtilityModal}
-          />
-        </div>
-      )}
-
-      {showRegistrationModal && (
-        <div className="fixed inset-0 z-[9500]">
-          <CommercialRegistrationModal
-            isOpen={showRegistrationModal}
-            onClose={handleCloseRegistrationModal}
-            currentStep={clickedStage}
-          />
-        </div>
-      )}
-
-      {showVideoModal && (
-        <VideoModal
-          isOpen={showVideoModal}
-          onClose={handleCloseVideoModal}
-          facility={currentAuthorizationFacility}
-          onVideoComplete={handleVideoComplete}
-        />
-      )}
-
-      {showAuthorizationModal && (
-        <AuthorizationModal
-          isOpen={showAuthorizationModal}
-          onClose={handleCloseAuthorizationModal}
-          facility={currentAuthorizationFacility}
-          onAuthorizationComplete={handleAuthorizationComplete}
-        />
-      )}
-    </div>
+    </>
   );
 }
