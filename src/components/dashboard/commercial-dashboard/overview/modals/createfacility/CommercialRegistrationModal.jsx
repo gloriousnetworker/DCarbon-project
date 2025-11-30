@@ -386,10 +386,9 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
   };
 
   const handleContinueRegistration = () => {
-    if (selectedRole === 'Owner') {
-      handleOwnerFlow(nextStage);
-    } else {
-      handleOwnerOperatorFlow(nextStage);
+    const selectedFacilityData = userFacilities.find(f => f.id === selectedFacility);
+    if (selectedFacilityData) {
+      initiateUtilityAuth(selectedFacilityData);
     }
   };
 
@@ -809,25 +808,17 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
                         )}
                       </div>
                     )}
-                    <div className="flex gap-2">
-                      <button
-                        onClick={handleContinueRegistration}
-                        disabled={loading || updatingRole}
-                        className={`flex-1 rounded-md border border-[#039994] text-[#039994] font-semibold py-3 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] ${
-                          loading || updatingRole ? 'opacity-50 cursor-not-allowed' : ''
-                        }`}
-                      >
-                        {updatingRole ? 'Updating...' : 'Continue Registration'}
-                      </button>
-                      {selectedFacility && (
-                        <button
-                          onClick={() => initiateUtilityAuth(userFacilities.find(f => f.id === selectedFacility))}
-                          className="flex-1 rounded-md bg-[#039994] text-white font-semibold py-3 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px]"
-                        >
-                          Authorize Utility
-                        </button>
-                      )}
-                    </div>
+                    <button
+                      onClick={handleContinueRegistration}
+                      disabled={loading || updatingRole || !selectedFacility}
+                      className={`w-full rounded-md text-white font-semibold py-3 focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] ${
+                        loading || updatingRole || !selectedFacility
+                          ? 'bg-gray-400 cursor-not-allowed' 
+                          : 'bg-[#039994] hover:bg-[#02857f]'
+                      }`}
+                    >
+                      {updatingRole ? 'Updating...' : 'Continue Registration'}
+                    </button>
                   </div>
                 )}
 
