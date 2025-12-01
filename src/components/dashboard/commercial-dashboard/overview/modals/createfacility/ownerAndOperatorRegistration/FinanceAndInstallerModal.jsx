@@ -536,7 +536,6 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
 
       if (response.data.message) {
         toast.success(response.data.message);
-        
         setGreenButtonEmail('');
         setShowIframe(false);
         onClose();
