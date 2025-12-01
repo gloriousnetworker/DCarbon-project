@@ -27,6 +27,10 @@ const ProgressTracker = ({ currentStage, onStageClick }) => {
     return stageId >= currentDisplayStage;
   };
 
+  const isCompleted = (stageId) => {
+    return stageId < currentDisplayStage;
+  };
+
   return (
     <div className="w-full bg-white rounded-lg shadow-sm p-4 mb-6">
       <div className="flex justify-between items-center mb-4">
@@ -45,17 +49,16 @@ const ProgressTracker = ({ currentStage, onStageClick }) => {
             >
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                  stage.id < currentDisplayStage ? "bg-[#039994] text-white cursor-default" : 
-                  stage.id === currentDisplayStage ? "bg-[#039994] text-white cursor-pointer" : 
-                  "bg-gray-200 text-gray-600 cursor-pointer"
-                } ${isClickable(stage.id) && stage.id >= currentDisplayStage ? 'hover:bg-[#028a85]' : ''}`}
+                  isCompleted(stage.id) ? "bg-[#039994] text-white" : 
+                  stage.id === currentDisplayStage ? "border-2 border-[#039994] bg-white text-gray-600" : 
+                  "bg-gray-200 text-gray-600"
+                } ${isClickable(stage.id) ? 'hover:bg-[#028a85] hover:text-white' : ''}`}
               >
                 {stage.id}
               </div>
               <span
                 className={`text-xs mt-1 text-center ${
-                  stage.id < currentDisplayStage ? "text-[#039994] font-medium" : 
-                  stage.id === currentDisplayStage ? "text-[#039994] font-medium" : 
+                  isCompleted(stage.id) ? "text-[#039994] font-medium" : 
                   "text-gray-500"
                 }`}
               >
@@ -72,7 +75,7 @@ const ProgressTracker = ({ currentStage, onStageClick }) => {
             <div
               key={stage.id}
               className={`h-1 flex-1 mx-2 ${
-                stage.id < currentDisplayStage ? "bg-[#039994]" : "bg-gray-200"
+                isCompleted(stage.id) ? "bg-[#039994]" : "bg-gray-200"
               }`}
             />
           ))}
@@ -93,6 +96,7 @@ export default function DashboardOverview() {
   const [currentStage, setCurrentStage] = useState(1);
   const [clickedStage, setClickedStage] = useState(1);
   const [showProgressTracker, setShowProgressTracker] = useState(true);
+  const [completedStages, setCompletedStages] = useState([1]);
 
   const checkStage2Completion = async (userId, authToken) => {
     try {
@@ -174,28 +178,42 @@ export default function DashboardOverview() {
 
       if (!userId || !authToken) return;
 
-      const stageChecks = [
-        { stage: 2, check: () => checkStage2Completion(userId, authToken) },
-        { stage: 3, check: () => checkStage3Completion(userId, authToken) },
-        { stage: 4, check: () => checkStage4Completion(userId, authToken) },
-        { stage: 5, check: () => checkStage5Completion(userId, authToken) }
-      ];
-
-      let highestCompletedStage = 1;
-
-      for (const { stage, check } of stageChecks) {
-        const isCompleted = await check();
-        if (isCompleted) {
-          highestCompletedStage = stage;
-        } else {
-          break;
-        }
+      const completed = [1];
+      
+      if (await checkStage2Completion(userId, authToken)) completed.push(2);
+      else {
+        setCurrentStage(2);
+        setShowProgressTracker(true);
+        return;
+      }
+      
+      if (await checkStage3Completion(userId, authToken)) completed.push(3);
+      else {
+        setCurrentStage(3);
+        setCompletedStages(completed);
+        setShowProgressTracker(true);
+        return;
+      }
+      
+      if (await checkStage4Completion(userId, authToken)) completed.push(4);
+      else {
+        setCurrentStage(4);
+        setCompletedStages(completed);
+        setShowProgressTracker(true);
+        return;
+      }
+      
+      if (await checkStage5Completion(userId, authToken)) completed.push(5);
+      else {
+        setCurrentStage(5);
+        setCompletedStages(completed);
+        setShowProgressTracker(true);
+        return;
       }
 
-      const newStage = highestCompletedStage === 5 ? 5 : highestCompletedStage + 1;
-      
-      setCurrentStage(newStage);
-      setShowProgressTracker(highestCompletedStage < 5);
+      setCompletedStages(completed);
+      setCurrentStage(6);
+      setShowProgressTracker(false);
     } catch (error) {
       console.error('Error checking user progress:', error);
     }
