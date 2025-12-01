@@ -9,7 +9,7 @@ const RecentRecSales = dynamic(() => import("./RecentRecSales"), { ssr: false })
 const WelcomeModal = dynamic(() => import("./modals/WelcomeModal"), { ssr: false });
 const AddUtilityProvider = dynamic(() => import("./modals/AddUtilityProvider"), { ssr: false });
 
-const ProgressTracker = ({ currentStage, nextStage, onStageClick }) => {
+const ProgressTracker = ({ currentStage, nextStage, onStageClick, hasMeters }) => {
   const stages = [
     { id: 1, name: "App Registration", tooltip: "Account creation completed" },
     { id: 2, name: "Solar Install Details", tooltip: "Owner details and address completed" },
@@ -95,6 +95,42 @@ export default function DashboardOverview() {
   const [nextStage, setNextStage] = useState(2);
   const [clickedStage, setClickedStage] = useState(1);
   const [showProgressTracker, setShowProgressTracker] = useState(true);
+  const [hasMeters, setHasMeters] = useState(false);
+  const [loadingMeters, setLoadingMeters] = useState(true);
+
+  const checkMeters = async () => {
+    const loginResponse = JSON.parse(localStorage.getItem("loginResponse") || '{}');
+    const userId = loginResponse?.data?.user?.id;
+    const authToken = loginResponse?.data?.token;
+
+    if (!userId || !authToken) {
+      setLoadingMeters(false);
+      return false;
+    }
+
+    try {
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        }
+      );
+      const result = await response.json();
+      const metersExist = result.status === 'success' && 
+                         result.data?.length > 0 && 
+                         result.data.some(item => item.meters?.meters?.length > 0);
+      setHasMeters(metersExist);
+      return metersExist;
+    } catch (error) {
+      console.error('Error checking meters:', error);
+      return false;
+    } finally {
+      setLoadingMeters(false);
+    }
+  };
 
   const checkStage2Completion = async (userId, authToken) => {
     try {
@@ -162,7 +198,11 @@ export default function DashboardOverview() {
         }
       );
       const result = await response.json();
-      return result.status === 'success' && result.data?.length > 0 && result.data.some(item => item.meters?.meters?.length > 0);
+      const metersExist = result.status === 'success' && 
+                         result.data?.length > 0 && 
+                         result.data.some(item => item.meters?.meters?.length > 0);
+      setHasMeters(metersExist);
+      return metersExist;
     } catch (error) {
       return false;
     }
@@ -203,14 +243,24 @@ export default function DashboardOverview() {
     }
   };
 
-  const handleStageClick = (stageId) => {
+  const handleStageClick = async (stageId) => {
     setClickedStage(stageId);
+    
+    if (stageId === 5) {
+      await checkMeters();
+      if (!hasMeters && !loadingMeters) {
+        setShowRegistrationModal(true);
+        return;
+      }
+    }
+    
     setShowRegistrationModal(true);
   };
 
   const handleCloseRegistrationModal = () => {
     setShowRegistrationModal(false);
     checkUserProgress();
+    checkMeters();
   };
 
   useEffect(() => {
@@ -233,6 +283,7 @@ export default function DashboardOverview() {
 
       await checkCommercialUserStatus(userId);
       await checkUserProgress();
+      await checkMeters();
     };
 
     loadUserData();
@@ -313,6 +364,7 @@ export default function DashboardOverview() {
           currentStage={currentStage} 
           nextStage={nextStage} 
           onStageClick={handleStageClick}
+          hasMeters={hasMeters}
         />
       )}
       <QuickActions />
