@@ -387,8 +387,15 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
 
   const handleContinueRegistration = () => {
     const selectedFacilityData = userFacilities.find(f => f.id === selectedFacility);
+    
     if (selectedFacilityData) {
-      initiateUtilityAuth(selectedFacilityData);
+      const facilityRole = selectedFacilityData.commercialRole;
+      
+      if (facilityRole === 'owner' || facilityRole === 'Owner') {
+        setShowInviteOperatorModal(true);
+      } else {
+        initiateUtilityAuth(selectedFacilityData);
+      }
     }
   };
 
@@ -811,10 +818,10 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
                     <button
                       onClick={handleContinueRegistration}
                       disabled={loading || updatingRole || !selectedFacility}
-                      className={`w-full rounded-md text-white font-semibold py-3 focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] ${
+                      className={`w-full rounded-md border border-green-500 bg-white text-green-500 font-semibold py-3 hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-green-500 font-sfpro text-[14px] ${
                         loading || updatingRole || !selectedFacility
-                          ? 'bg-gray-400 cursor-not-allowed' 
-                          : 'bg-[#039994] hover:bg-[#02857f]'
+                          ? 'bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed' 
+                          : ''
                       }`}
                     >
                       {updatingRole ? 'Updating...' : 'Continue Registration'}
