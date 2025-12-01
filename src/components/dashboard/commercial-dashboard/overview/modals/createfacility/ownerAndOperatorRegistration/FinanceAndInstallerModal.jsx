@@ -536,10 +536,12 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
 
       if (response.data.message) {
         toast.success(response.data.message);
-        setGreenButtonEmail('');
-        setShowIframe(false);
-        onClose();
-        window.location.reload();
+        setTimeout(() => {
+          setGreenButtonEmail('');
+          setShowIframe(false);
+          onClose();
+          window.location.reload();
+        }, 2000);
       }
     } catch (err) {
       toast.error(err.response?.data?.message || err.message || 'Failed to submit Green Button authorization');
