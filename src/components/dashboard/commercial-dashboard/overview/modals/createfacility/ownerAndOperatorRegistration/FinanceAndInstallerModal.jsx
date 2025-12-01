@@ -537,16 +537,6 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
       if (response.data.message) {
         toast.success(response.data.message);
         
-        const userId = loginResponse?.data?.user?.id;
-        await axios.post(
-          `https://services.dcarbon.solutions/api/user/submit-green-button-email/${userId}`,
-          { 
-            email: greenButtonEmail.trim(),
-            utilityProvider: formData.utilityProvider
-          },
-          { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } }
-        );
-        
         setGreenButtonEmail('');
         setShowIframe(false);
         onClose();
