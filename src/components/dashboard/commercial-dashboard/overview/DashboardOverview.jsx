@@ -9,7 +9,7 @@ const RecentRecSales = dynamic(() => import("./RecentRecSales"), { ssr: false })
 const WelcomeModal = dynamic(() => import("./modals/WelcomeModal"), { ssr: false });
 const AddUtilityProvider = dynamic(() => import("./modals/AddUtilityProvider"), { ssr: false });
 
-const ProgressTracker = ({ currentStage, nextStage, onStageClick, hasFacility }) => {
+const ProgressTracker = ({ currentStage, nextStage, onStageClick, hasFacility, stage5Completed }) => {
   const stages = [
     { id: 1, name: "App Registration", tooltip: "Account creation completed" },
     { id: 2, name: "Solar Install Details", tooltip: "Owner details and address completed" },
@@ -98,6 +98,7 @@ export default function DashboardOverview() {
   const [clickedStage, setClickedStage] = useState(1);
   const [showProgressTracker, setShowProgressTracker] = useState(true);
   const [hasFacility, setHasFacility] = useState(false);
+  const [stage5Completed, setStage5Completed] = useState(false);
 
   const checkUserFacilities = async (userId, authToken) => {
     try {
@@ -183,8 +184,11 @@ export default function DashboardOverview() {
         }
       );
       const result = await response.json();
-      return result.status === 'success' && result.data?.length > 0 && result.data.some(item => item.meters?.meters?.length > 0);
+      const completed = result.status === 'success' && result.data?.length > 0 && result.data.some(item => item.meters?.meters?.length > 0);
+      setStage5Completed(completed);
+      return completed;
     } catch (error) {
+      setStage5Completed(false);
       return false;
     }
   };
@@ -338,6 +342,7 @@ export default function DashboardOverview() {
           nextStage={nextStage} 
           onStageClick={handleStageClick}
           hasFacility={hasFacility}
+          stage5Completed={stage5Completed}
         />
       )}
       <QuickActions />
