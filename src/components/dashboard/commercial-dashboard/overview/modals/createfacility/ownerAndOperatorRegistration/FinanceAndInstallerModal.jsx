@@ -65,6 +65,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const [selectedUtilityProvider, setSelectedUtilityProvider] = useState(null);
   const [greenButtonEmail, setGreenButtonEmail] = useState('');
   const [submittingGreenButton, setSubmittingGreenButton] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
 
   const [formData, setFormData] = useState({
     financeType: "",
@@ -101,6 +102,12 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
 
   const selectedProvider = utilityProviders.find(provider => provider.name === formData.utilityProvider);
   const isGreenButtonUtility = selectedProvider && greenButtonUtilityIds.includes(selectedProvider.id);
+
+  useEffect(() => {
+    const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+    const email = loginResponse?.data?.user?.email || loginResponse?.data?.user?.userEmail || '';
+    setUserEmail(email);
+  }, []);
 
   const getUtilityUrl = (utilityName) => {
     const utilityUrls = {
@@ -499,25 +506,44 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
 
     setSubmittingGreenButton(true);
     try {
-      const userId = localStorage.getItem('userId');
-      const token = localStorage.getItem('authToken');
-      
-      const response = await axios.post(
-        `https://services.dcarbon.solutions/api/user/submit-green-button-email/${userId}`,
-        { 
-          email: greenButtonEmail.trim(),
-          utilityProvider: formData.utilityProvider
-        },
-        { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } }
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const userId = loginResponse?.data?.user?.id;
+      const authToken = loginResponse?.data?.token;
+
+      const greenButtonPayload = {
+        email: userEmail,
+        userType: "COMMERCIAL",
+        utilityType: formData.utilityProvider,
+        authorizationEmail: greenButtonEmail.trim()
+      };
+
+      const greenButtonResponse = await axios.post(
+        `https://services.dcarbon.solutions/api/utility-auth/green-button`,
+        greenButtonPayload,
+        { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` } }
       );
-      
-      toast.success('Green Button authorization email submitted successfully!');
-      setGreenButtonEmail('');
-      setShowIframe(false);
-      onClose();
-      window.location.reload();
+
+      if (greenButtonResponse.data.message) {
+        toast.success(greenButtonResponse.data.message);
+        
+        const submitEmailResponse = await axios.post(
+          `https://services.dcarbon.solutions/api/user/submit-green-button-email/${userId}`,
+          { 
+            email: greenButtonEmail.trim(),
+            utilityProvider: formData.utilityProvider
+          },
+          { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` } }
+        );
+        
+        if (submitEmailResponse.data.status === 'success') {
+          setGreenButtonEmail('');
+          setShowIframe(false);
+          onClose();
+          window.location.reload();
+        }
+      }
     } catch (err) {
-      toast.error(err.response?.data?.message || err.message || 'Failed to submit Green Button email');
+      toast.error(err.response?.data?.message || err.message || 'Failed to submit Green Button authorization');
     } finally {
       setSubmittingGreenButton(false);
     }
