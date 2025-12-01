@@ -7,7 +7,7 @@ const Graph = dynamic(() => import("./Graph"), { ssr: false });
 const RecentRecSales = dynamic(() => import("./RecentRecSales"), { ssr: false });
 const WelcomeModal = dynamic(() => import("./modals/WelcomeModal"), { ssr: false });
 
-const ProgressTracker = ({ currentStage, nextStage, onStageClick }) => {
+const ProgressTracker = ({ currentStage, onStageClick }) => {
   const stages = [
     { id: 1, name: "App Registration", tooltip: "Account creation completed" },
     { id: 2, name: "Solar Install Details", tooltip: "Owner details and address completed" },
@@ -45,16 +45,18 @@ const ProgressTracker = ({ currentStage, nextStage, onStageClick }) => {
             >
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                  stage.id < currentDisplayStage ? "bg-[#039994] text-white" : 
-                  stage.id === currentDisplayStage ? "bg-[#039994] text-white" : 
-                  stage.id === nextStage ? "border-2 border-[#039994] bg-white text-gray-600" : "bg-gray-200 text-gray-600"
-                } ${isClickable(stage.id) ? 'hover:bg-[#028a85]' : ''}`}
+                  stage.id < currentDisplayStage ? "bg-[#039994] text-white cursor-default" : 
+                  stage.id === currentDisplayStage ? "bg-[#039994] text-white cursor-pointer" : 
+                  "bg-gray-200 text-gray-600 cursor-pointer"
+                } ${isClickable(stage.id) && stage.id >= currentDisplayStage ? 'hover:bg-[#028a85]' : ''}`}
               >
                 {stage.id}
               </div>
               <span
                 className={`text-xs mt-1 text-center ${
-                  stage.id <= currentDisplayStage ? "text-[#039994] font-medium" : "text-gray-500"
+                  stage.id < currentDisplayStage ? "text-[#039994] font-medium" : 
+                  stage.id === currentDisplayStage ? "text-[#039994] font-medium" : 
+                  "text-gray-500"
                 }`}
               >
                 {stage.name}
@@ -89,13 +91,8 @@ export default function DashboardOverview() {
   });
   const [isCheckingCommercialStatus, setIsCheckingCommercialStatus] = useState(false);
   const [currentStage, setCurrentStage] = useState(1);
-  const [nextStage, setNextStage] = useState(2);
   const [clickedStage, setClickedStage] = useState(1);
   const [showProgressTracker, setShowProgressTracker] = useState(true);
-  const [stage2Completed, setStage2Completed] = useState(false);
-  const [stage3Completed, setStage3Completed] = useState(false);
-  const [stage4Completed, setStage4Completed] = useState(false);
-  const [stage5Completed, setStage5Completed] = useState(false);
 
   const checkStage2Completion = async (userId, authToken) => {
     try {
@@ -109,11 +106,8 @@ export default function DashboardOverview() {
         }
       );
       const result = await response.json();
-      const completed = result.status === 'success' && result.data?.commercialUser?.ownerAddress;
-      setStage2Completed(completed);
-      return completed;
+      return result.status === 'success' && result.data?.commercialUser?.ownerAddress;
     } catch (error) {
-      setStage2Completed(false);
       return false;
     }
   };
@@ -130,11 +124,8 @@ export default function DashboardOverview() {
         }
       );
       const result = await response.json();
-      const completed = result.status === 'success' && result.data?.termsAccepted;
-      setStage3Completed(completed);
-      return completed;
+      return result.status === 'success' && result.data?.termsAccepted;
     } catch (error) {
-      setStage3Completed(false);
       return false;
     }
   };
@@ -151,11 +142,8 @@ export default function DashboardOverview() {
         }
       );
       const result = await response.json();
-      const completed = result.status === 'success' && result.data?.financialInfo;
-      setStage4Completed(completed);
-      return completed;
+      return result.status === 'success' && result.data?.financialInfo;
     } catch (error) {
-      setStage4Completed(false);
       return false;
     }
   };
@@ -172,11 +160,8 @@ export default function DashboardOverview() {
         }
       );
       const result = await response.json();
-      const completed = result.status === 'success' && result.data?.length > 0 && result.data.some(item => item.meters?.meters?.length > 0);
-      setStage5Completed(completed);
-      return completed;
+      return result.status === 'success' && result.data?.length > 0 && result.data.some(item => item.meters?.meters?.length > 0);
     } catch (error) {
-      setStage5Completed(false);
       return false;
     }
   };
@@ -202,14 +187,14 @@ export default function DashboardOverview() {
         const isCompleted = await check();
         if (isCompleted) {
           highestCompletedStage = stage;
+        } else {
+          break;
         }
       }
 
-      const newStage = highestCompletedStage === 5 ? 5 : highestCompletedStage;
-      const newNextStage = highestCompletedStage === 5 ? 5 : highestCompletedStage + 1;
+      const newStage = highestCompletedStage === 5 ? 5 : highestCompletedStage + 1;
       
       setCurrentStage(newStage);
-      setNextStage(newNextStage);
       setShowProgressTracker(highestCompletedStage < 5);
     } catch (error) {
       console.error('Error checking user progress:', error);
@@ -217,11 +202,7 @@ export default function DashboardOverview() {
   };
 
   const handleStageClick = (stageId) => {
-    if (stageId === 2 && stage2Completed) return;
-    if (stageId === 3 && stage3Completed) return;
-    if (stageId === 4 && stage4Completed) return;
-    if (stageId === 5 && stage5Completed) return;
-    
+    if (stageId < currentStage) return;
     setClickedStage(stageId);
     setShowRegistrationModal(true);
   };
@@ -319,7 +300,6 @@ export default function DashboardOverview() {
       {showProgressTracker && (
         <ProgressTracker 
           currentStage={currentStage} 
-          nextStage={nextStage} 
           onStageClick={handleStageClick}
         />
       )}
