@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
-import { toast } from 'react-hot-toast';
 import CommercialRegistrationModal from "./modals/createfacility/CommercialRegistrationModal";
 
 const QuickActions = dynamic(() => import("./QuickActions"), { ssr: false });
@@ -8,7 +7,7 @@ const Graph = dynamic(() => import("./Graph"), { ssr: false });
 const RecentRecSales = dynamic(() => import("./RecentRecSales"), { ssr: false });
 const WelcomeModal = dynamic(() => import("./modals/WelcomeModal"), { ssr: false });
 
-const ProgressTracker = ({ currentStage, nextStage, onStageClick, hasMeters }) => {
+const ProgressTracker = ({ currentStage, nextStage, onStageClick }) => {
   const stages = [
     { id: 1, name: "App Registration", tooltip: "Account creation completed" },
     { id: 2, name: "Solar Install Details", tooltip: "Owner details and address completed" },
@@ -87,14 +86,12 @@ export default function DashboardOverview() {
     userFirstName: "",
     userId: ""
   });
-  const [isFirstTimeUser, setIsFirstTimeUser] = useState(false);
   const [isCheckingCommercialStatus, setIsCheckingCommercialStatus] = useState(false);
   const [currentStage, setCurrentStage] = useState(1);
   const [nextStage, setNextStage] = useState(2);
   const [clickedStage, setClickedStage] = useState(1);
   const [showProgressTracker, setShowProgressTracker] = useState(true);
   const [hasMeters, setHasMeters] = useState(false);
-  const [loadingMeters, setLoadingMeters] = useState(true);
 
   const checkMeters = async () => {
     const loginResponse = JSON.parse(localStorage.getItem("loginResponse") || '{}');
@@ -102,7 +99,6 @@ export default function DashboardOverview() {
     const authToken = loginResponse?.data?.token;
 
     if (!userId || !authToken) {
-      setLoadingMeters(false);
       return false;
     }
 
@@ -125,8 +121,6 @@ export default function DashboardOverview() {
     } catch (error) {
       console.error('Error checking meters:', error);
       return false;
-    } finally {
-      setLoadingMeters(false);
     }
   };
 
@@ -224,15 +218,19 @@ export default function DashboardOverview() {
     }
   };
 
-  const handleStageClick = (stageId) => {
+  const handleStageClick = async (stageId) => {
     setClickedStage(stageId);
+    
+    if (stageId === 5) {
+      await checkMeters();
+    }
+    
     setShowRegistrationModal(true);
   };
 
   const handleCloseRegistrationModal = () => {
     setShowRegistrationModal(false);
     checkUserProgress();
-    checkMeters();
   };
 
   useEffect(() => {
@@ -250,7 +248,7 @@ export default function DashboardOverview() {
 
       const hasVisitedBefore = localStorage.getItem("hasVisitedDashboard");
       if (!hasVisitedBefore) {
-        setIsFirstTimeUser(true);
+        localStorage.setItem("hasVisitedDashboard", "true");
       }
 
       await checkCommercialUserStatus(userId);
@@ -297,7 +295,6 @@ export default function DashboardOverview() {
 
   const handleCloseWelcomeModal = () => {
     setShowWelcomeModal(false);
-    localStorage.setItem("hasVisitedDashboard", "true");
     checkUserProgress();
   };
 
@@ -326,7 +323,6 @@ export default function DashboardOverview() {
           currentStage={currentStage} 
           nextStage={nextStage} 
           onStageClick={handleStageClick}
-          hasMeters={hasMeters}
         />
       )}
       <QuickActions />
