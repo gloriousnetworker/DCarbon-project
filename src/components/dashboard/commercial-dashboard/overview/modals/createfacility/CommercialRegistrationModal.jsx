@@ -30,6 +30,7 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [greenButtonEmail, setGreenButtonEmail] = useState('');
   const [submittingGreenButton, setSubmittingGreenButton] = useState(false);
+  const [showStage5Modal, setShowStage5Modal] = useState(false);
 
   const greenButtonUtilities = ['San Diego Gas and Electric', 'Pacific Gas and Electric', 'Southern California Edison', 'PG&E', 'SCE', 'SDG&E'];
 
@@ -358,7 +359,9 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
 
   useEffect(() => {
     if (isOpen && currentStep) {
-      if (selectedRole === 'Owner') {
+      if (currentStep === 5) {
+        setShowStage5Modal(true);
+      } else if (selectedRole === 'Owner') {
         handleOwnerFlow(currentStep);
       } else {
         handleOwnerOperatorFlow(currentStep);
@@ -425,6 +428,7 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
 
   const closeAllModals = () => {
     setCurrentModal(null);
+    setShowStage5Modal(false);
     onClose();
     checkUserProgress();
   };
@@ -723,15 +727,15 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
     }
   };
 
-  if (!isOpen && !currentModal && !showInviteOperatorModal && !showUtilityIframe && !showVideoModal) return null;
+  if (!isOpen && !currentModal && !showInviteOperatorModal && !showUtilityIframe && !showVideoModal && !showStage5Modal) return null;
 
   return (
     <>
-      {isOpen && !currentModal && !showInviteOperatorModal && !showUtilityIframe && !showVideoModal && (
+      {isOpen && !currentModal && !showInviteOperatorModal && !showUtilityIframe && !showVideoModal && showStage5Modal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
           <div className="relative w-full max-w-md bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
             <button
-              onClick={onClose}
+              onClick={closeAllModals}
               className="absolute top-4 right-4 z-10 w-6 h-6 flex items-center justify-center text-red-500 hover:text-red-700"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
