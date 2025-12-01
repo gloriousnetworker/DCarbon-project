@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { toast } from 'react-hot-toast';
-import CommercialRegisstrationModal from "./modals/createfacility/CommercialRegistrationModal";
+import CommercialRegistrationModal from "./modals/createfacility/CommercialRegistrationModal";
 
 const QuickActions = dynamic(() => import("./QuickActions"), { ssr: false });
 const Graph = dynamic(() => import("./Graph"), { ssr: false });
