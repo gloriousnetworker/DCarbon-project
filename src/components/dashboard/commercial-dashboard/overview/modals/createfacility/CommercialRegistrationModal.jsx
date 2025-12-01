@@ -8,6 +8,7 @@ import OperatorFinanceAndInstallerModal from "./ownerAndOperatorRegistration/Fin
 import AddCommercialFacilityModal from "./ownerAndOperatorRegistration/AddCommercialFacilityModal";
 import UtilityAuthorizationModal from "./ownerAndOperatorRegistration/UtilityAuthorizationModal";
 import InviteOperatorModal from "./ownerRegistration/InviteOperatorModal";
+import { toast } from "react-hot-toast";
 
 export default function CommercialRegistrationModal({ isOpen, onClose, currentStep }) {
   const [selectedRole, setSelectedRole] = useState('Owner');
@@ -31,8 +32,15 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
   const [greenButtonEmail, setGreenButtonEmail] = useState('');
   const [submittingGreenButton, setSubmittingGreenButton] = useState(false);
   const [showStage5Modal, setShowStage5Modal] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
 
   const greenButtonUtilities = ['San Diego Gas and Electric', 'Pacific Gas and Electric', 'Southern California Edison', 'PG&E', 'SCE', 'SDG&E'];
+
+  useEffect(() => {
+    const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+    const email = loginResponse?.data?.user?.email || loginResponse?.data?.user?.userEmail || '';
+    setUserEmail(email);
+  }, []);
 
   const isGreenButtonUtility = (utilityProvider) => {
     return greenButtonUtilities.includes(utilityProvider);
@@ -249,27 +257,57 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
       const userId = loginResponse?.data?.user?.id;
       const authToken = loginResponse?.data?.token;
       
-      const response = await fetch(
-        `https://services.dcarbon.solutions/api/user/submit-green-button-email/${userId}`,
+      const greenButtonPayload = {
+        email: userEmail,
+        userType: "COMMERCIAL",
+        utilityType: selectedUtilityProvider,
+        authorizationEmail: greenButtonEmail.trim()
+      };
+
+      const greenButtonResponse = await fetch(
+        `https://services.dcarbon.solutions/api/utility-auth/green-button`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${authToken}`
           },
-          body: JSON.stringify({ 
-            email: greenButtonEmail.trim(),
-            utilityProvider: selectedUtilityProvider
-          })
+          body: JSON.stringify(greenButtonPayload)
         }
       );
+
+      const greenButtonResult = await greenButtonResponse.json();
       
-      setGreenButtonEmail('');
-      setShowUtilityIframe(false);
-      onClose();
-      window.location.reload();
+      if (greenButtonResult.message === "Authorization process enqueued successfully") {
+        toast.success("Green Button authorization submitted successfully!");
+        
+        const submitEmailResponse = await fetch(
+          `https://services.dcarbon.solutions/api/user/submit-green-button-email/${userId}`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${authToken}`
+            },
+            body: JSON.stringify({ 
+              email: greenButtonEmail.trim(),
+              utilityProvider: selectedUtilityProvider
+            })
+          }
+        );
+        
+        const submitEmailResult = await submitEmailResponse.json();
+        
+        if (submitEmailResult.status === 'success') {
+          setGreenButtonEmail('');
+          setShowUtilityIframe(false);
+          onClose();
+          window.location.reload();
+        }
+      }
     } catch (err) {
-      console.error('Failed to submit Green Button email:', err);
+      toast.error("Failed to submit Green Button authorization");
+      console.error('Failed to submit Green Button authorization:', err);
     } finally {
       setSubmittingGreenButton(false);
     }
