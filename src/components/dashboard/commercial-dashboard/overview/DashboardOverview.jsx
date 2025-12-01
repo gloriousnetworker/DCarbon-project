@@ -9,7 +9,7 @@ const RecentRecSales = dynamic(() => import("./RecentRecSales"), { ssr: false })
 const WelcomeModal = dynamic(() => import("./modals/WelcomeModal"), { ssr: false });
 const AddUtilityProvider = dynamic(() => import("./modals/AddUtilityProvider"), { ssr: false });
 
-const ProgressTracker = ({ currentStage, nextStage, onStageClick, hasFacility, stage5Completed }) => {
+const ProgressTracker = ({ currentStage, nextStage, onStageClick }) => {
   const stages = [
     { id: 1, name: "App Registration", tooltip: "Account creation completed" },
     { id: 2, name: "Solar Install Details", tooltip: "Owner details and address completed" },
@@ -21,13 +21,11 @@ const ProgressTracker = ({ currentStage, nextStage, onStageClick, hasFacility, s
   const currentDisplayStage = currentStage > 5 ? 5 : currentStage;
 
   const handleClick = (stageId) => {
-    if ((stageId <= currentStage || stageId === nextStage) && (!hasFacility || stageId === 5)) {
-      onStageClick(stageId);
-    }
+    onStageClick(stageId);
   };
 
   const isClickable = (stageId) => {
-    return (stageId <= currentStage || stageId === nextStage) && (!hasFacility || stageId === 5);
+    return true;
   };
 
   return (
@@ -97,26 +95,6 @@ export default function DashboardOverview() {
   const [nextStage, setNextStage] = useState(2);
   const [clickedStage, setClickedStage] = useState(1);
   const [showProgressTracker, setShowProgressTracker] = useState(true);
-  const [hasFacility, setHasFacility] = useState(false);
-  const [stage5Completed, setStage5Completed] = useState(false);
-
-  const checkUserFacilities = async (userId, authToken) => {
-    try {
-      const response = await fetch(
-        `https://services.dcarbon.solutions/api/facility/get-user-facilities-by-userId/${userId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`
-          }
-        }
-      );
-      const result = await response.json();
-      return result.status === 'success' && result.data?.facilities?.length > 0;
-    } catch (error) {
-      return false;
-    }
-  };
 
   const checkStage2Completion = async (userId, authToken) => {
     try {
@@ -184,11 +162,8 @@ export default function DashboardOverview() {
         }
       );
       const result = await response.json();
-      const completed = result.status === 'success' && result.data?.length > 0 && result.data.some(item => item.meters?.meters?.length > 0);
-      setStage5Completed(completed);
-      return completed;
+      return result.status === 'success' && result.data?.length > 0 && result.data.some(item => item.meters?.meters?.length > 0);
     } catch (error) {
-      setStage5Completed(false);
       return false;
     }
   };
@@ -200,9 +175,6 @@ export default function DashboardOverview() {
       const authToken = loginResponse?.data?.token;
 
       if (!userId || !authToken) return;
-
-      const facilityCheck = await checkUserFacilities(userId, authToken);
-      setHasFacility(facilityCheck);
 
       const stageChecks = [
         { stage: 2, check: () => checkStage2Completion(userId, authToken) },
@@ -341,8 +313,6 @@ export default function DashboardOverview() {
           currentStage={currentStage} 
           nextStage={nextStage} 
           onStageClick={handleStageClick}
-          hasFacility={hasFacility}
-          stage5Completed={stage5Completed}
         />
       )}
       <QuickActions />
