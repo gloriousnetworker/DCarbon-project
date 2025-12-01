@@ -65,7 +65,6 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const [selectedUtilityProvider, setSelectedUtilityProvider] = useState(null);
   const [greenButtonEmail, setGreenButtonEmail] = useState('');
   const [submittingGreenButton, setSubmittingGreenButton] = useState(false);
-  const [userEmail, setUserEmail] = useState('');
 
   const [formData, setFormData] = useState({
     financeType: "",
@@ -103,12 +102,6 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const selectedProvider = utilityProviders.find(provider => provider.name === formData.utilityProvider);
   const isGreenButtonUtility = selectedProvider && greenButtonUtilityIds.includes(selectedProvider.id);
 
-  useEffect(() => {
-    const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
-    const email = loginResponse?.data?.user?.email || loginResponse?.data?.user?.userEmail || '';
-    setUserEmail(email);
-  }, []);
-
   const getUtilityUrl = (utilityName) => {
     const utilityUrls = {
       'PG&E': 'https://myaccount.pge.com/myaccount/s/login/?language=en_US',
@@ -124,8 +117,9 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
 
   const fetchCommercialRole = async () => {
     try {
-      const token = localStorage.getItem('authToken');
-      const userId = localStorage.getItem('userId');
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const userId = loginResponse?.data?.user?.id;
+      const token = loginResponse?.data?.token;
       const response = await axios.get(
         `https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`,
         { headers: { 'Authorization': `Bearer ${token}` } }
@@ -150,7 +144,8 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const fetchUtilityProviders = async () => {
     setLoadingUtilityProviders(true);
     try {
-      const token = localStorage.getItem('authToken');
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const token = loginResponse?.data?.token;
       const response = await axios.get(
         'https://services.dcarbon.solutions/api/auth/utility-providers',
         { headers: { 'Authorization': `Bearer ${token}` } }
@@ -168,7 +163,8 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const fetchFinanceTypes = async () => {
     setLoadingFinanceTypes(true);
     try {
-      const token = localStorage.getItem('authToken');
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const token = loginResponse?.data?.token;
       const response = await axios.get(
         'https://services.dcarbon.solutions/api/user/financial-types',
         { headers: { 'Authorization': `Bearer ${token}` } }
@@ -194,7 +190,8 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const fetchInstallers = async () => {
     setLoadingInstallers(true);
     try {
-      const token = localStorage.getItem('authToken');
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const token = loginResponse?.data?.token;
       const response = await axios.get(
         'https://services.dcarbon.solutions/api/user/partner/get-all-installer',
         { headers: { 'Authorization': `Bearer ${token}` } }
@@ -212,7 +209,8 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const fetchFinanceCompanies = async () => {
     setLoadingFinanceCompanies(true);
     try {
-      const token = localStorage.getItem('authToken');
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const token = loginResponse?.data?.token;
       const response = await axios.get(
         'https://services.dcarbon.solutions/api/user/partner/finance-companies',
         { headers: { 'Authorization': `Bearer ${token}` } }
@@ -228,8 +226,9 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   };
 
   const createFacility = async () => {
-    const userId = localStorage.getItem('userId');
-    const token = localStorage.getItem('authToken');
+    const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+    const userId = loginResponse?.data?.user?.id;
+    const token = loginResponse?.data?.token;
     const selectedFinanceType = financeTypes.find(type => type.name === formData.financeType);
     const selectedInstaller = installers.find(installer => installer.name === (showCustomInstaller ? formData.customInstaller : formData.installer));
     const selectedUtilityProvider = utilityProviders.find(provider => provider.name === formData.utilityProvider);
@@ -269,7 +268,8 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const uploadFinanceAgreementToFacility = async (facilityId) => {
     if (!file) return;
 
-    const token = localStorage.getItem('authToken');
+    const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+    const token = loginResponse?.data?.token;
     const formData = new FormData();
     formData.append('financeAgreementUrl', file);
 
@@ -281,8 +281,9 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   };
 
   const updateFinanceInfo = async () => {
-    const userId = localStorage.getItem('userId');
-    const token = localStorage.getItem('authToken');
+    const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+    const userId = loginResponse?.data?.user?.id;
+    const token = loginResponse?.data?.token;
     const selectedInstaller = installers.find(installer => installer.name === (showCustomInstaller ? formData.customInstaller : formData.installer));
 
     const finalInstaller = noInstallerSelected ? 'N/A' : (showCustomInstaller ? formData.customInstaller : formData.installer);
@@ -322,8 +323,9 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     }
     setRequestingFinanceType(true);
     try {
-      const userId = localStorage.getItem('userId');
-      const token = localStorage.getItem('authToken');
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const userId = loginResponse?.data?.user?.id;
+      const token = loginResponse?.data?.token;
       const response = await axios.post(
         `https://services.dcarbon.solutions/api/user/request-financial-type/${userId}`,
         { name: requestedFinanceTypeName.trim() },
@@ -347,8 +349,9 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     }
     setRequestingUtility(true);
     try {
-      const userId = localStorage.getItem('userId');
-      const token = localStorage.getItem('authToken');
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const userId = loginResponse?.data?.user?.id;
+      const token = loginResponse?.data?.token;
       const response = await axios.post(
         `https://services.dcarbon.solutions/api/user/request-utility-provider/${userId}`,
         { 
@@ -442,15 +445,23 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   };
 
   const handleSystemSizeChange = (e) => {
-    let value = e.target.value.replace(/[^0-9.]/g, '');
+    const input = e.target.value;
     
-    if (value && !value.includes('.')) {
-      value = value + '.0';
+    if (input === '') {
+      setFormData(prev => ({ ...prev, systemSize: '' }));
+      return;
     }
     
-    const decimalCount = (value.match(/\./g) || []).length;
-    if (decimalCount <= 1) {
-      setFormData(prev => ({ ...prev, systemSize: value }));
+    const regex = /^[0-9]*\.?[0-9]{0,1}$/;
+    
+    if (regex.test(input)) {
+      if (input.includes('.')) {
+        const [whole, decimal] = input.split('.');
+        const formattedDecimal = decimal.length > 0 ? decimal.slice(0, 1) : '0';
+        setFormData(prev => ({ ...prev, systemSize: `${whole}.${formattedDecimal}` }));
+      } else {
+        setFormData(prev => ({ ...prev, systemSize: input }));
+      }
     }
   };
 
@@ -507,40 +518,39 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     setSubmittingGreenButton(true);
     try {
       const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
-      const userId = loginResponse?.data?.user?.id;
-      const authToken = loginResponse?.data?.token;
+      const token = loginResponse?.data?.token;
+      const userEmail = loginResponse?.data?.user?.email || loginResponse?.data?.user?.userEmail || '';
 
-      const greenButtonPayload = {
+      const payload = {
         email: userEmail,
         userType: "COMMERCIAL",
         utilityType: formData.utilityProvider,
         authorizationEmail: greenButtonEmail.trim()
       };
 
-      const greenButtonResponse = await axios.post(
+      const response = await axios.post(
         `https://services.dcarbon.solutions/api/utility-auth/green-button`,
-        greenButtonPayload,
-        { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` } }
+        payload,
+        { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } }
       );
 
-      if (greenButtonResponse.data.message) {
-        toast.success(greenButtonResponse.data.message);
+      if (response.data.message) {
+        toast.success(response.data.message);
         
-        const submitEmailResponse = await axios.post(
+        const userId = loginResponse?.data?.user?.id;
+        await axios.post(
           `https://services.dcarbon.solutions/api/user/submit-green-button-email/${userId}`,
           { 
             email: greenButtonEmail.trim(),
             utilityProvider: formData.utilityProvider
           },
-          { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` } }
+          { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } }
         );
         
-        if (submitEmailResponse.data.status === 'success') {
-          setGreenButtonEmail('');
-          setShowIframe(false);
-          onClose();
-          window.location.reload();
-        }
+        setGreenButtonEmail('');
+        setShowIframe(false);
+        onClose();
+        window.location.reload();
       }
     } catch (err) {
       toast.error(err.response?.data?.message || err.message || 'Failed to submit Green Button authorization');
