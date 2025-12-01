@@ -22,11 +22,12 @@ export default function FacilityCardView() {
   const [facilityProgress, setFacilityProgress] = useState({});
   const [isLoadingProgress, setIsLoadingProgress] = useState(false);
   const [authorizingFacility, setAuthorizingFacility] = useState(null);
-  const [showIframe, setShowIframe] = useState(false);
+  const [showAuthorizationModal, setShowAuthorizationModal] = useState(false);
   const [showVideoModal, setShowVideoModal] = useState(false);
-  const [iframeUrl, setIframeUrl] = useState("");
-  const [scale, setScale] = useState(1);
+  const [greenButtonEmail, setGreenButtonEmail] = useState('');
+  const [submittingGreenButton, setSubmittingGreenButton] = useState(false);
   const [currentFacility, setCurrentFacility] = useState(null);
+  const [scale, setScale] = useState(1);
 
   const greenButtonUtilities = ['San Diego Gas and Electric', 'Pacific Gas and Electric', 'Southern California Edison'];
 
@@ -57,22 +58,57 @@ export default function FacilityCardView() {
     if (isGreenButton) {
       setShowVideoModal(true);
     } else {
-      const url = getUtilityUrl(facility.utilityProvider);
-      setIframeUrl(url);
-      setShowIframe(true);
-      setScale(1);
+      setShowAuthorizationModal(true);
     }
     
     setAuthorizingFacility(null);
+  };
+
+  const handleGreenButtonSubmit = async () => {
+    if (!greenButtonEmail.trim()) {
+      toast.error('Please enter the email address used for Green Button authorization');
+      return;
+    }
+
+    setSubmittingGreenButton(true);
+    try {
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const userId = loginResponse?.data?.user?.id;
+      const authToken = loginResponse?.data?.token;
+      
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/user/submit-green-button-email/${userId}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({ 
+            email: greenButtonEmail.trim(),
+            utilityProvider: currentFacility?.utilityProvider
+          })
+        }
+      );
+      
+      toast.success('Green Button authorization email submitted successfully!');
+      setGreenButtonEmail('');
+      setShowAuthorizationModal(false);
+      fetchFacilities();
+      window.location.reload();
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to submit Green Button email');
+    } finally {
+      setSubmittingGreenButton(false);
+    }
   };
 
   const handleVideoComplete = () => {
     setShowVideoModal(false);
     if (currentFacility) {
       const url = getUtilityUrl(currentFacility.utilityProvider);
-      setIframeUrl(url);
-      setShowIframe(true);
-      setScale(1);
+      window.open(url, '_blank');
+      setShowAuthorizationModal(true);
     }
   };
 
@@ -297,9 +333,9 @@ export default function FacilityCardView() {
     setScale(1);
   };
 
-  const handleIframeClose = () => {
-    setShowIframe(false);
-    setScale(1);
+  const handleAuthorizationModalClose = () => {
+    setShowAuthorizationModal(false);
+    setCurrentFacility(null);
     fetchFacilities();
   };
 
@@ -369,6 +405,148 @@ export default function FacilityCardView() {
     );
   };
 
+  const AuthorizationModal = ({ isOpen, onClose, facility }) => {
+    const isGreenButton = facility ? isGreenButtonUtility(facility.utilityProvider) : false;
+    const iframeUrl = facility ? getUtilityUrl(facility.utilityProvider) : 'https://utilityapi.com/authorize/DCarbon_Solutions';
+
+    const handleIframeClose = () => {
+      onClose();
+      setScale(1);
+      fetchFacilities();
+    };
+
+    if (!isOpen) return null;
+
+    return (
+      <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black bg-opacity-50 p-4">
+        <div className="relative w-full max-w-5xl h-[85vh] bg-white rounded-2xl overflow-hidden flex flex-col ml-16">
+          <div className="flex items-center justify-between p-4 border-b">
+            <h3 className="text-lg font-semibold text-[#039994]">
+              {facility?.utilityProvider} Authorization
+            </h3>
+            <div className="flex items-center gap-4">
+              {!isGreenButton && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={zoomOut}
+                    className="bg-gray-500 text-white px-3 py-1 rounded-md text-sm hover:bg-gray-600 flex items-center gap-1"
+                    disabled={scale <= 0.5}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                    </svg>
+                    Zoom Out
+                  </button>
+                  <button
+                    onClick={resetZoom}
+                    className="bg-gray-500 text-white px-3 py-1 rounded-md text-sm hover:bg-gray-600 flex items-center gap-1"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M15 3H21V9M21 3L15 9M9 21H3V15M3 21L9 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    Reset
+                  </button>
+                  <button
+                    onClick={zoomIn}
+                    className="bg-gray-500 text-white px-3 py-1 rounded-md text-sm hover:bg-gray-600 flex items-center gap-1"
+                    disabled={scale >= 3}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                    </svg>
+                    Zoom In
+                  </button>
+                </div>
+              )}
+              <button
+                onClick={handleIframeClose}
+                className="text-red-500 hover:text-red-700"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          
+          <div className={`p-4 border-b ${isGreenButton ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}>
+            <p className={`text-sm ${isGreenButton ? 'text-green-700' : 'text-yellow-700'}`}>
+              <strong>{facility?.utilityProvider} Authorization:</strong> Follow the steps to securely share your utility data with DCarbon Solutions.
+            </p>
+            <p className={`text-sm ${isGreenButton ? 'text-green-700' : 'text-yellow-700'} mt-1`}>
+              <strong>Selected Utility:</strong> {facility?.utilityProvider}
+            </p>
+            <p className={`text-sm ${isGreenButton ? 'text-green-700' : 'text-yellow-700'} mt-1`}>
+              <strong>Authorization URL:</strong> {iframeUrl}
+            </p>
+          </div>
+
+          {isGreenButton ? (
+            <div className="flex-1 p-6">
+              <div className="mt-4 p-4 border-2 border-green-500 rounded-lg bg-green-50">
+                <div className="font-semibold text-green-700 mb-2">Enter Authorization Email</div>
+                <div className="text-sm text-green-600 mb-3">
+                  Please enter the email address you used to authorize Green Button access with {facility?.utilityProvider}:
+                </div>
+                <input
+                  type="email"
+                  value={greenButtonEmail}
+                  onChange={(e) => setGreenButtonEmail(e.target.value)}
+                  placeholder="Enter the email used for Green Button authorization"
+                  className="w-full rounded-md border border-green-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 font-sfpro mb-2"
+                />
+                <button
+                  onClick={handleGreenButtonSubmit}
+                  disabled={submittingGreenButton || !greenButtonEmail.trim()}
+                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 font-sfpro"
+                >
+                  {submittingGreenButton ? 'Submitting...' : 'Submit Authorization Email'}
+                </button>
+              </div>
+
+              <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-700">
+                  <strong>Note:</strong> If you haven't completed the authorization yet, please go to the new tab that opened and complete the {facility?.utilityProvider} Green Button authorization process first.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex-1 p-4 bg-gray-100 overflow-hidden">
+              <div className="w-full h-full bg-white rounded-lg overflow-auto">
+                <div 
+                  className="w-full h-full origin-top-left"
+                  style={{ 
+                    transform: `scale(${scale})`,
+                    width: `${100/scale}%`,
+                    height: `${100/scale}%`
+                  }}
+                >
+                  <iframe
+                    src={iframeUrl}
+                    className="w-full h-full border-0"
+                    title={`${facility?.utilityProvider} Authorization`}
+                    sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {!isGreenButton && (
+            <div className="p-3 border-t bg-gray-50 flex justify-between items-center">
+              <span className="text-sm text-gray-600">
+                Zoom: {Math.round(scale * 100)}%
+              </span>
+              <span className="text-sm text-gray-600">
+                Use scroll to navigate when zoomed in
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   if (selectedFacility) {
     return (
       <div className="p-2">
@@ -391,101 +569,13 @@ export default function FacilityCardView() {
     );
   }
 
-  if (showIframe) {
-    const isGreenButton = currentFacility && isGreenButtonUtility(currentFacility.utilityProvider);
-    
+  if (showAuthorizationModal) {
     return (
-      <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black bg-opacity-50 p-4">
-        <div className="relative w-full max-w-5xl h-[85vh] bg-white rounded-2xl overflow-hidden flex flex-col ml-16">
-          <div className="flex items-center justify-between p-4 border-b">
-            <h3 className="text-lg font-semibold text-[#039994]">
-              {currentFacility?.utilityProvider} Authorization
-            </h3>
-            <div className="flex items-center gap-4">
-              <div className="flex gap-2">
-                <button
-                  onClick={zoomOut}
-                  className="bg-gray-500 text-white px-3 py-1 rounded-md text-sm hover:bg-gray-600 flex items-center gap-1"
-                  disabled={scale <= 0.5}
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  </svg>
-                  Zoom Out
-                </button>
-                <button
-                  onClick={resetZoom}
-                  className="bg-gray-500 text-white px-3 py-1 rounded-md text-sm hover:bg-gray-600 flex items-center gap-1"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M15 3H21V9M21 3L15 9M9 21H3V15M3 21L9 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  Reset
-                </button>
-                <button
-                  onClick={zoomIn}
-                  className="bg-gray-500 text-white px-3 py-1 rounded-md text-sm hover:bg-gray-600 flex items-center gap-1"
-                  disabled={scale >= 3}
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  </svg>
-                  Zoom In
-                </button>
-              </div>
-              <button
-                onClick={handleIframeClose}
-                className="text-red-500 hover:text-red-700"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </button>
-            </div>
-          </div>
-          
-          <div className={`p-4 border-b ${isGreenButton ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}>
-            <p className={`text-sm ${isGreenButton ? 'text-green-700' : 'text-yellow-700'}`}>
-              <strong>{currentFacility?.utilityProvider} Authorization:</strong> Follow the steps to securely share your utility data with DCarbon Solutions.
-            </p>
-            <p className={`text-sm ${isGreenButton ? 'text-green-700' : 'text-yellow-700'} mt-1`}>
-              <strong>Selected Utility:</strong> {currentFacility?.utilityProvider}
-            </p>
-            <p className={`text-sm ${isGreenButton ? 'text-green-700' : 'text-yellow-700'} mt-1`}>
-              <strong>Authorization URL:</strong> {iframeUrl}
-            </p>
-          </div>
-
-          <div className="flex-1 p-4 bg-gray-100 overflow-hidden">
-            <div className="w-full h-full bg-white rounded-lg overflow-auto">
-              <div 
-                className="w-full h-full origin-top-left"
-                style={{ 
-                  transform: `scale(${scale})`,
-                  width: `${100/scale}%`,
-                  height: `${100/scale}%`
-                }}
-              >
-                <iframe
-                  src={iframeUrl}
-                  className="w-full h-full border-0"
-                  title={`${currentFacility?.utilityProvider} Authorization`}
-                  sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="p-3 border-t bg-gray-50 flex justify-between items-center">
-            <span className="text-sm text-gray-600">
-              Zoom: {Math.round(scale * 100)}%
-            </span>
-            <span className="text-sm text-gray-600">
-              Use scroll to navigate when zoomed in
-            </span>
-          </div>
-        </div>
-      </div>
+      <AuthorizationModal
+        isOpen={showAuthorizationModal}
+        onClose={handleAuthorizationModalClose}
+        facility={currentFacility}
+      />
     );
   }
 
