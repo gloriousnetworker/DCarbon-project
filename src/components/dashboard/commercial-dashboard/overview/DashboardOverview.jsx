@@ -91,38 +91,6 @@ export default function DashboardOverview() {
   const [nextStage, setNextStage] = useState(2);
   const [clickedStage, setClickedStage] = useState(1);
   const [showProgressTracker, setShowProgressTracker] = useState(true);
-  const [hasMeters, setHasMeters] = useState(false);
-
-  const checkMeters = async () => {
-    const loginResponse = JSON.parse(localStorage.getItem("loginResponse") || '{}');
-    const userId = loginResponse?.data?.user?.id;
-    const authToken = loginResponse?.data?.token;
-
-    if (!userId || !authToken) {
-      return false;
-    }
-
-    try {
-      const response = await fetch(
-        `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`
-          }
-        }
-      );
-      const result = await response.json();
-      const metersExist = result.status === 'success' && 
-                         result.data?.length > 0 && 
-                         result.data.some(item => item.meters?.meters?.length > 0);
-      setHasMeters(metersExist);
-      return metersExist;
-    } catch (error) {
-      console.error('Error checking meters:', error);
-      return false;
-    }
-  };
 
   const checkStage2Completion = async (userId, authToken) => {
     try {
@@ -179,8 +147,21 @@ export default function DashboardOverview() {
   };
 
   const checkStage5Completion = async (userId, authToken) => {
-    const metersExist = await checkMeters();
-    return metersExist;
+    try {
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        }
+      );
+      const result = await response.json();
+      return result.status === 'success' && result.data?.length > 0 && result.data.some(item => item.meters?.meters?.length > 0);
+    } catch (error) {
+      return false;
+    }
   };
 
   const checkUserProgress = async () => {
@@ -218,13 +199,8 @@ export default function DashboardOverview() {
     }
   };
 
-  const handleStageClick = async (stageId) => {
+  const handleStageClick = (stageId) => {
     setClickedStage(stageId);
-    
-    if (stageId === 5) {
-      await checkMeters();
-    }
-    
     setShowRegistrationModal(true);
   };
 
