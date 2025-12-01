@@ -19,11 +19,12 @@ const ProgressTracker = ({ currentStage, nextStage, onStageClick }) => {
   const currentDisplayStage = currentStage > 5 ? 5 : currentStage;
 
   const handleClick = (stageId) => {
+    if (stageId < currentDisplayStage) return;
     onStageClick(stageId);
   };
 
   const isClickable = (stageId) => {
-    return true;
+    return stageId >= currentDisplayStage;
   };
 
   return (
@@ -91,6 +92,10 @@ export default function DashboardOverview() {
   const [nextStage, setNextStage] = useState(2);
   const [clickedStage, setClickedStage] = useState(1);
   const [showProgressTracker, setShowProgressTracker] = useState(true);
+  const [stage2Completed, setStage2Completed] = useState(false);
+  const [stage3Completed, setStage3Completed] = useState(false);
+  const [stage4Completed, setStage4Completed] = useState(false);
+  const [stage5Completed, setStage5Completed] = useState(false);
 
   const checkStage2Completion = async (userId, authToken) => {
     try {
@@ -104,8 +109,11 @@ export default function DashboardOverview() {
         }
       );
       const result = await response.json();
-      return result.status === 'success' && result.data?.commercialUser?.ownerAddress;
+      const completed = result.status === 'success' && result.data?.commercialUser?.ownerAddress;
+      setStage2Completed(completed);
+      return completed;
     } catch (error) {
+      setStage2Completed(false);
       return false;
     }
   };
@@ -122,8 +130,11 @@ export default function DashboardOverview() {
         }
       );
       const result = await response.json();
-      return result.status === 'success' && result.data?.termsAccepted;
+      const completed = result.status === 'success' && result.data?.termsAccepted;
+      setStage3Completed(completed);
+      return completed;
     } catch (error) {
+      setStage3Completed(false);
       return false;
     }
   };
@@ -140,8 +151,11 @@ export default function DashboardOverview() {
         }
       );
       const result = await response.json();
-      return result.status === 'success' && result.data?.financialInfo;
+      const completed = result.status === 'success' && result.data?.financialInfo;
+      setStage4Completed(completed);
+      return completed;
     } catch (error) {
+      setStage4Completed(false);
       return false;
     }
   };
@@ -158,8 +172,11 @@ export default function DashboardOverview() {
         }
       );
       const result = await response.json();
-      return result.status === 'success' && result.data?.length > 0 && result.data.some(item => item.meters?.meters?.length > 0);
+      const completed = result.status === 'success' && result.data?.length > 0 && result.data.some(item => item.meters?.meters?.length > 0);
+      setStage5Completed(completed);
+      return completed;
     } catch (error) {
+      setStage5Completed(false);
       return false;
     }
   };
@@ -200,6 +217,11 @@ export default function DashboardOverview() {
   };
 
   const handleStageClick = (stageId) => {
+    if (stageId === 2 && stage2Completed) return;
+    if (stageId === 3 && stage3Completed) return;
+    if (stageId === 4 && stage4Completed) return;
+    if (stageId === 5 && stage5Completed) return;
+    
     setClickedStage(stageId);
     setShowRegistrationModal(true);
   };
