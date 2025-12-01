@@ -165,7 +165,7 @@ export default function QuickActions() {
         <AddCommercialFacilityModal isOpen onClose={closeModal} />
       )}
       {modal === "add" && !hasMeters && (
-        <CommercialRegistrationModal isOpen onClose={closeModal} />
+        <CommercialRegistrationModal isOpen onClose={closeModal} currentStep={5} />
       )}
       {modal === "invite" && <InviteCollaboratorModal isOpen onClose={closeModal} />}
       {modal === "statement" && <CurrentStatementModal isOpen onClose={closeModal} />}
