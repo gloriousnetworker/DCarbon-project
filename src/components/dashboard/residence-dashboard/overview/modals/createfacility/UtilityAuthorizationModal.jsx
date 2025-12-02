@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 
-const QuickActions = dynamic(() => import("./QuickActions"), { ssr: false });
-const Graph = dynamic(() => import("./Graph"), { ssr: false });
-const CustomerCard = dynamic(() => import("./RecentTransactions"), { ssr: false });
-const WelcomeModal = dynamic(() => import("./modals/WelcomeModal"), { ssr: false });
-const FinanceAndInstallerModal = dynamic(() => import("./modals/createfacility/FinanceAndInstallerModal"), { ssr: false });
-const ResidenceTermsAndAgreementModal = dynamic(() => import("./modals/createfacility/ResidenceTermsAndAgreementModal"), { ssr: false });
-const UtilityAuthorizationModal = dynamic(() => import("./modals/createfacility/UtilityAuthorizationModal"), { ssr: false });
+
+const QuickActions = dynamic(() => import("../../../overview/QuickActions"), { ssr: false });
+const Graph = dynamic(() => import("../../../overview/Graph"), { ssr: false });
+const CustomerCard = dynamic(() => import("../../../overview/RecentTransactions"), { ssr: false });
+//const WelcomeModal = dynamic(() => import("../../../overview/WelcomeModal"), { ssr: false });
+
+
+
+const FinanceAndInstallerModal = dynamic(() => import("./FinanceAndInstallerModal"), { ssr: false });
+const ResidenceTermsAndAgreementModal = dynamic(() => import("./ResidenceTermsAndAgreementModal"), { ssr: false });
+
 
 const ProgressTracker = ({ currentStage, onStageClick }) => {
   const stages = [
