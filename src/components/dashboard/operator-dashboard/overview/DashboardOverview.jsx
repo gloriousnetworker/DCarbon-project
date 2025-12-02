@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { toast } from 'react-hot-toast';
+import axios from "axios";
 
 const QuickActions = dynamic(() => import("./QuickActions"), { ssr: false });
 const Graph = dynamic(() => import("./Graph"), { ssr: false });
@@ -245,33 +246,35 @@ const AuthorizationModal = ({ isOpen, onClose, facility, onAuthorizationComplete
     setSubmittingGreenButton(true);
     try {
       const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
-      const userId = loginResponse?.data?.user?.id;
-      const authToken = loginResponse?.data?.token;
-      
-      const response = await fetch(
-        `https://services.dcarbon.solutions/api/user/submit-green-button-email/${userId}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`
-          },
-          body: JSON.stringify({ 
-            email: greenButtonEmail.trim(),
-            utilityProvider: facility?.utilityProvider
-          })
-        }
+      const token = loginResponse?.data?.token;
+      const userEmail = loginResponse?.data?.user?.email || loginResponse?.data?.user?.userEmail || '';
+
+      const payload = {
+        email: userEmail,
+        userType: "COMMERCIAL",
+        utilityType: facility?.utilityProvider,
+        authorizationEmail: greenButtonEmail.trim()
+      };
+
+      const response = await axios.post(
+        `https://services.dcarbon.solutions/api/utility-auth/green-button`,
+        payload,
+        { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } }
       );
-      
-      toast.success('Green Button authorization email submitted successfully!');
-      setGreenButtonEmail('');
-      onClose();
-      if (onAuthorizationComplete) {
-        onAuthorizationComplete();
+
+      if (response.data.message) {
+        toast.success(response.data.message);
+        setTimeout(() => {
+          setGreenButtonEmail('');
+          onClose();
+          if (onAuthorizationComplete) {
+            onAuthorizationComplete();
+          }
+          window.location.reload();
+        }, 2000);
       }
-      window.location.reload();
     } catch (err) {
-      toast.error(err.response?.data?.message || err.message || 'Failed to submit Green Button email');
+      toast.error(err.response?.data?.message || err.message || 'Failed to submit Green Button authorization');
     } finally {
       setSubmittingGreenButton(false);
     }
@@ -489,17 +492,16 @@ export default function DashboardOverview() {
   const fetchUserFacilities = async (userId, authToken) => {
     try {
       setIsLoadingFacilities(true);
-      const response = await fetch(
+      const response = await axios.get(
         `https://services.dcarbon.solutions/api/facility/get-user-facilities-by-userId/${userId}`,
         {
-          method: 'GET',
           headers: {
             'Authorization': `Bearer ${authToken}`
           }
         }
       );
       
-      const result = await response.json();
+      const result = response.data;
       
       if (result.status === 'success' && result.data?.facilities) {
         setFacilities(result.data.facilities);
@@ -518,16 +520,15 @@ export default function DashboardOverview() {
   };
 
   const checkStage1Completion = async (userId, authToken) => {
-    const response = await fetch(
+    const response = await axios.get(
       `https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`,
       {
-        method: 'GET',
         headers: {
           'Authorization': `Bearer ${authToken}`
         }
       }
     );
-    const result = await response.json();
+    const result = response.data;
     return result.status === 'success' && result.data?.commercialUser?.ownerFullName;
   };
 
@@ -547,31 +548,29 @@ export default function DashboardOverview() {
   };
 
   const checkStage3Completion = async (userId, authToken) => {
-    const response = await fetch(
+    const response = await axios.get(
       `https://services.dcarbon.solutions/api/user/agreement/${userId}`,
       {
-        method: 'GET',
         headers: {
           'Authorization': `Bearer ${authToken}`
         }
       }
     );
-    const result = await response.json();
+    const result = response.data;
     return result.status === 'success' && result.data?.termsAccepted;
   };
 
   const checkStage4Completion = async (userId, authToken) => {
     try {
-      const response = await fetch(
+      const response = await axios.get(
         `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`,
         {
-          method: 'GET',
           headers: {
             'Authorization': `Bearer ${authToken}`
           }
         }
       );
-      const result = await response.json();
+      const result = response.data;
       
       if (result.status === 'success' && result.data?.length > 0) {
         for (const meterData of result.data) {
@@ -717,14 +716,13 @@ export default function DashboardOverview() {
 
     if (!authToken) return;
 
-    const response = await fetch(`https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`, {
-      method: 'GET',
+    const response = await axios.get(`https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`, {
       headers: {
         'Authorization': `Bearer ${authToken}`
       }
     });
 
-    const result = await response.json();
+    const result = response.data;
 
     if (result.statusCode === 422 && result.status === 'fail') {
       setShowWelcomeModal(true);
