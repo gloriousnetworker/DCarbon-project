@@ -7,7 +7,7 @@ const CustomerCard = dynamic(() => import("./RecentTransactions"), { ssr: false 
 const WelcomeModal = dynamic(() => import("./modals/WelcomeModal"), { ssr: false });
 const FinanceAndInstallerModal = dynamic(() => import("./modals/createfacility/FinanceAndInstallerModal"), { ssr: false });
 const ResidenceTermsAndAgreementModal = dynamic(() => import("./modals/createfacility/ResidenceTermsAndAgreementModal"), { ssr: false });
-const UtilityAuthorizationModal = dynamic(() => import("./modals/createfacility/UtilityAuthorizationModal"), { ssr: false });
+const UtilityAuthorizationModal = dynamic(() => import("./modals/createfacility/ResidentialUtilityAuthorizationModal"), { ssr: false });
 
 const ProgressTracker = ({ currentStage, onStageClick }) => {
   const stages = [
