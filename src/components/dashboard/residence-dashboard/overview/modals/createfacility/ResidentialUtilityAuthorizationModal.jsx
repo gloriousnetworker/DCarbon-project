@@ -372,12 +372,12 @@ export default function ResidentialUtilityAuthorizationModal({ isOpen, onClose }
                 value={greenButtonEmail}
                 onChange={(e) => setGreenButtonEmail(e.target.value)}
                 placeholder="Enter the email used for Green Button authorization"
-                className="w-full rounded-md border border-green-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 font-sfpro mb-2"
+                className="w-full rounded-md border border-green-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 mb-2"
               />
               <button
                 onClick={handleGreenButtonSubmit}
                 disabled={submittingGreenButton || !greenButtonEmail.trim()}
-                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 font-sfpro"
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
               >
                 {submittingGreenButton ? 'Submitting...' : 'Submit Authorization Email'}
               </button>
@@ -389,7 +389,7 @@ export default function ResidentialUtilityAuthorizationModal({ isOpen, onClose }
               </p>
               <button
                 onClick={() => authorizeFacility(selectedFacility)}
-                className="mt-3 px-4 py-2 bg-[#039994] text-white rounded-md hover:bg-[#028884] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro"
+                className="mt-3 px-4 py-2 bg-[#039994] text-white rounded-md hover:bg-[#028884] focus:outline-none focus:ring-2 focus:ring-[#039994]"
               >
                 Authorize Facility
               </button>
