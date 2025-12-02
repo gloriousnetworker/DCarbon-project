@@ -73,31 +73,33 @@ export default function FacilityCardView() {
     setSubmittingGreenButton(true);
     try {
       const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
-      const userId = loginResponse?.data?.user?.id;
-      const authToken = loginResponse?.data?.token;
-      
-      const response = await fetch(
-        `https://services.dcarbon.solutions/api/user/submit-green-button-email/${userId}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`
-          },
-          body: JSON.stringify({ 
-            email: greenButtonEmail.trim(),
-            utilityProvider: currentFacility?.utilityProvider
-          })
-        }
+      const token = loginResponse?.data?.token;
+      const userEmail = loginResponse?.data?.user?.email || loginResponse?.data?.user?.userEmail || '';
+
+      const payload = {
+        email: userEmail,
+        userType: "COMMERCIAL",
+        utilityType: currentFacility?.utilityProvider,
+        authorizationEmail: greenButtonEmail.trim()
+      };
+
+      const response = await axios.post(
+        `https://services.dcarbon.solutions/api/utility-auth/green-button`,
+        payload,
+        { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } }
       );
-      
-      toast.success('Green Button authorization email submitted successfully!');
-      setGreenButtonEmail('');
-      setShowAuthorizationModal(false);
-      fetchFacilities();
-      window.location.reload();
+
+      if (response.data.message) {
+        toast.success(response.data.message);
+        setTimeout(() => {
+          setGreenButtonEmail('');
+          setShowAuthorizationModal(false);
+          fetchFacilities();
+          window.location.reload();
+        }, 2000);
+      }
     } catch (err) {
-      toast.error(err.response?.data?.message || err.message || 'Failed to submit Green Button email');
+      toast.error(err.response?.data?.message || err.message || 'Failed to submit Green Button authorization');
     } finally {
       setSubmittingGreenButton(false);
     }
@@ -255,13 +257,16 @@ export default function FacilityCardView() {
   };
 
   const fetchFacilities = async () => {
-    const userId = localStorage.getItem('userId');
-    const authToken = localStorage.getItem('authToken');
+    const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+    const userId = loginResponse?.data?.user?.id;
+    const authToken = loginResponse?.data?.token;
+    
     if (!userId || !authToken) {
       toast.error("Authentication required");
       setLoading(false);
       return;
     }
+    
     try {
       const { data } = await axios.get(
         `https://services.dcarbon.solutions/api/facility/get-user-facilities-by-userId/${userId}`,
@@ -336,6 +341,7 @@ export default function FacilityCardView() {
   const handleAuthorizationModalClose = () => {
     setShowAuthorizationModal(false);
     setCurrentFacility(null);
+    setScale(1);
     fetchFacilities();
   };
 
