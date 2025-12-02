@@ -7,7 +7,7 @@ const CustomerCard = dynamic(() => import("./RecentTransactions"), { ssr: false 
 const WelcomeModal = dynamic(() => import("./modals/WelcomeModal"), { ssr: false });
 const FinanceAndInstallerModal = dynamic(() => import("./modals/createfacility/FinanceAndInstallerModal"), { ssr: false });
 const ResidenceTermsAndAgreementModal = dynamic(() => import("./modals/createfacility/ResidenceTermsAndAgreementModal"), { ssr: false });
-const ContinueResidentialFacilityCreation = dynamic(() => import("./modals/createfacility/ContinueResidentialFacilityCreation"), { ssr: false });
+const UtilityAuthorizationModal = dynamic(() => import("./modals/createfacility/UtilityAuthorizationModal"), { ssr: false });
 
 const ProgressTracker = ({ currentStage, onStageClick }) => {
   const stages = [
@@ -90,7 +90,7 @@ export default function DashboardOverview({ onSectionChange }) {
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [showFinanceModal, setShowFinanceModal] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
-  const [showContinueModal, setShowContinueModal] = useState(false);
+  const [showUtilityModal, setShowUtilityModal] = useState(false);
   const [userData, setUserData] = useState({
     userFirstName: "",
     userId: ""
@@ -231,7 +231,7 @@ export default function DashboardOverview({ onSectionChange }) {
     } else if (stageId === 3) {
       setShowTermsModal(true);
     } else if (stageId === 4) {
-      setShowContinueModal(true);
+      setShowUtilityModal(true);
     }
   };
 
@@ -250,8 +250,8 @@ export default function DashboardOverview({ onSectionChange }) {
     checkUserProgress();
   };
 
-  const handleCloseContinueModal = () => {
-    setShowContinueModal(false);
+  const handleCloseUtilityModal = () => {
+    setShowUtilityModal(false);
     checkUserProgress();
   };
 
@@ -334,10 +334,10 @@ export default function DashboardOverview({ onSectionChange }) {
         />
       )}
 
-      {showContinueModal && (
-        <ContinueResidentialFacilityCreation
-          isOpen={showContinueModal}
-          onClose={handleCloseContinueModal}
+      {showUtilityModal && (
+        <UtilityAuthorizationModal
+          isOpen={showUtilityModal}
+          onClose={handleCloseUtilityModal}
         />
       )}
     </div>
