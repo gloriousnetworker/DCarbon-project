@@ -7,18 +7,15 @@ export default function ResidentialFacilityModal({ isOpen, onClose, currentStep 
   const [creatingNewFacility, setCreatingNewFacility] = useState(false);
   const [userId, setUserId] = useState('');
   const [authToken, setAuthToken] = useState('');
-  const [userData, setUserData] = useState(null);
 
   useEffect(() => {
     if (isOpen) {
       const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
       const userId = loginResponse?.data?.user?.id;
       const authToken = loginResponse?.data?.token;
-      const userData = loginResponse?.data?.user;
       
       setUserId(userId);
       setAuthToken(authToken);
-      setUserData(userData);
       
       if (userId && authToken) {
         fetchUserFacilities(userId, authToken);
@@ -41,8 +38,8 @@ export default function ResidentialFacilityModal({ isOpen, onClose, currentStep 
       );
       
       const data = await response.json();
-      if (data.status === 'success' && data.data) {
-        const facilities = data.data;
+      if (data.status === 'success' && data.data?.facilities) {
+        const facilities = data.data.facilities;
         setUserFacilities(facilities);
         if (facilities.length > 0) {
           setSelectedFacility(facilities[0].id);
@@ -152,74 +149,69 @@ export default function ResidentialFacilityModal({ isOpen, onClose, currentStep 
                 </div>
               </div>
 
-              <div className="mb-6 border border-gray-200 rounded-lg overflow-hidden">
-                <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
-                  <label className="text-sm font-medium text-gray-700 font-sans">
-                    Select Facility
-                  </label>
-                </div>
-                
-                <div className="max-h-60 overflow-y-auto">
+              <div className="mb-6">
+                <select 
+                  value={selectedFacility}
+                  onChange={(e) => setSelectedFacility(e.target.value)}
+                  className="w-full p-3 border border-gray-300 rounded-lg text-sm font-sans focus:ring-2 focus:ring-[#039994] focus:border-[#039994] outline-none"
+                >
                   {userFacilities.map((facility) => (
-                    <div 
-                      key={facility.id}
-                      className={`px-4 py-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors ${
-                        selectedFacility === facility.id ? 'bg-[#039994]/5' : ''
-                      }`}
-                      onClick={() => setSelectedFacility(facility.id)}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <div className={`w-3 h-3 rounded-full ${
-                              selectedFacility === facility.id ? 'bg-[#039994]' : 'bg-gray-300'
-                            }`}></div>
-                            <h4 className="font-medium text-gray-900 font-sans">
-                              {facility.facilityName || 'Residential Facility'}
-                            </h4>
-                          </div>
-                          
-                          <div className="ml-6 space-y-2">
-                            <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-                              {facility.address && (
-                                <div className="flex items-center gap-1">
-                                  <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                                  </svg>
-                                  <span className="truncate max-w-[200px]">{facility.address}</span>
-                                </div>
-                              )}
-                              
-                              {facility.utilityProvider && (
-                                <div className="flex items-center gap-1">
-                                  <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
-                                  </svg>
-                                  <span>{facility.utilityProvider}</span>
-                                </div>
-                              )}
-                            </div>
-                            
-                            <div className="ml-6 flex items-center gap-3">
-                              {facility.status && getFacilityStatusBadge(facility.status)}
-                              {facility.utilityProvider && getUtilityTypeBadge(facility.utilityProvider)}
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="ml-4">
-                          {selectedFacility === facility.id && (
-                            <div className="w-6 h-6 rounded-full bg-[#039994] flex items-center justify-center">
-                              <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                              </svg>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
+                    <option key={facility.id} value={facility.id}>
+                      {facility.facilityName || 'Residential Facility'} - {facility.utilityProvider} ({facility.status})
+                    </option>
                   ))}
-                </div>
+                </select>
+
+                {selectedFacility && (
+                  <div className="mt-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                    {userFacilities.map((facility) => {
+                      if (facility.id === selectedFacility) {
+                        return (
+                          <div key={facility.id}>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                              <div>
+                                <p className="text-xs text-gray-500 mb-1">Facility Name</p>
+                                <p className="text-sm font-medium text-gray-800">{facility.facilityName}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-gray-500 mb-1">Utility Provider</p>
+                                <div className="flex items-center gap-2">
+                                  <p className="text-sm font-medium text-gray-800">{facility.utilityProvider}</p>
+                                  {getUtilityTypeBadge(facility.utilityProvider)}
+                                </div>
+                              </div>
+                              <div>
+                                <p className="text-xs text-gray-500 mb-1">Status</p>
+                                <div className="flex items-center gap-2">
+                                  {getFacilityStatusBadge(facility.status)}
+                                </div>
+                              </div>
+                              <div>
+                                <p className="text-xs text-gray-500 mb-1">Finance Type</p>
+                                <p className="text-sm font-medium text-gray-800">{facility.financeType}</p>
+                              </div>
+                              <div className="md:col-span-2">
+                                <p className="text-xs text-gray-500 mb-1">Address</p>
+                                <p className="text-sm font-medium text-gray-800">{facility.address}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-gray-500 mb-1">Installation Date</p>
+                                <p className="text-sm font-medium text-gray-800">
+                                  {new Date(facility.createdAt).toLocaleDateString()}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-gray-500 mb-1">Meter ID</p>
+                                <p className="text-sm font-medium text-gray-800">{facility.meterId}</p>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })}
+                  </div>
+                )}
               </div>
 
               <button
