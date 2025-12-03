@@ -1,21 +1,24 @@
 import React, { useState, useEffect } from "react";
 
-export default function ResidentialFacilityModal({ isOpen, onClose }) {
+export default function ResidentialFacilityModal({ isOpen, onClose, currentStep }) {
   const [userFacilities, setUserFacilities] = useState([]);
   const [selectedFacility, setSelectedFacility] = useState('');
   const [loading, setLoading] = useState(false);
   const [creatingNewFacility, setCreatingNewFacility] = useState(false);
   const [userId, setUserId] = useState('');
   const [authToken, setAuthToken] = useState('');
+  const [userData, setUserData] = useState(null);
 
   useEffect(() => {
     if (isOpen) {
       const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
       const userId = loginResponse?.data?.user?.id;
       const authToken = loginResponse?.data?.token;
+      const userData = loginResponse?.data?.user;
       
       setUserId(userId);
       setAuthToken(authToken);
+      setUserData(userData);
       
       if (userId && authToken) {
         fetchUserFacilities(userId, authToken);
@@ -27,7 +30,7 @@ export default function ResidentialFacilityModal({ isOpen, onClose }) {
     try {
       setLoading(true);
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/facility/get-user-facilities-by-userId/${userId}`,
+        `https://services.dcarbon.solutions/api/residential-facility/get-user-facilities/${userId}`,
         {
           method: 'GET',
           headers: {
@@ -38,14 +41,18 @@ export default function ResidentialFacilityModal({ isOpen, onClose }) {
       );
       
       const data = await response.json();
-      const facilities = data.data?.facilities || [];
-      setUserFacilities(facilities);
-      
-      if (facilities.length > 0) {
-        setSelectedFacility(facilities[0].id);
+      if (data.status === 'success' && data.data) {
+        const facilities = data.data;
+        setUserFacilities(facilities);
+        if (facilities.length > 0) {
+          setSelectedFacility(facilities[0].id);
+        }
+      } else {
+        setUserFacilities([]);
       }
     } catch (error) {
       console.error('Error fetching facilities:', error);
+      setUserFacilities([]);
     } finally {
       setLoading(false);
     }
@@ -54,18 +61,12 @@ export default function ResidentialFacilityModal({ isOpen, onClose }) {
   const handleContinueRegistration = () => {
     const facility = userFacilities.find(f => f.id === selectedFacility);
     if (facility) {
-      // Here you would handle continuing registration for the selected facility
-      console.log('Continuing registration for facility:', facility);
-      // This could open another modal or navigate to a different step
       onClose();
     }
   };
 
   const handleCreateNewFacility = () => {
     setCreatingNewFacility(true);
-    // Here you would open the facility creation modal
-    console.log('Opening new facility creation modal');
-    // For now, just close this modal
     setTimeout(() => {
       setCreatingNewFacility(false);
       onClose();
@@ -111,7 +112,6 @@ export default function ResidentialFacilityModal({ isOpen, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
       <div className="relative w-full max-w-2xl bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
-        {/* Header */}
         <div className="flex-shrink-0 p-6 border-b border-gray-200 bg-gradient-to-r from-[#039994]/10 to-transparent">
           <div className="flex justify-between items-center">
             <div>
@@ -133,9 +133,7 @@ export default function ResidentialFacilityModal({ isOpen, onClose }) {
           </div>
         </div>
 
-        {/* Content */}
         <div className="flex-1 overflow-y-auto p-6">
-          {/* Loading State */}
           {loading && (
             <div className="flex flex-col items-center justify-center py-12">
               <div className="w-12 h-12 border-4 border-gray-300 border-t-[#039994] rounded-full animate-spin mb-4"></div>
@@ -143,7 +141,6 @@ export default function ResidentialFacilityModal({ isOpen, onClose }) {
             </div>
           )}
 
-          {/* Existing Facilities Section */}
           {!loading && userFacilities.length > 0 && (
             <div className="mb-8">
               <div className="flex items-center justify-between mb-4">
@@ -155,7 +152,6 @@ export default function ResidentialFacilityModal({ isOpen, onClose }) {
                 </div>
               </div>
 
-              {/* Facility Selector */}
               <div className="mb-6 border border-gray-200 rounded-lg overflow-hidden">
                 <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
                   <label className="text-sm font-medium text-gray-700 font-sans">
@@ -179,12 +175,11 @@ export default function ResidentialFacilityModal({ isOpen, onClose }) {
                               selectedFacility === facility.id ? 'bg-[#039994]' : 'bg-gray-300'
                             }`}></div>
                             <h4 className="font-medium text-gray-900 font-sans">
-                              {facility.nickname || facility.facilityName || 'Unnamed Facility'}
+                              {facility.facilityName || 'Residential Facility'}
                             </h4>
                           </div>
                           
                           <div className="ml-6 space-y-2">
-                            {/* Facility Details */}
                             <div className="flex flex-wrap gap-4 text-sm text-gray-600">
                               {facility.address && (
                                 <div className="flex items-center gap-1">
@@ -205,7 +200,6 @@ export default function ResidentialFacilityModal({ isOpen, onClose }) {
                               )}
                             </div>
                             
-                            {/* Status and Type Badges */}
                             <div className="ml-6 flex items-center gap-3">
                               {facility.status && getFacilityStatusBadge(facility.status)}
                               {facility.utilityProvider && getUtilityTypeBadge(facility.utilityProvider)}
@@ -213,7 +207,6 @@ export default function ResidentialFacilityModal({ isOpen, onClose }) {
                           </div>
                         </div>
                         
-                        {/* Selection Indicator */}
                         <div className="ml-4">
                           {selectedFacility === facility.id && (
                             <div className="w-6 h-6 rounded-full bg-[#039994] flex items-center justify-center">
@@ -229,7 +222,6 @@ export default function ResidentialFacilityModal({ isOpen, onClose }) {
                 </div>
               </div>
 
-              {/* Continue Registration Button */}
               <button
                 onClick={handleContinueRegistration}
                 disabled={!selectedFacility || creatingNewFacility}
@@ -244,7 +236,6 @@ export default function ResidentialFacilityModal({ isOpen, onClose }) {
             </div>
           )}
 
-          {/* Divider */}
           {!loading && userFacilities.length > 0 && (
             <div className="relative my-8">
               <div className="absolute inset-0 flex items-center">
@@ -258,7 +249,6 @@ export default function ResidentialFacilityModal({ isOpen, onClose }) {
             </div>
           )}
 
-          {/* Create New Facility Section */}
           <div className={`${userFacilities.length > 0 ? 'mt-6' : ''}`}>
             <div className="text-center mb-6">
               <h3 className="font-[600] text-[16px] text-gray-800 font-sans mb-2">
@@ -269,18 +259,15 @@ export default function ResidentialFacilityModal({ isOpen, onClose }) {
               </p>
             </div>
 
-            {/* New Facility Card */}
             <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 hover:border-[#039994] hover:bg-[#039994]/5 transition-all group cursor-pointer"
                  onClick={handleCreateNewFacility}>
               <div className="flex flex-col items-center text-center">
-                {/* Icon */}
                 <div className="w-16 h-16 rounded-full bg-[#039994]/10 flex items-center justify-center mb-4 group-hover:bg-[#039994]/20 transition-colors">
                   <svg className="w-8 h-8 text-[#039994]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                   </svg>
                 </div>
                 
-                {/* Text Content */}
                 <h4 className="font-[600] text-[18px] text-gray-900 font-sans mb-2">
                   Create New Residential Facility
                 </h4>
@@ -288,7 +275,6 @@ export default function ResidentialFacilityModal({ isOpen, onClose }) {
                   Register a new solar installation for your home. You'll need facility details and utility information.
                 </p>
                 
-                {/* Button */}
                 <button
                   onClick={handleCreateNewFacility}
                   disabled={creatingNewFacility}
@@ -313,7 +299,6 @@ export default function ResidentialFacilityModal({ isOpen, onClose }) {
                   )}
                 </button>
                 
-                {/* Steps Info */}
                 <div className="mt-6 pt-6 border-t border-gray-200 w-full">
                   <p className="text-xs text-gray-500 font-sans mb-2">
                     Registration includes:
@@ -343,7 +328,6 @@ export default function ResidentialFacilityModal({ isOpen, onClose }) {
             </div>
           </div>
 
-          {/* No Facilities State */}
           {!loading && userFacilities.length === 0 && (
             <div className="text-center py-8">
               <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
@@ -361,7 +345,6 @@ export default function ResidentialFacilityModal({ isOpen, onClose }) {
           )}
         </div>
 
-        {/* Footer */}
         <div className="flex-shrink-0 p-4 border-t border-gray-200 bg-gray-50">
           <div className="flex items-center justify-between">
             <div className="text-xs text-gray-500 font-sans">
