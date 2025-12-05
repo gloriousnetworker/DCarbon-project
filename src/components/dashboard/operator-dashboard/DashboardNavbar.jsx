@@ -128,9 +128,7 @@ const DashboardNavbar = ({
             )}
           </div>
 
-          <div className="flex-1 flex justify-center mx-4">
-            
-          </div>
+          <div className="flex-1 flex justify-center mx-4"></div>
 
           <div className="flex items-center space-x-6">
             <div className="relative group">
