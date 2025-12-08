@@ -33,6 +33,7 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
   const [submittingGreenButton, setSubmittingGreenButton] = useState(false);
   const [showStage5Modal, setShowStage5Modal] = useState(false);
   const [userEmail, setUserEmail] = useState('');
+  const [showGreenButtonInfo, setShowGreenButtonInfo] = useState(false);
 
   const greenButtonUtilities = ['San Diego Gas and Electric', 'Pacific Gas and Electric', 'Southern California Edison', 'PG&E', 'SCE', 'SDG&E'];
 
@@ -320,7 +321,7 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
     setSelectedUtilityProvider(utilityName);
     
     if (isGreenButtonUtility(utilityName)) {
-      setShowVideoModal(true);
+      setShowGreenButtonInfo(true);
     } else {
       setIframeUrl(url);
       setShowUtilityIframe(true);
@@ -328,10 +329,50 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
     }
   };
 
+  const handleGreenButtonStart = async () => {
+    try {
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const userId = loginResponse?.data?.user?.id;
+      const authToken = loginResponse?.data?.token;
+
+      const selectedFacilityData = userFacilities.find(f => f.id === selectedFacility);
+      
+      const payload = {
+        userId: userId,
+        utilityProvider: selectedUtilityProvider,
+        facilityId: selectedFacility
+      };
+
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/green-button/start`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify(payload)
+        }
+      );
+
+      const result = await response.json();
+      
+      if (result.success) {
+        window.open(result.redirectUrl, '_blank');
+        setShowGreenButtonInfo(false);
+        setShowVideoModal(true);
+      } else {
+        toast.error("Failed to initiate Green Button authorization");
+      }
+    } catch (error) {
+      console.error('Error starting Green Button:', error);
+      toast.error("Failed to initiate Green Button authorization");
+    }
+  };
+
   const handleVideoComplete = () => {
     setShowVideoModal(false);
     const url = getUtilityUrl(selectedUtilityProvider);
-    window.open(url, '_blank');
     setIframeUrl(url);
     setShowUtilityIframe(true);
     setScale(1);
@@ -467,6 +508,7 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
   const closeAllModals = () => {
     setCurrentModal(null);
     setShowStage5Modal(false);
+    setShowGreenButtonInfo(false);
     onClose();
     checkUserProgress();
   };
@@ -505,6 +547,63 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
   const handleInviteOperatorModalClose = () => {
     setShowInviteOperatorModal(false);
     onClose();
+  };
+
+  const renderGreenButtonInfoModal = () => {
+    const selectedFacilityData = userFacilities.find(f => f.id === selectedFacility);
+    
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+        <div className="relative w-full max-w-md bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
+          <div className="p-6">
+            <h2 className="font-[600] text-[20px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro mb-4">
+              Green Button Authorization
+            </h2>
+            
+            <div className="mb-6">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                <div className="flex items-start mb-2">
+                  <svg className="w-5 h-5 text-green-600 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  <div>
+                    <p className="text-green-800 font-semibold text-sm">Green Button Utility Selected</p>
+                    <p className="text-green-700 text-sm mt-1">{selectedUtilityProvider}</p>
+                  </div>
+                </div>
+                
+                <div className="mt-3 p-3 bg-green-100 rounded border border-green-300">
+                  <p className="text-green-800 text-sm">
+                    You'll be redirected to {selectedUtilityProvider}'s authorization page. Please complete the authorization process in the new tab, then return here to continue.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-blue-800 text-sm">
+                  <strong>Note:</strong> After clicking "Continue to Green Button", a new tab will open. Complete the authorization there, then watch the instructional video.
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowGreenButtonInfo(false)}
+                className="flex-1 rounded-md border border-gray-300 text-gray-700 font-semibold py-3 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300 font-sfpro text-[14px]"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleGreenButtonStart}
+                className="flex-1 rounded-md bg-green-600 text-white font-semibold py-3 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 font-sfpro text-[14px]"
+              >
+                Continue to Green Button
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   const renderUtilityIframeModal = () => {
@@ -765,7 +864,7 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
     }
   };
 
-  if (!isOpen && !currentModal && !showInviteOperatorModal && !showUtilityIframe && !showVideoModal && !showStage5Modal) return null;
+  if (!isOpen && !currentModal && !showInviteOperatorModal && !showUtilityIframe && !showVideoModal && !showStage5Modal && !showGreenButtonInfo) return null;
 
   return (
     <>
@@ -990,6 +1089,8 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
           onClose={handleInviteOperatorModalClose}
         />
       )}
+
+      {showGreenButtonInfo && renderGreenButtonInfoModal()}
 
       {showUtilityIframe && renderUtilityIframeModal()}
 
