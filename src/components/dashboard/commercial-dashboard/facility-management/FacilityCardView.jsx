@@ -104,12 +104,28 @@ export default function FacilityCardView() {
 
   const checkStage5Completion = async (userId, authToken) => {
     try {
-      const response = await fetch(`https://services.dcarbon.solutions/api/auth/user-meters/${userId}`, {
-        method: 'GET',
-        headers: { 'Authorization': `Bearer ${authToken}` }
-      });
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        }
+      );
       const result = await response.json();
-      return result.status === 'success' && result.data?.length > 0 && result.data.some(item => item.meters?.meters?.length > 0);
+      
+      const metersExist = result.status === 'success' && 
+                         Array.isArray(result.data) &&
+                         result.data.some(item => 
+                           Array.isArray(item.meters) &&
+                           item.meters.some(meter => 
+                             Array.isArray(meter.meterNumbers) && 
+                             meter.meterNumbers.length > 0
+                           )
+                         );
+      
+      return metersExist;
     } catch (error) {
       return false;
     }

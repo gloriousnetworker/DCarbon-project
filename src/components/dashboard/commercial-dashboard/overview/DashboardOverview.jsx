@@ -164,7 +164,18 @@ export default function DashboardOverview() {
         }
       );
       const result = await response.json();
-      return result.status === 'success' && result.data?.length > 0 && result.data.some(item => item.meters?.meters?.length > 0);
+      
+      const metersExist = result.status === 'success' && 
+                         Array.isArray(result.data) &&
+                         result.data.some(item => 
+                           Array.isArray(item.meters) &&
+                           item.meters.some(meter => 
+                             Array.isArray(meter.meterNumbers) && 
+                             meter.meterNumbers.length > 0
+                           )
+                         );
+      
+      return metersExist;
     } catch (error) {
       return false;
     }
