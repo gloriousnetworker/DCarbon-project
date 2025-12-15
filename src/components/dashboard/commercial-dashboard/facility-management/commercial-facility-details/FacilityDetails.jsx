@@ -214,11 +214,23 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
             { headers: { 'Authorization': `Bearer ${authToken}` } }
           );
           const result = await response.json();
-          const metersExist = result.status === 'success' && result.data?.length > 0 && result.data.some(item => item.meters?.meters?.length > 0);
           
-          if (metersExist) {
-            const meterUid = result.data[0].meters.meters[0].uid;
-            setMeterId(meterUid);
+          const metersExist = result.status === 'success' && 
+                           Array.isArray(result.data) &&
+                           result.data.some(item => 
+                             Array.isArray(item.meters) &&
+                             item.meters.some(meter => 
+                               Array.isArray(meter.meterNumbers) && 
+                               meter.meterNumbers.length > 0
+                             )
+                           );
+          
+          if (metersExist && result.data[0]?.meters) {
+            const firstMeter = result.data[0].meters.find(item => item.meterNumbers && item.meterNumbers.length > 0);
+            if (firstMeter) {
+              const meterUid = firstMeter.uid;
+              setMeterId(meterUid);
+            }
           }
           
           setHasMeters(metersExist);

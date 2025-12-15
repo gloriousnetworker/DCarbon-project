@@ -25,7 +25,8 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
     facilityTypeNamingCode: 1,
     utilityProviderNamingCode: "",
     installerNamingCode: "",
-    financeNamingCode: ""
+    financeNamingCode: "",
+    financeType: ""
   });
   const [loading, setLoading] = useState(false);
   const [utilityProviders, setUtilityProviders] = useState([]);
@@ -35,6 +36,7 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
   const [selectedMeter, setSelectedMeter] = useState(null);
   const [isSameLocation, setIsSameLocation] = useState(null);
   const [selectedUtilityAuthEmail, setSelectedUtilityAuthEmail] = useState("");
+  const [selectedUtilityProvider, setSelectedUtilityProvider] = useState("");
   const [installers, setInstallers] = useState([]);
   const [installersLoading, setInstallersLoading] = useState(false);
   const [financeTypes, setFinanceTypes] = useState([]);
@@ -47,6 +49,9 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
   const [createdFacilityData, setCreatedFacilityData] = useState(null);
   const [meterAgreementAccepted, setMeterAgreementAccepted] = useState(false);
   const [acceptingAgreement, setAcceptingAgreement] = useState(false);
+  const [file, setFile] = useState(null);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -58,11 +63,24 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
   }, [isOpen]);
 
   useEffect(() => {
+    if (selectedUtilityAuthEmail) {
+      const selectedData = userMeterData.find(item => item.utilityAuthEmail === selectedUtilityAuthEmail);
+      if (selectedData) {
+        setSelectedUtilityProvider(selectedData.utilityProvider);
+        setFormData(prev => ({
+          ...prev,
+          utilityProvider: selectedData.utilityProvider
+        }));
+      }
+    }
+  }, [selectedUtilityAuthEmail, userMeterData]);
+
+  useEffect(() => {
     if (selectedMeter && isSameLocation !== null) {
       if (isSameLocation === true) {
         setFormData(prev => ({
           ...prev,
-          address: selectedMeter.base.service_address
+          address: selectedMeter.serviceAddress || ""
         }));
       } else {
         setFormData(prev => ({
@@ -72,6 +90,9 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
       }
     }
   }, [selectedMeter, isSameLocation]);
+
+  const isCashType = formData.financeType.toLowerCase() === 'cash';
+  const showUploadField = !isCashType && formData.financeType !== '';
 
   const fetchUtilityProviders = async () => {
     const authToken = localStorage.getItem("authToken");
@@ -120,9 +141,8 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
 
       if (response.data.status === "success") {
         setUserMeterData(response.data.data);
-        const firstWithMeters = response.data.data.find(item => item.meters?.meters?.length > 0);
-        if (firstWithMeters) {
-          setSelectedUtilityAuthEmail(firstWithMeters.utilityAuthEmail);
+        if (response.data.data.length > 0) {
+          setSelectedUtilityAuthEmail(response.data.data[0].utilityAuthEmail);
         }
       }
     } catch (error) {
@@ -177,7 +197,15 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
       );
 
       if (response.data.status === "success") {
-        setFinanceTypes(response.data.data.types);
+        const approvedTypes = response.data.data.types.filter(type =>
+          type.status === 'APPROVED' || type.name.toLowerCase() === 'cash'
+        );
+        const uniqueTypes = approvedTypes.reduce((acc, current) => {
+          const x = acc.find(item => item.name.toLowerCase() === current.name.toLowerCase());
+          if (!x) return acc.concat([current]);
+          return acc;
+        }, []);
+        setFinanceTypes(uniqueTypes);
       }
     } catch (error) {
       console.error("Error fetching finance types:", error);
@@ -187,42 +215,24 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
     }
   };
 
-  const getCurrentMeters = () => {
+  const getValidMeters = () => {
     if (!selectedUtilityAuthEmail) return [];
 
     const selectedData = userMeterData.find(
       item => item.utilityAuthEmail === selectedUtilityAuthEmail
     );
 
-    if (!selectedData || !selectedData.meters?.meters) return [];
+    if (!selectedData?.meters) return [];
 
-    return selectedData.meters.meters.filter(
-      meter => meter.base.service_class === "electric"
+    return selectedData.meters.filter(
+      meter => meter.meterNumbers?.length > 0 && meter.serviceAddress && meter.billingAddress
     );
-  };
-
-  const getUtilityShortCode = (utilityAuthEmail) => {
-    const selectedData = userMeterData.find(
-      item => item.utilityAuthEmail === utilityAuthEmail
-    );
-
-    if (selectedData && selectedData.meters?.meters?.length > 0) {
-      return selectedData.meters.meters[0].utility || "";
-    }
-    return "";
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    if (name === "utilityProvider") {
-      const selectedProvider = utilityProviders.find(provider => provider.name === value);
-      setFormData(prev => ({
-        ...prev,
-        utilityProvider: value,
-        utilityProviderNamingCode: selectedProvider ? selectedProvider.namingCode : ""
-      }));
-    } else if (name === "installerNamingCode") {
+    if (name === "installerNamingCode") {
       const selectedInstaller = installers.find(installer => installer.namingCode.toString() === value);
       setFormData(prev => ({
         ...prev,
@@ -237,15 +247,15 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
         financeType: selectedFinanceType ? selectedFinanceType.name : ""
       }));
     } else if (name === "meterId") {
-      const currentMeters = getCurrentMeters();
-      const meter = currentMeters.find(m => m.uid === value);
+      const validMeters = getValidMeters();
+      const meter = validMeters.find(m => m.uid === value);
       setSelectedMeter(meter || null);
       setIsSameLocation(null);
       setMeterAgreementAccepted(false);
       setFormData(prev => ({
         ...prev,
         meterIds: [value],
-        address: ""
+        address: meter?.serviceAddress || ""
       }));
     } else {
       setFormData(prev => ({
@@ -269,6 +279,37 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
 
   const handleLocationChoice = (choice) => {
     setIsSameLocation(choice);
+  };
+
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files[0];
+    if (!selectedFile) return;
+    const validTypes = ['application/pdf', 'image/jpeg', 'image/png', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    if (!validTypes.includes(selectedFile.type)) {
+      toast.error('Invalid file type. Please upload PDF, JPEG, PNG, or Word documents.');
+      return;
+    }
+    setFile(selectedFile);
+    setUploadSuccess(false);
+  };
+
+  const handleUpload = async () => {
+    if (!file) return;
+    setUploading(true);
+    try {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64data = reader.result;
+        setUploadSuccess(true);
+        toast.success('Financial agreement uploaded successfully!');
+      };
+      reader.onerror = () => toast.error('Error reading file');
+      reader.readAsDataURL(file);
+    } catch (err) {
+      toast.error(err.message || 'Upload failed');
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleAcceptMeterAgreement = async () => {
@@ -344,12 +385,30 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
       facilityTypeNamingCode: 1,
       utilityProviderNamingCode: "",
       installerNamingCode: "",
-      financeNamingCode: ""
+      financeNamingCode: "",
+      financeType: ""
     });
     setSelectedMeter(null);
     setIsSameLocation(null);
     setSelectedUtilityAuthEmail("");
+    setSelectedUtilityProvider("");
     setMeterAgreementAccepted(false);
+    setFile(null);
+    setUploadSuccess(false);
+  };
+
+  const uploadFinanceAgreementToFacility = async (facilityId) => {
+    if (!file) return;
+
+    const authToken = localStorage.getItem("authToken");
+    const formData = new FormData();
+    formData.append('financeAgreementUrl', file);
+
+    await axios.put(
+      `https://services.dcarbon.solutions/api/facility/update-facility-financial-agreement/${facilityId}`,
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data', 'Authorization': `Bearer ${authToken}` } }
+    );
   };
 
   const handleSubmit = async (e) => {
@@ -365,7 +424,15 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
       return;
     }
 
+    if (!isCashType && !uploadSuccess && showUploadField) {
+      toast.error("Please upload the finance agreement document");
+      setLoading(false);
+      return;
+    }
+
     try {
+      const selectedProvider = utilityProviders.find(provider => provider.name === formData.utilityProvider);
+      
       const payload = {
         nickname: formData.nickname,
         address: formData.address,
@@ -374,7 +441,7 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
         commercialRole: formData.commercialRole,
         entityType: formData.entityType,
         facilityTypeNamingCode: formData.facilityTypeNamingCode,
-        utilityProviderNamingCode: formData.utilityProviderNamingCode,
+        utilityProviderNamingCode: selectedProvider ? selectedProvider.namingCode : "",
         installerNamingCode: formData.installerNamingCode,
         financeNamingCode: formData.financeNamingCode
       };
@@ -391,6 +458,10 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
       );
 
       if (response.data.status === "success") {
+        if (file && uploadSuccess && showUploadField) {
+          await uploadFinanceAgreementToFacility(response.data.data.id);
+        }
+        
         setCreatedFacilityData(response.data.data);
         storeFacilityData(response.data.data);
         resetForm();
@@ -468,17 +539,12 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
     formData.address &&
     formData.utilityProvider &&
     formData.meterIds.length > 0 &&
-    formData.utilityProviderNamingCode &&
     formData.installerNamingCode &&
     formData.financeNamingCode &&
+    formData.financeType &&
     (selectedMeter ? isSameLocation !== null : true) &&
-    (selectedMeter ? meterAgreementAccepted : true);
-
-  const utilityAuthEmailsWithMeters = userMeterData.filter(
-    item => item.meters?.meters?.length > 0
-  );
-
-  const currentMeters = getCurrentMeters();
+    (selectedMeter ? meterAgreementAccepted : true) &&
+    (isCashType ? true : (showUploadField ? uploadSuccess : true));
 
   if (!isOpen) return null;
 
@@ -522,31 +588,6 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
 
               <div>
                 <label className={labelClass}>
-                  Utility Provider <span className="text-red-500">*</span>
-                </label>
-                <select
-                  name="utilityProvider"
-                  value={formData.utilityProvider}
-                  onChange={handleChange}
-                  className={selectClass}
-                  required
-                  disabled={loading || utilityProvidersLoading}
-                >
-                  <option value="">Select utility provider</option>
-                  {utilityProvidersLoading ? (
-                    <option value="" disabled>Loading providers...</option>
-                  ) : (
-                    utilityProviders.map(provider => (
-                      <option key={provider.id} value={provider.name}>
-                        {provider.name}
-                      </option>
-                    ))
-                  )}
-                </select>
-              </div>
-
-              <div>
-                <label className={labelClass}>
                   Utility Account <span className="text-red-500">*</span>
                 </label>
                 <select
@@ -559,12 +600,12 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
                   <option value="">Select utility account</option>
                   {userMetersLoading ? (
                     <option value="" disabled>Loading accounts...</option>
-                  ) : utilityAuthEmailsWithMeters.length === 0 ? (
+                  ) : userMeterData.length === 0 ? (
                     <option value="" disabled>No utility accounts found</option>
                   ) : (
-                    utilityAuthEmailsWithMeters.map(item => (
+                    userMeterData.map(item => (
                       <option key={item.id} value={item.utilityAuthEmail}>
-                        {item.utilityAuthEmail} - {getUtilityShortCode(item.utilityAuthEmail)}
+                        {item.utilityAuthEmail}
                       </option>
                     ))
                   )}
@@ -577,6 +618,23 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
               {selectedUtilityAuthEmail && (
                 <div>
                   <label className={labelClass}>
+                    Utility Provider <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={selectedUtilityProvider}
+                    className={`${inputClass} bg-gray-100`}
+                    disabled={true}
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Utility provider from selected account
+                  </p>
+                </div>
+              )}
+
+              {selectedUtilityAuthEmail && (
+                <div>
+                  <label className={labelClass}>
                     Please Select the Solar Meter you want to Register <span className="text-red-500">*</span>
                   </label>
                   <select
@@ -585,21 +643,22 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
                     onChange={handleChange}
                     className={selectClass}
                     required
-                    disabled={loading || currentMeters.length === 0}
+                    disabled={loading || getValidMeters().length === 0}
                   >
                     <option value="">Select meter</option>
-                    {currentMeters.length === 0 ? (
-                      <option value="" disabled>No electric meters found for this account</option>
+                    {getValidMeters().length === 0 ? (
+                      <option value="" disabled>No valid meters found for this account</option>
                     ) : (
-                      currentMeters.map(meter => (
+                      getValidMeters().map(meter => (
                         <option key={meter.uid} value={meter.uid}>
-                          {meter.base.meter_numbers[0]} - {meter.base.billing_address}
+                          {meter.meterNumbers.length > 0 ? meter.meterNumbers[0] : meter.uid}
+                          {meter.billingAddress ? ` - ${meter.billingAddress.split(',')[0]}` : ''}
                         </option>
                       ))
                     )}
                   </select>
                   <p className="mt-1 text-xs text-gray-500">
-                    Only electric meters are shown
+                    Only meters with meter numbers, service address, and billing address are shown
                   </p>
                 </div>
               )}
@@ -613,7 +672,12 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
 
               {selectedMeter && (
                 <div className="mb-3 p-2 bg-gray-50 rounded-md border border-gray-200 text-sm">
-                  <p className="font-medium mb-2">Service Address: {selectedMeter.base.service_address}</p>
+                  {selectedMeter.serviceAddress && (
+                    <p className="font-medium mb-2">Service Address: {selectedMeter.serviceAddress}</p>
+                  )}
+                  {selectedMeter.billingAddress && (
+                    <p className="font-medium mb-2">Billing Address: {selectedMeter.billingAddress}</p>
+                  )}
                   <p className="font-medium mb-2">
                     Is this the same location for the solar installation? <span className="text-red-500">*</span>
                   </p>
@@ -756,6 +820,41 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
                   Finance Type not listed?
                 </button>
               </div>
+
+              {showUploadField && (
+                <div>
+                  <label className={labelClass}>
+                    Upload Finance Agreement
+                  </label>
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="file"
+                      onChange={handleFileChange}
+                      className="relative flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-500 bg-gray-50 focus-within:outline-none focus-within:ring-2 focus-within:ring-[#039994] cursor-pointer font-sfpro"
+                      accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleUpload}
+                      disabled={!file || uploading || uploadSuccess}
+                      className="px-4 py-2 bg-[#039994] text-white rounded-md hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro"
+                    >
+                      {uploading ? 'Uploading...' : uploadSuccess ? '✓' : 'Upload'}
+                    </button>
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Required for loan, PPA, and lease agreements
+                  </p>
+                </div>
+              )}
+
+              {isCashType && (
+                <div className="mb-3 p-2 bg-green-50 rounded-md border border-green-200 text-sm">
+                  <p className="font-medium text-green-700">
+                    ✓ Cash payment selected - No finance agreement document required
+                  </p>
+                </div>
+              )}
 
               <div>
                 <label className={labelClass}>

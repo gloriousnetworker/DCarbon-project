@@ -12,7 +12,6 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
     address: facility.address || "",
     utilityProvider: facility.utilityProvider || "",
     meterId: Array.isArray(facility.meterIds) ? facility.meterIds[0] : facility.meterIds || "",
-    utilityUsername: facility.utilityUsername || "",
     commercialRole: facility.commercialRole || "owner",
     entityType: facility.entityType || "company",
     name: facility.name || "",
@@ -34,6 +33,7 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
   const [selectedMeter, setSelectedMeter] = useState(null);
   const [isSameLocation, setIsSameLocation] = useState(null);
   const [selectedUtilityAuthEmail, setSelectedUtilityAuthEmail] = useState("");
+  const [selectedUtilityProvider, setSelectedUtilityProvider] = useState("");
   const [commercialUserLoading, setCommercialUserLoading] = useState(false);
   const [multipleOwnersData, setMultipleOwnersData] = useState([]);
   const [meterAgreementAccepted, setMeterAgreementAccepted] = useState(false);
@@ -49,11 +49,24 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
   }, []);
 
   useEffect(() => {
+    if (selectedUtilityAuthEmail) {
+      const selectedData = userMeterData.find(item => item.utilityAuthEmail === selectedUtilityAuthEmail);
+      if (selectedData) {
+        setSelectedUtilityProvider(selectedData.utilityProvider);
+        setFormData(prev => ({
+          ...prev,
+          utilityProvider: selectedData.utilityProvider
+        }));
+      }
+    }
+  }, [selectedUtilityAuthEmail, userMeterData]);
+
+  useEffect(() => {
     if (selectedMeter && isSameLocation !== null) {
       if (isSameLocation === true) {
         setFormData(prev => ({
           ...prev,
-          address: selectedMeter.base.service_address
+          address: selectedMeter.serviceAddress || ""
         }));
       } else {
         setFormData(prev => ({
@@ -145,9 +158,8 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
 
       if (response.data.status === "success") {
         setUserMeterData(response.data.data);
-        const firstWithMeters = response.data.data.find(item => item.meters?.meters?.length > 0);
-        if (firstWithMeters) {
-          setSelectedUtilityAuthEmail(firstWithMeters.utilityAuthEmail);
+        if (response.data.data.length > 0) {
+          setSelectedUtilityAuthEmail(response.data.data[0].utilityAuthEmail);
         }
       }
     } catch (error) {
@@ -158,17 +170,17 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
     }
   };
 
-  const getCurrentMeters = () => {
+  const getValidMeters = () => {
     if (!selectedUtilityAuthEmail) return [];
     
     const selectedData = userMeterData.find(
       item => item.utilityAuthEmail === selectedUtilityAuthEmail
     );
     
-    if (!selectedData || !selectedData.meters?.meters) return [];
+    if (!selectedData?.meters) return [];
     
-    return selectedData.meters.meters.filter(
-      meter => meter.base.service_class === "electric"
+    return selectedData.meters.filter(
+      meter => meter.meterNumbers?.length > 0 && meter.serviceAddress && meter.billingAddress
     );
   };
 
@@ -180,8 +192,8 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
     }));
 
     if (name === "meterId") {
-      const currentMeters = getCurrentMeters();
-      const meter = currentMeters.find(m => m.uid === value);
+      const validMeters = getValidMeters();
+      const meter = validMeters.find(m => m.uid === value);
       setSelectedMeter(meter || null);
       setIsSameLocation(null);
       setMeterAgreementAccepted(false);
@@ -260,7 +272,6 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
         address: formData.address,
         utilityProvider: formData.utilityProvider,
         meterId: formData.meterId,
-        utilityUsername: formData.utilityUsername,
         commercialRole: formData.commercialRole,
         entityType: formData.entityType,
         name: formData.name,
@@ -313,12 +324,6 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
       handleClose(e);
     }
   };
-
-  const utilityAuthEmailsWithMeters = userMeterData.filter(
-    item => item.meters?.meters?.length > 0
-  );
-
-  const currentMeters = getCurrentMeters();
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" onClick={handleBackdropClick}>
@@ -390,45 +395,6 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
 
             <div>
               <label className={`${labelClass} mb-2`}>
-                Utility Provider <span className="text-red-500">*</span>
-              </label>
-              <select
-                name="utilityProvider"
-                value={formData.utilityProvider}
-                onChange={handleChange}
-                className={`${selectClass}`}
-                required
-                disabled={loading || utilityProvidersLoading}
-              >
-                <option value="">Select utility provider</option>
-                {utilityProvidersLoading ? (
-                  <option value="" disabled>Loading providers...</option>
-                ) : (
-                  utilityProviders.map(provider => (
-                    <option key={provider.id} value={provider.name}>
-                      {provider.name}
-                    </option>
-                  ))
-                )}
-              </select>
-            </div>
-
-            <div>
-              <label className={`${labelClass} mb-2`}>
-                Utility Username
-              </label>
-              <input
-                type="text"
-                name="utilityUsername"
-                value={formData.utilityUsername}
-                onChange={handleChange}
-                className={`${inputClass}`}
-                disabled={loading}
-              />
-            </div>
-
-            <div>
-              <label className={`${labelClass} mb-2`}>
                 Utility Account <span className="text-red-500">*</span>
               </label>
               <select
@@ -441,10 +407,10 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
                 <option value="">Select utility account</option>
                 {userMetersLoading ? (
                   <option value="" disabled>Loading accounts...</option>
-                ) : utilityAuthEmailsWithMeters.length === 0 ? (
+                ) : userMeterData.length === 0 ? (
                   <option value="" disabled>No utility accounts found</option>
                 ) : (
-                  utilityAuthEmailsWithMeters.map(item => (
+                  userMeterData.map(item => (
                     <option key={item.id} value={item.utilityAuthEmail}>
                       {item.utilityAuthEmail}
                     </option>
@@ -459,6 +425,23 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
             {selectedUtilityAuthEmail && (
               <div>
                 <label className={`${labelClass} mb-2`}>
+                  Utility Provider <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={selectedUtilityProvider}
+                  className={`${inputClass} bg-gray-100`}
+                  disabled={true}
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Utility provider from selected account
+                </p>
+              </div>
+            )}
+
+            {selectedUtilityAuthEmail && (
+              <div>
+                <label className={`${labelClass} mb-2`}>
                   Solar Meter <span className="text-red-500">*</span>
                 </label>
                 <select
@@ -467,21 +450,22 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
                   onChange={handleChange}
                   className={`${selectClass}`}
                   required
-                  disabled={loading || currentMeters.length === 0}
+                  disabled={loading || getValidMeters().length === 0}
                 >
                   <option value="">Select meter</option>
-                  {currentMeters.length === 0 ? (
-                    <option value="" disabled>No electric meters found for this account</option>
+                  {getValidMeters().length === 0 ? (
+                    <option value="" disabled>No valid meters found for this account</option>
                   ) : (
-                    currentMeters.map(meter => (
+                    getValidMeters().map(meter => (
                       <option key={meter.uid} value={meter.uid}>
-                        {meter.base.meter_numbers[0]} - {meter.base.service_tariff}
+                        {meter.meterNumbers.length > 0 ? meter.meterNumbers[0] : meter.uid}
+                        {meter.billingAddress ? ` - ${meter.billingAddress.split(',')[0]}` : ''}
                       </option>
                     ))
                   )}
                 </select>
                 <p className="mt-1 text-xs text-gray-500">
-                  Only electric meters are shown
+                  Only meters with meter numbers, service address, and billing address are shown
                 </p>
               </div>
             )}
@@ -489,7 +473,12 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
             {selectedMeter && (
               <div className="md:col-span-2">
                 <div className="mb-3 p-3 bg-gray-50 rounded-md border border-gray-200">
-                  <p className="font-medium mb-2">Service Address: {selectedMeter.base.service_address}</p>
+                  {selectedMeter.serviceAddress && (
+                    <p className="font-medium mb-2">Service Address: {selectedMeter.serviceAddress}</p>
+                  )}
+                  {selectedMeter.billingAddress && (
+                    <p className="font-medium mb-2">Billing Address: {selectedMeter.billingAddress}</p>
+                  )}
                   <p className="font-medium mb-2">
                     Is this the same location for the solar installation? <span className="text-red-500">*</span>
                   </p>
