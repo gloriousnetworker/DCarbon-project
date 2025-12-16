@@ -9,10 +9,6 @@ const AddCommercialFacilityModal = dynamic(
   () => import("./modals/createfacility/ownerAndOperatorRegistration/AddCommercialFacilityModal"),
   { ssr: false }
 );
-const ResolvePendingActionsModal = dynamic(
-  () => import("./modals/ResolvePendingActionsModal"),
-  { ssr: false }
-);
 const CurrentStatementModal = dynamic(
   () => import("./modals/CurrentStatementModal"),
   { ssr: false }
@@ -92,11 +88,11 @@ export default function QuickActions() {
     <div className="w-full py-4 px-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div
-          className="p-4 min-h-[100px] rounded-2xl flex flex-col items-start justify-start cursor-pointer hover:opacity-90 transition-opacity"
+          className={`p-4 min-h-[100px] rounded-2xl flex flex-col items-start justify-start ${hasMeters ? "cursor-pointer hover:opacity-90" : "opacity-50 cursor-not-allowed"}`}
           style={{
             background: "radial-gradient(100.83% 133.3% at 130.26% -10.83%, #013331 0%, #039994 100%)",
           }}
-          onClick={() => openModal("add")}
+          onClick={() => hasMeters && openModal("add")}
         >
           <img
             src="/vectors/MapPinPlus.png"
@@ -111,11 +107,11 @@ export default function QuickActions() {
         </div>
 
         <div
-          className={`p-4 min-h-[100px] rounded-2xl flex flex-col items-start justify-start ${hasMeters ? "cursor-pointer hover:opacity-90" : "opacity-50 cursor-not-allowed"}`}
+          className={`p-4 min-h-[100px] rounded-2xl flex flex-col items-start justify-start cursor-pointer hover:opacity-90`}
           style={{
             background: "radial-gradient(433.01% 729.42% at 429.68% -283.45%, rgba(6, 155, 150, 0.3) 0%, #FFFFFF 100%)",
           }}
-          onClick={() => hasMeters && openModal("resolve")}
+          onClick={() => openModal("continue")}
         >
           <img
             src="/vectors/Files.png"
@@ -124,8 +120,8 @@ export default function QuickActions() {
           />
           <hr className="border-[1px] border-green-500 w-full mb-2" />
           <p className="text-black text-sm leading-tight">
-            Resolve <br />
-            <span className="font-bold">Pending Actions</span>
+            Continue <br />
+            <span className="font-bold">Registration</span>
           </p>
         </div>
 
@@ -171,12 +167,14 @@ export default function QuickActions() {
       {modal === "add" && hasMeters && (
         <AddCommercialFacilityModal isOpen onClose={closeModal} />
       )}
-      {modal === "add" && !hasMeters && (
+      {modal === "continue" && !hasMeters && (
         <CommercialRegistrationModal isOpen onClose={closeModal} currentStep={5} />
+      )}
+      {modal === "continue" && hasMeters && (
+        <AddCommercialFacilityModal isOpen onClose={closeModal} />
       )}
       {modal === "invite" && <InviteCollaboratorModal isOpen onClose={closeModal} />}
       {modal === "statement" && <CurrentStatementModal isOpen onClose={closeModal} />}
-      {modal === "resolve" && <ResolvePendingActionsModal isOpen onClose={closeModal} />}
     </div>
   );
 }
