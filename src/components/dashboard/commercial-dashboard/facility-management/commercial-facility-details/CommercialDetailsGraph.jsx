@@ -7,7 +7,9 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
     recGenerated: 0,
     recSold: 0,
     revenueEarned: 0,
-    energyProduced: 0
+    energyProduced: 0,
+    salePricePerREC: 0,
+    currentRecBalance: 0
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -20,38 +22,74 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
   const [selectedMonths, setSelectedMonths] = useState([]);
   const [sortBy, setSortBy] = useState('date-asc');
   const [showFilters, setShowFilters] = useState(false);
+  const [recStatistics, setRecStatistics] = useState([]);
+  const [recOverview, setRecOverview] = useState(null);
+  const [monthlyChartData, setMonthlyChartData] = useState([]);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
+  const [selectedMonth, setSelectedMonth] = useState("");
 
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const monthNumberMap = {
+    'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6,
+    'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12
+  };
+
+  const getAuthToken = () => {
+    const loginResponse = JSON.parse(localStorage.getItem("loginResponse") || '{}');
+    return loginResponse?.data?.token;
+  };
 
   useEffect(() => {
-    if (meterId) {
-      fetchMeterData();
+    if (facilityId) {
+      fetchAllData();
     }
-  }, [meterId]);
+  }, [facilityId, selectedYear, selectedMonth]);
 
   useEffect(() => {
     applyFiltersAndSort();
   }, [rawData, dateRange, selectedMonths, sortBy]);
 
-  const fetchMeterData = async () => {
-    if (!meterId) return;
-
+  const fetchAllData = async () => {
     try {
       setLoading(true);
       setError(null);
+      const authToken = getAuthToken();
       
-      const authToken = localStorage.getItem('authToken');
       if (!authToken) {
-        throw new Error('Authentication token not found');
+        throw new Error("Authentication token not found");
       }
 
-      const response = await fetch(`https://services.dcarbon.solutions/api/facility/get-meter-rec-data/${meterId}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${authToken}`,
-          'Content-Type': 'application/json'
+      if (!facilityId) {
+        throw new Error("Facility ID is required");
+      }
+
+      await Promise.all([
+        fetchMeterData(authToken),
+        fetchRecStatistics(authToken),
+        fetchMonthlyChartData(authToken)
+      ]);
+    } catch (err) {
+      setError(err.message);
+      console.error('Error fetching data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchMeterData = async (authToken) => {
+    try {
+      if (!meterId) return;
+
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/facility/get-meter-rec-data/${meterId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json'
+          }
         }
-      });
+      );
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -63,30 +101,149 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
         const readings = result.data.data.intervals[0].readings;
         setRawData(readings);
         
-        const startDate = new Date(Math.min(...readings.map(r => new Date(r.start))));
-        const endDate = new Date(Math.max(...readings.map(r => new Date(r.start))));
-        
-        setDateRange({
-          startDate: startDate.toISOString().split('T')[0],
-          endDate: endDate.toISOString().split('T')[0]
-        });
+        if (readings.length > 0) {
+          const startDate = new Date(Math.min(...readings.map(r => new Date(r.start))));
+          const endDate = new Date(Math.max(...readings.map(r => new Date(r.start))));
+          
+          setDateRange({
+            startDate: startDate.toISOString().split('T')[0],
+            endDate: endDate.toISOString().split('T')[0]
+          });
+        }
       } else {
         setRawData([]);
         setFilteredData([]);
-        setChartData([]);
-        setStats({
-          recGenerated: 0,
-          recSold: 0,
-          revenueEarned: 0,
-          energyProduced: 0
-        });
       }
     } catch (err) {
-      setError(err.message);
       console.error('Error fetching meter data:', err);
-    } finally {
-      setLoading(false);
+      setRawData([]);
     }
+  };
+
+  const fetchRecStatistics = async (authToken) => {
+    try {
+      const monthParam = selectedMonth || new Date().getMonth() + 1;
+      const url = new URL(`https://services.dcarbon.solutions/api/rec/statistics`);
+      const params = {
+        month: monthParam,
+        year: selectedYear,
+        facilityId: facilityId
+      };
+      
+      Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
+      
+      const response = await fetch(url, {
+        headers: { 
+          Authorization: `Bearer ${authToken}`, 
+          "Content-Type": "application/json" 
+        }
+      });
+      
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      const data = await response.json();
+      
+      if (data.status === "success") {
+        setRecStatistics(data.data || []);
+        
+        if (data.data && data.data.length > 0) {
+          const statsData = data.data[0];
+          updateStatsFromRecStatistics(statsData);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching REC statistics:', err);
+      setRecStatistics([]);
+    }
+  };
+
+  const fetchMonthlyChartData = async (authToken) => {
+    try {
+      const url = new URL(`https://services.dcarbon.solutions/api/rec/chart/monthly`);
+      const params = {
+        type: 'commercial',
+        year: selectedYear,
+        facilityId: facilityId
+      };
+      
+      Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
+      
+      const response = await fetch(url, {
+        headers: { 
+          Authorization: `Bearer ${authToken}`, 
+          "Content-Type": "application/json" 
+        }
+      });
+      
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      const data = await response.json();
+      
+      if (data.status === "success") {
+        setMonthlyChartData(data.data || []);
+        processMonthlyChartData(data.data);
+      }
+    } catch (err) {
+      console.error('Error fetching monthly chart data:', err);
+      setMonthlyChartData([]);
+    }
+  };
+
+  const updateStatsFromRecStatistics = (recStats) => {
+    setStats(prev => ({
+      ...prev,
+      recGenerated: recStats.recsGenerated || 0,
+      recSold: recStats.recsSold || 0,
+      revenueEarned: recStats.salesAmount || 0,
+      salePricePerREC: recStats.avgRecPrice || 0,
+      currentRecBalance: recStats.remainingRecs || 0
+    }));
+  };
+
+  const processMonthlyChartData = (monthlyData) => {
+    if (!monthlyData || !Array.isArray(monthlyData)) {
+      const emptyChartData = months.map(month => ({
+        month,
+        value: 0,
+        recs: 0,
+        normalizedValue: 0
+      }));
+      setChartData(emptyChartData);
+      return;
+    }
+
+    const monthlyMap = {};
+    monthlyData.forEach(item => {
+      if (item.label && months.includes(item.label)) {
+        monthlyMap[item.label] = {
+          sumNetKWh: item.sumNetKWh || 0,
+          recs: (item.sumNetKWh || 0) * 1.2
+        };
+      }
+    });
+
+    const processedChartData = months.map(month => {
+      const data = monthlyMap[month] || { sumNetKWh: 0, recs: 0 };
+      return {
+        month,
+        value: data.sumNetKWh,
+        recs: data.recs
+      };
+    });
+
+    const maxValue = Math.max(...processedChartData.map(d => d.value), 1);
+    const normalizedData = processedChartData.map(data => ({
+      ...data,
+      normalizedValue: maxValue > 0 ? (data.value / maxValue) * 100 : 0
+    }));
+
+    setChartData(normalizedData);
+    
+    const totalEnergyProduced = processedChartData.reduce((sum, data) => sum + data.value, 0);
+    const totalRecs = processedChartData.reduce((sum, data) => sum + data.recs, 0);
+    
+    setStats(prev => ({
+      ...prev,
+      energyProduced: totalEnergyProduced
+    }));
   };
 
   const applyFiltersAndSort = () => {
@@ -129,49 +286,6 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
     });
 
     setFilteredData(filtered);
-    processFilteredData(filtered);
-  };
-
-  const processFilteredData = (data) => {
-    const monthlyData = {};
-    let totalEnergyProduced = 0;
-    
-    data.forEach(reading => {
-      const date = new Date(reading.start);
-      const monthKey = date.toLocaleString('default', { month: 'short' });
-      const energyValue = reading.kwh || 0;
-      
-      if (!monthlyData[monthKey]) {
-        monthlyData[monthKey] = 0;
-      }
-      monthlyData[monthKey] += energyValue;
-      totalEnergyProduced += energyValue;
-    });
-
-    const processedChartData = months.map(month => ({
-      month,
-      value: monthlyData[month] || 0,
-      recs: Math.round((monthlyData[month] || 0) * 1.2)
-    }));
-
-    const maxValue = Math.max(...processedChartData.map(d => d.value));
-    const normalizedData = processedChartData.map(data => ({
-      ...data,
-      normalizedValue: maxValue > 0 ? (data.value / maxValue) * 100 : 0
-    }));
-
-    setChartData(normalizedData);
-    
-    const totalRecs = Math.round(totalEnergyProduced * 1.2);
-    const soldRecs = Math.round(totalRecs * 0.8);
-    const revenue = soldRecs * 45;
-
-    setStats({
-      recGenerated: totalRecs,
-      recSold: soldRecs,
-      revenueEarned: revenue,
-      energyProduced: Math.round(totalEnergyProduced * 100) / 100
-    });
   };
 
   const downloadData = () => {
@@ -202,11 +316,11 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
           const month = startDate.toLocaleString('default', { month: 'short' });
           const day = startDate.getDate();
           const year = startDate.getFullYear();
-          const recsGenerated = Math.round((reading.kwh || 0) * 1.2);
+          const recsGenerated = (reading.kwh || 0) * 1.2;
           
-          const netDatapoint = reading.datapoints.find(dp => dp.type === 'net');
-          const fwdDatapoint = reading.datapoints.find(dp => dp.type === 'fwd');
-          const revDatapoint = reading.datapoints.find(dp => dp.type === 'rev');
+          const netDatapoint = reading.datapoints?.find(dp => dp.type === 'net');
+          const fwdDatapoint = reading.datapoints?.find(dp => dp.type === 'fwd');
+          const revDatapoint = reading.datapoints?.find(dp => dp.type === 'rev');
 
           const row = [
             index + 1,
@@ -219,7 +333,7 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
             month,
             day,
             year,
-            recsGenerated
+            recsGenerated.toFixed(2)
           ];
           
           csvRows.push(row.join(','));
@@ -239,10 +353,30 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
       
       csvRows.push('');
       csvRows.push('Summary Statistics');
-      csvRows.push(`Total RECs Generated,${stats.recGenerated}`);
-      csvRows.push(`RECs Sold,${stats.recSold}`);
-      csvRows.push(`Revenue Earned,$${stats.revenueEarned}`);
-      csvRows.push(`Total Energy Produced,${stats.energyProduced} MWh`);
+      csvRows.push(`Total RECs Generated,${stats.recGenerated.toFixed(2)}`);
+      csvRows.push(`RECs Sold,${stats.recSold.toFixed(2)}`);
+      csvRows.push(`Revenue Earned,$${stats.revenueEarned.toFixed(2)}`);
+      csvRows.push(`Energy Produced,${stats.energyProduced.toFixed(2)} MWh`);
+      csvRows.push(`Current REC Balance,${stats.currentRecBalance.toFixed(2)}`);
+      csvRows.push(`Avg. REC Price,$${stats.salePricePerREC.toFixed(2)}`);
+
+      if (recStatistics.length > 0) {
+        csvRows.push('');
+        csvRows.push('Monthly REC Statistics');
+        csvRows.push(`Selected Month,${selectedMonth || 'Current'}`);
+        csvRows.push(`Selected Year,${selectedYear}`);
+        recStatistics.forEach((stat, index) => {
+          csvRows.push(`Month ${stat.month},RECs Generated: ${stat.recsGenerated?.toFixed(2) || 0}, RECs Sold: ${stat.recsSold?.toFixed(2) || 0}, Revenue: $${stat.salesAmount?.toFixed(2) || 0}, Remaining: ${stat.remainingRecs?.toFixed(2) || 0}`);
+        });
+      }
+
+      if (monthlyChartData.length > 0) {
+        csvRows.push('');
+        csvRows.push('Monthly Chart Data');
+        monthlyChartData.forEach((item, index) => {
+          csvRows.push(`${item.label || `Month ${item.month}`},Energy: ${item.sumNetKWh?.toFixed(2) || 0} kWh, RECs: ${((item.sumNetKWh || 0) * 1.2).toFixed(2)}`);
+        });
+      }
 
       const csvContent = csvRows.join('\n');
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -286,12 +420,23 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
     return count;
   };
 
+  const handleYearChange = (year) => {
+    setSelectedYear(year);
+    setSelectedMonth("");
+    setSelectedMonths([]);
+  };
+
+  const handleMonthChange = (month) => {
+    setSelectedMonth(month);
+    setSelectedMonths([]);
+  };
+
   if (loading) {
     return (
       <div className="w-full bg-white border border-gray-200 rounded-lg shadow-sm p-6">
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#039994]"></div>
-          <span className="ml-2 text-gray-600">Loading energy data...</span>
+          <span className="ml-2 text-gray-600">Loading facility REC data...</span>
         </div>
       </div>
     );
@@ -304,7 +449,7 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
           <div className="text-red-500 mb-2">⚠️ Error loading data</div>
           <p className="text-gray-600 text-sm text-center">{error}</p>
           <button 
-            onClick={fetchMeterData}
+            onClick={fetchAllData}
             className="mt-4 bg-[#039994] text-white px-4 py-2 rounded text-sm hover:bg-[#027a75] transition-colors"
           >
             Retry
@@ -314,53 +459,65 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
     );
   }
 
-  if (rawData.length === 0) {
-    return (
-      <div className="w-full bg-white border border-gray-200 rounded-lg shadow-sm p-6">
-        <div className="flex flex-col justify-center items-center h-64">
-          <div className="text-gray-500 mb-2">📊 No REC data available</div>
-          <p className="text-gray-600 text-sm text-center">This meter currently doesn't have any REC data available.</p>
-          <button 
-            onClick={fetchMeterData}
-            className="mt-4 bg-[#039994] text-white px-4 py-2 rounded text-sm hover:bg-[#027a75] transition-colors"
-          >
-            Refresh Data
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  const maxValue = Math.max(...chartData.map(d => d.normalizedValue));
+  const maxValue = Math.max(...chartData.map(d => d.value), 1);
   const activeFilters = getActiveFiltersCount();
+  const currentYear = new Date().getFullYear();
+  const yearOptions = Array.from({length: 5}, (_, i) => currentYear - i);
 
   return (
     <div className="w-full bg-white border border-gray-200 rounded-lg shadow-sm p-6">
-      <div className="flex justify-between items-center mb-8">
-        <h3 className="text-lg font-semibold text-[#039994]">Energy Performance</h3>
-        <div className="flex items-center space-x-2">
-          <button 
-            onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center space-x-1 px-3 py-1 rounded text-sm transition-colors relative ${
-              showFilters ? 'bg-[#039994] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            <FiFilter size={14} />
-            <span>Filters</span>
-            {activeFilters > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                {activeFilters}
-              </span>
-            )}
-          </button>
-          <button 
-            onClick={downloadData}
-            className="flex items-center space-x-1 bg-[#039994] text-white px-3 py-1 rounded text-sm hover:bg-[#027a75] transition-colors"
-            disabled={!rawData || rawData.length === 0}
-          >
-            <FiDownload size={14} />
-            <span>Download CSV</span>
-          </button>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <h3 className="text-lg font-semibold text-[#039994]">Facility Energy Performance</h3>
+        
+        <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+          <div className="flex space-x-2">
+            <select 
+              value={selectedYear}
+              onChange={(e) => handleYearChange(e.target.value)}
+              className="border border-gray-300 rounded px-3 py-1.5 text-sm min-w-[100px] focus:outline-none focus:border-[#039994]"
+            >
+              {yearOptions.map(year => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </select>
+            
+            <select 
+              value={selectedMonth}
+              onChange={(e) => handleMonthChange(e.target.value)}
+              className="border border-gray-300 rounded px-3 py-1.5 text-sm min-w-[120px] focus:outline-none focus:border-[#039994]"
+            >
+              <option value="">All Months</option>
+              {months.map((month, index) => (
+                <option key={month} value={index + 1}>{month}</option>
+              ))}
+            </select>
+          </div>
+          
+          <div className="flex space-x-2">
+            <button 
+              onClick={() => setShowFilters(!showFilters)}
+              className={`flex items-center space-x-1 px-3 py-1.5 rounded text-sm transition-colors relative ${
+                showFilters ? 'bg-[#039994] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <FiFilter size={14} />
+              <span>Filters</span>
+              {activeFilters > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                  {activeFilters}
+                </span>
+              )}
+            </button>
+            
+            <button 
+              onClick={downloadData}
+              className="flex items-center space-x-1 bg-[#039994] text-white px-3 py-1.5 rounded text-sm hover:bg-[#027a75] transition-colors"
+              disabled={!rawData || rawData.length === 0}
+            >
+              <FiDownload size={14} />
+              <span>Download CSV</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -431,81 +588,207 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
           </div>
           
           <div className="mt-3 text-sm text-gray-600">
-            Showing {filteredData.length} of {rawData.length} records
-            {selectedMonths.length > 0 && (
-              <span className="ml-2 text-[#039994]">
-                • Months: {selectedMonths.join(', ')}
-              </span>
-            )}
-            {dateRange.startDate && dateRange.endDate && (
-              <span className="ml-2 text-[#039994]">
-                • Date: {dateRange.startDate} to {dateRange.endDate}
-              </span>
-            )}
+            <div className="flex flex-wrap gap-2">
+              <span>Showing {filteredData.length} of {rawData.length} meter readings</span>
+              {selectedMonths.length > 0 && (
+                <span className="text-[#039994]">
+                  • Months: {selectedMonths.join(', ')}
+                </span>
+              )}
+              {dateRange.startDate && dateRange.endDate && (
+                <span className="text-[#039994]">
+                  • Date: {dateRange.startDate} to {dateRange.endDate}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       )}
 
       {!showFilters && <div className="mb-16"></div>}
 
-      <div className="flex items-end">
-        <div className="flex flex-col justify-between items-end mr-4 h-64 py-2">
-          {[100, 75, 50, 25, 0].map((val, idx) => (
-            <span key={idx} className="text-gray-400 text-xs font-medium">
-              {maxValue > 0 ? Math.round((val / 100) * maxValue * 10) / 10 : val}
-            </span>
-          ))}
+      <div className="mb-8">
+        <div className="flex items-end">
+          <div className="flex flex-col justify-between items-end mr-4 h-64 py-2">
+            {[100, 75, 50, 25, 0].map((val, idx) => (
+              <span key={idx} className="text-gray-400 text-xs font-medium">
+                {maxValue > 0 ? Math.round((val / 100) * maxValue * 10) / 10 : val}
+              </span>
+            ))}
+          </div>
+          <div className="flex-1 flex items-end justify-between h-64 px-2">
+            {chartData.map((data, idx) => (
+              <div key={idx} className="flex flex-col items-center relative group">
+                <div className="relative w-6 h-64 bg-gray-100 rounded-full border-2 border-gray-200 overflow-hidden shadow-inner">
+                  <div 
+                    className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-[#039994] to-[#04b5a8] rounded-full transition-all duration-500"
+                    style={{ height: `${data.normalizedValue}%` }}
+                  />
+                  <div className="absolute left-1 top-2 bottom-2 w-1 bg-white opacity-20 rounded-full" />
+                </div>
+                <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
+                  <div>{data.recs.toFixed(2)} RECs</div>
+                  <div>{data.value.toFixed(2)} kWh</div>
+                </div>
+                <p className="text-xs text-gray-600 mt-3 font-medium">{data.month}</p>
+              </div>
+            ))}
+          </div>
         </div>
-        <div className="flex-1 flex items-end justify-between h-64 px-2">
-          {chartData.map((data, idx) => (
-            <div key={idx} className="flex flex-col items-center relative group">
-              <div className="relative w-6 h-64 bg-gray-100 rounded-full border-2 border-gray-200 overflow-hidden shadow-inner">
-                <div 
-                  className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-[#039994] to-[#04b5a8] rounded-full transition-all duration-500"
-                  style={{ height: `${data.normalizedValue}%` }}
-                />
-                <div className="absolute left-1 top-2 bottom-2 w-1 bg-white opacity-20 rounded-full" />
-              </div>
-              <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
-                <div>{data.recs} RECs</div>
-                <div>{data.value.toFixed(2)} kWh</div>
-              </div>
-              <p className="text-xs text-gray-600 mt-3 font-medium">{data.month}</p>
-            </div>
-          ))}
+        <div className="text-center mt-2 text-xs text-gray-500">
+          Monthly Energy Production and REC Generation ({selectedYear})
         </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-4 mt-16">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-16 mb-8">
         <div className="bg-white border border-gray-200 rounded-lg p-4 flex flex-col">
           <div className="flex items-center space-x-2 mb-2">
             <div className="h-3 w-3 bg-[#039994] rounded-full"></div>
             <p className="text-gray-700 text-xs font-medium">RECs Generated</p>
           </div>
-          <p className="text-[#056C69] text-lg font-bold">{stats.recGenerated.toLocaleString()}</p>
+          <p className="text-[#056C69] text-lg font-bold">{stats.recGenerated.toFixed(2)}</p>
+          {recStatistics.length > 0 && (
+            <p className="text-gray-500 text-xs mt-1">
+              Current: {recStatistics[0]?.recsGenerated?.toFixed(2) || 0}
+            </p>
+          )}
         </div>
+        
         <div className="bg-white border border-gray-200 rounded-lg p-4 flex flex-col">
           <div className="flex items-center space-x-2 mb-2">
             <div className="h-3 w-3 bg-[#039994] rounded-full"></div>
             <p className="text-gray-700 text-xs font-medium">RECs Sold</p>
           </div>
-          <p className="text-[#056C69] text-lg font-bold">{stats.recSold.toLocaleString()}</p>
+          <p className="text-[#056C69] text-lg font-bold">{stats.recSold.toFixed(2)}</p>
+          {recStatistics.length > 0 && (
+            <p className="text-gray-500 text-xs mt-1">
+              Current: {recStatistics[0]?.recsSold?.toFixed(2) || 0}
+            </p>
+          )}
         </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-4 flex flexCol">
+        
+        <div className="bg-white border border-gray-200 rounded-lg p-4 flex flex-col">
           <div className="flex items-center space-x-2 mb-2">
             <div className="h-3 w-3 bg-black rounded-full"></div>
             <p className="text-gray-700 text-xs font-medium">Revenue Earned</p>
           </div>
-          <p className="text-[#056C69] text-lg font-bold">${stats.revenueEarned.toLocaleString()}</p>
+          <p className="text-[#056C69] text-lg font-bold">${stats.revenueEarned.toFixed(2)}</p>
+          {recStatistics.length > 0 && (
+            <p className="text-gray-500 text-xs mt-1">
+              Current: ${recStatistics[0]?.salesAmount?.toFixed(2) || 0}
+            </p>
+          )}
         </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-4 flex flexCol">
+        
+        <div className="bg-white border border-gray-200 rounded-lg p-4 flex flex-col">
           <div className="flex items-center space-x-2 mb-2">
             <div className="h-3 w-3 bg-[#FBBF24] rounded-full"></div>
             <p className="text-gray-700 text-xs font-medium">Energy Generated</p>
           </div>
-          <p className="text-[#056C69] text-lg font-bold">{stats.energyProduced} MWh</p>
+          <p className="text-[#056C69] text-lg font-bold">{stats.energyProduced.toFixed(2)} MWh</p>
+        </div>
+        
+        <div className="bg-white border border-gray-200 rounded-lg p-4 flex flex-col">
+          <div className="flex items-center space-x-2 mb-2">
+            <div className="h-3 w-3 bg-blue-500 rounded-full"></div>
+            <p className="text-gray-700 text-xs font-medium">Avg. REC Price</p>
+          </div>
+          <p className="text-[#056C69] text-lg font-bold">${stats.salePricePerREC.toFixed(2)}</p>
+          {recStatistics.length > 0 && (
+            <p className="text-gray-500 text-xs mt-1">
+              Current: ${recStatistics[0]?.avgRecPrice?.toFixed(2) || 0}
+            </p>
+          )}
+        </div>
+        
+        <div className="bg-white border border-gray-200 rounded-lg p-4 flex flex-col">
+          <div className="flex items-center space-x-2 mb-2">
+            <div className="h-3 w-3 bg-green-500 rounded-full"></div>
+            <p className="text-gray-700 text-xs font-medium">REC Balance</p>
+          </div>
+          <p className="text-[#056C69] text-lg font-bold">{stats.currentRecBalance.toFixed(2)}</p>
+          {recStatistics.length > 0 && (
+            <p className="text-gray-500 text-xs mt-1">
+              Current: {recStatistics[0]?.remainingRecs?.toFixed(2) || 0}
+            </p>
+          )}
         </div>
       </div>
+
+      {recStatistics.length > 0 && (
+        <div className="mt-8 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+          <h4 className="text-sm font-semibold text-gray-700 mb-3">Monthly REC Statistics ({selectedYear})</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+            {recStatistics.map((stat, index) => (
+              <div key={index} className="bg-white p-3 rounded border border-gray-200">
+                <p className="text-xs font-medium text-gray-600">
+                  {months[stat.month - 1] || `Month ${stat.month}`}, {stat.year}
+                </p>
+                <div className="mt-2 space-y-1">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-gray-500">RECs Generated:</span>
+                    <span className="font-medium text-[#039994]">{stat.recsGenerated?.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-gray-500">RECs Sold:</span>
+                    <span className="font-medium text-[#039994]">{stat.recsSold?.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-gray-500">Revenue:</span>
+                    <span className="font-medium text-green-600">${stat.salesAmount?.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-gray-500">Remaining:</span>
+                    <span className="font-medium text-blue-600">{stat.remainingRecs?.toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {monthlyChartData.length > 0 && (
+        <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+          <h4 className="text-sm font-semibold text-gray-700 mb-3">Monthly Energy Data ({selectedYear})</h4>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="py-2 px-3 text-left font-medium text-gray-700">Month</th>
+                  <th className="py-2 px-3 text-left font-medium text-gray-700">Energy (kWh)</th>
+                  <th className="py-2 px-3 text-left font-medium text-gray-700">RECs Generated</th>
+                  <th className="py-2 px-3 text-left font-medium text-gray-700">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {monthlyChartData.map((item, index) => (
+                  <tr key={index}>
+                    <td className="py-2 px-3">
+                      {item.label || `Month ${item.month}`}
+                    </td>
+                    <td className="py-2 px-3 font-medium">
+                      {item.sumNetKWh?.toFixed(2) || "0.00"}
+                    </td>
+                    <td className="py-2 px-3 text-[#039994] font-medium">
+                      {((item.sumNetKWh || 0) * 1.2).toFixed(2)}
+                    </td>
+                    <td className="py-2 px-3">
+                      <span className={`px-2 py-1 rounded-full text-xs ${
+                        (item.sumNetKWh || 0) > 0 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {(item.sumNetKWh || 0) > 0 ? 'Active' : 'No Data'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

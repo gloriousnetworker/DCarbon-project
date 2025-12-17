@@ -489,7 +489,7 @@ export default function Graph() {
             <div className="bg-white rounded-lg shadow-sm p-4 flex flex-col">
               <div className="flex items-center space-x-2 mb-3">
                 <div className="h-3 w-3 bg-[#039994] rounded-full"></div>
-                <p className="text-gray-700 text-sm font-medium">RECs Generated</p>
+                <p className="text-gray-700 text-sm font-medium">Total RECs Generated</p>
               </div>
               <hr className="border-gray-200 mb-3" />
               {recData.loading ? (
