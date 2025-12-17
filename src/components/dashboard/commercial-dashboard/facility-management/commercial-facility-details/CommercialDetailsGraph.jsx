@@ -292,6 +292,11 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
     try {
       const dataToExport = filteredData.length > 0 ? filteredData : rawData;
       
+      if (!dataToExport || dataToExport.length === 0) {
+        alert('No data available to download.');
+        return;
+      }
+
       const headers = [
         'Timestamp',
         'Start Time',
@@ -309,36 +314,34 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
       const csvRows = [];
       csvRows.push(headers.join(','));
 
-      if (dataToExport && dataToExport.length > 0) {
-        dataToExport.forEach((reading, index) => {
-          const startDate = new Date(reading.start);
-          const endDate = new Date(reading.end);
-          const month = startDate.toLocaleString('default', { month: 'short' });
-          const day = startDate.getDate();
-          const year = startDate.getFullYear();
-          const recsGenerated = (reading.kwh || 0) * 1.2;
-          
-          const netDatapoint = reading.datapoints?.find(dp => dp.type === 'net');
-          const fwdDatapoint = reading.datapoints?.find(dp => dp.type === 'fwd');
-          const revDatapoint = reading.datapoints?.find(dp => dp.type === 'rev');
+      dataToExport.forEach((reading, index) => {
+        const startDate = new Date(reading.start);
+        const endDate = new Date(reading.end);
+        const month = startDate.toLocaleString('default', { month: 'short' });
+        const day = startDate.getDate();
+        const year = startDate.getFullYear();
+        const recsGenerated = (reading.kwh || 0) * 1.2;
+        
+        const netDatapoint = reading.datapoints?.find(dp => dp.type === 'net');
+        const fwdDatapoint = reading.datapoints?.find(dp => dp.type === 'fwd');
+        const revDatapoint = reading.datapoints?.find(dp => dp.type === 'rev');
 
-          const row = [
-            index + 1,
-            startDate.toISOString(),
-            endDate.toISOString(),
-            reading.kwh || 0,
-            netDatapoint ? netDatapoint.value : 0,
-            fwdDatapoint ? fwdDatapoint.value : 0,
-            revDatapoint ? revDatapoint.value : 0,
-            month,
-            day,
-            year,
-            recsGenerated.toFixed(2)
-          ];
-          
-          csvRows.push(row.join(','));
-        });
-      }
+        const row = [
+          index + 1,
+          startDate.toISOString(),
+          endDate.toISOString(),
+          reading.kwh || 0,
+          netDatapoint ? netDatapoint.value : 0,
+          fwdDatapoint ? fwdDatapoint.value : 0,
+          revDatapoint ? revDatapoint.value : 0,
+          month,
+          day,
+          year,
+          recsGenerated.toFixed(2)
+        ];
+        
+        csvRows.push(row.join(','));
+      });
 
       csvRows.push('');
       csvRows.push('Filter Applied');
@@ -354,9 +357,9 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
       csvRows.push('');
       csvRows.push('Summary Statistics');
       csvRows.push(`Total RECs Generated,${stats.recGenerated.toFixed(2)}`);
-      csvRows.push(`RECs Sold,${stats.recSold.toFixed(2)}`);
-      csvRows.push(`Revenue Earned,$${stats.revenueEarned.toFixed(2)}`);
-      csvRows.push(`Energy Produced,${stats.energyProduced.toFixed(2)} MWh`);
+      csvRows.push(`Total RECs Sold,${stats.recSold.toFixed(2)}`);
+      csvRows.push(`Total Revenue Earned,$${stats.revenueEarned.toFixed(2)}`);
+      csvRows.push(`Total Energy Produced,${stats.energyProduced.toFixed(2)} MWh`);
       csvRows.push(`Current REC Balance,${stats.currentRecBalance.toFixed(2)}`);
       csvRows.push(`Avg. REC Price,$${stats.salePricePerREC.toFixed(2)}`);
 
@@ -382,16 +385,21 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.setAttribute('href', url);
+      link.href = url;
       
       const filterSuffix = selectedMonths.length > 0 ? `_${selectedMonths.join('-')}` : 
                           (dateRange.startDate && dateRange.endDate) ? `_${dateRange.startDate}_to_${dateRange.endDate}` : '';
       
-      link.setAttribute('download', `facility_${facilityId}_meter_${meterId}${filterSuffix}_${new Date().toISOString().split('T')[0]}.csv`);
+      const fileName = `facility_${facilityId}_meter_${meterId || 'data'}${filterSuffix}_${new Date().toISOString().split('T')[0]}.csv`;
+      link.download = fileName;
+      
       document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      
+      setTimeout(() => {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }, 100);
     } catch (err) {
       console.error('Error downloading data:', err);
       alert('Failed to download data. Please try again.');
@@ -644,7 +652,7 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
         <div className="bg-white border border-gray-200 rounded-lg p-4 flex flex-col">
           <div className="flex items-center space-x-2 mb-2">
             <div className="h-3 w-3 bg-[#039994] rounded-full"></div>
-            <p className="text-gray-700 text-xs font-medium">RECs Generated</p>
+            <p className="text-gray-700 text-xs font-medium">Total RECs Generated</p>
           </div>
           <p className="text-[#056C69] text-lg font-bold">{stats.recGenerated.toFixed(2)}</p>
           {recStatistics.length > 0 && (
@@ -657,7 +665,7 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
         <div className="bg-white border border-gray-200 rounded-lg p-4 flex flex-col">
           <div className="flex items-center space-x-2 mb-2">
             <div className="h-3 w-3 bg-[#039994] rounded-full"></div>
-            <p className="text-gray-700 text-xs font-medium">RECs Sold</p>
+            <p className="text-gray-700 text-xs font-medium">Total RECs Sold</p>
           </div>
           <p className="text-[#056C69] text-lg font-bold">{stats.recSold.toFixed(2)}</p>
           {recStatistics.length > 0 && (
@@ -670,7 +678,7 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
         <div className="bg-white border border-gray-200 rounded-lg p-4 flex flex-col">
           <div className="flex items-center space-x-2 mb-2">
             <div className="h-3 w-3 bg-black rounded-full"></div>
-            <p className="text-gray-700 text-xs font-medium">Revenue Earned</p>
+            <p className="text-gray-700 text-xs font-medium">Total Revenue Earned</p>
           </div>
           <p className="text-[#056C69] text-lg font-bold">${stats.revenueEarned.toFixed(2)}</p>
           {recStatistics.length > 0 && (
