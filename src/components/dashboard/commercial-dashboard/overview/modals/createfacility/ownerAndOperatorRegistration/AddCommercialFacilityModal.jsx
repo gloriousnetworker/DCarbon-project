@@ -14,7 +14,7 @@ import {
 } from "../../styles";
 import Loader from "@/components/loader/Loader.jsx";
 
-export default function AddCommercialFacilityModal({ isOpen, onClose }) {
+export default function AddCommercialFacilityModal({ isOpen, onClose, onCreateNewFacility }) {
   const [formData, setFormData] = useState({
     nickname: "",
     address: "",
@@ -94,8 +94,18 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
   const isCashType = formData.financeType.toLowerCase() === 'cash';
   const showUploadField = !isCashType && formData.financeType !== '';
 
+  const getAuthToken = () => {
+    const loginResponse = JSON.parse(localStorage.getItem("loginResponse") || '{}');
+    return loginResponse?.data?.token;
+  };
+
+  const getUserId = () => {
+    const loginResponse = JSON.parse(localStorage.getItem("loginResponse") || '{}');
+    return loginResponse?.data?.user?.id;
+  };
+
   const fetchUtilityProviders = async () => {
-    const authToken = localStorage.getItem("authToken");
+    const authToken = getAuthToken();
     if (!authToken) return;
 
     setUtilityProvidersLoading(true);
@@ -122,8 +132,8 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
   };
 
   const fetchUserMeters = async () => {
-    const userId = localStorage.getItem("userId");
-    const authToken = localStorage.getItem("authToken");
+    const userId = getUserId();
+    const authToken = getAuthToken();
 
     if (!userId || !authToken) return;
 
@@ -154,7 +164,7 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
   };
 
   const fetchInstallers = async () => {
-    const authToken = localStorage.getItem("authToken");
+    const authToken = getAuthToken();
     if (!authToken) return;
 
     setInstallersLoading(true);
@@ -181,7 +191,7 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
   };
 
   const fetchFinanceTypes = async () => {
-    const authToken = localStorage.getItem("authToken");
+    const authToken = getAuthToken();
     if (!authToken) return;
 
     setFinanceTypesLoading(true);
@@ -313,8 +323,8 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
   };
 
   const handleAcceptMeterAgreement = async () => {
-    const userId = localStorage.getItem("userId");
-    const authToken = localStorage.getItem("authToken");
+    const userId = getUserId();
+    const authToken = getAuthToken();
 
     if (!userId || !authToken) {
       toast.error("Authentication required");
@@ -353,7 +363,7 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
   };
 
   const storeFacilityData = (facilityData) => {
-    const userId = localStorage.getItem("userId");
+    const userId = getUserId();
     const userFacilitiesKey = `user_${userId}_facilities`;
 
     try {
@@ -400,7 +410,7 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
   const uploadFinanceAgreementToFacility = async (facilityId) => {
     if (!file) return;
 
-    const authToken = localStorage.getItem("authToken");
+    const authToken = getAuthToken();
     const formData = new FormData();
     formData.append('financeAgreementUrl', file);
 
@@ -415,8 +425,8 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
     e.preventDefault();
     setLoading(true);
 
-    const userId = localStorage.getItem("userId");
-    const authToken = localStorage.getItem("authToken");
+    const userId = getUserId();
+    const authToken = getAuthToken();
 
     if (!userId || !authToken) {
       toast.error("Authentication required");
@@ -482,7 +492,10 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
   };
 
   const handleOpenAddUtilityModal = () => {
-    setShowUtilityAuthModal(true);
+    onClose();
+    if (onCreateNewFacility) {
+      onCreateNewFacility();
+    }
   };
 
   const handleCloseAddUtilityModal = () => {
@@ -496,8 +509,8 @@ export default function AddCommercialFacilityModal({ isOpen, onClose }) {
   };
 
   const handleRequestFinanceType = async () => {
-    const userId = localStorage.getItem("userId");
-    const authToken = localStorage.getItem("authToken");
+    const userId = getUserId();
+    const authToken = getAuthToken();
 
     if (!newFinanceTypeName.trim()) {
       toast.error("Please enter a finance type name");

@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 
-const CommercialRegistrationModal = dynamic(
-  () => import("./modals/createfacility/CommercialRegistrationModal"),
+const CreateNewFacilityModal = dynamic(
+  () => import("./modals/createfacility/CreateNewFacilityModal"),
   { ssr: false }
 );
-const AddCommercialFacilityModal = dynamic(
-  () => import("./modals/createfacility/ownerAndOperatorRegistration/AddCommercialFacilityModal"),
+const ExistingFacilitiesModal = dynamic(
+  () => import("./modals/createfacility/ExistingFacilitiesModal"),
   { ssr: false }
 );
 const CurrentStatementModal = dynamic(
@@ -17,11 +17,16 @@ const InviteCollaboratorModal = dynamic(
   () => import("./modals/InviteCollaboratorModal"),
   { ssr: false }
 );
+const AddCommercialFacilityModal = dynamic(
+  () => import("./modals/createfacility/ownerAndOperatorRegistration/AddCommercialFacilityModal"),
+  { ssr: false }
+);
 
 export default function QuickActions() {
   const [modal, setModal] = useState("");
   const [hasMeters, setHasMeters] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [userMeters, setUserMeters] = useState([]);
 
   useEffect(() => {
     const checkMeters = async () => {
@@ -46,6 +51,8 @@ export default function QuickActions() {
         );
         const result = await response.json();
         
+        setUserMeters(result.data || []);
+        
         const metersExist = result.status === 'success' && 
                            Array.isArray(result.data) &&
                            result.data.some(item => 
@@ -69,11 +76,24 @@ export default function QuickActions() {
 
   const openModal = (type) => {
     if (loading) return;
-    setModal(type);
+    
+    if (type === "add") {
+      if (hasMeters) {
+        setModal("addCommercialFacility");
+      } else {
+        setModal("add");
+      }
+    } else {
+      setModal(type);
+    }
   };
 
   const closeModal = () => {
     setModal("");
+  };
+
+  const handleCreateNewFacility = () => {
+    setModal("add");
   };
 
   if (loading) {
@@ -88,11 +108,11 @@ export default function QuickActions() {
     <div className="w-full py-4 px-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div
-          className={`p-4 min-h-[100px] rounded-2xl flex flex-col items-start justify-start ${hasMeters ? "cursor-pointer hover:opacity-90" : "opacity-50 cursor-not-allowed"}`}
+          className={`p-4 min-h-[100px] rounded-2xl flex flex-col items-start justify-start cursor-pointer hover:opacity-90`}
           style={{
             background: "radial-gradient(100.83% 133.3% at 130.26% -10.83%, #013331 0%, #039994 100%)",
           }}
-          onClick={() => hasMeters && openModal("add")}
+          onClick={() => openModal("add")}
         >
           <img
             src="/vectors/MapPinPlus.png"
@@ -164,14 +184,11 @@ export default function QuickActions() {
         </div>
       </div>
 
-      {modal === "add" && hasMeters && (
-        <AddCommercialFacilityModal isOpen onClose={closeModal} />
-      )}
-      {modal === "continue" && (
-        <CommercialRegistrationModal isOpen onClose={closeModal} currentStep={5} />
-      )}
-      {modal === "invite" && <InviteCollaboratorModal isOpen onClose={closeModal} />}
-      {modal === "statement" && <CurrentStatementModal isOpen onClose={closeModal} />}
+      {modal === "add" && <CreateNewFacilityModal isOpen={true} onClose={closeModal} />}
+      {modal === "addCommercialFacility" && <AddCommercialFacilityModal isOpen={true} onClose={closeModal} onCreateNewFacility={handleCreateNewFacility} />}
+      {modal === "continue" && <ExistingFacilitiesModal isOpen={true} onClose={closeModal} />}
+      {modal === "invite" && <InviteCollaboratorModal isOpen={true} onClose={closeModal} />}
+      {modal === "statement" && <CurrentStatementModal isOpen={true} onClose={closeModal} />}
     </div>
   );
 }
