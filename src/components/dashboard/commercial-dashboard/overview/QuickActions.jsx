@@ -121,7 +121,7 @@ export default function QuickActions() {
           <hr className="border-[1px] border-green-500 w-full mb-2" />
           <p className="text-black text-sm leading-tight">
             Continue <br />
-            <span className="font-bold">Registration</span>
+            <span className="font-bold">Pending Registrations</span>
           </p>
         </div>
 
