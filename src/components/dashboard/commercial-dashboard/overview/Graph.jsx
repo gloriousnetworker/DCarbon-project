@@ -3,7 +3,6 @@ import React, { useState, useEffect } from "react";
 export default function Graph() {
   const [chartType, setChartType] = useState("Solar Production");
   const [selectedFacility, setSelectedFacility] = useState("All facilities");
-  const [selectedPeriod, setSelectedPeriod] = useState("Yearly");
   const [selectedYear, setSelectedYear] = useState("2025");
   const [selectedMonth, setSelectedMonth] = useState("");
   const [facilities, setFacilities] = useState([]);
@@ -124,7 +123,7 @@ export default function Graph() {
       };
       fetchData();
     }
-  }, [selectedFacility, selectedYear, selectedMonth, selectedPeriod, facilities]);
+  }, [selectedFacility, selectedYear, selectedMonth, facilities]);
 
   const fetchFacilities = async (userId, authToken) => {
     try {
@@ -527,15 +526,6 @@ export default function Graph() {
               </select>
               
               <select 
-                value={selectedPeriod} 
-                onChange={(e) => setSelectedPeriod(e.target.value)} 
-                className="border border-gray-300 rounded px-2 py-1 text-sm"
-              >
-                <option>Yearly</option>
-                <option>Monthly</option>
-              </select>
-              
-              <select 
                 value={selectedYear} 
                 onChange={(e) => setSelectedYear(e.target.value)} 
                 className="border border-gray-300 rounded px-2 py-1 text-sm"
@@ -628,9 +618,7 @@ export default function Graph() {
             <div className="bg-white rounded-lg shadow-sm p-4 flex flex-col">
               <div className="flex items-center space-x-2 mb-3">
                 <div className="h-3 w-3 bg-[#039994] rounded-full"></div>
-                <p className="text-gray-700 text-sm font-medium">
-                  {selectedFacility === "All facilities" ? "Total RECs Generated" : "RECs Generated"}
-                </p>
+                <p className="text-gray-700 text-sm font-medium">Total RECs Generated</p>
               </div>
               <hr className="border-gray-200 mb-3" />
               {recData.loading ? (
@@ -650,9 +638,7 @@ export default function Graph() {
             <div className="bg-white rounded-lg shadow-sm p-4 flex flex-col">
               <div className="flex items-center space-x-2 mb-3">
                 <div className="h-3 w-3 bg-[#039994] rounded-full"></div>
-                <p className="text-gray-700 text-sm font-medium">
-                  {selectedFacility === "All facilities" ? "Total RECs Sold" : "RECs Sold"}
-                </p>
+                <p className="text-gray-700 text-sm font-medium">Total RECs Sold</p>
               </div>
               <hr className="border-gray-200 mb-3" />
               {recData.loading ? (
@@ -730,9 +716,7 @@ export default function Graph() {
           <div className="bg-white rounded-lg shadow-sm p-4 flex flex-col">
             <div className="flex items-center space-x-2 mb-3">
               <div className="h-3 w-3 bg-green-500 rounded-full"></div>
-              <p className="text-gray-700 text-sm font-medium">
-                {selectedFacility === "All facilities" ? "Facility Status" : "Facility Status"}
-              </p>
+              <p className="text-gray-700 text-sm font-medium">Facility Status</p>
             </div>
             <hr className="border-gray-200 mb-3" />
             <div className="space-y-2">
