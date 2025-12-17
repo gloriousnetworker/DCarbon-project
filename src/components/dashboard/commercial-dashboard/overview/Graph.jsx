@@ -5,7 +5,7 @@ export default function Graph() {
   const [selectedFacility, setSelectedFacility] = useState("All facilities");
   const [selectedPeriod, setSelectedPeriod] = useState("Yearly");
   const [selectedYear, setSelectedYear] = useState("2025");
-  const [selectedMonth, setSelectedMonth] = useState("8");
+  const [selectedMonth, setSelectedMonth] = useState("");
   const [facilities, setFacilities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -33,6 +33,13 @@ export default function Graph() {
   const [facilityRecData, setFacilityRecData] = useState({});
   const [facilityMonthlyData, setFacilityMonthlyData] = useState({});
   const [currentFacilityStats, setCurrentFacilityStats] = useState(null);
+
+  const monthNames = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+  
+  const monthShortNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
   const getAuthData = () => {
     const loginResponse = JSON.parse(localStorage.getItem("loginResponse") || '{}');
@@ -171,8 +178,9 @@ export default function Graph() {
   const fetchRecStatistics = async (userId, authToken, facilityId) => {
     try {
       const url = new URL(`https://services.dcarbon.solutions/api/rec/statistics`);
+      const monthNumber = selectedMonth ? monthNames.indexOf(selectedMonth) + 1 : new Date().getMonth() + 1;
       const params = {
-        month: selectedMonth,
+        month: monthNumber,
         year: selectedYear,
         userId: facilityId ? undefined : userId,
         facilityId: facilityId || undefined
@@ -196,7 +204,7 @@ export default function Graph() {
         setRecStatistics(data.data || []);
         
         if (facilityId) {
-          const facilityDataKey = `${facilityId}_${selectedYear}_${selectedMonth}`;
+          const facilityDataKey = `${facilityId}_${selectedYear}_${monthNumber}`;
           setFacilityRecData(prev => ({
             ...prev,
             [facilityDataKey]: data.data || []
@@ -342,8 +350,7 @@ export default function Graph() {
 
   const processChartData = (monthlyData, isFacility = false) => {
     if (!monthlyData || !Array.isArray(monthlyData)) {
-      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-      const emptyMonthlyData = months.map(month => ({ 
+      const emptyMonthlyData = monthShortNames.map(month => ({ 
         month, 
         solarProduction: 0, 
         energyConsumed: 0, 
@@ -462,7 +469,6 @@ export default function Graph() {
   };
 
   const yAxisValues = [100, 75, 50, 25, 0];
-  const months = Array.from({length: 12}, (_, i) => i + 1);
   const currentYear = new Date().getFullYear();
   const yearOptions = [currentYear, currentYear - 1, currentYear - 2, currentYear - 3];
 
@@ -542,12 +548,12 @@ export default function Graph() {
               <select 
                 value={selectedMonth} 
                 onChange={(e) => setSelectedMonth(e.target.value)} 
-                className="border border-gray-300 rounded px-2 py-1 text-sm"
+                className="border border-gray-300 rounded px-2 py-1 text-sm min-w-[120px]"
               >
                 <option value="">All Months</option>
-                {months.map(month => (
+                {monthNames.map(month => (
                   <option key={month} value={month}>
-                    Month {month}
+                    {month}
                   </option>
                 ))}
               </select>
@@ -634,9 +640,9 @@ export default function Graph() {
                   {stats.recGenerated.toFixed(2)}
                 </p>
               )}
-              {recStatistics.length > 0 && (
+              {recStatistics.length > 0 && selectedMonth && (
                 <p className="text-gray-500 text-xs mt-1">
-                  Current month: {recStatistics[0]?.recsGenerated?.toFixed(2) || 0}
+                  {selectedMonth}: {recStatistics[0]?.recsGenerated?.toFixed(2) || 0}
                 </p>
               )}
             </div>
@@ -656,9 +662,9 @@ export default function Graph() {
                   {stats.recSold.toFixed(2)}
                 </p>
               )}
-              {recStatistics.length > 0 && (
+              {recStatistics.length > 0 && selectedMonth && (
                 <p className="text-gray-500 text-xs mt-1">
-                  Current month: {recStatistics[0]?.recsSold?.toFixed(2) || 0}
+                  {selectedMonth}: {recStatistics[0]?.recsSold?.toFixed(2) || 0}
                 </p>
               )}
             </div>
@@ -678,9 +684,9 @@ export default function Graph() {
                   ${stats.revenueEarned.toFixed(2)}
                 </p>
               )}
-              {recStatistics.length > 0 && (
+              {recStatistics.length > 0 && selectedMonth && (
                 <p className="text-gray-500 text-xs mt-1">
-                  Current month: ${recStatistics[0]?.salesAmount?.toFixed(2) || 0}
+                  {selectedMonth}: ${recStatistics[0]?.salesAmount?.toFixed(2) || 0}
                 </p>
               )}
             </div>
@@ -698,9 +704,9 @@ export default function Graph() {
                   ${stats.salePricePerREC.toFixed(2)}
                 </p>
               )}
-              {recStatistics.length > 0 && (
+              {recStatistics.length > 0 && selectedMonth && (
                 <p className="text-gray-500 text-xs mt-1">
-                  Current: ${recStatistics[0]?.avgRecPrice?.toFixed(2) || 0}
+                  {selectedMonth}: ${recStatistics[0]?.avgRecPrice?.toFixed(2) || 0}
                 </p>
               )}
             </div>
@@ -761,7 +767,7 @@ export default function Graph() {
               <div className="flex items-center space-x-2 mb-3">
                 <div className="h-3 w-3 bg-blue-500 rounded-full"></div>
                 <p className="text-gray-700 text-sm font-medium">
-                  {selectedMonth ? `Month ${selectedMonth} Stats` : "Current Month Stats"}
+                  {selectedMonth ? `${selectedMonth} ${selectedYear} Stats` : "Current Month Stats"}
                 </p>
               </div>
               <hr className="border-gray-200 mb-3" />
