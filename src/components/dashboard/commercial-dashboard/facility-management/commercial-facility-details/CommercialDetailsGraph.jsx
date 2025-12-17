@@ -23,7 +23,6 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
   const [sortBy, setSortBy] = useState('date-asc');
   const [showFilters, setShowFilters] = useState(false);
   const [recStatistics, setRecStatistics] = useState([]);
-  const [recOverview, setRecOverview] = useState(null);
   const [monthlyChartData, setMonthlyChartData] = useState([]);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
   const [selectedMonth, setSelectedMonth] = useState("");
@@ -238,7 +237,6 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
     setChartData(normalizedData);
     
     const totalEnergyProduced = processedChartData.reduce((sum, data) => sum + data.value, 0);
-    const totalRecs = processedChartData.reduce((sum, data) => sum + data.recs, 0);
     
     setStats(prev => ({
       ...prev,
@@ -290,95 +288,33 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
 
   const downloadData = () => {
     try {
-      const dataToExport = filteredData.length > 0 ? filteredData : rawData;
-      
-      if (!dataToExport || dataToExport.length === 0) {
-        alert('No data available to download.');
+      if (chartData.length === 0) {
+        alert('No chart data available to download.');
         return;
       }
 
-      const headers = [
-        'Timestamp',
-        'Start Time',
-        'End Time',
-        'Energy (kWh)',
-        'Net Value',
-        'Forward Value',
-        'Reverse Value',
-        'Month',
-        'Day',
-        'Year',
-        'RECs Generated'
-      ];
+      const headers = ['Month', 'Energy (kWh)', 'RECs Generated', 'Percentage of Max (%)'];
       
       const csvRows = [];
       csvRows.push(headers.join(','));
 
-      dataToExport.forEach((reading, index) => {
-        const startDate = new Date(reading.start);
-        const endDate = new Date(reading.end);
-        const month = startDate.toLocaleString('default', { month: 'short' });
-        const day = startDate.getDate();
-        const year = startDate.getFullYear();
-        const recsGenerated = (reading.kwh || 0) * 1.2;
-        
-        const netDatapoint = reading.datapoints?.find(dp => dp.type === 'net');
-        const fwdDatapoint = reading.datapoints?.find(dp => dp.type === 'fwd');
-        const revDatapoint = reading.datapoints?.find(dp => dp.type === 'rev');
-
+      chartData.forEach((data) => {
         const row = [
-          index + 1,
-          startDate.toISOString(),
-          endDate.toISOString(),
-          reading.kwh || 0,
-          netDatapoint ? netDatapoint.value : 0,
-          fwdDatapoint ? fwdDatapoint.value : 0,
-          revDatapoint ? revDatapoint.value : 0,
-          month,
-          day,
-          year,
-          recsGenerated.toFixed(2)
+          data.month,
+          data.value.toFixed(2),
+          data.recs.toFixed(2),
+          data.normalizedValue.toFixed(2)
         ];
-        
         csvRows.push(row.join(','));
       });
 
       csvRows.push('');
-      csvRows.push('Filter Applied');
-      if (dateRange.startDate && dateRange.endDate) {
-        csvRows.push(`Date Range,${dateRange.startDate} to ${dateRange.endDate}`);
-      }
-      if (selectedMonths.length > 0) {
-        csvRows.push(`Selected Months,"${selectedMonths.join(', ')}"`);
-      }
-      csvRows.push(`Sort Order,${sortBy}`);
-      csvRows.push(`Total Records,${dataToExport.length}`);
-      
-      csvRows.push('');
-      csvRows.push('Summary Statistics');
-      csvRows.push(`Total RECs Generated,${stats.recGenerated.toFixed(2)}`);
-      csvRows.push(`Total RECs Sold,${stats.recSold.toFixed(2)}`);
-      csvRows.push(`Total Revenue Earned,$${stats.revenueEarned.toFixed(2)}`);
+      csvRows.push('Summary');
       csvRows.push(`Total Energy Produced,${stats.energyProduced.toFixed(2)} MWh`);
-      csvRows.push(`Current REC Balance,${stats.currentRecBalance.toFixed(2)}`);
-      csvRows.push(`Avg. REC Price,$${stats.salePricePerREC.toFixed(2)}`);
-
-      if (recStatistics.length > 0) {
-        csvRows.push('');
-        csvRows.push('Monthly REC Statistics');
-        csvRows.push(`Selected Month,${selectedMonth || 'Current'}`);
-        csvRows.push(`Selected Year,${selectedYear}`);
-        recStatistics.forEach((stat, index) => {
-          csvRows.push(`Month ${stat.month},RECs Generated: ${stat.recsGenerated?.toFixed(2) || 0}, RECs Sold: ${stat.recsSold?.toFixed(2) || 0}, Revenue: $${stat.salesAmount?.toFixed(2) || 0}, Remaining: ${stat.remainingRecs?.toFixed(2) || 0}`);
-        });
-      }
-
-      if (monthlyChartData.length > 0) {
-        csvRows.push('');
-        csvRows.push('Monthly Chart Data');
-        monthlyChartData.forEach((item, index) => {
-          csvRows.push(`${item.label || `Month ${item.month}`},Energy: ${item.sumNetKWh?.toFixed(2) || 0} kWh, RECs: ${((item.sumNetKWh || 0) * 1.2).toFixed(2)}`);
-        });
+      csvRows.push(`Total RECs Generated,${stats.recGenerated.toFixed(2)}`);
+      csvRows.push(`Selected Year,${selectedYear}`);
+      if (selectedMonth) {
+        csvRows.push(`Selected Month,${months[parseInt(selectedMonth) - 1] || selectedMonth}`);
       }
 
       const csvContent = csvRows.join('\n');
@@ -387,10 +323,7 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
       const link = document.createElement('a');
       link.href = url;
       
-      const filterSuffix = selectedMonths.length > 0 ? `_${selectedMonths.join('-')}` : 
-                          (dateRange.startDate && dateRange.endDate) ? `_${dateRange.startDate}_to_${dateRange.endDate}` : '';
-      
-      const fileName = `facility_${facilityId}_meter_${meterId || 'data'}${filterSuffix}_${new Date().toISOString().split('T')[0]}.csv`;
+      const fileName = `facility_${facilityId}_chart_data_${selectedYear}${selectedMonth ? `_${months[parseInt(selectedMonth) - 1]}` : ''}_${new Date().toISOString().split('T')[0]}.csv`;
       link.download = fileName;
       
       document.body.appendChild(link);
@@ -401,8 +334,8 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
         URL.revokeObjectURL(url);
       }, 100);
     } catch (err) {
-      console.error('Error downloading data:', err);
-      alert('Failed to download data. Please try again.');
+      console.error('Error downloading chart data:', err);
+      alert('Failed to download chart data. Please try again.');
     }
   };
 
@@ -520,7 +453,7 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
             <button 
               onClick={downloadData}
               className="flex items-center space-x-1 bg-[#039994] text-white px-3 py-1.5 rounded text-sm hover:bg-[#027a75] transition-colors"
-              disabled={!rawData || rawData.length === 0}
+              disabled={chartData.length === 0}
             >
               <FiDownload size={14} />
               <span>Download CSV</span>

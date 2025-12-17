@@ -30,6 +30,10 @@ export default function FacilityCardView() {
     return greenButtonUtilities.includes(utilityProvider);
   };
 
+  const isFacilityComplete = (facility) => {
+    return facility.status && facility.status.toLowerCase() === 'verified';
+  };
+
   const fetchOperators = async () => {
     try {
       const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
@@ -197,22 +201,36 @@ export default function FacilityCardView() {
     }
   };
 
-  const getCircleProgressSegments = (facilityId) => {
+  const getCircleProgressSegments = (facilityId, isComplete) => {
     const progress = facilityProgress[facilityId] || { completedStages: [1], currentStage: 2 };
     const segments = [];
     
     for (let i = 1; i <= 6; i++) {
+      const isCompleted = progress.completedStages.includes(i);
+      const isCurrent = i === progress.currentStage;
+      
       segments.push(
         <div
           key={i}
           className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-            progress.completedStages.includes(i) ? "bg-[#039994] border-[#039994]" : 
-            i === progress.currentStage ? "border-[#039994] bg-white" : "border-gray-300 bg-white"
+            isComplete && isCompleted
+              ? "bg-[#039994] border-[#039994]" 
+              : isComplete && isCurrent
+              ? "border-[#039994] bg-white"
+              : isCompleted
+              ? "bg-gray-500 border-gray-500"
+              : isCurrent
+              ? "border-gray-400 bg-white"
+              : "border-gray-300 bg-white"
           }`}
         >
           <div
             className={`w-2 h-2 rounded-full ${
-              progress.completedStages.includes(i) ? "bg-white" : "bg-gray-300"
+              isComplete && isCompleted
+                ? "bg-white"
+                : isCompleted
+                ? "bg-white"
+                : "bg-gray-300"
             }`}
           />
         </div>
@@ -332,96 +350,169 @@ export default function FacilityCardView() {
             const isExpanded = expandedOperators[facility.id];
             const isOwner = facility.commercialRole?.toLowerCase() === 'owner';
             const isGreenButton = isGreenButtonUtility(facility.utilityProvider);
+            const isComplete = isFacilityComplete(facility);
+            
+            // Determine card styling based on completion status
+            const cardBgClass = isComplete && isGreenButton
+              ? 'bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 border-2 border-green-300 shadow-md'
+              : isComplete
+              ? 'bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50 border-2 border-[#039994] shadow-md'
+              : 'bg-gradient-to-br from-gray-50 via-slate-50 to-gray-100 border-2 border-gray-300';
+            
+            const titleColorClass = isComplete && isGreenButton
+              ? 'text-green-800'
+              : isComplete
+              ? 'text-[#039994]'
+              : 'text-gray-600';
+            
+            const labelColorClass = isComplete && isGreenButton
+              ? 'text-green-700'
+              : isComplete
+              ? 'text-gray-700'
+              : 'text-gray-500';
+            
+            const valueColorClass = isComplete ? 'text-gray-900' : 'text-gray-600';
             
             return (
               <div
                 key={facility.id}
-                className={`rounded-lg cursor-pointer hover:shadow-lg transition-all duration-300 flex flex-col justify-between p-2 relative overflow-hidden ${
-                  isGreenButton 
-                    ? 'bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 border-2 border-green-300 shadow-md' 
-                    : 'border border-[#039994] bg-white'
-                }`}
+                className={`rounded-lg cursor-pointer hover:shadow-lg transition-all duration-300 flex flex-col justify-between p-2 relative overflow-hidden ${cardBgClass}`}
               >
-                {isGreenButton && (
-                  <div className="absolute top-2 right-2">
+                {/* Status Badge */}
+                <div className="absolute top-2 right-2">
+                  {isComplete && isGreenButton ? (
                     <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xs px-2 py-1 rounded-full font-semibold flex items-center shadow-sm">
                       <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                       </svg>
                       Green Button
                     </div>
-                  </div>
-                )}
+                  ) : isComplete ? (
+                    <div className="bg-gradient-to-r from-[#039994] to-teal-600 text-white text-xs px-2 py-1 rounded-full font-semibold flex items-center shadow-sm">
+                      <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                      Verified
+                    </div>
+                  ) : (
+                    <div className="bg-gradient-to-r from-gray-400 to-gray-500 text-white text-xs px-2 py-1 rounded-full font-semibold flex items-center shadow-sm">
+                      <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                      </svg>
+                      Pending
+                    </div>
+                  )}
+                </div>
                 
                 <div onClick={() => setSelectedFacility(facility)}>
-                  <h3 className={`font-semibold text-base mb-1 ${
-                    isGreenButton ? 'text-green-800' : 'text-[#039994]'
-                  }`}>
+                  <h3 className={`font-semibold text-base mb-1 ${titleColorClass}`}>
                     {facility.facilityName}
                   </h3>
                   <div className="grid grid-cols-2 gap-y-1 text-xs">
-                    <span className={`font-medium ${isGreenButton ? 'text-green-700' : 'text-gray-700'}`}>Role:</span>
-                    <span className="capitalize">{facility.commercialRole}</span>
+                    <span className={`font-medium ${labelColorClass}`}>Role:</span>
+                    <span className={`capitalize ${valueColorClass}`}>{facility.commercialRole}</span>
 
-                    <span className={`font-medium ${isGreenButton ? 'text-green-700' : 'text-gray-700'}`}>Type:</span>
-                    <span className="capitalize">{facility.entityType}</span>
+                    <span className={`font-medium ${labelColorClass}`}>Type:</span>
+                    <span className={`capitalize ${valueColorClass}`}>{facility.entityType}</span>
 
-                    <span className={`font-medium ${isGreenButton ? 'text-green-700' : 'text-gray-700'}`}>Utility:</span>
-                    <span className={`${isGreenButton ? 'text-green-600 font-semibold' : ''}`}>
+                    <span className={`font-medium ${labelColorClass}`}>Utility:</span>
+                    <span className={`${isComplete && isGreenButton ? 'text-green-600 font-semibold' : valueColorClass}`}>
                       {facility.utilityProvider}
-                      {isGreenButton && (
+                      {isComplete && isGreenButton && (
                         <svg className="w-3 h-3 ml-1 inline text-green-500" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>
                       )}
                     </span>
 
-                    <span className={`font-medium ${isGreenButton ? 'text-green-700' : 'text-gray-700'}`}>Meter ID:</span>
-                    <span>{formatMeterIds(facility.meterIds)}</span>
+                    <span className={`font-medium ${labelColorClass}`}>Meter ID:</span>
+                    <span className={valueColorClass}>{formatMeterIds(facility.meterIds)}</span>
 
-                    <span className={`font-medium ${isGreenButton ? 'text-green-700' : 'text-gray-700'}`}>Status:</span>
-                    <span className="capitalize">{facility.status}</span>
+                    <span className={`font-medium ${labelColorClass}`}>Status:</span>
+                    <span className={`capitalize ${
+                      isComplete 
+                        ? 'text-green-600 font-semibold' 
+                        : 'text-gray-500'
+                    }`}>
+                      {facility.status}
+                    </span>
 
-                    <span className={`font-medium ${isGreenButton ? 'text-green-700' : 'text-gray-700'}`}>Created:</span>
-                    <span>{formatDate(facility.createdAt)}</span>
+                    <span className={`font-medium ${labelColorClass}`}>Created:</span>
+                    <span className={valueColorClass}>{formatDate(facility.createdAt)}</span>
                   </div>
                   
                   {isOwner && operators.length > 0 && (
-                    <div className="mt-2 pt-2 border-t border-gray-200">
+                    <div className={`mt-2 pt-2 ${isComplete ? 'border-t border-gray-200' : 'border-t border-gray-300'}`}>
                       <div 
                         className={`flex items-center justify-between p-2 rounded cursor-pointer transition-colors ${
-                          isGreenButton ? 'bg-green-100 hover:bg-green-200' : 'bg-gray-50 hover:bg-gray-100'
+                          isComplete && isGreenButton
+                            ? 'bg-green-100 hover:bg-green-200'
+                            : isComplete
+                            ? 'bg-teal-50 hover:bg-teal-100'
+                            : 'bg-gray-100 hover:bg-gray-200'
                         }`}
                         onClick={(e) => {
                           e.stopPropagation();
                           toggleOperatorDropdown(facility.id);
                         }}
                       >
-                        <span className={`text-sm font-medium ${isGreenButton ? 'text-green-800' : 'text-gray-700'}`}>Your Operator</span>
-                        {isExpanded ? <FiChevronUp className={isGreenButton ? "text-green-600" : "text-gray-500"} /> : <FiChevronDown className={isGreenButton ? "text-green-600" : "text-gray-500"} />}
+                        <span className={`text-sm font-medium ${
+                          isComplete && isGreenButton
+                            ? 'text-green-800'
+                            : isComplete
+                            ? 'text-[#039994]'
+                            : 'text-gray-600'
+                        }`}>
+                          Your Operator
+                        </span>
+                        {isExpanded ? (
+                          <FiChevronUp className={
+                            isComplete && isGreenButton
+                              ? "text-green-600"
+                              : isComplete
+                              ? "text-[#039994]"
+                              : "text-gray-500"
+                          } />
+                        ) : (
+                          <FiChevronDown className={
+                            isComplete && isGreenButton
+                              ? "text-green-600"
+                              : isComplete
+                              ? "text-[#039994]"
+                              : "text-gray-500"
+                          } />
+                        )}
                       </div>
                       
                       {isExpanded && (
                         <div className={`mt-2 p-2 rounded border ${
-                          isGreenButton ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'
+                          isComplete && isGreenButton
+                            ? 'bg-green-50 border-green-200'
+                            : isComplete
+                            ? 'bg-teal-50 border-teal-200'
+                            : 'bg-gray-50 border-gray-300'
                         }`}>
                           {operators.map((operator, index) => (
                             <div key={index} className="grid grid-cols-2 gap-y-1 text-xs">
-                              <span className={`font-medium ${isGreenButton ? 'text-green-700' : 'text-gray-700'}`}>Name:</span>
-                              <span className="truncate">{operator.name}</span>
+                              <span className={`font-medium ${labelColorClass}`}>Name:</span>
+                              <span className={`truncate ${valueColorClass}`}>{operator.name}</span>
                               
-                              <span className={`font-medium ${isGreenButton ? 'text-green-700' : 'text-gray-700'}`}>Email:</span>
-                              <span className="truncate" title={operator.inviteeEmail}>
+                              <span className={`font-medium ${labelColorClass}`}>Email:</span>
+                              <span className={`truncate ${valueColorClass}`} title={operator.inviteeEmail}>
                                 {truncateEmail(operator.inviteeEmail)}
                               </span>
                               
-                              <span className={`font-medium ${isGreenButton ? 'text-green-700' : 'text-gray-700'}`}>Status:</span>
-                              <span className={`font-medium ${operator.status === 'ACCEPTED' ? 'text-green-600' : 'text-yellow-600'}`}>
+                              <span className={`font-medium ${labelColorClass}`}>Status:</span>
+                              <span className={`font-medium ${
+                                operator.status === 'ACCEPTED' 
+                                  ? isComplete ? 'text-green-600' : 'text-gray-600'
+                                  : 'text-yellow-600'
+                              }`}>
                                 {operator.status === 'ACCEPTED' ? 'Accepted' : 'Pending'}
                               </span>
                               
-                              <span className={`font-medium ${isGreenButton ? 'text-green-700' : 'text-gray-700'}`}>Invited:</span>
-                              <span>{formatDate(operator.createdAt)}</span>
+                              <span className={`font-medium ${labelColorClass}`}>Invited:</span>
+                              <span className={valueColorClass}>{formatDate(operator.createdAt)}</span>
                             </div>
                           ))}
                         </div>
@@ -429,32 +520,48 @@ export default function FacilityCardView() {
                     </div>
                   )}
                   
-                  <div className="mt-3 pt-2 border-t border-gray-200">
+                  <div className={`mt-3 pt-2 ${isComplete ? 'border-t border-gray-200' : 'border-t border-gray-300'}`}>
                     <div className="flex items-center justify-between mb-2">
-                      <span className={`text-xs font-medium ${isGreenButton ? 'text-green-700' : 'text-gray-600'}`}>Progress</span>
-                      <span className={`text-xs font-medium ${isGreenButton ? 'text-green-700' : 'text-[#039994]'}`}>
+                      <span className={`text-xs font-medium ${labelColorClass}`}>Progress</span>
+                      <span className={`text-xs font-medium ${
+                        isComplete 
+                          ? isGreenButton ? 'text-green-700' : 'text-[#039994]'
+                          : 'text-gray-600'
+                      }`}>
                         Step {progress.currentStage} of 6
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
-                      {getCircleProgressSegments(facility.id)}
+                      {getCircleProgressSegments(facility.id, isComplete)}
                     </div>
                   </div>
                 </div>
                 <div
                   className={`flex items-center justify-between mt-2 px-1 py-1 rounded transition-colors ${
-                    isGreenButton 
-                      ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700' 
-                      : 'bg-[#069B9621] hover:bg-[#069B9633]'
+                    isComplete && isGreenButton
+                      ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700'
+                      : isComplete
+                      ? 'bg-[#069B9621] hover:bg-[#069B9633]'
+                      : 'bg-gray-200 hover:bg-gray-300'
                   }`}
                   onClick={() => setSelectedFacility(facility)}
                 >
                   <span className={`text-xs font-medium ${
-                    isGreenButton ? 'text-white' : 'text-[#039994]'
+                    isComplete && isGreenButton
+                      ? 'text-white'
+                      : isComplete
+                      ? 'text-[#039994]'
+                      : 'text-gray-600'
                   }`}>
                     View details
                   </span>
-                  <FiChevronRight size={16} className={isGreenButton ? "text-white" : "text-[#039994]"} />
+                  <FiChevronRight size={16} className={
+                    isComplete && isGreenButton
+                      ? "text-white"
+                      : isComplete
+                      ? "text-[#039994]"
+                      : "text-gray-500"
+                  } />
                 </div>
               </div>
             );
