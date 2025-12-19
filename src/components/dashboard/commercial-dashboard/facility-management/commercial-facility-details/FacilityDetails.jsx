@@ -20,12 +20,12 @@ const labelClass = "block text-sm font-medium text-gray-700 mb-1";
 
 const ProgressTracker = ({ currentStage, nextStage, onStageClick }) => {
   const stages = [
-    { id: 1, name: "App Registration", tooltip: "Account creation completed" },
-    { id: 2, name: "Solar Install Details", tooltip: "Owner details and address completed" },
-    { id: 3, name: "DCarbon Service Agreements", tooltip: "Terms and conditions signed" },
-    { id: 4, name: "Utility Authorization", tooltip: "Financial information submitted" },
-    { id: 5, name: "Utility Meter Selection", tooltip: "Utility meters connected" },
-    { id: 6, name: "Solar Document Uploads", tooltip: "All required documents uploaded" }
+    { id: 1, name: "Created Facility", tooltip: "Facility registration completed" },
+    { id: 2, name: "Service Agreements", tooltip: "Terms and conditions signed" },
+    { id: 3, name: "Authorizations", tooltip: "Financial information submitted" },
+    { id: 4, name: "Meter Selection", tooltip: "Utility meters connected" },
+    { id: 5, name: "Facility Details", tooltip: "All facility details completed" },
+    { id: 6, name: "Document Uploads", tooltip: "All required documents uploaded" }
   ];
 
   const currentDisplayStage = currentStage > 6 ? 6 : currentStage;
@@ -168,20 +168,11 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
 
       if (!userId || !authToken) return;
 
-      const checkStage2 = async () => {
-        try {
-          const response = await fetch(
-            `https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`,
-            { headers: { 'Authorization': `Bearer ${authToken}` } }
-          );
-          const result = await response.json();
-          return result.status === 'success' && result.data?.commercialUser?.ownerAddress;
-        } catch (error) {
-          return false;
-        }
+      const checkStage1 = () => {
+        return true;
       };
 
-      const checkStage3 = async () => {
+      const checkStage2 = async () => {
         try {
           const response = await fetch(
             `https://services.dcarbon.solutions/api/user/agreement/${userId}`,
@@ -194,7 +185,7 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
         }
       };
 
-      const checkStage4 = async () => {
+      const checkStage3 = async () => {
         try {
           const response = await fetch(
             `https://services.dcarbon.solutions/api/user/financial-info/${userId}`,
@@ -207,7 +198,7 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
         }
       };
 
-      const checkStage5 = async () => {
+      const checkStage4 = async () => {
         try {
           const response = await fetch(
             `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`,
@@ -240,24 +231,31 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
         }
       };
 
+      const checkStage5 = (facility) => {
+        return checkFacilityCompletion(facility);
+      };
+
       const checkStage6 = () => {
         return facilityData.status?.toLowerCase() === 'verified';
       };
 
       const stageChecks = [
+        { stage: 1, check: checkStage1 },
         { stage: 2, check: checkStage2 },
         { stage: 3, check: checkStage3 },
         { stage: 4, check: checkStage4 },
-        { stage: 5, check: checkStage5 },
+        { stage: 5, check: () => checkStage5(facilityData) },
         { stage: 6, check: checkStage6 }
       ];
 
       let highestCompletedStage = 1;
 
       for (const { stage, check } of stageChecks) {
-        const isCompleted = await check();
+        const isCompleted = typeof check === 'function' ? await check() : false;
         if (isCompleted) {
           highestCompletedStage = stage;
+        } else {
+          break;
         }
       }
 
@@ -430,6 +428,9 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
   const handleStageClick = (stageId) => {
     if (stageId === 6 && facilityData.status?.toLowerCase() !== 'verified') {
       toast('Please complete all document uploads to verify your facility', { icon: 'ℹ️' });
+    }
+    if (stageId === 5 && !isFacilityComplete) {
+      toast('Please complete all facility details first', { icon: 'ℹ️' });
     }
   };
 

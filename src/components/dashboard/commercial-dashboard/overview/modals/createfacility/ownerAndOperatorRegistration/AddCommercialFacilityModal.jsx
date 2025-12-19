@@ -669,19 +669,15 @@ export default function AddCommercialFacilityModal({ isOpen, onClose, onCreateNe
                         </option>
                       ))
                     )}
+                    <option value="add-utility" className="text-[#039994] bg-gray-50 hover:bg-gray-100 font-medium">
+                      Meters to be registered not listed? Add Utility account
+                    </option>
                   </select>
                   <p className="mt-1 text-xs text-gray-500">
                     Only meters with meter numbers, service address, and billing address are shown
                   </p>
                 </div>
               )}
-              <button
-                type="button"
-                onClick={handleOpenAddUtilityModal}
-                className="mt-2 text-xs text-[#039994] hover:text-[#02857f] underline focus:outline-none"
-              >
-                Meters to be registered not listed? Add Utility account
-              </button>
 
               {selectedMeter && (
                 <div className="mb-3 p-2 bg-gray-50 rounded-md border border-gray-200 text-sm">
@@ -807,7 +803,13 @@ export default function AddCommercialFacilityModal({ isOpen, onClose, onCreateNe
                 <select
                   name="financeNamingCode"
                   value={formData.financeNamingCode}
-                  onChange={handleChange}
+                  onChange={(e) => {
+                    if (e.target.value === "request-new") {
+                      setShowFinanceTypeRequestModal(true);
+                    } else {
+                      handleChange(e);
+                    }
+                  }}
                   className={selectClass}
                   required
                   disabled={loading || financeTypesLoading}
@@ -824,14 +826,10 @@ export default function AddCommercialFacilityModal({ isOpen, onClose, onCreateNe
                       </option>
                     ))
                   )}
+                  <option value="request-new" className="text-[#039994] bg-gray-50 hover:bg-gray-100 font-medium">
+                    Finance Type not listed?
+                  </option>
                 </select>
-                <button
-                  type="button"
-                  onClick={() => setShowFinanceTypeRequestModal(true)}
-                  className="mt-2 text-xs text-[#039994] hover:text-[#02857f] underline focus:outline-none"
-                >
-                  Finance Type not listed?
-                </button>
               </div>
 
               {showUploadField && (

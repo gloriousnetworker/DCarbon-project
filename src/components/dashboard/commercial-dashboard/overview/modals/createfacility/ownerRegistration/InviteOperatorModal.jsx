@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import axios from "axios";
 
@@ -8,21 +8,82 @@ const styles = {
   spinner: 'h-10 w-10 border-4 border-t-4 border-gray-300 border-t-[#039994] rounded-full animate-spin',
   labelClass: 'block mb-1 font-sfpro text-[12px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]',
   inputClass: 'w-full rounded-md border border-gray-300 px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[12px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]',
+  selectClass: 'w-full rounded-md border border-gray-300 px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[12px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E] bg-white',
   termsTextContainer: 'text-center mt-2'
 };
 
 export default function InviteOperatorModal({ isOpen, onClose, onBack, selectedUtilityProvider, isGreenButtonUtility }) {
   const [loading, setLoading] = useState(false);
+  const [loadingFacilities, setLoadingFacilities] = useState(false);
   const [currentModal, setCurrentModal] = useState('invite');
+  const [facilities, setFacilities] = useState([]);
+  const [selectedFacilityId, setSelectedFacilityId] = useState("");
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     message: "Please join the DCarbon Platform as my Operator!"
   });
 
+  useEffect(() => {
+    if (isOpen && currentModal === 'invite') {
+      fetchUserFacilities();
+    }
+  }, [isOpen, currentModal]);
+
+  const fetchUserFacilities = async () => {
+    setLoadingFacilities(true);
+    try {
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const userId = loginResponse?.data?.user?.id;
+      const authToken = loginResponse?.data?.token;
+
+      if (!userId || !authToken) {
+        throw new Error('Authentication data not found');
+      }
+
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/facility/get-user-facilities-by-userId/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      const result = await response.json();
+      
+      if (result.status === 'success' && result.data?.facilities) {
+        const sortedFacilities = result.data.facilities.sort((a, b) => 
+          new Date(b.createdAt) - new Date(a.createdAt)
+        );
+        setFacilities(sortedFacilities);
+        if (sortedFacilities.length > 0) {
+          setSelectedFacilityId(sortedFacilities[0].id);
+        }
+      } else {
+        toast.error('Failed to load facilities');
+      }
+    } catch (error) {
+      console.error('Error fetching facilities:', error);
+      toast.error('Error loading facilities');
+    } finally {
+      setLoadingFacilities(false);
+    }
+  };
+
+  const getSelectedFacility = () => {
+    return facilities.find(f => f.id === selectedFacilityId);
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleFacilityChange = (e) => {
+    setSelectedFacilityId(e.target.value);
   };
 
   const validateForm = () => {
@@ -47,6 +108,11 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, selectedU
       return false;
     }
 
+    if (!selectedFacilityId) {
+      toast.error('Please select a facility');
+      return false;
+    }
+
     return true;
   };
 
@@ -61,13 +127,16 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, selectedU
     const toastId = toast.loading('Sending invitation...');
 
     try {
-      const userId = localStorage.getItem('userId');
-      const token = localStorage.getItem('authToken');
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const userId = loginResponse?.data?.user?.id;
+      const authToken = loginResponse?.data?.token;
       
-      if (!userId || !token) {
+      if (!userId || !authToken) {
         throw new Error('Authentication required');
       }
 
+      const selectedFacility = getSelectedFacility();
+      
       const payload = {
         invitees: [
           {
@@ -76,7 +145,9 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, selectedU
             name: formData.name.trim(),
             customerType: "COMMERCIAL",
             message: formData.message.trim(),
-            inviterUserType: "COMMERCIAL_USER"
+            inviterUserType: "COMMERCIAL_USER",
+            facilityId: selectedFacilityId,
+            facilityName: selectedFacility?.nickname || selectedFacility?.facilityName || "Facility"
           }
         ]
       };
@@ -87,7 +158,7 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, selectedU
         {
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
+            'Authorization': `Bearer ${authToken}`
           }
         }
       );
@@ -111,6 +182,7 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, selectedU
     if (!loading) {
       setFormData({ name: "", email: "", message: "Please join our platform!" });
       setCurrentModal('invite');
+      setSelectedFacilityId("");
       onClose();
     }
   };
@@ -119,6 +191,7 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, selectedU
     if (!loading && onBack) {
       setFormData({ name: "", email: "", message: "Please join our platform!" });
       setCurrentModal('invite');
+      setSelectedFacilityId("");
       onBack();
     }
   };
@@ -130,6 +203,7 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, selectedU
   const handleGoToDashboard = () => {
     setFormData({ name: "", email: "", message: "Please join our platform!" });
     setCurrentModal('invite');
+    setSelectedFacilityId("");
     onClose();
     window.location.reload();
   };
@@ -267,6 +341,46 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, selectedU
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
+                {loadingFacilities ? (
+                  <div className="py-2 text-center">
+                    <div className="inline-block w-4 h-4 border-2 border-[#039994] border-t-transparent rounded-full animate-spin"></div>
+                    <p className="text-xs text-gray-500 mt-1">Loading facilities...</p>
+                  </div>
+                ) : facilities.length > 0 ? (
+                  <div>
+                    <label className={`${styles.labelClass} text-xs`}>
+                      Select Facility
+                    </label>
+                    <select
+                      value={selectedFacilityId}
+                      onChange={handleFacilityChange}
+                      className={styles.selectClass}
+                      disabled={loading}
+                      required
+                    >
+                      {facilities.map(facility => (
+                        <option key={facility.id} value={facility.id}>
+                          {facility.nickname || facility.facilityName || "Unnamed Facility"}
+                        </option>
+                      ))}
+                    </select>
+                    {selectedFacilityId && (
+                      <div className="mt-1 text-[10px] text-gray-500">
+                        <p>Facility ID: {selectedFacilityId}</p>
+                        {getSelectedFacility()?.utilityProvider && (
+                          <p>Utility: {getSelectedFacility()?.utilityProvider}</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                    <p className="text-xs text-yellow-700 text-center">
+                      No facilities found. Please create a facility first.
+                    </p>
+                  </div>
+                )}
+
                 <div>
                   <label className={`${styles.labelClass} text-xs`}>
                     Operator's name
@@ -278,7 +392,7 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, selectedU
                     onChange={handleInputChange}
                     placeholder="Enter operator's name"
                     className={styles.inputClass}
-                    disabled={loading}
+                    disabled={loading || facilities.length === 0}
                     required
                   />
                 </div>
@@ -294,7 +408,7 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, selectedU
                     onChange={handleInputChange}
                     placeholder="Enter operator's email address"
                     className={styles.inputClass}
-                    disabled={loading}
+                    disabled={loading || facilities.length === 0}
                     required
                   />
                 </div>
@@ -309,7 +423,7 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, selectedU
                     onChange={handleInputChange}
                     placeholder="Enter your custom invitation message"
                     className={`${styles.inputClass} min-h-[60px] resize-none`}
-                    disabled={loading}
+                    disabled={loading || facilities.length === 0}
                     required
                     rows={2}
                   />
@@ -331,8 +445,8 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, selectedU
 
                 <button 
                   type="submit" 
-                  className={`${styles.buttonPrimary} ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  disabled={loading}
+                  className={`${styles.buttonPrimary} ${loading || facilities.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  disabled={loading || facilities.length === 0}
                 >
                   {loading ? 'Sending...' : 'Send Invitation'}
                 </button>

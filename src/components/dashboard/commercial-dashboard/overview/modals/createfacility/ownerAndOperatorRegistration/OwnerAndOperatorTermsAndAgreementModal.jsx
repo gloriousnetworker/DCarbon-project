@@ -1,25 +1,23 @@
 import React, { useState, useRef, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import SignatureModal from "./SignatureModal";
-import FinanceAndInstallerModal from "./FinanceAndInstallerModal";
+import OperatorFinanceAndInstallerModal from "./FinanceAndInstallerModal";
 import { jsPDF } from "jspdf";
 
 export default function OwnerAndOperatorTermsAndAgreementModal({ isOpen, onClose }) {
   const [isChecked1, setIsChecked1] = useState(false);
   const [isChecked2, setIsChecked2] = useState(false);
-  const [scrolledToBottom, setScrolledToBottom] = useState(false);
   const [showSignatureModal, setShowSignatureModal] = useState(false);
   const [showFinanceModal, setShowFinanceModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [hasSigned, setHasSigned] = useState(false);
+  const [signatureUrl, setSignatureUrl] = useState(null);
   const contentRef = useRef(null);
 
   useEffect(() => {
     const handleScroll = () => {
       if (contentRef.current) {
         const { scrollTop, scrollHeight, clientHeight } = contentRef.current;
-        const isBottom = scrollTop + clientHeight >= scrollHeight - 10;
-        setScrolledToBottom(isBottom);
       }
     };
 
@@ -34,11 +32,45 @@ export default function OwnerAndOperatorTermsAndAgreementModal({ isOpen, onClose
     };
   }, []);
 
+  const fetchUserAgreement = async () => {
+    try {
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const userId = loginResponse?.data?.user?.id;
+      const authToken = loginResponse?.data?.token;
+      
+      if (!userId || !authToken) {
+        return null;
+      }
+
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/user/agreement/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (response.ok && data.status === 'success') {
+        return data.data;
+      } else {
+        return null;
+      }
+    } catch (error) {
+      console.error('Error fetching agreement:', error);
+      return null;
+    }
+  };
+
   const acceptUserAgreementTerms = async () => {
     try {
       setIsLoading(true);
-      const userId = localStorage.getItem('userId');
-      const authToken = localStorage.getItem('authToken');
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const userId = loginResponse?.data?.user?.id;
+      const authToken = loginResponse?.data?.token;
       
       if (!userId || !authToken) {
         toast.error('Authentication required. Please log in again.');
@@ -85,6 +117,10 @@ export default function OwnerAndOperatorTermsAndAgreementModal({ isOpen, onClose
   const handleSignatureComplete = async () => {
     setShowSignatureModal(false);
     setHasSigned(true);
+    const agreementData = await fetchUserAgreement();
+    if (agreementData && agreementData.signature) {
+      setSignatureUrl(agreementData.signature);
+    }
     const success = await acceptUserAgreementTerms();
     if (success) {
       setShowFinanceModal(true);
@@ -111,7 +147,17 @@ export default function OwnerAndOperatorTermsAndAgreementModal({ isOpen, onClose
     window.location.reload();
   };
 
-  const handleDownload = () => {
+  const loadImage = (url) => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'Anonymous';
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = url;
+    });
+  };
+
+  const handleDownload = async () => {
     const doc = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
@@ -120,7 +166,6 @@ export default function OwnerAndOperatorTermsAndAgreementModal({ isOpen, onClose
 
     doc.setFont('helvetica', 'normal');
     
-    // First Agreement
     doc.setFontSize(16);
     doc.setTextColor(3, 153, 148);
     doc.setFont('helvetica', 'bold');
@@ -162,7 +207,6 @@ export default function OwnerAndOperatorTermsAndAgreementModal({ isOpen, onClose
       yPosition += 7;
     });
 
-    // Second Agreement
     doc.addPage();
     yPosition = 20;
     
@@ -205,7 +249,6 @@ export default function OwnerAndOperatorTermsAndAgreementModal({ isOpen, onClose
       yPosition += 7;
     });
 
-    // Signature Page
     doc.addPage();
     yPosition = 30;
     
@@ -223,11 +266,27 @@ export default function OwnerAndOperatorTermsAndAgreementModal({ isOpen, onClose
     doc.text('presented in this document.', 105, yPosition, { align: 'center' });
     yPosition += 20;
     
-    doc.line(40, yPosition, 80, yPosition);
-    doc.text('Authorized Signature', 60, yPosition + 5, { align: 'center' });
+    if (signatureUrl) {
+      try {
+        const img = await loadImage(signatureUrl);
+        const imgWidth = 40;
+        const imgHeight = 20;
+        doc.addImage(img, 'PNG', 40, yPosition, imgWidth, imgHeight);
+        yPosition += imgHeight + 5;
+      } catch (error) {
+        console.error('Error loading signature image:', error);
+        doc.line(40, yPosition, 80, yPosition);
+        doc.text('Authorized Signature', 60, yPosition + 5, { align: 'center' });
+        yPosition += 10;
+      }
+    } else {
+      doc.line(40, yPosition, 80, yPosition);
+      doc.text('Authorized Signature', 60, yPosition + 5, { align: 'center' });
+      yPosition += 10;
+    }
     
-    doc.line(130, yPosition, 170, yPosition);
-    doc.text('Date', 150, yPosition + 5, { align: 'center' });
+    doc.line(130, yPosition - 10, 170, yPosition - 10);
+    doc.text('Date', 150, yPosition - 5, { align: 'center' });
     yPosition += 20;
     
     doc.text('Printed Name: ___________________________', 40, yPosition);
@@ -241,7 +300,7 @@ export default function OwnerAndOperatorTermsAndAgreementModal({ isOpen, onClose
 
   if (showFinanceModal) {
     return (
-      <FinanceAndInstallerModal
+      <OperatorFinanceAndInstallerModal
         isOpen={showFinanceModal}
         onClose={handleFinanceModalClose}
         onBack={handleFinanceModalBack}
@@ -282,57 +341,60 @@ export default function OwnerAndOperatorTermsAndAgreementModal({ isOpen, onClose
 
               <div className="border-b border-gray-300 mb-4"></div>
 
-              <div className="space-y-4 mb-4">
-                <div className="flex items-start">
-                  <input
-                    type="checkbox"
-                    id="agreementCheckbox1"
-                    checked={isChecked1}
-                    onChange={(e) => setIsChecked1(e.target.checked)}
-                    className="mt-1 w-4 h-4 text-[#039994] border-gray-300 rounded focus:ring-[#039994] accent-[#039994]"
-                  />
-                  <label htmlFor="agreementCheckbox1" className="ml-3 font-sans font-[400] text-[14px] leading-[150%] text-[#039994] cursor-pointer">
-                    Owner and Operator REC Agreement
-                  </label>
-                </div>
-                <div className="flex items-start">
-                  <input
-                    type="checkbox"
-                    id="agreementCheckbox2"
-                    checked={isChecked2}
-                    onChange={(e) => setIsChecked2(e.target.checked)}
-                    className="mt-1 w-4 h-4 text-[#039994] border-gray-300 rounded focus:ring-[#039994] accent-[#039994]"
-                  />
-                  <label htmlFor="agreementCheckbox2" className="ml-3 font-sans font-[400] text-[14px] leading-[150%] text-[#039994] cursor-pointer">
-                    Information Release Authorization
-                  </label>
-                </div>
-              </div>
-
               <div
                 ref={contentRef}
                 className="agreement-content h-[300px] overflow-y-auto mb-6 font-sans text-[12px] leading-[150%] font-[400] text-[#1E1E1E] p-4 bg-gray-50 rounded-lg"
               >
-                <h3 className="font-bold text-[#039994] mb-2">OWNER AND OPERATOR REC AGREEMENT</h3>
-                <p className="mb-4">
-                  This Owner and Operator Renewable Energy Certificate (REC) Agreement (the "Agreement") is made between DCarbon Solutions ("Company") and the undersigned owner and operator ("Customer").
-                </p>
-                <p className="mb-2"><strong>1. REC Ownership:</strong> Customer agrees to transfer all rights, title, and interest in the RECs generated by their renewable energy system to Company.</p>
-                <p className="mb-2"><strong>2. Term:</strong> This Agreement shall commence on the date of execution and continue for a period of 12 months, automatically renewing for successive 12-month terms unless terminated.</p>
-                <p className="mb-2"><strong>3. Compensation:</strong> Company shall pay Customer $0.03 per kWh for all verified RECs generated by Customer's system.</p>
-                <p className="mb-2"><strong>4. Metering:</strong> Customer agrees to provide Company with access to energy production data from their renewable energy system.</p>
-                <p className="mb-2"><strong>5. Representations:</strong> Customer represents they have the authority to enter this Agreement and transfer RECs on behalf of the property.</p>
-                <p className="mb-4"><strong>6. Governing Law:</strong> This Agreement shall be governed by the laws of the state where the system is located.</p>
+                <div>
+                  <h3 className="font-bold text-[#039994] mb-2">OWNER AND OPERATOR REC AGREEMENT</h3>
+                  <p className="mb-4">
+                    This Owner and Operator Renewable Energy Certificate (REC) Agreement (the "Agreement") is made between DCarbon Solutions ("Company") and the undersigned owner and operator ("Customer").
+                  </p>
+                  <p className="mb-2"><strong>1. REC Ownership:</strong> Customer agrees to transfer all rights, title, and interest in the RECs generated by their renewable energy system to Company.</p>
+                  <p className="mb-2"><strong>2. Term:</strong> This Agreement shall commence on the date of execution and continue for a period of 12 months, automatically renewing for successive 12-month terms unless terminated.</p>
+                  <p className="mb-2"><strong>3. Compensation:</strong> Company shall pay Customer $0.03 per kWh for all verified RECs generated by Customer's system.</p>
+                  <p className="mb-2"><strong>4. Metering:</strong> Customer agrees to provide Company with access to energy production data from their renewable energy system.</p>
+                  <p className="mb-2"><strong>5. Representations:</strong> Customer represents they have the authority to enter this Agreement and transfer RECs on behalf of the property.</p>
+                  <p className="mb-4"><strong>6. Governing Law:</strong> This Agreement shall be governed by the laws of the state where the system is located.</p>
+                  
+                  <div className="flex items-start mb-6">
+                    <input
+                      type="checkbox"
+                      id="agreementCheckbox1"
+                      checked={isChecked1}
+                      onChange={(e) => setIsChecked1(e.target.checked)}
+                      className="mt-1 w-4 h-4 text-[#039994] border-gray-300 rounded focus:ring-[#039994] accent-[#039994]"
+                    />
+                    <label htmlFor="agreementCheckbox1" className="ml-3 font-sans font-[400] text-[14px] leading-[150%] text-[#039994] cursor-pointer">
+                      I agree to the Owner and Operator REC Agreement
+                    </label>
+                  </div>
+                </div>
 
-                <h3 className="font-bold text-[#039994] mb-2">OWNER AND OPERATOR INFORMATION RELEASE AUTHORIZATION</h3>
-                <p className="mb-4">
-                  This Owner and Operator Information Release Authorization ("Authorization") permits DCarbon Solutions to access and use Customer's utility data.
-                </p>
-                <p className="mb-2"><strong>1. Authorization:</strong> Customer authorizes Company to access their utility account data for the purpose of REC verification and energy management services.</p>
-                <p className="mb-2"><strong>2. Data Use:</strong> Company may use this data to calculate REC production, verify system performance, and provide energy reports.</p>
-                <p className="mb-2"><strong>3. Third Parties:</strong> Customer authorizes their utility provider to release consumption and generation data to Company.</p>
-                <p className="mb-2"><strong>4. Duration:</strong> This Authorization remains in effect until revoked in writing by Customer.</p>
-                <p className="mb-2"><strong>5. Security:</strong> Company agrees to maintain appropriate safeguards to protect Customer's data.</p>
+                <div className="border-t border-gray-300 my-6 pt-6">
+                  <h3 className="font-bold text-[#039994] mb-2">OWNER AND OPERATOR INFORMATION RELEASE AUTHORIZATION</h3>
+                  <p className="mb-4">
+                    This Owner and Operator Information Release Authorization ("Authorization") permits DCarbon Solutions to access and use Customer's utility data.
+                  </p>
+                  <p className="mb-2"><strong>1. Authorization:</strong> Customer authorizes Company to access their utility account data for the purpose of REC verification and energy management services.</p>
+                  <p className="mb-2"><strong>2. Data Use:</strong> Company may use this data to calculate REC production, verify system performance, and provide energy reports.</p>
+                  <p className="mb-2"><strong>3. Third Parties:</strong> Customer authorizes their utility provider to release consumption and generation data to Company.</p>
+                  <p className="mb-2"><strong>4. Duration:</strong> This Authorization remains in effect until revoked in writing by Customer.</p>
+                  <p className="mb-4"><strong>5. Security:</strong> Company agrees to maintain appropriate safeguards to protect Customer's data.</p>
+                  
+                  <div className="flex items-start">
+                    <input
+                      type="checkbox"
+                      id="agreementCheckbox2"
+                      checked={isChecked2}
+                      onChange={(e) => setIsChecked2(e.target.checked)}
+                      className="mt-1 w-4 h-4 text-[#039994] border-gray-300 rounded focus:ring-[#039994] accent-[#039994]"
+                    />
+                    <label htmlFor="agreementCheckbox2" className="ml-3 font-sans font-[400] text-[14px] leading-[150%] text-[#039994] cursor-pointer">
+                      I agree to the Information Release Authorization
+                    </label>
+                  </div>
+                </div>
               </div>
 
               <div className="flex justify-between gap-4">

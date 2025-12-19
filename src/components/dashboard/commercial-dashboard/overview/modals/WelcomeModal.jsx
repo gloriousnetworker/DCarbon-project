@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
-import CommercialRegistrationModal from "./createfacility/CommercialRegistrationModal";
+import CreateNewFacilityModal from "./createfacility/CreateNewFacilityModal";
 import * as styles from './styles';
 import { toast } from 'react-hot-toast';
 
 export default function WelcomeModal({ isOpen, onClose, userData }) {
   const [isCreatingFacility, setIsCreatingFacility] = useState(false);
-  const [showCommercialRegistration, setShowCommercialRegistration] = useState(false);
+  const [showCreateFacility, setShowCreateFacility] = useState(false);
   const [showCommercialForm, setShowCommercialForm] = useState(false);
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [formData, setFormData] = useState({
@@ -142,16 +142,12 @@ export default function WelcomeModal({ isOpen, onClose, userData }) {
     setIsCreatingFacility(true);
     setTimeout(() => {
       setIsCreatingFacility(false);
-      setShowCommercialRegistration(true);
+      setShowCreateFacility(true);
     }, 1000);
   };
 
-  const handleBackToWelcome = () => {
-    setShowCommercialRegistration(false);
-  };
-
   const handleCloseAll = () => {
-    setShowCommercialRegistration(false);
+    setShowCreateFacility(false);
     setShowCommercialForm(false);
     setShowWelcomeModal(false);
     onClose();
@@ -273,7 +269,7 @@ export default function WelcomeModal({ isOpen, onClose, userData }) {
         </div>
       )}
 
-      {!showCommercialRegistration && !showCommercialForm && showWelcomeModal && (
+      {!showCreateFacility && !showCommercialForm && showWelcomeModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div className="relative w-full max-w-md mx-4">
             <div
@@ -373,10 +369,9 @@ export default function WelcomeModal({ isOpen, onClose, userData }) {
         </div>
       )}
 
-      <CommercialRegistrationModal 
-        isOpen={showCommercialRegistration}
+      <CreateNewFacilityModal 
+        isOpen={showCreateFacility}
         onClose={handleCloseAll}
-        onBack={handleBackToWelcome}
       />
     </>
   );
