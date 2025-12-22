@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import AddUtilityProvider from "./AddUtilityProvider";
 import UtilityAuthorizationModal from "./UtilityAuthorizationModal";
 import FacilityCreatedSuccessfulModal from "./FacilityCreatedSuccessfulModal";
+import CreateNewFacilityModal from "../CreateNewFacilityModal";
 import {
   labelClass,
   selectClass,
@@ -52,6 +53,7 @@ export default function AddCommercialFacilityModal({ isOpen, onClose, onCreateNe
   const [file, setFile] = useState(null);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [showCreateNewFacilityModal, setShowCreateNewFacilityModal] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -257,6 +259,11 @@ export default function AddCommercialFacilityModal({ isOpen, onClose, onCreateNe
         financeType: selectedFinanceType ? selectedFinanceType.name : ""
       }));
     } else if (name === "meterId") {
+      if (value === "add-utility") {
+        handleOpenCreateNewFacilityModal();
+        return;
+      }
+      
       const validMeters = getValidMeters();
       const meter = validMeters.find(m => m.uid === value);
       setSelectedMeter(meter || null);
@@ -493,9 +500,7 @@ export default function AddCommercialFacilityModal({ isOpen, onClose, onCreateNe
 
   const handleOpenAddUtilityModal = () => {
     onClose();
-    if (onCreateNewFacility) {
-      onCreateNewFacility();
-    }
+    setShowAddUtilityModal(true);
   };
 
   const handleCloseAddUtilityModal = () => {
@@ -506,6 +511,23 @@ export default function AddCommercialFacilityModal({ isOpen, onClose, onCreateNe
   const handleCloseUtilityAuthModal = () => {
     setShowUtilityAuthModal(false);
     fetchUserMeters();
+  };
+
+  const handleOpenCreateNewFacilityModal = () => {
+    if (onCreateNewFacility) {
+      onCreateNewFacility();
+    } else {
+      onClose();
+      setShowCreateNewFacilityModal(true);
+    }
+  };
+
+  const handleCloseCreateNewFacilityModal = () => {
+    setShowCreateNewFacilityModal(false);
+    fetchUserMeters();
+    if (isOpen) {
+      onClose();
+    }
   };
 
   const handleRequestFinanceType = async () => {
@@ -559,11 +581,11 @@ export default function AddCommercialFacilityModal({ isOpen, onClose, onCreateNe
     (selectedMeter ? meterAgreementAccepted : true) &&
     (isCashType ? true : (showUploadField ? uploadSuccess : true));
 
-  if (!isOpen) return null;
+  if (!isOpen && !showCreateNewFacilityModal && !showAddUtilityModal && !showUtilityAuthModal && !showFinanceTypeRequestModal && !showSuccessModal) return null;
 
   return (
     <>
-      {!showAddUtilityModal && !showUtilityAuthModal && !showFinanceTypeRequestModal && !showSuccessModal && (
+      {isOpen && !showAddUtilityModal && !showUtilityAuthModal && !showFinanceTypeRequestModal && !showSuccessModal && !showCreateNewFacilityModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20">
           {loading && (
             <div className="absolute inset-0 z-10 flex items-center justify-center bg-white bg-opacity-70 rounded-md">
@@ -931,6 +953,11 @@ export default function AddCommercialFacilityModal({ isOpen, onClose, onCreateNe
       <UtilityAuthorizationModal
         isOpen={showUtilityAuthModal}
         onClose={handleCloseUtilityAuthModal}
+      />
+
+      <CreateNewFacilityModal
+        isOpen={showCreateNewFacilityModal}
+        onClose={handleCloseCreateNewFacilityModal}
       />
 
       {showFinanceTypeRequestModal && (

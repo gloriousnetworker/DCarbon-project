@@ -373,7 +373,7 @@ import CommercialRegistrationModal from "./modals/createfacility/CommercialRegis
 
 const QuickActions = dynamic(() => import("./QuickActions"), { ssr: false });
 const Graph = dynamic(() => import("./Graph"), { ssr: false });
-const RecentRecSales = dynamic(() => import("./RecentRecSales"), { ssr: false });
+// const RecentRecSales = dynamic(() => import("./RecentRecSales"), { ssr: false });
 const WelcomeModal = dynamic(() => import("./modals/WelcomeModal"), { ssr: false });
 
 export default function DashboardOverview() {
@@ -480,7 +480,7 @@ export default function DashboardOverview() {
 
       <hr className="border-gray-300" />
 
-      <RecentRecSales />
+      {/* <RecentRecSales /> */}
 
       {showWelcomeModal && (
         <div className="fixed inset-0 z-[100]">

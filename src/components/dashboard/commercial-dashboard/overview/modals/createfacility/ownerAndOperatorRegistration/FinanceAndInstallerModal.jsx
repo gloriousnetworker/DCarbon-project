@@ -31,11 +31,19 @@ const styles = {
   uploadNoteStyle: 'mt-2 font-sfpro text-[12px] leading-[100%] tracking-[-0.05em] font-[300] italic text-[#1E1E1E]',
   closeButton: 'absolute top-6 right-6 text-red-500 hover:text-red-700 cursor-pointer z-50',
   dateInput: 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E] bg-[#E8E8E8]',
-  greenButtonFrame: 'mt-4 p-4 border-2 border-green-500 rounded-lg bg-green-50',
-  greenButtonTitle: 'font-semibold text-green-700 mb-2',
-  greenButtonText: 'text-sm text-green-600 mb-3',
-  emailInput: 'w-full rounded-md border border-green-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 font-sfpro mb-2',
-  submitButton: 'px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 font-sfpro'
+  authModalContainer: 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4',
+  authModal: 'relative w-full max-w-md bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col',
+  authModalHeader: 'p-6 pb-4 border-b border-gray-200',
+  authModalTitle: 'font-[600] text-[20px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro mb-2',
+  authModalSubtitle: 'text-sm text-gray-600 mb-4',
+  authModalBody: 'flex-1 overflow-y-auto p-6',
+  authModalFooter: 'p-6 pt-4 border-t border-gray-200',
+  authCloseButton: 'absolute top-4 right-4 text-gray-500 hover:text-gray-700 cursor-pointer',
+  authButtonSecondary: 'flex-1 rounded-md border border-gray-300 text-gray-700 font-semibold py-2 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300 font-sfpro',
+  authButtonPrimary: 'flex-1 rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro',
+  messageContainer: 'mt-4 p-4 bg-green-50 border border-green-200 rounded-lg',
+  messageText: 'text-green-700 text-sm',
+  instapullButton: 'mt-4 w-full rounded-md bg-blue-600 text-white font-semibold py-2 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 font-sfpro'
 };
 
 export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
@@ -53,18 +61,16 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const [requestedFinanceTypeName, setRequestedFinanceTypeName] = useState('');
   const [requestedUtilityName, setRequestedUtilityName] = useState('');
   const [requestedUtilityWebsite, setRequestedUtilityWebsite] = useState('');
-  const [showIframe, setShowIframe] = useState(false);
-  const [iframeUrl, setIframeUrl] = useState("");
-  const [showVideoModal, setShowVideoModal] = useState(false);
-  const [scale, setScale] = useState(1);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [submittingAuth, setSubmittingAuth] = useState(false);
+  const [authResponse, setAuthResponse] = useState(null);
+  const [instapullOpened, setInstapullOpened] = useState(false);
   const [file, setFile] = useState(null);
   const [facilityNickname, setFacilityNickname] = useState('');
   const [utilityProviders, setUtilityProviders] = useState([]);
   const [financeCompanies, setFinanceCompanies] = useState([]);
   const [commercialRole, setCommercialRole] = useState('both');
-  const [selectedUtilityProvider, setSelectedUtilityProvider] = useState(null);
-  const [greenButtonEmail, setGreenButtonEmail] = useState('');
-  const [submittingGreenButton, setSubmittingGreenButton] = useState(false);
+  const [createdFacilityId, setCreatedFacilityId] = useState(null);
 
   const [formData, setFormData] = useState({
     financeType: "",
@@ -82,38 +88,21 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     financeNamingCode: ""
   });
 
+  const [authFormData, setAuthFormData] = useState({
+    email: "",
+    userType: "COMMERCIAL",
+    utilityType: "",
+    authorizationEmail: ""
+  });
+
   const [financeTypes, setFinanceTypes] = useState([]);
   const [installers, setInstallers] = useState([]);
 
-  const greenButtonUtilityIds = ['PG&E', 'SCE', 'SDG&E'];
   const isCashType = formData.financeType.toLowerCase() === 'cash';
   const showUploadField = !isCashType && formData.financeType !== '';
   const showFinanceCompany = !isCashType && formData.financeType !== '';
   const showCustomInstaller = formData.installer === 'others';
   const noInstallerSelected = formData.installer === 'not_available';
-
-  const greenButtonProviders = utilityProviders.filter(provider => 
-    greenButtonUtilityIds.includes(provider.id)
-  );
-  const otherProviders = utilityProviders.filter(provider => 
-    !greenButtonUtilityIds.includes(provider.id)
-  );
-
-  const selectedProvider = utilityProviders.find(provider => provider.name === formData.utilityProvider);
-  const isGreenButtonUtility = selectedProvider && greenButtonUtilityIds.includes(selectedProvider.id);
-
-  const getUtilityUrl = (utilityName) => {
-    const utilityUrls = {
-      'PG&E': 'https://myaccount.pge.com/myaccount/s/login/?language=en_US',
-      'Pacific Gas and Electric': 'https://myaccount.pge.com/myaccount/s/login/?language=en_US',
-      'San Diego Gas and Electric': 'https://myenergycenter.com/portal/PreLogin/Validate',
-      'SDG&E': 'https://myenergycenter.com/portal/PreLogin/Validate',
-      'SCE': 'https://myaccount.sce.com/myaccount/s/login/?language=en_US',
-      'Southern California Edison': 'https://myaccount.sce.com/myaccount/s/login/?language=en_US'
-    };
-    
-    return utilityUrls[utilityName] || 'https://utilityapi.com/authorize/DCarbon_Solutions';
-  };
 
   const fetchCommercialRole = async () => {
     try {
@@ -140,6 +129,16 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
       fetchFinanceCompanies();
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+    const userEmail = loginResponse?.data?.user?.email || loginResponse?.data?.user?.userEmail || '';
+    setAuthFormData(prev => ({
+      ...prev,
+      email: userEmail,
+      utilityType: formData.utilityProvider
+    }));
+  }, [formData.utilityProvider]);
 
   const fetchUtilityProviders = async () => {
     setLoadingUtilityProviders(true);
@@ -432,7 +431,6 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     }
     else if (name === "utilityProvider") {
       const selectedUtilityProvider = utilityProviders.find(provider => provider.name === value);
-      setSelectedUtilityProvider(selectedUtilityProvider);
       setFormData(prev => ({
         ...prev,
         utilityProvider: value,
@@ -442,6 +440,11 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     else {
       setFormData(prev => ({ ...prev, [name]: value }));
     }
+  };
+
+  const handleAuthFormChange = (e) => {
+    const { name, value } = e.target;
+    setAuthFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSystemSizeChange = (e) => {
@@ -509,100 +512,61 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     }
   };
 
-  const handleGreenButtonSubmit = async () => {
-    if (!greenButtonEmail.trim()) {
-      toast.error('Please enter the email address used for Green Button authorization');
+  const openInstapullTab = () => {
+    const newTab = window.open('https://main.instapull.io/authorize/dcarbonsolutions/', '_blank');
+    if (newTab) {
+      setInstapullOpened(true);
+      toast.success('Instapull opened in new tab');
+    } else {
+      toast.error('Please allow pop-ups for this site to open Instapull');
+    }
+  };
+
+  const handleSubmitAuthForm = async (e) => {
+    e.preventDefault();
+    
+    if (!authFormData.email.trim()) {
+      toast.error('Please enter your email');
       return;
     }
 
-    setSubmittingGreenButton(true);
+    if (!authFormData.utilityType.trim()) {
+      toast.error('Utility type is required');
+      return;
+    }
+
+    setSubmittingAuth(true);
+    setAuthResponse(null);
+    
     try {
       const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
       const token = loginResponse?.data?.token;
-      const userEmail = loginResponse?.data?.user?.email || loginResponse?.data?.user?.userEmail || '';
 
       const payload = {
-        email: userEmail,
-        userType: "COMMERCIAL",
-        utilityType: formData.utilityProvider,
-        authorizationEmail: greenButtonEmail.trim()
+        email: authFormData.email.trim(),
+        userType: authFormData.userType,
+        utilityType: authFormData.utilityType,
+        authorizationEmail: authFormData.authorizationEmail.trim() || undefined
       };
 
       const response = await axios.post(
-        `https://services.dcarbon.solutions/api/utility-auth/green-button`,
+        'https://services.dcarbon.solutions/api/utility-auth/green-button',
         payload,
-        { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } }
+        { 
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          } 
+        }
       );
 
-      if (response.data.message) {
-        toast.success(response.data.message);
-        setTimeout(() => {
-          setGreenButtonEmail('');
-          setShowIframe(false);
-          onClose();
-          window.location.reload();
-        }, 2000);
-      }
+      setAuthResponse(response.data);
+      toast.success(response.data.message || 'Authorization submitted successfully!');
     } catch (err) {
-      toast.error(err.response?.data?.message || err.message || 'Failed to submit Green Button authorization');
+      toast.error(err.response?.data?.message || err.message || 'Failed to submit authorization');
     } finally {
-      setSubmittingGreenButton(false);
+      setSubmittingAuth(false);
     }
-  };
-
-  const initiateUtilityAuth = () => {
-    const utilityName = selectedUtilityProvider?.name;
-    const url = getUtilityUrl(utilityName);
-    
-    if (isGreenButtonUtility) {
-      window.open(url, '_blank');
-      setIframeUrl(url);
-      setShowIframe(true);
-      setScale(1);
-    } else {
-      setIframeUrl(url);
-      setShowIframe(true);
-      setScale(1);
-    }
-  };
-
-  const handleVideoComplete = () => {
-    setShowVideoModal(false);
-    initiateUtilityAuth();
-  };
-
-  const handleIframeMessage = (event) => {
-    if (event.data && event.data.type === 'utility-auth-complete') {
-      setShowIframe(false);
-      onClose();
-      window.location.reload();
-    }
-  };
-
-  useEffect(() => {
-    if (showIframe) {
-      window.addEventListener('message', handleIframeMessage);
-      return () => window.removeEventListener('message', handleIframeMessage);
-    }
-  }, [showIframe]);
-
-  const zoomIn = () => {
-    setScale(prev => Math.min(prev + 0.25, 3));
-  };
-
-  const zoomOut = () => {
-    setScale(prev => Math.max(prev - 0.25, 0.5));
-  };
-
-  const resetZoom = () => {
-    setScale(1);
-  };
-
-  const handleIframeClose = () => {
-    setShowIframe(false);
-    setScale(1);
-    onClose();
-    window.location.reload();
   };
 
   const handleSubmit = async (e) => {
@@ -619,6 +583,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     try {
       await updateFinanceInfo();
       const response = await createFacility();
+      setCreatedFacilityId(response.data.id);
 
       if (file && uploadSuccess) {
         await uploadFinanceAgreementToFacility(response.data.id);
@@ -627,11 +592,12 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
       toast.dismiss(toastId);
       toast.success('Facility created successfully!');
       
-      if (isGreenButtonUtility) {
-        setShowVideoModal(true);
-      } else {
-        await initiateUtilityAuth();
-      }
+      // OPEN INSTAPULL IN NEW TAB
+      openInstapullTab();
+      
+      // Close the main modal and show auth modal
+      onClose();
+      setShowAuthModal(true);
     } catch (err) {
       toast.error(err.response?.data?.message || err.message || 'Operation failed', { id: toastId });
     } finally {
@@ -658,206 +624,21 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     setFacilityNickname('');
     setFile(null);
     setUploadSuccess(false);
-    setSelectedUtilityProvider(null);
-    setGreenButtonEmail('');
+    setShowAuthModal(false);
+    setAuthResponse(null);
+    setInstapullOpened(false);
+    setCreatedFacilityId(null);
     onClose();
+  };
+
+  const handleCloseAuthModal = () => {
+    setShowAuthModal(false);
+    setAuthResponse(null);
+    setInstapullOpened(false);
     window.location.reload();
   };
 
-  if (!isOpen) return null;
-
-  if (showVideoModal) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-        <div className="relative w-full max-w-4xl bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
-          <div className="flex-shrink-0 p-6 border-b border-gray-200">
-            <div className="flex justify-between items-center">
-              <h2 className="font-[600] text-[20px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sans">
-                {selectedUtilityProvider?.name} Authorization Instructions
-              </h2>
-              <button onClick={() => setShowVideoModal(false)} className="text-red-500 hover:text-red-700">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-6">
-            <div className="bg-gray-100 rounded-lg p-4 mb-6">
-              <p className="text-sm text-gray-700 mb-4">
-                <strong>Important:</strong> Please watch this instructional video to understand how to complete the {selectedUtilityProvider?.name} authorization process.
-              </p>
-              
-              <div className="bg-black rounded-lg aspect-video flex items-center justify-center mb-4">
-                <div className="text-white text-center">
-                  <svg className="w-16 h-16 mx-auto mb-2" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M8 5v14l11-7z"/>
-                  </svg>
-                  <p className="text-lg font-semibold">Instructional Video</p>
-                  <p className="text-sm opacity-75">Video demonstration for {selectedUtilityProvider?.name}</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-between text-sm text-gray-600">
-                <span>Estimated time: 2-3 minutes</span>
-                <span>Mandatory viewing</span>
-              </div>
-            </div>
-
-            <div className="flex justify-between gap-4 mt-8">
-              <button
-                onClick={() => setShowVideoModal(false)}
-                className="flex-1 rounded-md bg-white border border-[#039994] text-[#039994] font-semibold py-3 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#039994] font-sans text-[14px] transition-colors"
-              >
-                Back
-              </button>
-              <button
-                onClick={handleVideoComplete}
-                className="flex-1 rounded-md text-white font-semibold py-3 bg-[#039994] hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sans text-[14px] transition-colors"
-              >
-                I've Watched the Video - Continue
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (showIframe) {
-    const utilityName = selectedUtilityProvider?.name;
-    const isGreenButton = isGreenButtonUtility;
-    
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-        <div className="relative w-full max-w-6xl h-[90vh] bg-white rounded-2xl overflow-hidden flex flex-col">
-          <div className="flex items-center justify-between p-4 border-b">
-            <h3 className="text-lg font-semibold text-[#039994]">
-              {utilityName} Authorization
-            </h3>
-            <div className="flex items-center gap-4">
-              {!isGreenButton && (
-                <div className="flex gap-2">
-                  <button
-                    onClick={zoomOut}
-                    className="bg-gray-500 text-white px-3 py-1 rounded-md text-sm hover:bg-gray-600 flex items-center gap-1"
-                    disabled={scale <= 0.5}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                    </svg>
-                    Zoom Out
-                  </button>
-                  <button
-                    onClick={resetZoom}
-                    className="bg-gray-500 text-white px-3 py-1 rounded-md text-sm hover:bg-gray-600 flex items-center gap-1"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M15 3H21V9M21 3L15 9M9 21H3V15M3 21L9 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    Reset
-                  </button>
-                  <button
-                    onClick={zoomIn}
-                    className="bg-gray-500 text-white px-3 py-1 rounded-md text-sm hover:bg-gray-600 flex items-center gap-1"
-                    disabled={scale >= 3}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                    </svg>
-                    Zoom In
-                  </button>
-                </div>
-              )}
-              <button
-                onClick={handleIframeClose}
-                className="text-red-500 hover:text-red-700"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </button>
-            </div>
-          </div>
-          
-          <div className={`p-4 border-b ${isGreenButton ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}>
-            <p className={`text-sm ${isGreenButton ? 'text-green-700' : 'text-yellow-700'}`}>
-              <strong>{utilityName} Authorization:</strong> Follow the steps to securely share your utility data with DCarbon Solutions.
-            </p>
-            <p className={`text-sm ${isGreenButton ? 'text-green-700' : 'text-yellow-700'} mt-1`}>
-              <strong>Selected Utility:</strong> {utilityName}
-            </p>
-            <p className={`text-sm ${isGreenButton ? 'text-green-700' : 'text-yellow-700'} mt-1`}>
-              <strong>Authorization URL:</strong> {iframeUrl}
-            </p>
-          </div>
-
-          {isGreenButton ? (
-            <div className="flex-1 p-6">
-              <div className={styles.greenButtonFrame}>
-                <div className={styles.greenButtonTitle}>Enter Authorization Email</div>
-                <div className={styles.greenButtonText}>
-                  Please enter the email address you used to authorize Green Button access with {utilityName}:
-                </div>
-                <input
-                  type="email"
-                  value={greenButtonEmail}
-                  onChange={(e) => setGreenButtonEmail(e.target.value)}
-                  placeholder="Enter the email used for Green Button authorization"
-                  className={styles.emailInput}
-                />
-                <button
-                  onClick={handleGreenButtonSubmit}
-                  disabled={submittingGreenButton || !greenButtonEmail.trim()}
-                  className={styles.submitButton}
-                >
-                  {submittingGreenButton ? 'Submitting...' : 'Submit Authorization Email'}
-                </button>
-              </div>
-
-              <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm text-blue-700">
-                  <strong>Note:</strong> If you haven't completed the authorization yet, please go to the new tab that opened and complete the {utilityName} Green Button authorization process first.
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="flex-1 p-4 bg-gray-100 overflow-hidden">
-              <div className="w-full h-full bg-white rounded-lg overflow-auto">
-                <div 
-                  className="w-full h-full origin-top-left"
-                  style={{ 
-                    transform: `scale(${scale})`,
-                    width: `${100/scale}%`,
-                    height: `${100/scale}%`
-                  }}
-                >
-                  <iframe
-                    src={iframeUrl}
-                    className="w-full h-full border-0"
-                    title={`${utilityName} Authorization`}
-                    sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {!isGreenButton && (
-            <div className="p-3 border-t bg-gray-50 flex justify-between items-center">
-              <span className="text-sm text-gray-600">
-                Zoom: {Math.round(scale * 100)}%
-              </span>
-              <span className="text-sm text-gray-600">
-                Use scroll to navigate when zoomed in
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
+  if (!isOpen && !showAuthModal) return null;
 
   return (
     <>
@@ -959,190 +740,357 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
         </div>
       )}
 
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-        <div className="relative w-full max-w-lg bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
-          <div className="relative p-6 pb-4">
-            {onBack && (
-              <button
-                onClick={onBack}
-                className={styles.backArrow}
-              >
-              </button>
-            )}
-
+      {showAuthModal && (
+        <div className={styles.authModalContainer}>
+          <div className={styles.authModal}>
             <button
-              onClick={handleCloseModal}
-              className={styles.closeButton}
+              onClick={handleCloseAuthModal}
+              className={styles.authCloseButton}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
 
-            <div className={styles.headingContainer}>
-              <h2 className={styles.pageTitle}>
-                {commercialRole === 'both' ? "Finance & Installer information for Owner and Operator" : "Finance & Installer information for Owner"}
-              </h2>
-              <p className="text-sm text-gray-500 mt-1">
-                Please provide accurate details below. Hover over the <span className="inline-flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400 mx-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg> icons
-                </span> for important guidance on each field.
+            <div className={styles.authModalHeader}>
+              <h2 className={styles.authModalTitle}>Complete Utility Authorization</h2>
+              <p className={styles.authModalSubtitle}>
+                {instapullOpened 
+                  ? 'Instapull is open in a new tab. Complete your authorization there, then return here to submit your details.'
+                  : 'Instapull was not opened. Please click the button below to open it in a new tab.'}
               </p>
             </div>
 
-            <div className={styles.progressContainer}>
-              <div className={styles.progressBarWrapper}>
-                <div className={styles.progressBarActive}></div>
+            <form onSubmit={handleSubmitAuthForm} className={styles.authModalBody}>
+              <div className="space-y-4">
+                <button
+                  type="button"
+                  onClick={openInstapullTab}
+                  className={styles.instapullButton}
+                >
+                  {instapullOpened ? '✓ Instapull Opened - Click to Reopen' : 'Open Instapull in New Tab'}
+                </button>
+
+                <div>
+                  <label className={styles.labelClass}>
+                    Your Email <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={authFormData.email}
+                    onChange={handleAuthFormChange}
+                    className={styles.inputClass}
+                    placeholder="Enter your email"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className={styles.labelClass}>
+                    User Type <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="userType"
+                    value={authFormData.userType}
+                    className={`${styles.inputClass} bg-gray-100`}
+                    disabled
+                  />
+                  <p className={styles.noteText}>User type is automatically set to COMMERCIAL</p>
+                </div>
+
+                <div>
+                  <label className={styles.labelClass}>
+                    Utility Provider <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="utilityType"
+                    value={authFormData.utilityType}
+                    onChange={handleAuthFormChange}
+                    className={styles.inputClass}
+                    placeholder="Utility provider name"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className={styles.labelClass}>
+                    Authorization Email (Optional)
+                  </label>
+                  <input
+                    type="email"
+                    name="authorizationEmail"
+                    value={authFormData.authorizationEmail}
+                    onChange={handleAuthFormChange}
+                    className={styles.inputClass}
+                    placeholder="Enter authorization email if required"
+                  />
+                  <p className={styles.noteText}>Required for Green Button authorization. Can also be provided for traditional method.</p>
+                </div>
               </div>
-              <span className={styles.progressStepText}>04/05</span>
+
+              {authResponse && (
+                <div className={styles.messageContainer}>
+                  <p className={styles.messageText}>
+                    <strong>Response from server:</strong> {authResponse.message}
+                  </p>
+                </div>
+              )}
+
+              <div className="pt-6">
+                <button
+                  type="submit"
+                  disabled={submittingAuth}
+                  className={`${styles.buttonPrimary} flex items-center justify-center gap-2`}
+                >
+                  {submittingAuth ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>Processing...</span>
+                    </>
+                  ) : (
+                    'Confirm Authorization'
+                  )}
+                </button>
+              </div>
+            </form>
+
+            <div className={styles.authModalFooter}>
+              <button
+                type="button"
+                onClick={handleCloseAuthModal}
+                className={styles.authButtonSecondary}
+                disabled={submittingAuth}
+              >
+                Close
+              </button>
             </div>
           </div>
+        </div>
+      )}
 
-          <div className="flex-1 overflow-y-auto px-6 pb-6">
-            <form onSubmit={handleSubmit} className={styles.formWrapper}>
-              <div>
-                <label className={styles.labelClass}>
-                  Facility Nickname <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={facilityNickname}
-                  onChange={(e) => setFacilityNickname(e.target.value)}
-                  placeholder="e.g. Nancy's Nest"
-                  className={`${styles.inputClass} ${styles.grayPlaceholder}`}
-                  required
-                />
-                <p className={styles.noteText}>Give your facility a nickname (e.g. "Nancy's Nest")</p>
+      {isOpen && !showAuthModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="relative w-full max-w-lg bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
+            <div className="relative p-6 pb-4">
+              {onBack && (
+                <button
+                  onClick={onBack}
+                  className={styles.backArrow}
+                >
+                </button>
+              )}
+
+              <button
+                onClick={handleCloseModal}
+                className={styles.closeButton}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+
+              <div className={styles.headingContainer}>
+                <h2 className={styles.pageTitle}>
+                  {commercialRole === 'both' ? "Finance & Installer information for Owner and Operator" : "Finance & Installer information for Owner"}
+                </h2>
+                <p className="text-sm text-gray-500 mt-1">
+                  Please provide accurate details below. Hover over the <span className="inline-flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400 mx-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg> icons
+                  </span> for important guidance on each field.
+                </p>
               </div>
 
-              <div>
-                <label className={styles.labelClass}>
-                  Utility Provider <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <select
-                    name="utilityProvider"
-                    value={formData.utilityProvider}
-                    onChange={handleInputChange}
-                    className={`${styles.selectClass} appearance-none`}
-                    required
-                    disabled={loadingUtilityProviders}
-                  >
-                    <option value="">{loadingUtilityProviders ? 'Loading...' : 'Choose provider'}</option>
-                    
-                    {greenButtonProviders.length > 0 && (
-                      <optgroup label="Green Button Utilities" className="bg-green-50">
-                        {greenButtonProviders.map((provider) => (
-                          <option 
-                            key={provider.id} 
-                            value={provider.name}
-                            className="text-green-700 font-semibold"
-                          >
-                            {provider.name} ✓
-                          </option>
-                        ))}
-                      </optgroup>
-                    )}
-
-                    {otherProviders.length > 0 && (
-                      <optgroup label="Other Utilities">
-                        {otherProviders.map((provider) => (
-                          <option key={provider.id} value={provider.name}>
-                            {provider.name}
-                          </option>
-                        ))}
-                      </optgroup>
-                    )}
-                  </select>
-                  {isGreenButtonUtility && (
-                    <div className="absolute inset-0 border-2 border-green-500 rounded-lg animate-pulse pointer-events-none"></div>
-                  )}
-                  <div className={styles.uploadIconContainer}>
-                    <svg className="w-5 h-5 text-gray-400 pointer-events-none absolute top-1/2 right-3 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
+              <div className={styles.progressContainer}>
+                <div className={styles.progressBarWrapper}>
+                  <div className={styles.progressBarActive}></div>
                 </div>
-                {isGreenButtonUtility && (
-                  <p className="text-xs text-green-600 mt-1 flex items-center">
-                    <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                    Selected utility supports Green Button authorization.
-                  </p>
+                <span className={styles.progressStepText}>04/05</span>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-6 pb-6">
+              <form onSubmit={handleSubmit} className={styles.formWrapper}>
+                <div>
+                  <label className={styles.labelClass}>
+                    Facility Nickname <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={facilityNickname}
+                    onChange={(e) => setFacilityNickname(e.target.value)}
+                    placeholder="e.g. Nancy's Nest"
+                    className={`${styles.inputClass} ${styles.grayPlaceholder}`}
+                    required
+                  />
+                  <p className={styles.noteText}>Give your facility a nickname (e.g. "Nancy's Nest")</p>
+                </div>
+
+                <div>
+                  <label className={styles.labelClass}>
+                    Utility Provider <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <select
+                      name="utilityProvider"
+                      value={formData.utilityProvider}
+                      onChange={handleInputChange}
+                      className={`${styles.selectClass} appearance-none`}
+                      required
+                      disabled={loadingUtilityProviders}
+                    >
+                      <option value="">{loadingUtilityProviders ? 'Loading...' : 'Choose provider'}</option>
+                      {utilityProviders.map((provider) => (
+                        <option key={provider.id} value={provider.name}>
+                          {provider.name}
+                        </option>
+                      ))}
+                    </select>
+                    <div className={styles.uploadIconContainer}>
+                      <svg className="w-5 h-5 text-gray-400 pointer-events-none absolute top-1/2 right-3 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowUtilityRequestModal(true)}
+                    className="text-[#039994] text-xs hover:underline mt-1"
+                  >
+                    Not on the list?
+                  </button>
+                </div>
+
+                <div>
+                  <label className={styles.labelClass}>
+                    Finance type <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <select
+                      name="financeType"
+                      value={formData.financeType}
+                      onChange={handleInputChange}
+                      className={`${styles.selectClass} appearance-none`}
+                      required
+                      disabled={loadingFinanceTypes}
+                    >
+                      <option value="">{loadingFinanceTypes ? 'Loading...' : 'Choose type'}</option>
+                      {financeTypes.map((type) => (
+                        <option key={type.id} value={type.name}>{type.name}</option>
+                      ))}
+                    </select>
+                    <div className={styles.uploadIconContainer}>
+                      <svg className="w-5 h-5 text-gray-400 pointer-events-none absolute top-1/2 right-3 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowRequestModal(true)}
+                    className="text-[#039994] text-xs hover:underline mt-1"
+                  >
+                    Finance Type not listed?
+                  </button>
+                </div>
+
+                {showFinanceCompany && (
+                  <div>
+                    <div className="flex items-center gap-1">
+                      <label className={styles.labelClass}>
+                        Finance company
+                      </label>
+                      <div className="group relative">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <div className="absolute hidden group-hover:block bg-white p-2 rounded shadow-lg border border-gray-200 text-xs w-64 z-10 -left-32 -top-20">
+                          If you were referred by a finance company, select them here so they can help submit required documents if needed.
+                        </div>
+                      </div>
+                    </div>
+                    <div className="relative">
+                      <select
+                        name="financeCompany"
+                        value={formData.financeCompany}
+                        onChange={handleInputChange}
+                        className={`${styles.selectClass} appearance-none`}
+                        disabled={loadingFinanceCompanies}
+                      >
+                        <option value="">{loadingFinanceCompanies ? 'Loading...' : 'Choose company'}</option>
+                        {financeCompanies.map((company) => (
+                          <option key={company.id} value={company.name}>{company.name}</option>
+                        ))}
+                        <option value="Other">Other</option>
+                      </select>
+                      <div className={styles.uploadIconContainer}>
+                        <svg className="w-5 h-5 text-gray-400 pointer-events-none absolute top-1/2 right-3 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
                 )}
-                <button
-                  type="button"
-                  onClick={() => setShowUtilityRequestModal(true)}
-                  className="text-[#039994] text-xs hover:underline mt-1"
-                >
-                  Not on the list?
-                </button>
-              </div>
 
-              <div>
-                <label className={styles.labelClass}>
-                  Finance type <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <select
-                    name="financeType"
-                    value={formData.financeType}
-                    onChange={handleInputChange}
-                    className={`${styles.selectClass} appearance-none`}
-                    required
-                    disabled={loadingFinanceTypes}
-                  >
-                    <option value="">{loadingFinanceTypes ? 'Loading...' : 'Choose type'}</option>
-                    {financeTypes.map((type) => (
-                      <option key={type.id} value={type.name}>{type.name}</option>
-                    ))}
-                  </select>
-                  <div className={styles.uploadIconContainer}>
-                    <svg className="w-5 h-5 text-gray-400 pointer-events-none absolute top-1/2 right-3 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                    </svg>
+                {showUploadField && (
+                  <div>
+                    <label className={styles.uploadHeading}>
+                      Upload Finance Agreement
+                    </label>
+                    <div className={styles.uploadFieldWrapper}>
+                      <input
+                        type="file"
+                        onChange={handleFileChange}
+                        className={styles.uploadInputLabel}
+                        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleUpload}
+                        disabled={!file || uploading || uploadSuccess}
+                        className={styles.uploadButtonStyle}
+                      >
+                        {uploading ? 'Uploading...' : uploadSuccess ? '✓' : 'Upload'}
+                      </button>
+                    </div>
+                    <p className={styles.uploadNoteStyle}>
+                      Optional for loan, PPA, and lease agreements
+                    </p>
                   </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowRequestModal(true)}
-                  className="text-[#039994] text-xs hover:underline mt-1"
-                >
-                  Finance Type not listed?
-                </button>
-              </div>
+                )}
 
-              {showFinanceCompany && (
                 <div>
                   <div className="flex items-center gap-1">
                     <label className={styles.labelClass}>
-                      Finance company
+                      Select installer
                     </label>
-                    <div className="group relative">
+                    <div className="group relative flex justify-center">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      <div className="absolute hidden group-hover:block bg-white p-2 rounded shadow-lg border border-gray-200 text-xs w-64 z-10 -left-32 -top-20">
-                        If you were referred by a finance company, select them here so they can help submit required documents if needed.
+                      <div className="absolute hidden group-hover:block bg-white p-2 rounded shadow-lg border border-gray-200 text-xs w-64 z-10 left-8 -top-20">
+                        Select your installer who can submit installation documents if needed. If not listed or unavailable, choose "Not Yet Available" and your finance company can invite them later.
                       </div>
                     </div>
                   </div>
                   <div className="relative">
                     <select
-                      name="financeCompany"
-                      value={formData.financeCompany}
+                      name="installer"
+                      value={formData.installer}
                       onChange={handleInputChange}
                       className={`${styles.selectClass} appearance-none`}
-                      disabled={loadingFinanceCompanies}
+                      disabled={loadingInstallers}
                     >
-                      <option value="">{loadingFinanceCompanies ? 'Loading...' : 'Choose company'}</option>
-                      {financeCompanies.map((company) => (
-                        <option key={company.id} value={company.name}>{company.name}</option>
+                      <option value="">{loadingInstallers ? 'Loading...' : 'Choose installer'}</option>
+                      {installers.map((installer) => (
+                        <option key={installer.id} value={installer.name}>{installer.name}</option>
                       ))}
-                      <option value="Other">Other</option>
+                      <option value="others">Others</option>
+                      <option value="not_available">Not Yet Available</option>
                     </select>
                     <div className={styles.uploadIconContainer}>
                       <svg className="w-5 h-5 text-gray-400 pointer-events-none absolute top-1/2 right-3 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1151,140 +1099,76 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                     </div>
                   </div>
                 </div>
-              )}
 
-              {showUploadField && (
-                <div>
-                  <label className={styles.uploadHeading}>
-                    Upload Finance Agreement
-                  </label>
-                  <div className={styles.uploadFieldWrapper}>
+                {showCustomInstaller && (
+                  <div>
+                    <label className={styles.labelClass}>
+                      Installer Name
+                    </label>
                     <input
-                      type="file"
-                      onChange={handleFileChange}
-                      className={styles.uploadInputLabel}
-                      accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                      type="text"
+                      name="customInstaller"
+                      value={formData.customInstaller}
+                      onChange={handleInputChange}
+                      placeholder="Enter your installer name"
+                      className={`${styles.inputClass} ${styles.grayPlaceholder}`}
                     />
-                    <button
-                      type="button"
-                      onClick={handleUpload}
-                      disabled={!file || uploading || uploadSuccess}
-                      className={styles.uploadButtonStyle}
-                    >
-                      {uploading ? 'Uploading...' : uploadSuccess ? '✓' : 'Upload'}
-                    </button>
                   </div>
-                  <p className={styles.uploadNoteStyle}>
-                    Optional for loan, PPA, and lease agreements
-                  </p>
-                </div>
-              )}
+                )}
 
-              <div>
-                <div className="flex items-center gap-1">
-                  <label className={styles.labelClass}>
-                    Select installer
-                  </label>
-                  <div className="group relative flex justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <div className="absolute hidden group-hover:block bg-white p-2 rounded shadow-lg border border-gray-200 text-xs w-64 z-10 left-8 -top-20">
-                      Select your installer who can submit installation documents if needed. If not listed or unavailable, choose "Not Yet Available" and your finance company can invite them later.
-                    </div>
+                <div className={styles.rowWrapper}>
+                  <div className={styles.halfWidth}>
+                    <label className={styles.labelClass}>
+                      System Size (kW) <span className="text-gray-500 text-xs">(optional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="systemSize"
+                      value={formData.systemSize}
+                      onChange={handleSystemSizeChange}
+                      placeholder="e.g., 26.0"
+                      className={`${styles.inputClass} ${styles.grayPlaceholder}`}
+                    />
+                    <p className={styles.noteText}>The system size should match your utility PTO authorization letter</p>
+                  </div>
+
+                  <div className={styles.halfWidth}>
+                    <label className={styles.labelClass}>
+                      Commercial Operation Date (COD) <span className="text-gray-500 text-xs">(optional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="cod"
+                      value={formData.cod}
+                      onChange={handleDateChange}
+                      placeholder="MM/DD/YYYY"
+                      className={styles.dateInput}
+                    />
+                    <p className={styles.noteText}>The COD should match your utility PTO authorization letter</p>
                   </div>
                 </div>
-                <div className="relative">
-                  <select
-                    name="installer"
-                    value={formData.installer}
-                    onChange={handleInputChange}
-                    className={`${styles.selectClass} appearance-none`}
-                    disabled={loadingInstallers}
+
+                <div className="pt-6">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className={`${styles.buttonPrimary} flex items-center justify-center gap-2`}
                   >
-                    <option value="">{loadingInstallers ? 'Loading...' : 'Choose installer'}</option>
-                    {installers.map((installer) => (
-                      <option key={installer.id} value={installer.name}>{installer.name}</option>
-                    ))}
-                    <option value="others">Others</option>
-                    <option value="not_available">Not Yet Available</option>
-                  </select>
-                  <div className={styles.uploadIconContainer}>
-                    <svg className="w-5 h-5 text-gray-400 pointer-events-none absolute top-1/2 right-3 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
+                    {loading ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span>Saving...</span>
+                      </>
+                    ) : (
+                      'Next'
+                    )}
+                  </button>
                 </div>
-              </div>
-
-              {showCustomInstaller && (
-                <div>
-                  <label className={styles.labelClass}>
-                    Installer Name
-                  </label>
-                  <input
-                    type="text"
-                    name="customInstaller"
-                    value={formData.customInstaller}
-                    onChange={handleInputChange}
-                    placeholder="Enter your installer name"
-                    className={`${styles.inputClass} ${styles.grayPlaceholder}`}
-                  />
-                </div>
-              )}
-
-              <div className={styles.rowWrapper}>
-                <div className={styles.halfWidth}>
-                  <label className={styles.labelClass}>
-                    System Size (kW) <span className="text-gray-500 text-xs">(optional)</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="systemSize"
-                    value={formData.systemSize}
-                    onChange={handleSystemSizeChange}
-                    placeholder="e.g., 26.0"
-                    className={`${styles.inputClass} ${styles.grayPlaceholder}`}
-                  />
-                  <p className={styles.noteText}>The system size should match your utility PTO authorization letter</p>
-                </div>
-
-                <div className={styles.halfWidth}>
-                  <label className={styles.labelClass}>
-                    Commercial Operation Date (COD) <span className="text-gray-500 text-xs">(optional)</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="cod"
-                    value={formData.cod}
-                    onChange={handleDateChange}
-                    placeholder="MM/DD/YYYY"
-                    className={styles.dateInput}
-                  />
-                  <p className={styles.noteText}>The COD should match your utility PTO authorization letter</p>
-                </div>
-              </div>
-
-              <div className="pt-6">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className={`${styles.buttonPrimary} flex items-center justify-center gap-2`}
-                >
-                  {loading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      <span>Saving...</span>
-                    </>
-                  ) : (
-                    'Next'
-                  )}
-                </button>
-              </div>
-            </form>
+              </form>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </>
   );
 }
