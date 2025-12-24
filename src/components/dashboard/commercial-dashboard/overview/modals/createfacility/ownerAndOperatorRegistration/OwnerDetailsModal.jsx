@@ -602,7 +602,7 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
 
               <div>
                 <label className={styles.labelClass}>
-                  Address 1 <span className="text-red-500">*</span>
+                  Legal Business Address <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -860,7 +860,7 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
 
                           <div>
                             <label className={styles.labelClass}>
-                              Address 1
+                              Legal Business Address
                             </label>
                             <input
                               type="text"

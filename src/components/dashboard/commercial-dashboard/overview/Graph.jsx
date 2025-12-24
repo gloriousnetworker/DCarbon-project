@@ -31,10 +31,10 @@ export default function Graph() {
   const monthShortNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
   const quarterOptions = [
-    { value: "1", label: "Q1 (Jan-Mar)" },
-    { value: "2", label: "Q2 (Apr-Jun)" },
-    { value: "3", label: "Q3 (Jul-Sep)" },
-    { value: "4", label: "Q4 (Oct-Dec)" }
+    { value: "1", label: "Q1" },
+    { value: "2", label: "Q2" },
+    { value: "3", label: "Q3" },
+    { value: "4", label: "Q4" }
   ];
 
   const getAuthData = () => {
@@ -56,7 +56,8 @@ export default function Graph() {
   };
 
   const toggleViewMode = () => {
-    setViewMode(prev => prev === "monthly" ? "quarterly" : "monthly");
+    const newMode = viewMode === "monthly" ? "quarterly" : "monthly";
+    setViewMode(newMode);
     setSelectedMonth("");
     setSelectedQuarter("");
   };
@@ -132,7 +133,7 @@ export default function Graph() {
       };
       fetchData();
     }
-  }, [selectedFacility, selectedYear, selectedMonth, selectedQuarter, facilities]);
+  }, [selectedFacility, selectedYear, selectedMonth, selectedQuarter, facilities, viewMode]);
 
   const fetchTotalLifetimeRecs = async (userId, authToken) => {
     try {
@@ -320,10 +321,9 @@ export default function Graph() {
 
   const processGraphData = (statisticsData) => {
     if (!statisticsData || !Array.isArray(statisticsData)) {
-      const emptyGraphData = monthShortNames.map(month => ({ 
-        month, 
-        value: 0
-      }));
+      const emptyGraphData = viewMode === "monthly" 
+        ? monthShortNames.map(month => ({ month, value: 0 }))
+        : quarterOptions.map(q => ({ month: q.label, value: 0 }));
       setGraphData(emptyGraphData);
       return;
     }
@@ -344,7 +344,7 @@ export default function Graph() {
       });
       
       const processedData = quarterOptions.map((q, index) => ({
-        month: q.label.split(' ')[0],
+        month: q.label,
         value: quarterData[index]?.value || 0
       }));
       
@@ -547,52 +547,36 @@ export default function Graph() {
             ))}
           </select>
 
-          <button 
-            onClick={toggleViewMode}
-            className="bg-[#039994] text-white px-3 py-2 rounded text-sm font-sfpro hover:bg-[#02827d] transition-colors"
-          >
-            {viewMode === "monthly" ? "Switch to Quarterly" : "Switch to Monthly"}
-          </button>
+          <div className="flex items-center space-x-2 bg-gray-100 rounded-full p-1">
+            <button
+              onClick={() => setViewMode("monthly")}
+              className={`px-3 py-1 text-sm rounded-full transition-colors font-sfpro ${
+                viewMode === "monthly" 
+                  ? "bg-[#039994] text-white shadow-sm" 
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              Monthly
+            </button>
+            <button
+              onClick={() => setViewMode("quarterly")}
+              className={`px-3 py-1 text-sm rounded-full transition-colors font-sfpro ${
+                viewMode === "quarterly" 
+                  ? "bg-[#039994] text-white shadow-sm" 
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              Quarterly
+            </button>
+          </div>
         </div>
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 mb-6">
-        <div className="flex flex-wrap items-center justify-between mb-6">
-          <div className="flex items-center space-x-3">
-            <span className="text-[#039994] font-sfpro font-[600] text-[18px] leading-[100%] tracking-[-0.05em]">
-              REC Generated (kWh) - {viewMode === "monthly" ? "Monthly" : "Quarterly"} View
-            </span>
-          </div>
-          
-          <div className="flex items-center space-x-3 mt-3 lg:mt-0">
-            {viewMode === "monthly" ? (
-              <select 
-                value={selectedMonth} 
-                onChange={(e) => handleMonthChange(e.target.value)} 
-                className="border border-gray-300 rounded px-3 py-2 text-sm min-w-[120px] font-sfpro focus:outline-none focus:ring-2 focus:ring-[#039994]"
-              >
-                <option value="">All Months</option>
-                {monthNames.map(month => (
-                  <option key={month} value={month}>
-                    {month}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <select 
-                value={selectedQuarter} 
-                onChange={(e) => handleQuarterChange(e.target.value)} 
-                className="border border-gray-300 rounded px-3 py-2 text-sm min-w-[120px] font-sfpro focus:outline-none focus:ring-2 focus:ring-[#039994]"
-              >
-                <option value="">All Quarters</option>
-                {quarterOptions.map(quarter => (
-                  <option key={quarter.value} value={quarter.value}>
-                    {quarter.label}
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
+        <div className="flex items-center justify-between mb-6">
+          <span className="text-[#039994] font-sfpro font-[600] text-[18px] leading-[100%] tracking-[-0.05em]">
+            REC Generated (kWh)
+          </span>
         </div>
         
         <div className="flex items-end">
