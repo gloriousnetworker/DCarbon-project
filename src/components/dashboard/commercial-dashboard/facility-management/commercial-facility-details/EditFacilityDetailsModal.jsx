@@ -11,7 +11,7 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
     nickname: facility.nickname || "",
     address: facility.address || "",
     utilityProvider: facility.utilityProvider || "",
-    meterId: Array.isArray(facility.meterIds) ? facility.meterIds[0] : facility.meterIds || "",
+    meterId: facility.meterId || "",
     commercialRole: facility.commercialRole || "owner",
     entityType: facility.entityType || "company",
     name: facility.name || "",
@@ -38,9 +38,7 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
   const [multipleOwnersData, setMultipleOwnersData] = useState([]);
   const [meterAgreementAccepted, setMeterAgreementAccepted] = useState(false);
   const [acceptingAgreement, setAcceptingAgreement] = useState(false);
-  const [originalMeterId, setOriginalMeterId] = useState(
-    Array.isArray(facility.meterIds) ? facility.meterIds[0] : facility.meterIds || ""
-  );
+  const [originalMeterId, setOriginalMeterId] = useState(facility.meterId || "");
   const [meterSearch, setMeterSearch] = useState("");
   const [showMeterDropdown, setShowMeterDropdown] = useState(false);
   const [filteredMeters, setFilteredMeters] = useState([]);
@@ -209,6 +207,10 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
         if (meterData.length > 0) {
           setSelectedUtilityAuthEmail(meterData[0].utilityAuthEmail);
         }
+        const initialMeter = findMeterByUid(facility.meterId, meterData);
+        if (initialMeter) {
+          setSelectedMeter(initialMeter);
+        }
       }
     } catch (error) {
       console.error("Error fetching user meters:", error);
@@ -216,6 +218,17 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
     } finally {
       setUserMetersLoading(false);
     }
+  };
+
+  const findMeterByUid = (uid, meterData) => {
+    for (const account of meterData) {
+      for (const meter of account.meters) {
+        if (meter.uid === uid) {
+          return meter;
+        }
+      }
+    }
+    return null;
   };
 
   const getValidMeters = () => {
@@ -238,7 +251,7 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
     setMeterAgreementAccepted(false);
     setFormData(prev => ({
       ...prev,
-      meterId: String(meter.meterNumbers),
+      meterId: meter.uid,
       address: meter?.serviceAddress || ""
     }));
     setShowMeterDropdown(false);
@@ -253,7 +266,7 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
 
     if (name === "meterId") {
       const validMeters = getValidMeters();
-      const meter = validMeters.find(m => String(m.meterNumbers) === value);
+      const meter = validMeters.find(m => m.uid === value);
       setSelectedMeter(meter || null);
       setIsSameLocation(null);
       setMeterAgreementAccepted(false);
@@ -559,8 +572,8 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
                           <>
                             {filteredMeters.map(meter => (
                               <div
-                                key={meter.meterNumbers}
-                                className={`px-4 py-3 cursor-pointer hover:bg-gray-100 border-b border-gray-100 ${selectedMeter?.meterNumbers === meter.meterNumbers ? 'bg-blue-50' : ''}`}
+                                key={meter.uid}
+                                className={`px-4 py-3 cursor-pointer hover:bg-gray-100 border-b border-gray-100 ${selectedMeter?.uid === meter.uid ? 'bg-blue-50' : ''}`}
                                 onClick={() => handleMeterSelect(meter)}
                               >
                                 <div className="font-medium text-sm text-gray-900">
