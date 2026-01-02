@@ -152,9 +152,10 @@ export default function AddCommercialFacilityModal({ isOpen, onClose, onCreateNe
       );
 
       if (response.data.status === "success") {
-        setUserMeterData(response.data.data);
-        if (response.data.data.length > 0) {
-          setSelectedUtilityAuthEmail(response.data.data[0].utilityAuthEmail);
+        const meterData = response.data.data || [];
+        setUserMeterData(meterData);
+        if (meterData.length > 0) {
+          setSelectedUtilityAuthEmail(meterData[0].utilityAuthEmail);
         }
       }
     } catch (error) {
@@ -237,7 +238,7 @@ export default function AddCommercialFacilityModal({ isOpen, onClose, onCreateNe
     if (!selectedData?.meters) return [];
 
     return selectedData.meters.filter(
-      meter => meter.meterNumbers?.length > 0 && meter.serviceAddress && meter.billingAddress
+      meter => meter.meterNumbers && meter.meterNumbers.length > 0 && meter.serviceAddress && meter.billingAddress
     );
   };
 
@@ -265,7 +266,7 @@ export default function AddCommercialFacilityModal({ isOpen, onClose, onCreateNe
       }
       
       const validMeters = getValidMeters();
-      const meter = validMeters.find(m => m.uid === value);
+      const meter = validMeters.find(m => m.meterNumbers === value);
       setSelectedMeter(meter || null);
       setIsSameLocation(null);
       setMeterAgreementAccepted(false);
@@ -685,9 +686,9 @@ export default function AddCommercialFacilityModal({ isOpen, onClose, onCreateNe
                       <option value="" disabled>No valid meters found for this account</option>
                     ) : (
                       getValidMeters().map(meter => (
-                        <option key={meter.uid} value={meter.uid}>
-                          {meter.meterNumbers.length > 0 ? meter.meterNumbers[0] : meter.uid}
-                          {meter.billingAddress ? ` - ${meter.billingAddress.split(',')[0]}` : ''}
+                        <option key={meter.meterNumbers} value={meter.meterNumbers}>
+                          {meter.meterNumbers}
+                          {meter.serviceAddress ? ` - ${meter.serviceAddress.split(',')[0]}` : ''}
                         </option>
                       ))
                     )}

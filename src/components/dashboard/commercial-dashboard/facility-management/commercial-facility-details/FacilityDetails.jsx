@@ -160,6 +160,21 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
     return isComplete;
   };
 
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric"
+    });
+  };
+
+  const formatMeterIds = (meterIds) => {
+    if (!meterIds || meterIds.length === 0) return "N/A";
+    return meterIds.join(", ");
+  };
+
   useEffect(() => {
     const checkUserProgress = async () => {
       const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
@@ -198,37 +213,10 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
         }
       };
 
-      const checkStage4 = async () => {
-        try {
-          const response = await fetch(
-            `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`,
-            { headers: { 'Authorization': `Bearer ${authToken}` } }
-          );
-          const result = await response.json();
-          
-          const metersExist = result.status === 'success' && 
-                           Array.isArray(result.data) &&
-                           result.data.some(item => 
-                             Array.isArray(item.meters) &&
-                             item.meters.some(meter => 
-                               Array.isArray(meter.meterNumbers) && 
-                               meter.meterNumbers.length > 0
-                             )
-                           );
-          
-          if (metersExist && result.data[0]?.meters) {
-            const firstMeter = result.data[0].meters.find(item => item.meterNumbers && item.meterNumbers.length > 0);
-            if (firstMeter) {
-              const meterUid = firstMeter.uid;
-              setMeterId(meterUid);
-            }
-          }
-          
-          setHasMeters(metersExist);
-          return metersExist;
-        } catch (error) {
-          return false;
-        }
+      const checkStage4 = () => {
+        const meterId = facilityData.meterId || (Array.isArray(facilityData.meterIds) && facilityData.meterIds.length > 0 ? facilityData.meterIds[0] : null);
+        const formattedMeterId = meterId ? (typeof meterId === 'string' ? meterId.trim() : String(meterId).trim()) : '';
+        return formattedMeterId !== '' && formattedMeterId !== 'N/A' && formattedMeterId !== 'null' && formattedMeterId !== 'undefined';
       };
 
       const checkStage5 = (facility) => {
@@ -266,25 +254,102 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
       setNextStage(newNextStage);
     };
 
+    const checkMeters = async () => {
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const userId = loginResponse?.data?.user?.id;
+      const authToken = loginResponse?.data?.token;
+
+      if (!userId || !authToken) return;
+
+      try {
+        const response = await fetch(
+          `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`,
+          { headers: { 'Authorization': `Bearer ${authToken}` } }
+        );
+        const result = await response.json();
+        
+        const metersExist = result.status === 'success' && 
+                         Array.isArray(result.data) &&
+                         result.data.length > 0 &&
+                         result.data.some(item => 
+                           Array.isArray(item.meters) &&
+                           item.meters.length > 0
+                         );
+        
+        setHasMeters(metersExist);
+      } catch (error) {
+        console.error('Error checking meters:', error);
+      }
+    };
+
     checkUserProgress();
+    checkMeters();
     checkFacilityCompletion(facilityData);
     fetchOperators();
   }, [facilityData]);
 
-  const formatDate = (dateString) => {
-    if (!dateString) return "N/A";
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric"
-    });
-  };
+  useEffect(() => {
+    const checkStage4 = () => {
+      const meterId = facilityData.meterId || (Array.isArray(facilityData.meterIds) && facilityData.meterIds.length > 0 ? facilityData.meterIds[0] : null);
+      const formattedMeterId = meterId ? (typeof meterId === 'string' ? meterId.trim() : String(meterId).trim()) : '';
+      return formattedMeterId !== '' && formattedMeterId !== 'N/A' && formattedMeterId !== 'null' && formattedMeterId !== 'undefined';
+    };
 
-  const formatMeterIds = (meterIds) => {
-    if (!meterIds || meterIds.length === 0) return "N/A";
-    return meterIds.join(", ");
-  };
+    if (checkStage4()) {
+      const updateProgress = async () => {
+        const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+        const userId = loginResponse?.data?.user?.id;
+        const authToken = loginResponse?.data?.token;
+
+        if (!userId || !authToken) return;
+
+        const checkStage1 = () => true;
+        const checkStage2 = async () => {
+          try {
+            const response = await fetch(
+              `https://services.dcarbon.solutions/api/user/agreement/${userId}`,
+              { headers: { 'Authorization': `Bearer ${authToken}` } }
+            );
+            const result = await response.json();
+            return result.status === 'success' && result.data?.termsAccepted;
+          } catch (error) {
+            return false;
+          }
+        };
+        const checkStage3 = async () => {
+          try {
+            const response = await fetch(
+              `https://services.dcarbon.solutions/api/user/financial-info/${userId}`,
+              { headers: { 'Authorization': `Bearer ${authToken}` } }
+            );
+            const result = await response.json();
+            return result.status === 'success' && result.data?.financialInfo;
+          } catch (error) {
+            return false;
+          }
+        };
+        
+        let highestCompletedStage = 1;
+        const stageResults = [await checkStage1(), await checkStage2(), await checkStage3(), true];
+        
+        for (let i = 0; i < stageResults.length; i++) {
+          if (stageResults[i]) {
+            highestCompletedStage = i + 1;
+          } else {
+            break;
+          }
+        }
+        
+        const newStage = highestCompletedStage === 6 ? 6 : highestCompletedStage;
+        const newNextStage = highestCompletedStage === 6 ? 6 : highestCompletedStage + 1;
+        
+        setCurrentStage(newStage);
+        setNextStage(newNextStage);
+      };
+      
+      updateProgress();
+    }
+  }, [facilityData.meterId, facilityData.meterIds]);
 
   const handleFileSelect = (docType) => {
     const input = document.createElement("input");
@@ -306,7 +371,8 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
   const uploadDocument = async (docType, file) => {
     setUploadingDoc(docType);
     
-    const authToken = localStorage.getItem('authToken');
+    const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+    const authToken = loginResponse?.data?.token;
     if (!authToken) {
       toast.error('Authentication token not found. Please login again.');
       setUploadingDoc("");
@@ -394,7 +460,8 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
   };
 
   const deleteFacility = async () => {
-    const authToken = localStorage.getItem('authToken');
+    const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+    const authToken = loginResponse?.data?.token;
     if (!authToken) {
       toast.error('Authentication token not found. Please login again.');
       return;

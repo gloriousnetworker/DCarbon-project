@@ -332,7 +332,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
         `https://services.dcarbon.solutions/api/user/request-utility-provider/${userId}`,
         { 
           name: requestedUtilityName.trim(),
-          website: requestedUtilityWebsite.trim() || "https://example.com"
+          websiteUrl: requestedUtilityWebsite.trim() || "https://example.com"
         },
         { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } }
       );

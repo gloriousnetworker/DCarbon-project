@@ -106,33 +106,10 @@ export default function FacilityCardView() {
     }
   };
 
-  const checkStage5Completion = async (userId, authToken) => {
-    try {
-      const response = await fetch(
-        `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`
-          }
-        }
-      );
-      const result = await response.json();
-      
-      const metersExist = result.status === 'success' && 
-                         Array.isArray(result.data) &&
-                         result.data.some(item => 
-                           Array.isArray(item.meters) &&
-                           item.meters.some(meter => 
-                             Array.isArray(meter.meterNumbers) && 
-                             meter.meterNumbers.length > 0
-                           )
-                         );
-      
-      return metersExist;
-    } catch (error) {
-      return false;
-    }
+  const checkStage5Completion = (facility) => {
+    const meterId = facility.meterId || (Array.isArray(facility.meterIds) && facility.meterIds.length > 0 ? facility.meterIds[0] : null);
+    const formattedMeterId = meterId ? (typeof meterId === 'string' ? meterId.trim() : String(meterId).trim()) : '';
+    return formattedMeterId !== '' && formattedMeterId !== 'N/A' && formattedMeterId !== 'null' && formattedMeterId !== 'undefined';
   };
 
   const checkStage6Completion = (facility) => {
@@ -168,22 +145,20 @@ export default function FacilityCardView() {
         highestCompletedStage = 4;
       }
 
-      const stage5Completed = await checkStage5Completion(userId, authToken);
-      if (stage5Completed) {
-        newCompletedStages.push(5);
-        highestCompletedStage = 5;
-      }
-
       const progressData = {};
       facilities.forEach(facility => {
         const facilityCompletedStages = [...newCompletedStages];
         let facilityCurrentStage = highestCompletedStage;
 
+        const stage5Completed = checkStage5Completion(facility);
+        if (stage5Completed) {
+          facilityCompletedStages.push(5);
+          facilityCurrentStage = 5;
+        }
+
         const stage6Completed = checkStage6Completion(facility);
         if (stage6Completed) {
           facilityCompletedStages.push(6);
-          facilityCurrentStage = 6;
-        } else if (facilityCurrentStage === 5) {
           facilityCurrentStage = 6;
         }
 
@@ -289,9 +264,27 @@ export default function FacilityCardView() {
     });
   };
 
-  const formatMeterIds = meterIds => {
-    if (!meterIds || meterIds.length === 0) return "N/A";
-    return meterIds.map(id => id.split('_')[0] || id).join(', ');
+  const formatMeterIds = (meterIds, meterId) => {
+    const primaryMeterId = meterId || (Array.isArray(meterIds) && meterIds.length > 0 ? meterIds[0] : null);
+    
+    if (primaryMeterId) {
+      const formattedId = typeof primaryMeterId === 'string' ? primaryMeterId.trim() : String(primaryMeterId).trim();
+      if (formattedId !== '' && formattedId !== 'N/A' && formattedId !== 'null' && formattedId !== 'undefined') {
+        return formattedId;
+      }
+    }
+    
+    if (meterIds && meterIds.length > 0) {
+      const validIds = meterIds.filter(id => {
+        const formattedId = typeof id === 'string' ? id.trim() : String(id).trim();
+        return formattedId !== '' && formattedId !== 'N/A' && formattedId !== 'null' && formattedId !== 'undefined';
+      });
+      if (validIds.length > 0) {
+        return validIds.join(', ');
+      }
+    }
+    
+    return "N/A";
   };
 
   const filteredFacilities = facilities
@@ -300,7 +293,10 @@ export default function FacilityCardView() {
       if (filters.role !== "All" && f.commercialRole.toLowerCase() !== filters.role.toLowerCase()) return false;
       if (filters.entityType !== "All" && f.entityType.toLowerCase() !== filters.entityType.toLowerCase()) return false;
       if (filters.utility !== "All" && f.utilityProvider !== filters.utility) return false;
-      if (filters.meterId && !f.meterIds?.some(id => id.toLowerCase().includes(filters.meterId.toLowerCase()))) return false;
+      if (filters.meterId) {
+        const displayMeterId = formatMeterIds(f.meterIds, f.meterId);
+        if (!displayMeterId.toLowerCase().includes(filters.meterId.toLowerCase())) return false;
+      }
       if (filters.status !== "All" && f.status.toLowerCase() !== filters.status.toLowerCase()) return false;
       if (filters.createdDate) {
         const d = new Date(f.createdAt).toISOString().slice(0, 10);
@@ -352,7 +348,6 @@ export default function FacilityCardView() {
             const isGreenButton = isGreenButtonUtility(facility.utilityProvider);
             const isComplete = isFacilityComplete(facility);
             
-            // Determine card styling based on completion status
             const cardBgClass = isComplete && isGreenButton
               ? 'bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 border-2 border-green-300 shadow-md'
               : isComplete
@@ -373,12 +368,13 @@ export default function FacilityCardView() {
             
             const valueColorClass = isComplete ? 'text-gray-900' : 'text-gray-600';
             
+            const displayMeterId = formatMeterIds(facility.meterIds, facility.meterId);
+            
             return (
               <div
                 key={facility.id}
                 className={`rounded-lg cursor-pointer hover:shadow-lg transition-all duration-300 flex flex-col justify-between p-2 relative overflow-hidden ${cardBgClass}`}
               >
-                {/* Status Badge */}
                 <div className="absolute top-2 right-2">
                   {isComplete && isGreenButton ? (
                     <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xs px-2 py-1 rounded-full font-semibold flex items-center shadow-sm">
@@ -426,7 +422,7 @@ export default function FacilityCardView() {
                     </span>
 
                     <span className={`font-medium ${labelColorClass}`}>Meter ID:</span>
-                    <span className={valueColorClass}>{formatMeterIds(facility.meterIds)}</span>
+                    <span className={valueColorClass}>{displayMeterId}</span>
 
                     <span className={`font-medium ${labelColorClass}`}>Status:</span>
                     <span className={`capitalize ${

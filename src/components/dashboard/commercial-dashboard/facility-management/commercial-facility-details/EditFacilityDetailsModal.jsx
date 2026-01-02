@@ -77,9 +77,19 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
     }
   }, [selectedMeter, isSameLocation]);
 
+  const getAuthToken = () => {
+    const loginResponse = JSON.parse(localStorage.getItem("loginResponse") || '{}');
+    return loginResponse?.data?.token;
+  };
+
+  const getUserId = () => {
+    const loginResponse = JSON.parse(localStorage.getItem("loginResponse") || '{}');
+    return loginResponse?.data?.user?.id;
+  };
+
   const fetchCommercialUser = async () => {
-    const userId = localStorage.getItem("userId");
-    const authToken = localStorage.getItem("authToken");
+    const userId = getUserId();
+    const authToken = getAuthToken();
     if (!userId || !authToken) return;
 
     setCommercialUserLoading(true);
@@ -112,7 +122,7 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
   };
 
   const fetchUtilityProviders = async () => {
-    const authToken = localStorage.getItem("authToken");
+    const authToken = getAuthToken();
     if (!authToken) return;
 
     setUtilityProvidersLoading(true);
@@ -139,8 +149,8 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
   };
 
   const fetchUserMeters = async () => {
-    const userId = localStorage.getItem("userId");
-    const authToken = localStorage.getItem("authToken");
+    const userId = getUserId();
+    const authToken = getAuthToken();
 
     if (!userId || !authToken) return;
 
@@ -157,9 +167,10 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
       );
 
       if (response.data.status === "success") {
-        setUserMeterData(response.data.data);
-        if (response.data.data.length > 0) {
-          setSelectedUtilityAuthEmail(response.data.data[0].utilityAuthEmail);
+        const meterData = response.data.data || [];
+        setUserMeterData(meterData);
+        if (meterData.length > 0) {
+          setSelectedUtilityAuthEmail(meterData[0].utilityAuthEmail);
         }
       }
     } catch (error) {
@@ -180,7 +191,7 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
     if (!selectedData?.meters) return [];
     
     return selectedData.meters.filter(
-      meter => meter.meterNumbers?.length > 0 && meter.serviceAddress && meter.billingAddress
+      meter => meter.meterNumbers && meter.meterNumbers.length > 0 && meter.serviceAddress && meter.billingAddress
     );
   };
 
@@ -193,7 +204,7 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
 
     if (name === "meterId") {
       const validMeters = getValidMeters();
-      const meter = validMeters.find(m => m.uid === value);
+      const meter = validMeters.find(m => m.meterNumbers === value);
       setSelectedMeter(meter || null);
       setIsSameLocation(null);
       setMeterAgreementAccepted(false);
@@ -217,8 +228,8 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
   };
 
   const handleAcceptMeterAgreement = async () => {
-    const userId = localStorage.getItem("userId");
-    const authToken = localStorage.getItem("authToken");
+    const userId = getUserId();
+    const authToken = getAuthToken();
 
     if (!userId || !authToken) {
       toast.error("Authentication required");
@@ -251,7 +262,7 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
   };
 
   const handleSave = async () => {
-    const authToken = localStorage.getItem("authToken");
+    const authToken = getAuthToken();
 
     if (!authToken) {
       toast.error("Authentication required");
@@ -457,9 +468,9 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
                     <option value="" disabled>No valid meters found for this account</option>
                   ) : (
                     getValidMeters().map(meter => (
-                      <option key={meter.uid} value={meter.uid}>
-                        {meter.meterNumbers.length > 0 ? meter.meterNumbers[0] : meter.uid}
-                        {meter.billingAddress ? ` - ${meter.billingAddress.split(',')[0]}` : ''}
+                      <option key={meter.meterNumbers} value={meter.meterNumbers}>
+                        {meter.meterNumbers}
+                        {meter.serviceAddress ? ` - ${meter.serviceAddress.split(',')[0]}` : ''}
                       </option>
                     ))
                   )}

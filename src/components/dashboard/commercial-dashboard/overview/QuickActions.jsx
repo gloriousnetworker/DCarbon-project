@@ -55,12 +55,10 @@ export default function QuickActions() {
         
         const metersExist = result.status === 'success' && 
                            Array.isArray(result.data) &&
+                           result.data.length > 0 &&
                            result.data.some(item => 
                              Array.isArray(item.meters) &&
-                             item.meters.some(meter => 
-                               Array.isArray(meter.meterNumbers) && 
-                               meter.meterNumbers.length > 0
-                             )
+                             item.meters.length > 0
                            );
         
         setHasMeters(metersExist);
