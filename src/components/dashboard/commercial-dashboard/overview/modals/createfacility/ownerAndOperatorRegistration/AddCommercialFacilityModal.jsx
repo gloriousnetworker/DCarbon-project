@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { FiX } from "react-icons/fi";
+import React, { useState, useEffect, useRef } from "react";
+import { FiX, FiSearch } from "react-icons/fi";
 import axios from "axios";
 import toast from "react-hot-toast";
 import AddUtilityProvider from "./AddUtilityProvider";
@@ -54,6 +54,11 @@ export default function AddCommercialFacilityModal({ isOpen, onClose, onCreateNe
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [showCreateNewFacilityModal, setShowCreateNewFacilityModal] = useState(false);
+  const [meterSearch, setMeterSearch] = useState("");
+  const [showMeterDropdown, setShowMeterDropdown] = useState(false);
+  const [filteredMeters, setFilteredMeters] = useState([]);
+  const meterDropdownRef = useRef(null);
+  const meterSelectRef = useRef(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -92,6 +97,36 @@ export default function AddCommercialFacilityModal({ isOpen, onClose, onCreateNe
       }
     }
   }, [selectedMeter, isSameLocation]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (meterDropdownRef.current && !meterDropdownRef.current.contains(event.target) && 
+          meterSelectRef.current && !meterSelectRef.current.contains(event.target)) {
+        setShowMeterDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    const validMeters = getValidMeters();
+    if (meterSearch) {
+      const filtered = validMeters.filter(meter => {
+        const meterNumber = String(meter.meterNumbers || '').toLowerCase();
+        const serviceAddress = String(meter.serviceAddress || '').toLowerCase();
+        const billingAddress = String(meter.billingAddress || '').toLowerCase();
+        const searchTerm = meterSearch.toLowerCase();
+        
+        return meterNumber.includes(searchTerm) ||
+               serviceAddress.includes(searchTerm) ||
+               billingAddress.includes(searchTerm);
+      });
+      setFilteredMeters(filtered);
+    } else {
+      setFilteredMeters(validMeters);
+    }
+  }, [meterSearch, selectedUtilityAuthEmail, userMeterData]);
 
   const isCashType = formData.financeType.toLowerCase() === 'cash';
   const showUploadField = !isCashType && formData.financeType !== '';
@@ -238,8 +273,20 @@ export default function AddCommercialFacilityModal({ isOpen, onClose, onCreateNe
     if (!selectedData?.meters) return [];
 
     return selectedData.meters.filter(
-      meter => meter.meterNumbers && meter.meterNumbers.length > 0 && meter.serviceAddress && meter.billingAddress
+      meter => meter.meterNumbers && String(meter.meterNumbers).length > 0 && meter.serviceAddress && meter.billingAddress
     );
+  };
+
+  const handleMeterSelect = (meter) => {
+    setSelectedMeter(meter);
+    setIsSameLocation(null);
+    setMeterAgreementAccepted(false);
+    setFormData(prev => ({
+      ...prev,
+      meterIds: [String(meter.meterNumbers)],
+      address: meter?.serviceAddress || ""
+    }));
+    setShowMeterDropdown(false);
   };
 
   const handleChange = (e) => {
@@ -259,22 +306,6 @@ export default function AddCommercialFacilityModal({ isOpen, onClose, onCreateNe
         financeNamingCode: value,
         financeType: selectedFinanceType ? selectedFinanceType.name : ""
       }));
-    } else if (name === "meterId") {
-      if (value === "add-utility") {
-        handleOpenCreateNewFacilityModal();
-        return;
-      }
-      
-      const validMeters = getValidMeters();
-      const meter = validMeters.find(m => m.meterNumbers === value);
-      setSelectedMeter(meter || null);
-      setIsSameLocation(null);
-      setMeterAgreementAccepted(false);
-      setFormData(prev => ({
-        ...prev,
-        meterIds: [value],
-        address: meter?.serviceAddress || ""
-      }));
     } else {
       setFormData(prev => ({
         ...prev,
@@ -293,6 +324,8 @@ export default function AddCommercialFacilityModal({ isOpen, onClose, onCreateNe
     setSelectedMeter(null);
     setIsSameLocation(null);
     setMeterAgreementAccepted(false);
+    setMeterSearch("");
+    setShowMeterDropdown(false);
   };
 
   const handleLocationChoice = (choice) => {
@@ -413,6 +446,8 @@ export default function AddCommercialFacilityModal({ isOpen, onClose, onCreateNe
     setMeterAgreementAccepted(false);
     setFile(null);
     setUploadSuccess(false);
+    setMeterSearch("");
+    setShowMeterDropdown(false);
   };
 
   const uploadFinanceAgreementToFacility = async (facilityId) => {
@@ -669,33 +704,109 @@ export default function AddCommercialFacilityModal({ isOpen, onClose, onCreateNe
               )}
 
               {selectedUtilityAuthEmail && (
-                <div>
+                <div className="relative">
                   <label className={labelClass}>
                     Please Select the Solar Meter you want to Register <span className="text-red-500">*</span>
                   </label>
-                  <select
-                    name="meterId"
-                    value={formData.meterIds[0] || ""}
-                    onChange={handleChange}
-                    className={selectClass}
-                    required
-                    disabled={loading || getValidMeters().length === 0}
-                  >
-                    <option value="">Select meter</option>
-                    {getValidMeters().length === 0 ? (
-                      <option value="" disabled>No valid meters found for this account</option>
-                    ) : (
-                      getValidMeters().map(meter => (
-                        <option key={meter.meterNumbers} value={meter.meterNumbers}>
-                          {meter.meterNumbers}
-                          {meter.serviceAddress ? ` - ${meter.serviceAddress.split(',')[0]}` : ''}
-                        </option>
-                      ))
+                  <div className="relative" ref={meterSelectRef}>
+                    <div 
+                      className={`${inputClass} flex items-center justify-between cursor-pointer ${selectedMeter ? 'bg-gray-50' : ''}`}
+                      onClick={() => setShowMeterDropdown(!showMeterDropdown)}
+                    >
+                      {selectedMeter ? (
+                        <div className="truncate">
+                          {String(selectedMeter.meterNumbers || '')}
+                          {selectedMeter.serviceAddress && ` - ${selectedMeter.serviceAddress.split(',')[0]}`}
+                        </div>
+                      ) : (
+                        <span className="text-gray-500">Select meter</span>
+                      )}
+                      <div className={`transform transition-transform ${showMeterDropdown ? 'rotate-180' : ''}`}>
+                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </div>
+                    
+                    {showMeterDropdown && (
+                      <div 
+                        ref={meterDropdownRef}
+                        className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-96 overflow-hidden"
+                      >
+                        <div className="sticky top-0 bg-white border-b border-gray-300 p-2">
+                          <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                              <FiSearch className="text-gray-400" />
+                            </div>
+                            <input
+                              type="text"
+                              value={meterSearch}
+                              onChange={(e) => setMeterSearch(e.target.value)}
+                              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] focus:border-[#039994]"
+                              placeholder="Search meter number or address..."
+                              autoFocus
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="overflow-y-auto max-h-80">
+                          {filteredMeters.length === 0 ? (
+                            <div className="px-4 py-6 text-center">
+                              <p className="text-gray-500 text-sm mb-3">No meters found</p>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setShowMeterDropdown(false);
+                                  handleOpenCreateNewFacilityModal();
+                                }}
+                                className="text-[#039994] text-sm font-medium hover:underline"
+                              >
+                                Add Utility account
+                              </button>
+                            </div>
+                          ) : (
+                            <>
+                              {filteredMeters.map(meter => (
+                                <div
+                                  key={meter.meterNumbers}
+                                  className={`px-4 py-3 cursor-pointer hover:bg-gray-100 border-b border-gray-100 ${selectedMeter?.meterNumbers === meter.meterNumbers ? 'bg-blue-50' : ''}`}
+                                  onClick={() => handleMeterSelect(meter)}
+                                >
+                                  <div className="font-medium text-sm text-gray-900">
+                                    {String(meter.meterNumbers || '')}
+                                  </div>
+                                  {meter.serviceAddress && (
+                                    <div className="text-xs text-gray-600 mt-1 truncate">
+                                      Service: {meter.serviceAddress}
+                                    </div>
+                                  )}
+                                  {meter.billingAddress && (
+                                    <div className="text-xs text-gray-600 truncate">
+                                      Billing: {meter.billingAddress}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                              
+                              <div className="border-t border-gray-200">
+                                <div
+                                  className="px-4 py-3 cursor-pointer hover:bg-gray-50 text-center"
+                                  onClick={() => {
+                                    setShowMeterDropdown(false);
+                                    handleOpenCreateNewFacilityModal();
+                                  }}
+                                >
+                                  <span className="text-[#039994] text-sm font-medium">
+                                    Meters to be registered not listed? Add Utility account
+                                  </span>
+                                </div>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
                     )}
-                    <option value="add-utility" className="text-[#039994] bg-gray-50 hover:bg-gray-100 font-medium">
-                      Meters to be registered not listed? Add Utility account
-                    </option>
-                  </select>
+                  </div>
                   <p className="mt-1 text-xs text-gray-500">
                     Only meters with meter numbers, service address, and billing address are shown
                   </p>
