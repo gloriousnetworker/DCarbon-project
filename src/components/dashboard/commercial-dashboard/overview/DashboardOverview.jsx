@@ -370,11 +370,46 @@
 import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import CommercialRegistrationModal from "./modals/createfacility/CommercialRegistrationModal";
+import axios from "axios";
 
 const QuickActions = dynamic(() => import("./QuickActions"), { ssr: false });
 const Graph = dynamic(() => import("./Graph"), { ssr: false });
-// const RecentRecSales = dynamic(() => import("./RecentRecSales"), { ssr: false });
 const WelcomeModal = dynamic(() => import("./modals/WelcomeModal"), { ssr: false });
+
+const styles = {
+  mainContainer: 'min-h-screen w-full flex flex-col items-center justify-center py-8 px-4 bg-white',
+  headingContainer: 'relative w-full flex flex-col items-center mb-2',
+  backArrow: 'absolute left-4 top-0 text-[#039994] cursor-pointer z-10',
+  pageTitle: 'mb-4 font-[600] text-[24px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro text-left',
+  progressContainer: 'w-full max-w-md flex items-center justify-between mb-6',
+  progressBarWrapper: 'flex-1 h-1 bg-gray-200 rounded-full mr-4',
+  progressBarActive: 'h-1 bg-[#039994] w-2/3 rounded-full',
+  progressStepText: 'text-sm font-medium text-gray-500 font-sfpro',
+  formWrapper: 'w-full max-w-md space-y-6',
+  labelClass: 'block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]',
+  selectClass: 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#626060]',
+  inputClass: 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]',
+  fileInputWrapper: 'relative flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-500 bg-gray-50 focus-within:outline-none focus-within:ring-2 focus-within:ring-[#039994] cursor-pointer font-sfpro',
+  noteText: 'mt-2 font-sfpro text-[12px] leading-[100%] tracking-[-0.05em] font-[300] italic text-[#1E1E1E]',
+  rowWrapper: 'flex space-x-4',
+  halfWidth: 'w-1/2',
+  grayPlaceholder: 'bg-[#E8E8E8]',
+  buttonPrimary: 'w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro',
+  spinnerOverlay: 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20',
+  spinner: 'h-12 w-12 border-4 border-t-4 border-gray-300 border-t-[#039994] rounded-full animate-spin',
+  termsTextContainer: 'mt-6 text-center font-sfpro text-[10px] font-[800] leading-[100%] tracking-[-0.05em] underline text-[#1E1E1E]',
+  uploadHeading: 'block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]',
+  uploadFieldWrapper: 'flex items-center space-x-3',
+  uploadInputLabel: 'relative flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-500 bg-gray-50 focus-within:outline-none focus-within:ring-2 focus-within:ring-[#039994] cursor-pointer font-sfpro',
+  uploadIconContainer: 'absolute right-3 top-1/2 -translate-y-1/2 text-gray-400',
+  uploadButtonStyle: 'px-4 py-2 bg-[#039994] text-white rounded-md hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro',
+  uploadNoteStyle: 'mt-2 font-sfpro text-[12px] leading-[100%] tracking-[-0.05em] font-[300] italic text-[#1E1E1E]',
+  meterStatusButton: 'px-3 py-1 rounded-md border text-xs font-semibold font-sfpro transition-colors duration-200',
+  meterStatusButtonRed: 'border-red-300 bg-red-50 text-red-700 hover:bg-red-100',
+  meterStatusButtonGreen: 'border-green-300 bg-green-50 text-green-700 hover:bg-green-100',
+  meterStatusButtonGray: 'border-gray-300 bg-gray-50 text-gray-700 hover:bg-gray-100',
+  meterStatusContainer: 'flex items-center gap-2'
+};
 
 export default function DashboardOverview() {
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
@@ -384,6 +419,11 @@ export default function DashboardOverview() {
     userId: ""
   });
   const [isCheckingCommercialStatus, setIsCheckingCommercialStatus] = useState(false);
+  const [meterStatus, setMeterStatus] = useState({
+    loading: false,
+    hasMeter: null,
+    lastChecked: null
+  });
 
   const checkCommercialUserStatus = async (userId) => {
     if (!userId) return;
@@ -413,10 +453,50 @@ export default function DashboardOverview() {
         setShowWelcomeModal(true);
       }
     } catch (error) {
-      console.error('Error checking commercial status:', error);
       setShowWelcomeModal(true);
     } finally {
       setIsCheckingCommercialStatus(false);
+    }
+  };
+
+  const checkMeterStatus = async () => {
+    if (!userData.userId) return;
+    
+    setMeterStatus(prev => ({ ...prev, loading: true }));
+    
+    try {
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const token = loginResponse?.data?.token;
+      
+      const response = await axios.get(
+        `https://services.dcarbon.solutions/api/auth/utility-auth/${userData.userId}`,
+        { 
+          headers: { 
+            'Authorization': `Bearer ${token}`
+          } 
+        }
+      );
+      
+      if (response.data.status === 'success' && response.data.data.length > 0) {
+        const authData = response.data.data[0];
+        setMeterStatus({
+          loading: false,
+          hasMeter: authData.hasMeter,
+          lastChecked: new Date()
+        });
+      } else {
+        setMeterStatus({
+          loading: false,
+          hasMeter: false,
+          lastChecked: new Date()
+        });
+      }
+    } catch (err) {
+      setMeterStatus({
+        loading: false,
+        hasMeter: null,
+        lastChecked: new Date()
+      });
     }
   };
 
@@ -452,6 +532,32 @@ export default function DashboardOverview() {
     loadUserData();
   }, []);
 
+  useEffect(() => {
+    if (userData.userId) {
+      checkMeterStatus();
+      
+      const interval = setInterval(() => {
+        checkMeterStatus();
+      }, 300000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [userData.userId]);
+
+  const getMeterStatusText = () => {
+    if (meterStatus.loading) return "Checking meter status...";
+    if (meterStatus.hasMeter === true) return "✓ Meters Fetched";
+    if (meterStatus.hasMeter === false) return "⏳ Fetching Meters";
+    return "Check Meter Status";
+  };
+
+  const getMeterStatusButtonClass = () => {
+    if (meterStatus.loading) return `${styles.meterStatusButton} ${styles.meterStatusButtonGray}`;
+    if (meterStatus.hasMeter === true) return `${styles.meterStatusButton} ${styles.meterStatusButtonGreen}`;
+    if (meterStatus.hasMeter === false) return `${styles.meterStatusButton} ${styles.meterStatusButtonRed}`;
+    return `${styles.meterStatusButton} ${styles.meterStatusButtonGray}`;
+  };
+
   if (isCheckingCommercialStatus) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
@@ -470,6 +576,21 @@ export default function DashboardOverview() {
             Quick Action
           </h1>
         </div>
+        
+        <div className={styles.meterStatusContainer}>
+          {meterStatus.hasMeter === false && (
+            <span className="text-xs text-gray-500">
+              Meters usually fetch in 3-5 mins
+            </span>
+          )}
+          <button
+            onClick={checkMeterStatus}
+            disabled={meterStatus.loading}
+            className={getMeterStatusButtonClass()}
+          >
+            {getMeterStatusText()}
+          </button>
+        </div>
       </div>
 
       <QuickActions />
@@ -479,8 +600,6 @@ export default function DashboardOverview() {
       <Graph />
 
       <hr className="border-gray-300" />
-
-      {/* <RecentRecSales /> */}
 
       {showWelcomeModal && (
         <div className="fixed inset-0 z-[100]">

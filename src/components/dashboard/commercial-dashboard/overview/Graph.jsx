@@ -78,14 +78,13 @@ export default function Graph() {
           }
         );
         const result = await response.json();
+        
         const metersExist = result.status === 'success' && 
                            Array.isArray(result.data) &&
+                           result.data.length > 0 &&
                            result.data.some(item => 
-                             Array.isArray(item.meters) &&
-                             item.meters.some(meter => 
-                               Array.isArray(meter.meterNumbers) && 
-                               meter.meterNumbers.length > 0
-                             )
+                             Array.isArray(item.meters) && 
+                             item.meters.length > 0
                            );
         setHasMeters(metersExist);
       } catch (error) {

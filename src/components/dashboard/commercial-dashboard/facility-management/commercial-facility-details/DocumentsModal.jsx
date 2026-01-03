@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { FiFileText, FiEye, FiRefreshCw, FiUpload, FiAlertCircle, FiX, FiDownload, FiAlertTriangle, FiChevronDown } from "react-icons/fi";
-import { toast } from 'react-hot-toast';
 
 const DocumentCard = ({ title, status, url, onUpload, onView, docType, rejectionReason }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -133,13 +132,18 @@ const AcknowledgementCard = ({ title, status, url, onView, rejectionReason }) =>
 
   const fileName = getDocumentFileName(url);
   const isRejected = status?.toUpperCase() === "REJECTED";
-  const displayStatus = status || "PENDING";
+  const displayStatus = !url ? "REQUIRED" : status || "PENDING";
 
   return (
     <div className="mb-4 bg-green-50 border border-green-200 rounded-md p-3">
       <div className="flex items-center justify-between mb-2">
         <span className="font-medium text-sm text-green-800">{title}</span>
-        <span className={`px-2 py-0.5 rounded text-xs font-semibold bg-green-600 text-white`}>
+        <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
+          displayStatus === "APPROVED" ? "bg-green-600 text-white" :
+          displayStatus === "PENDING" || displayStatus === "SUBMITTED" ? "bg-yellow-500 text-white" :
+          displayStatus === "REJECTED" ? "bg-red-500 text-white" :
+          displayStatus === "REQUIRED" ? "bg-orange-500 text-white" : "bg-gray-500 text-white"
+        }`}>
           {displayStatus}
         </span>
       </div>

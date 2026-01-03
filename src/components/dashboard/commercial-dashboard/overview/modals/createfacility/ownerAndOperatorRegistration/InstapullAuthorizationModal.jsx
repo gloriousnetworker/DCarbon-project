@@ -3,28 +3,27 @@ import { toast } from "react-hot-toast";
 import axios from "axios";
 
 const styles = {
-  modalContainer: 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4',
-  modal: 'relative w-full max-w-md bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col',
-  modalHeader: 'p-6 pb-4 border-b border-gray-200',
-  modalTitle: 'font-[600] text-[20px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro mb-2',
-  modalSubtitle: 'text-sm text-gray-600 mb-4',
-  modalBody: 'flex-1 overflow-y-auto p-6',
-  modalFooter: 'p-6 pt-4 border-t border-gray-200',
-  closeButton: 'absolute top-4 right-4 text-gray-500 hover:text-gray-700 cursor-pointer',
-  buttonSecondary: 'flex-1 rounded-md border border-gray-300 text-gray-700 font-semibold py-2 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300 font-sfpro',
-  buttonPrimary: 'flex-1 rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro',
-  labelClass: 'block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]',
-  inputClass: 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]',
-  noteText: 'mt-2 font-sfpro text-[12px] leading-[100%] tracking-[-0.05em] font-[300] italic text-[#1E1E1E]',
-  instapullButton: 'w-full rounded-md bg-blue-600 text-white font-semibold py-2 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 font-sfpro mb-4',
-  messageContainer: 'mt-4 p-4 bg-green-50 border border-green-200 rounded-lg',
-  messageText: 'text-green-700 text-sm',
-  spinner: 'inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin'
+  modalContainer: 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 p-4 backdrop-blur-sm',
+  modal: 'relative w-full max-w-2xl bg-white rounded-xl shadow-2xl overflow-hidden',
+  modalHeader: 'px-8 pt-8 pb-6 bg-gradient-to-br from-[#039994] to-[#02857f]',
+  modalTitle: 'font-[600] text-[28px] leading-[110%] tracking-[-0.05em] text-white font-sfpro mb-2',
+  modalSubtitle: 'text-[15px] text-white text-opacity-90 leading-relaxed',
+  closeButton: 'absolute top-6 right-6 text-white hover:text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 cursor-pointer transition-all',
+  modalBody: 'px-8 py-6',
+  buttonPrimary: 'w-full rounded-lg bg-[#039994] text-white font-semibold py-3 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] focus:ring-offset-2 font-sfpro transition-all disabled:opacity-50 disabled:cursor-not-allowed',
+  buttonSecondary: 'w-full rounded-lg border-2 border-[#039994] text-[#039994] font-semibold py-3 hover:bg-[#039994] hover:bg-opacity-5 focus:outline-none focus:ring-2 focus:ring-[#039994] focus:ring-offset-2 font-sfpro transition-all',
+  labelClass: 'block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.03em] font-[500] text-[#1E1E1E]',
+  inputClass: 'w-full rounded-lg border-2 border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] focus:border-transparent font-sfpro text-[14px] leading-[100%] tracking-[-0.03em] font-[400] text-[#1E1E1E] transition-all',
+  noteText: 'mt-2 font-sfpro text-[12px] leading-[140%] tracking-[-0.03em] font-[400] text-gray-500',
+  spinner: 'inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin',
+  divider: 'my-6 border-t border-gray-200',
+  infoBox: 'flex items-start gap-3 p-4 bg-[#039994] bg-opacity-5 border-l-4 border-[#039994] rounded-r-lg',
+  infoIcon: 'flex-shrink-0 w-5 h-5 text-[#039994] mt-0.5'
 };
 
-export default function InstapullAuthorizationModal({ isOpen, onClose, utilityProvider, instapullOpened, openInstapullTab }) {
+export default function InstapullAuthorizationModal({ isOpen, onClose, utilityProvider, instapullOpened, openInstapullTab, userId }) {
   const [submitting, setSubmitting] = useState(false);
-  const [response, setResponse] = useState(null);
+  const [checkingMeters, setCheckingMeters] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     userType: "COMMERCIAL",
@@ -49,21 +48,62 @@ export default function InstapullAuthorizationModal({ isOpen, onClose, utilityPr
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const checkMeterStatus = async () => {
+    if (!userId) return;
+    
+    setCheckingMeters(true);
+    try {
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const token = loginResponse?.data?.token;
+      
+      const response = await axios.get(
+        `https://services.dcarbon.solutions/api/auth/utility-auth/${userId}`,
+        { 
+          headers: { 
+            'Authorization': `Bearer ${token}`
+          } 
+        }
+      );
+      
+      if (response.data.status === 'success' && response.data.data.length > 0) {
+        const authData = response.data.data[0];
+        
+        if (authData.hasMeter) {
+          toast.success('Meters fetched successfully! You can now add them to your facilities.', {
+            duration: 5000,
+            icon: '✓'
+          });
+          setTimeout(() => {
+            onClose();
+          }, 1500);
+        } else {
+          toast.loading('Meters are being fetched. This takes 3-5 minutes.', {
+            duration: 4000,
+            icon: '⏳'
+          });
+        }
+      }
+    } catch (err) {
+      toast.error('Failed to check meter status. Please try again.');
+    } finally {
+      setCheckingMeters(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!formData.email.trim()) {
-      toast.error('Please enter your email');
+      toast.error('Please enter your email address');
       return;
     }
 
     if (!formData.utilityType.trim()) {
-      toast.error('Utility type is required');
+      toast.error('Utility provider is required');
       return;
     }
 
     setSubmitting(true);
-    setResponse(null);
     
     try {
       const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
@@ -87,8 +127,15 @@ export default function InstapullAuthorizationModal({ isOpen, onClose, utilityPr
         }
       );
 
-      setResponse(response.data);
-      toast.success(response.data.message || 'Authorization submitted successfully!');
+      toast.success(response.data.message || 'Authorization submitted successfully!', {
+        duration: 4000,
+        icon: '✓'
+      });
+      
+      setTimeout(() => {
+        checkMeterStatus();
+      }, 2000);
+      
     } catch (err) {
       toast.error(err.response?.data?.message || err.message || 'Failed to submit authorization');
     } finally {
@@ -96,13 +143,17 @@ export default function InstapullAuthorizationModal({ isOpen, onClose, utilityPr
     }
   };
 
+  const handleClose = () => {
+    onClose();
+  };
+
   if (!isOpen) return null;
 
   return (
-    <div className={styles.modalContainer}>
-      <div className={styles.modal}>
+    <div className={styles.modalContainer} onClick={handleClose}>
+      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <button
-          onClick={onClose}
+          onClick={handleClose}
           className={styles.closeButton}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -111,27 +162,19 @@ export default function InstapullAuthorizationModal({ isOpen, onClose, utilityPr
         </button>
 
         <div className={styles.modalHeader}>
-          <h2 className={styles.modalTitle}>Complete Utility Authorization</h2>
+          <h2 className={styles.modalTitle}>Utility Authorization</h2>
           <p className={styles.modalSubtitle}>
             {instapullOpened 
-              ? 'Instapull is open in a new tab. Complete your authorization there, then return here to submit your details.'
-              : 'Instapull was not opened. Please click the button below to open it in a new tab.'}
+              ? 'Complete your authorization in the Instapull tab, then return here to submit your details.'
+              : 'Click the button below to open Instapull and complete your authorization.'}
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className={styles.modalBody}>
-          <div className="space-y-4">
-            <button
-              type="button"
-              onClick={openInstapullTab}
-              className={styles.instapullButton}
-            >
-              {instapullOpened ? '✓ Instapull Opened - Click to Reopen' : 'Open Instapull in New Tab'}
-            </button>
-
+        <div className={styles.modalBody}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
               <label className={styles.labelClass}>
-                Your Email <span className="text-red-500">*</span>
+                Your Email <span className="text-[#039994]">*</span>
               </label>
               <input
                 type="email"
@@ -139,28 +182,28 @@ export default function InstapullAuthorizationModal({ isOpen, onClose, utilityPr
                 value={formData.email}
                 onChange={handleInputChange}
                 className={styles.inputClass}
-                placeholder="Enter your email"
+                placeholder="your.email@company.com"
                 required
               />
             </div>
 
             <div>
               <label className={styles.labelClass}>
-                User Type <span className="text-red-500">*</span>
+                User Type <span className="text-[#039994]">*</span>
               </label>
               <input
                 type="text"
                 name="userType"
                 value={formData.userType}
-                className={`${styles.inputClass} bg-gray-100`}
+                className={`${styles.inputClass} bg-gray-50 cursor-not-allowed`}
                 disabled
               />
-              <p className={styles.noteText}>User type is automatically set to COMMERCIAL</p>
+              <p className={styles.noteText}>Fixed as COMMERCIAL</p>
             </div>
 
             <div>
               <label className={styles.labelClass}>
-                Utility Provider <span className="text-red-500">*</span>
+                Utility Provider <span className="text-[#039994]">*</span>
               </label>
               <input
                 type="text"
@@ -168,14 +211,14 @@ export default function InstapullAuthorizationModal({ isOpen, onClose, utilityPr
                 value={formData.utilityType}
                 onChange={handleInputChange}
                 className={styles.inputClass}
-                placeholder="Utility provider name"
+                placeholder="e.g., PG&E, ConEd"
                 required
               />
             </div>
 
             <div>
               <label className={styles.labelClass}>
-                Authorization Email (Optional)
+                Authorization Email <span className="text-gray-400">(Optional)</span>
               </label>
               <input
                 type="email"
@@ -183,47 +226,51 @@ export default function InstapullAuthorizationModal({ isOpen, onClose, utilityPr
                 value={formData.authorizationEmail}
                 onChange={handleInputChange}
                 className={styles.inputClass}
-                placeholder="Enter authorization email if required"
+                placeholder="auth.email@company.com"
               />
-              <p className={styles.noteText}>Required for Green Button authorization. Can also be provided for traditional method.</p>
+              <p className={styles.noteText}>For Green Button authorization</p>
             </div>
           </div>
 
-          {response && (
-            <div className={styles.messageContainer}>
-              <p className={styles.messageText}>
-                <strong>Response from server:</strong> {response.message}
-              </p>
+          <div className={styles.divider}></div>
+
+          {!instapullOpened && (
+            <div className={styles.infoBox}>
+              <svg className={styles.infoIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div>
+                <p className="text-[14px] font-[500] text-[#039994] mb-1">Action Required</p>
+                <p className="text-[13px] text-gray-700 leading-relaxed">Open Instapull to authorize access to your utility data before submitting this form.</p>
+              </div>
             </div>
           )}
 
-          <div className="pt-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
             <button
-              type="submit"
-              disabled={submitting}
-              className={`${styles.buttonPrimary} flex items-center justify-center gap-2`}
+              type="button"
+              onClick={openInstapullTab}
+              className={styles.buttonSecondary}
             >
-              {submitting ? (
-                <>
+              {instapullOpened ? '↻ Reopen Instapull' : 'Open Instapull'}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={submitting || checkingMeters}
+              className={styles.buttonPrimary}
+            >
+              {submitting || checkingMeters ? (
+                <span className="flex items-center justify-center gap-2">
                   <div className={styles.spinner}></div>
-                  <span>Processing...</span>
-                </>
+                  <span>{checkingMeters ? 'Checking Status...' : 'Processing...'}</span>
+                </span>
               ) : (
                 'Confirm Authorization'
               )}
             </button>
           </div>
-        </form>
-
-        <div className={styles.modalFooter}>
-          <button
-            type="button"
-            onClick={onClose}
-            className={styles.buttonSecondary}
-            disabled={submitting}
-          >
-            Close
-          </button>
         </div>
       </div>
     </div>

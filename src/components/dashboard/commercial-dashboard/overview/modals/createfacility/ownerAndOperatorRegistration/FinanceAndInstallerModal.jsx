@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import axios from "axios";
+import InstapullAuthorizationModal from "./InstapullAuthorizationModal";
 
 const styles = {
   mainContainer: 'min-h-screen w-full flex flex-col items-center justify-center py-8 px-4 bg-white',
@@ -43,7 +44,10 @@ const styles = {
   authButtonPrimary: 'flex-1 rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro',
   messageContainer: 'mt-4 p-4 bg-green-50 border border-green-200 rounded-lg',
   messageText: 'text-green-700 text-sm',
-  instapullButton: 'mt-4 w-full rounded-md bg-blue-600 text-white font-semibold py-2 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 font-sfpro'
+  instapullButton: 'mt-4 w-full rounded-md bg-blue-600 text-white font-semibold py-2 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 font-sfpro',
+  optionGroup: 'px-3 py-2 text-sm text-gray-500 font-sfpro',
+  optionGroupGreenButton: 'px-3 py-2 text-sm text-green-600 font-semibold font-sfpro',
+  greenButtonBadge: 'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 ml-2'
 };
 
 export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
@@ -61,9 +65,6 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const [requestedFinanceTypeName, setRequestedFinanceTypeName] = useState('');
   const [requestedUtilityName, setRequestedUtilityName] = useState('');
   const [requestedUtilityWebsite, setRequestedUtilityWebsite] = useState('');
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const [submittingAuth, setSubmittingAuth] = useState(false);
-  const [authResponse, setAuthResponse] = useState(null);
   const [instapullOpened, setInstapullOpened] = useState(false);
   const [file, setFile] = useState(null);
   const [facilityNickname, setFacilityNickname] = useState('');
@@ -71,6 +72,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const [financeCompanies, setFinanceCompanies] = useState([]);
   const [commercialRole, setCommercialRole] = useState('both');
   const [createdFacilityId, setCreatedFacilityId] = useState(null);
+  const [showInstapullAuthModal, setShowInstapullAuthModal] = useState(false);
 
   const [formData, setFormData] = useState({
     financeType: "",
@@ -88,15 +90,10 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     financeNamingCode: ""
   });
 
-  const [authFormData, setAuthFormData] = useState({
-    email: "",
-    userType: "COMMERCIAL",
-    utilityType: "",
-    authorizationEmail: ""
-  });
-
   const [financeTypes, setFinanceTypes] = useState([]);
   const [installers, setInstallers] = useState([]);
+  const [greenButtonUtilities, setGreenButtonUtilities] = useState([]);
+  const [regularUtilities, setRegularUtilities] = useState([]);
 
   const isCashType = formData.financeType.toLowerCase() === 'cash';
   const showUploadField = !isCashType && formData.financeType !== '';
@@ -116,8 +113,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
       if (response.data.status === 'success') {
         setCommercialRole(response.data.data.commercialUser.commercialRole);
       }
-    } catch (error) {
-    }
+    } catch (error) {}
   };
 
   useEffect(() => {
@@ -130,16 +126,6 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     }
   }, [isOpen]);
 
-  useEffect(() => {
-    const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
-    const userEmail = loginResponse?.data?.user?.email || loginResponse?.data?.user?.userEmail || '';
-    setAuthFormData(prev => ({
-      ...prev,
-      email: userEmail,
-      utilityType: formData.utilityProvider
-    }));
-  }, [formData.utilityProvider]);
-
   const fetchUtilityProviders = async () => {
     setLoadingUtilityProviders(true);
     try {
@@ -151,12 +137,34 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
       );
       if (response.data.status === 'success') {
         setUtilityProviders(response.data.data);
+        categorizeUtilities(response.data.data);
       }
     } catch (err) {
       toast.error('Failed to load utility providers');
     } finally {
       setLoadingUtilityProviders(false);
     }
+  };
+
+  const categorizeUtilities = (utilities) => {
+    const greenButtonKeywords = ['green button connect', 'green button', 'san diego gas and electric', 'southern california edison', 'pacific gas and electric', 'PG&E', 'SCE', 'SDG&E'];
+    
+    const greenButtonUtils = [];
+    const regularUtils = [];
+    
+    utilities.forEach(utility => {
+      const nameLower = utility.name.toLowerCase();
+      const isGreenButton = greenButtonKeywords.some(keyword => nameLower.includes(keyword));
+      
+      if (isGreenButton) {
+        greenButtonUtils.push(utility);
+      } else {
+        regularUtils.push(utility);
+      }
+    });
+    
+    setGreenButtonUtilities(greenButtonUtils);
+    setRegularUtilities(regularUtils);
   };
 
   const fetchFinanceTypes = async () => {
@@ -269,12 +277,12 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
 
     const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
     const token = loginResponse?.data?.token;
-    const formData = new FormData();
-    formData.append('financeAgreementUrl', file);
+    const formDataObj = new FormData();
+    formDataObj.append('financeAgreementUrl', file);
 
     await axios.put(
       `https://services.dcarbon.solutions/api/facility/update-facility-financial-agreement/${facilityId}`,
-      formData,
+      formDataObj,
       { headers: { 'Content-Type': 'multipart/form-data', 'Authorization': `Bearer ${token}` } }
     );
   };
@@ -442,11 +450,6 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     }
   };
 
-  const handleAuthFormChange = (e) => {
-    const { name, value } = e.target;
-    setAuthFormData(prev => ({ ...prev, [name]: value }));
-  };
-
   const handleSystemSizeChange = (e) => {
     const input = e.target.value;
     
@@ -455,16 +458,10 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
       return;
     }
     
-    const regex = /^[0-9]*\.?[0-9]{0,1}$/;
+    const regex = /^\d*\.?\d*$/;
     
     if (regex.test(input)) {
-      if (input.includes('.')) {
-        const [whole, decimal] = input.split('.');
-        const formattedDecimal = decimal.length > 0 ? decimal.slice(0, 1) : '0';
-        setFormData(prev => ({ ...prev, systemSize: `${whole}.${formattedDecimal}` }));
-      } else {
-        setFormData(prev => ({ ...prev, systemSize: input }));
-      }
+      setFormData(prev => ({ ...prev, systemSize: input }));
     }
   };
 
@@ -522,53 +519,6 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     }
   };
 
-  const handleSubmitAuthForm = async (e) => {
-    e.preventDefault();
-    
-    if (!authFormData.email.trim()) {
-      toast.error('Please enter your email');
-      return;
-    }
-
-    if (!authFormData.utilityType.trim()) {
-      toast.error('Utility type is required');
-      return;
-    }
-
-    setSubmittingAuth(true);
-    setAuthResponse(null);
-    
-    try {
-      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
-      const token = loginResponse?.data?.token;
-
-      const payload = {
-        email: authFormData.email.trim(),
-        userType: authFormData.userType,
-        utilityType: authFormData.utilityType,
-        authorizationEmail: authFormData.authorizationEmail.trim() || undefined
-      };
-
-      const response = await axios.post(
-        'https://services.dcarbon.solutions/api/utility-auth/green-button',
-        payload,
-        { 
-          headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          } 
-        }
-      );
-
-      setAuthResponse(response.data);
-      toast.success(response.data.message || 'Authorization submitted successfully!');
-    } catch (err) {
-      toast.error(err.response?.data?.message || err.message || 'Failed to submit authorization');
-    } finally {
-      setSubmittingAuth(false);
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.financeType) return toast.error('Please select a finance type');
@@ -592,12 +542,9 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
       toast.dismiss(toastId);
       toast.success('Facility created successfully!');
       
-      // OPEN INSTAPULL IN NEW TAB
       openInstapullTab();
       
-      // Close the main modal and show auth modal
-      onClose();
-      setShowAuthModal(true);
+      setShowInstapullAuthModal(true);
     } catch (err) {
       toast.error(err.response?.data?.message || err.message || 'Operation failed', { id: toastId });
     } finally {
@@ -624,21 +571,12 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     setFacilityNickname('');
     setFile(null);
     setUploadSuccess(false);
-    setShowAuthModal(false);
-    setAuthResponse(null);
     setInstapullOpened(false);
     setCreatedFacilityId(null);
     onClose();
   };
 
-  const handleCloseAuthModal = () => {
-    setShowAuthModal(false);
-    setAuthResponse(null);
-    setInstapullOpened(false);
-    window.location.reload();
-  };
-
-  if (!isOpen && !showAuthModal) return null;
+  if (!isOpen && !showInstapullAuthModal) return null;
 
   return (
     <>
@@ -740,138 +678,21 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
         </div>
       )}
 
-      {showAuthModal && (
-        <div className={styles.authModalContainer}>
-          <div className={styles.authModal}>
-            <button
-              onClick={handleCloseAuthModal}
-              className={styles.authCloseButton}
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
-
-            <div className={styles.authModalHeader}>
-              <h2 className={styles.authModalTitle}>Complete Utility Authorization</h2>
-              <p className={styles.authModalSubtitle}>
-                {instapullOpened 
-                  ? 'Instapull is open in a new tab. Complete your authorization there, then return here to submit your details.'
-                  : 'Instapull was not opened. Please click the button below to open it in a new tab.'}
-              </p>
-            </div>
-
-            <form onSubmit={handleSubmitAuthForm} className={styles.authModalBody}>
-              <div className="space-y-4">
-                <button
-                  type="button"
-                  onClick={openInstapullTab}
-                  className={styles.instapullButton}
-                >
-                  {instapullOpened ? '✓ Instapull Opened - Click to Reopen' : 'Open Instapull in New Tab'}
-                </button>
-
-                <div>
-                  <label className={styles.labelClass}>
-                    Your Email <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={authFormData.email}
-                    onChange={handleAuthFormChange}
-                    className={styles.inputClass}
-                    placeholder="Enter your email"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className={styles.labelClass}>
-                    User Type <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="userType"
-                    value={authFormData.userType}
-                    className={`${styles.inputClass} bg-gray-100`}
-                    disabled
-                  />
-                  <p className={styles.noteText}>User type is automatically set to COMMERCIAL</p>
-                </div>
-
-                <div>
-                  <label className={styles.labelClass}>
-                    Utility Provider <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="utilityType"
-                    value={authFormData.utilityType}
-                    onChange={handleAuthFormChange}
-                    className={styles.inputClass}
-                    placeholder="Utility provider name"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className={styles.labelClass}>
-                    Authorization Email (Optional)
-                  </label>
-                  <input
-                    type="email"
-                    name="authorizationEmail"
-                    value={authFormData.authorizationEmail}
-                    onChange={handleAuthFormChange}
-                    className={styles.inputClass}
-                    placeholder="Enter authorization email if required"
-                  />
-                  <p className={styles.noteText}>Required for Green Button authorization. Can also be provided for traditional method.</p>
-                </div>
-              </div>
-
-              {authResponse && (
-                <div className={styles.messageContainer}>
-                  <p className={styles.messageText}>
-                    <strong>Response from server:</strong> {authResponse.message}
-                  </p>
-                </div>
-              )}
-
-              <div className="pt-6">
-                <button
-                  type="submit"
-                  disabled={submittingAuth}
-                  className={`${styles.buttonPrimary} flex items-center justify-center gap-2`}
-                >
-                  {submittingAuth ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      <span>Processing...</span>
-                    </>
-                  ) : (
-                    'Confirm Authorization'
-                  )}
-                </button>
-              </div>
-            </form>
-
-            <div className={styles.authModalFooter}>
-              <button
-                type="button"
-                onClick={handleCloseAuthModal}
-                className={styles.authButtonSecondary}
-                disabled={submittingAuth}
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
+      {showInstapullAuthModal && (
+        <InstapullAuthorizationModal
+          isOpen={showInstapullAuthModal}
+          onClose={() => {
+            setShowInstapullAuthModal(false);
+            onClose();
+          }}
+          utilityProvider={formData.utilityProvider}
+          instapullOpened={instapullOpened}
+          openInstapullTab={openInstapullTab}
+          userId={JSON.parse(localStorage.getItem('loginResponse') || '{}')?.data?.user?.id}
+        />
       )}
 
-      {isOpen && !showAuthModal && (
+      {isOpen && !showInstapullAuthModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
           <div className="relative w-full max-w-lg bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
             <div className="relative p-6 pb-4">
@@ -944,11 +765,26 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                       disabled={loadingUtilityProviders}
                     >
                       <option value="">{loadingUtilityProviders ? 'Loading...' : 'Choose provider'}</option>
-                      {utilityProviders.map((provider) => (
-                        <option key={provider.id} value={provider.name}>
-                          {provider.name}
-                        </option>
-                      ))}
+                      
+                      {greenButtonUtilities.length > 0 && (
+                        <optgroup label="Green Button Utilities" className={styles.optionGroupGreenButton}>
+                          {greenButtonUtilities.map((provider) => (
+                            <option key={provider.id} value={provider.name}>
+                              {provider.name} <span className={styles.greenButtonBadge}>Green Button</span>
+                            </option>
+                          ))}
+                        </optgroup>
+                      )}
+                      
+                      {regularUtilities.length > 0 && (
+                        <optgroup label="Other Utilities" className={styles.optionGroup}>
+                          {regularUtilities.map((provider) => (
+                            <option key={provider.id} value={provider.name}>
+                              {provider.name}
+                            </option>
+                          ))}
+                        </optgroup>
+                      )}
                     </select>
                     <div className={styles.uploadIconContainer}>
                       <svg className="w-5 h-5 text-gray-400 pointer-events-none absolute top-1/2 right-3 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

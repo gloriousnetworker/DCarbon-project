@@ -787,19 +787,10 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
                     {additionalOwners.map((owner, index) => (
                       <div key={index} className="border border-[#039994] rounded-lg p-4 relative">
                         <div className="flex items-center justify-between mb-3">
-                          <div className="bg-[#039994] text-white px-3 py-1 rounded text-sm font-sfpro">
-                            {owner.fullName || `Owner ${index + 2}`}
+                          <div className="text-sm font-medium text-gray-700">
+                            Additional Owner {index + 1}
                           </div>
                           <div className="flex space-x-2">
-                            <button
-                              type="button"
-                              className="text-[#039994] hover:text-[#02857f]"
-                            >
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="2"/>
-                                <path d="m18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2"/>
-                              </svg>
-                            </button>
                             {additionalOwners.length > 1 && (
                               <button
                                 type="button"
