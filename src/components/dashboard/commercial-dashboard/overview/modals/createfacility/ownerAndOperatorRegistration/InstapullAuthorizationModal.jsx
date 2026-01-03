@@ -103,6 +103,11 @@ export default function InstapullAuthorizationModal({ isOpen, onClose, utilityPr
       return;
     }
 
+    if (!formData.authorizationEmail.trim()) {
+      toast.error('Authorization email is required');
+      return;
+    }
+
     setSubmitting(true);
     
     try {
@@ -218,7 +223,7 @@ export default function InstapullAuthorizationModal({ isOpen, onClose, utilityPr
 
             <div>
               <label className={styles.labelClass}>
-                Authorization Email <span className="text-gray-400">(Optional)</span>
+                Authorization Email <span className="text-[#039994]">*</span>
               </label>
               <input
                 type="email"
@@ -227,8 +232,9 @@ export default function InstapullAuthorizationModal({ isOpen, onClose, utilityPr
                 onChange={handleInputChange}
                 className={styles.inputClass}
                 placeholder="auth.email@company.com"
+                required
               />
-              <p className={styles.noteText}>For Green Button authorization</p>
+              <p className={styles.noteText}>Required for Green Button authorization</p>
             </div>
           </div>
 
