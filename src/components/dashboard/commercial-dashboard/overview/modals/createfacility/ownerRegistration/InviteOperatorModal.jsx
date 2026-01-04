@@ -3,13 +3,28 @@ import { toast } from "react-hot-toast";
 import axios from "axios";
 
 const styles = {
-  buttonPrimary: 'w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-sm',
+  modalContainer: 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 p-4 backdrop-blur-sm',
+  modal: 'relative w-full max-w-2xl bg-white rounded-xl shadow-2xl overflow-hidden',
+  modalHeader: 'px-8 pt-8 pb-6 bg-gradient-to-br from-[#039994] to-[#02857f]',
+  modalTitle: 'font-[600] text-[28px] leading-[110%] tracking-[-0.05em] text-white font-sfpro mb-2',
+  modalSubtitle: 'text-[15px] text-white text-opacity-90 leading-relaxed',
+  closeButton: 'absolute top-6 right-6 text-white hover:text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 cursor-pointer transition-all',
+  backButton: 'absolute top-6 left-6 text-white hover:text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 cursor-pointer transition-all',
+  modalBody: 'px-8 py-6',
+  buttonPrimary: 'w-full rounded-lg bg-[#039994] text-white font-semibold py-3 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] focus:ring-offset-2 font-sfpro transition-all disabled:opacity-50 disabled:cursor-not-allowed',
+  labelClass: 'block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.03em] font-[500] text-[#1E1E1E]',
+  inputClass: 'w-full rounded-lg border-2 border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] focus:border-transparent font-sfpro text-[14px] leading-[100%] tracking-[-0.03em] font-[400] text-[#1E1E1E] transition-all',
+  selectClass: 'w-full rounded-lg border-2 border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] focus:border-transparent font-sfpro text-[14px] leading-[100%] tracking-[-0.03em] font-[400] text-[#1E1E1E] transition-all bg-white',
+  textareaClass: 'w-full rounded-lg border-2 border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] focus:border-transparent font-sfpro text-[14px] leading-[100%] tracking-[-0.03em] font-[400] text-[#1E1E1E] transition-all resize-none',
+  noteText: 'mt-2 font-sfpro text-[12px] leading-[140%] tracking-[-0.03em] font-[400] text-gray-500',
+  spinner: 'inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin',
   spinnerOverlay: 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20',
-  spinner: 'h-10 w-10 border-4 border-t-4 border-gray-300 border-t-[#039994] rounded-full animate-spin',
-  labelClass: 'block mb-1 font-sfpro text-[12px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]',
-  inputClass: 'w-full rounded-md border border-gray-300 px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[12px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]',
-  selectClass: 'w-full rounded-md border border-gray-300 px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[12px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E] bg-white',
-  termsTextContainer: 'text-center mt-2'
+  spinnerLarge: 'h-10 w-10 border-4 border-t-4 border-gray-300 border-t-[#039994] rounded-full animate-spin',
+  infoBox: 'flex items-start gap-3 p-4 bg-[#039994] bg-opacity-5 border-l-4 border-[#039994] rounded-r-lg',
+  successBox: 'flex items-start gap-3 p-4 bg-green-50 border-l-4 border-green-500 rounded-r-lg',
+  warningBox: 'flex items-start gap-3 p-4 bg-yellow-50 border-l-4 border-yellow-500 rounded-r-lg',
+  divider: 'my-6 border-t border-gray-200',
+  successModalBody: 'px-8 py-12 text-center'
 };
 
 export default function InviteOperatorModal({ isOpen, onClose, onBack, selectedUtilityProvider, isGreenButtonUtility }) {
@@ -66,7 +81,6 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, selectedU
         toast.error('Failed to load facilities');
       }
     } catch (error) {
-      console.error('Error fetching facilities:', error);
       toast.error('Error loading facilities');
     } finally {
       setLoadingFacilities(false);
@@ -170,7 +184,6 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, selectedU
         throw new Error(response.data.message || 'Failed to send invitation');
       }
     } catch (err) {
-      console.error('Invitation error:', err);
       const errorMessage = err.response?.data?.message || err.message || 'Failed to send invitation';
       toast.error(errorMessage, { id: toastId });
     } finally {
@@ -180,7 +193,7 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, selectedU
 
   const handleClose = () => {
     if (!loading) {
-      setFormData({ name: "", email: "", message: "Please join our platform!" });
+      setFormData({ name: "", email: "", message: "Please join the DCarbon Platform as my Operator!" });
       setCurrentModal('invite');
       setSelectedFacilityId("");
       onClose();
@@ -189,7 +202,7 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, selectedU
 
   const handleBackClick = () => {
     if (!loading && onBack) {
-      setFormData({ name: "", email: "", message: "Please join our platform!" });
+      setFormData({ name: "", email: "", message: "Please join the DCarbon Platform as my Operator!" });
       setCurrentModal('invite');
       setSelectedFacilityId("");
       onBack();
@@ -201,7 +214,7 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, selectedU
   };
 
   const handleGoToDashboard = () => {
-    setFormData({ name: "", email: "", message: "Please join our platform!" });
+    setFormData({ name: "", email: "", message: "Please join the DCarbon Platform as my Operator!" });
     setCurrentModal('invite');
     setSelectedFacilityId("");
     onClose();
@@ -214,37 +227,22 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, selectedU
     <>
       {loading && (
         <div className={styles.spinnerOverlay}>
-          <div className={styles.spinner}></div>
+          <div className={styles.spinnerLarge}></div>
         </div>
       )}
 
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-        <div className="relative w-full max-w-sm bg-white rounded-xl overflow-hidden max-h-[85vh] flex flex-col">
+      <div className={styles.modalContainer} onClick={handleClose}>
+        <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
           {currentModal === 'invite' && (
-            <div className="relative p-4 flex-1 overflow-y-auto">
+            <>
               {onBack && (
                 <button
                   onClick={handleBackClick}
                   disabled={loading}
-                  className={`absolute left-4 top-4 text-[#039994] hover:text-[#02857f] transition-colors ${
-                    loading ? 'opacity-50 cursor-not-allowed' : ''
-                  }`}
-                  aria-label="Go back"
+                  className={styles.backButton}
                 >
-                  <svg 
-                    width="16" 
-                    height="16" 
-                    viewBox="0 0 24 24" 
-                    fill="none" 
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path 
-                      d="M19 12H5M12 19L5 12L12 5" 
-                      stroke="currentColor" 
-                      strokeWidth="2" 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round"
-                    />
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M19 12H5M12 19L5 12L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </button>
               )}
@@ -252,342 +250,257 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, selectedU
               <button
                 onClick={handleClose}
                 disabled={loading}
-                className={`absolute top-4 right-4 text-red-500 hover:text-red-700 transition-colors ${
-                  loading ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
-                aria-label="Close modal"
+                className={styles.closeButton}
               >
-                <svg 
-                  width="16" 
-                  height="16" 
-                  viewBox="0 0 24 24" 
-                  fill="none" 
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path 
-                    d="M18 6L6 18M6 6L18 18" 
-                    stroke="currentColor" 
-                    strokeWidth="2" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round"
-                  />
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </button>
 
-              <div className="flex flex-col items-center mt-6 mb-4">
-                <div className="mb-3">
-                  <svg 
-                    width="36" 
-                    height="36" 
-                    viewBox="0 0 24 24" 
-                    fill="none" 
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path 
-                      d="M16 21V19C16 17.9391 15.5786 16.9217 14.8284 16.1716C14.0783 15.4214 13.0609 15 12 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21" 
-                      stroke="#039994" 
-                      strokeWidth="2" 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round"
-                    />
-                    <path 
-                      d="M8.5 11C10.7091 11 12.5 9.20914 12.5 7C12.5 4.79086 10.7091 3 8.5 3C6.29086 3 4.5 4.79086 4.5 7C4.5 9.20914 6.29086 11 8.5 11Z" 
-                      stroke="#039994" 
-                      strokeWidth="2" 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round"
-                    />
-                    <path 
-                      d="M17 11L19 13L23 9" 
-                      stroke="#039994" 
-                      strokeWidth="2" 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </div>
-
-                <h2 className="font-[600] text-[16px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro text-center">
-                  Invite an Operator
-                </h2>
-
-                {selectedUtilityProvider && (
-                  <div className={`mt-3 p-2 rounded-lg text-center w-full ${
-                    isGreenButtonUtility ? 'bg-green-50 border border-green-200' : 'bg-blue-50 border border-blue-200'
-                  }`}>
-                    <p className={`text-xs font-medium ${
-                      isGreenButtonUtility ? 'text-green-700' : 'text-blue-700'
-                    }`}>
-                      {isGreenButtonUtility ? (
-                        <>
-                          <span className="flex items-center justify-center gap-1">
-                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                            Green Button Utility
-                          </span>
-                          <span className="text-[10px] mt-0.5 block">
-                            Invite operator to authorize utility data
-                          </span>
-                        </>
-                      ) : (
-                        <>
-                          Utility: <strong>{selectedUtilityProvider.name}</strong>
-                        </>
-                      )}
-                    </p>
-                  </div>
-                )}
+              <div className={styles.modalHeader}>
+                <h2 className={styles.modalTitle}>Invite Operator</h2>
+                <p className={styles.modalSubtitle}>
+                  Send an invitation to your operator to join and manage your facility
+                </p>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {loadingFacilities ? (
-                  <div className="py-2 text-center">
-                    <div className="inline-block w-4 h-4 border-2 border-[#039994] border-t-transparent rounded-full animate-spin"></div>
-                    <p className="text-xs text-gray-500 mt-1">Loading facilities...</p>
-                  </div>
-                ) : facilities.length > 0 ? (
-                  <div>
-                    <label className={`${styles.labelClass} text-xs`}>
-                      Select Facility
-                    </label>
-                    <select
-                      value={selectedFacilityId}
-                      onChange={handleFacilityChange}
-                      className={styles.selectClass}
-                      disabled={loading}
-                      required
-                    >
-                      {facilities.map(facility => (
-                        <option key={facility.id} value={facility.id}>
-                          {facility.nickname || facility.facilityName || "Unnamed Facility"}
-                        </option>
-                      ))}
-                    </select>
-                    {selectedFacilityId && (
-                      <div className="mt-1 text-[10px] text-gray-500">
-                        <p>Facility ID: {selectedFacilityId}</p>
-                        {getSelectedFacility()?.utilityProvider && (
-                          <p>Utility: {getSelectedFacility()?.utilityProvider}</p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-                    <p className="text-xs text-yellow-700 text-center">
-                      No facilities found. Please create a facility first.
-                    </p>
+              <div className={styles.modalBody}>
+                {selectedUtilityProvider && (
+                  <div className={isGreenButtonUtility ? styles.successBox : styles.infoBox}>
+                    <svg className="flex-shrink-0 w-5 h-5 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div>
+                      <p className="text-[14px] font-[500] mb-1" style={{color: isGreenButtonUtility ? '#059669' : '#039994'}}>
+                        {isGreenButtonUtility ? 'Green Button Utility' : `Utility: ${selectedUtilityProvider.name}`}
+                      </p>
+                      {isGreenButtonUtility && (
+                        <p className="text-[13px] text-gray-700 leading-relaxed">Invite operator to authorize utility data</p>
+                      )}
+                    </div>
                   </div>
                 )}
 
-                <div>
-                  <label className={`${styles.labelClass} text-xs`}>
-                    Operator's name
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    placeholder="Enter operator's name"
-                    className={styles.inputClass}
-                    disabled={loading || facilities.length === 0}
-                    required
-                  />
-                </div>
+                {loadingFacilities ? (
+                  <div className="py-8 text-center">
+                    <div className="inline-block w-6 h-6 border-3 border-[#039994] border-t-transparent rounded-full animate-spin mb-2"></div>
+                    <p className="text-sm text-gray-500">Loading facilities...</p>
+                  </div>
+                ) : facilities.length === 0 ? (
+                  <div className={styles.warningBox}>
+                    <svg className="flex-shrink-0 w-5 h-5 text-yellow-600 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <div>
+                      <p className="text-[14px] font-[500] text-yellow-700 mb-1">No Facilities Found</p>
+                      <p className="text-[13px] text-yellow-700 leading-relaxed">Please create a facility before inviting an operator</p>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      <div className="md:col-span-2">
+                        <label className={styles.labelClass}>
+                          Select Facility <span className="text-[#039994]">*</span>
+                        </label>
+                        <select
+                          value={selectedFacilityId}
+                          onChange={handleFacilityChange}
+                          className={styles.selectClass}
+                          disabled={loading}
+                          required
+                        >
+                          {facilities.map(facility => (
+                            <option key={facility.id} value={facility.id}>
+                              {facility.nickname || facility.facilityName || "Unnamed Facility"}
+                            </option>
+                          ))}
+                        </select>
+                        {selectedFacilityId && (
+                          <p className={styles.noteText}>
+                            Facility ID: {selectedFacilityId}
+                            {getSelectedFacility()?.utilityProvider && ` • Utility: ${getSelectedFacility()?.utilityProvider}`}
+                          </p>
+                        )}
+                      </div>
 
-                <div>
-                  <label className={`${styles.labelClass} text-xs`}>
-                    Operator's email address
-                  </label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    placeholder="Enter operator's email address"
-                    className={styles.inputClass}
-                    disabled={loading || facilities.length === 0}
-                    required
-                  />
-                </div>
+                      <div>
+                        <label className={styles.labelClass}>
+                          Operator Name <span className="text-[#039994]">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          name="name"
+                          value={formData.name}
+                          onChange={handleInputChange}
+                          placeholder="Enter operator's name"
+                          className={styles.inputClass}
+                          disabled={loading}
+                          required
+                        />
+                      </div>
 
-                <div>
-                  <label className={`${styles.labelClass} text-xs`}>
-                    Custom message
-                  </label>
-                  <textarea
-                    name="message"
-                    value={formData.message}
-                    onChange={handleInputChange}
-                    placeholder="Enter your custom invitation message"
-                    className={`${styles.inputClass} min-h-[60px] resize-none`}
-                    disabled={loading || facilities.length === 0}
-                    required
-                    rows={2}
-                  />
-                </div>
+                      <div>
+                        <label className={styles.labelClass}>
+                          Operator Email <span className="text-[#039994]">*</span>
+                        </label>
+                        <input
+                          type="email"
+                          name="email"
+                          value={formData.email}
+                          onChange={handleInputChange}
+                          placeholder="operator@company.com"
+                          className={styles.inputClass}
+                          disabled={loading}
+                          required
+                        />
+                      </div>
 
-                <div className={styles.termsTextContainer}>
-                  <p className="text-[10px] text-gray-500">
-                    By inviting an operator, you agree to our{' '}
-                    <a 
-                      href="/terms" 
-                      className="text-[#039994] hover:underline"
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      <div className="md:col-span-2">
+                        <label className={styles.labelClass}>
+                          Role <span className="text-[#039994]">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value="OPERATOR"
+                          className={`${styles.inputClass} bg-gray-50 cursor-not-allowed`}
+                          disabled
+                        />
+                        <p className={styles.noteText}>Role is fixed as OPERATOR</p>
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <label className={styles.labelClass}>
+                          Custom Message <span className="text-[#039994]">*</span>
+                        </label>
+                        <textarea
+                          name="message"
+                          value={formData.message}
+                          onChange={handleInputChange}
+                          placeholder="Enter your custom invitation message"
+                          className={styles.textareaClass}
+                          disabled={loading}
+                          required
+                          rows={3}
+                        />
+                      </div>
+                    </div>
+
+                    <div className={styles.divider}></div>
+
+                    <p className="text-[12px] text-gray-500 text-center mb-6">
+                      By inviting an operator, you agree to our{' '}
+                      <a 
+                        href="/terms" 
+                        className="text-[#039994] hover:underline font-medium"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        Terms of Service
+                      </a>
+                    </p>
+
+                    <button 
+                      type="button" 
+                      onClick={handleSubmit}
+                      className={styles.buttonPrimary}
+                      disabled={loading}
                     >
-                      Terms of Service
-                    </a>.
-                  </p>
-                </div>
-
-                <button 
-                  type="submit" 
-                  className={`${styles.buttonPrimary} ${loading || facilities.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  disabled={loading || facilities.length === 0}
-                >
-                  {loading ? 'Sending...' : 'Send Invitation'}
-                </button>
-              </form>
-            </div>
+                      {loading ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <div className={styles.spinner}></div>
+                          <span>Sending Invitation...</span>
+                        </span>
+                      ) : (
+                        'Send Invitation'
+                      )}
+                    </button>
+                  </>
+                )}
+              </div>
+            </>
           )}
 
           {currentModal === 'emailSent' && (
-            <div className="relative p-4 flex-1 overflow-y-auto">
+            <>
               <button
                 onClick={handleClose}
-                className="absolute top-4 right-4 text-red-500 hover:text-red-700 transition-colors"
-                aria-label="Close modal"
+                className={styles.closeButton}
               >
-                <svg 
-                  width="16" 
-                  height="16" 
-                  viewBox="0 0 24 24" 
-                  fill="none" 
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path 
-                    d="M18 6L6 18M6 6L18 18" 
-                    stroke="currentColor" 
-                    strokeWidth="2" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round"
-                  />
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </button>
 
-              <div className="flex flex-col items-center mt-6 mb-4">
-                <div className="mb-4">
-                  <svg 
-                    width="36" 
-                    height="36" 
-                    viewBox="0 0 24 24" 
-                    fill="none" 
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path 
-                      d="M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z" 
-                      stroke="#039994" 
-                      strokeWidth="2" 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round"
-                    />
-                    <polyline 
-                      points="22,6 12,13 2,6" 
-                      stroke="#039994" 
-                      strokeWidth="2" 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round"
-                    />
+              <div className={styles.modalHeader}>
+                <h2 className={styles.modalTitle}>Email Sent Successfully</h2>
+                <p className={styles.modalSubtitle}>
+                  Your invitation has been delivered to the operator
+                </p>
+              </div>
+
+              <div className={styles.successModalBody}>
+                <div className="flex justify-center mb-6">
+                  <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z" stroke="#039994" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    <polyline points="22,6 12,13 2,6" stroke="#039994" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </div>
 
-                <h2 className="font-[600] text-[16px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro text-center mb-3">
-                  Email Sent
-                </h2>
-
-                <p className="text-xs text-gray-600 text-center mb-6 max-w-xs">
-                  Invitation sent to your operator. They'll complete the authorization process.
+                <h3 className="text-[20px] font-[600] text-[#039994] mb-3">Invitation Sent</h3>
+                <p className="text-[15px] text-gray-600 mb-8 max-w-md mx-auto">
+                  Your operator will receive the invitation and complete the authorization process to access utility data.
                 </p>
 
                 <button 
                   onClick={handleCompleteRegistration}
-                  className={`${styles.buttonPrimary} w-full`}
+                  className={styles.buttonPrimary}
                 >
                   Complete Registration
                 </button>
               </div>
-            </div>
+            </>
           )}
 
           {currentModal === 'registrationSuccess' && (
-            <div className="relative p-4 flex-1 overflow-y-auto">
+            <>
               <button
                 onClick={handleClose}
-                className="absolute top-4 right-4 text-red-500 hover:text-red-700 transition-colors"
-                aria-label="Close modal"
+                className={styles.closeButton}
               >
-                <svg 
-                  width="16" 
-                  height="16" 
-                  viewBox="0 0 24 24" 
-                  fill="none" 
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path 
-                    d="M18 6L6 18M6 6L18 18" 
-                    stroke="currentColor" 
-                    strokeWidth="2" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round"
-                  />
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </button>
 
-              <div className="flex flex-col items-center mt-6 mb-4">
-                <div className="mb-4">
-                  <svg 
-                    width="36" 
-                    height="36" 
-                    viewBox="0 0 24 24" 
-                    fill="none" 
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path 
-                      d="M12 8V12L14.5 14.5" 
-                      stroke="#039994" 
-                      strokeWidth="2" 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round"
-                    />
-                    <path 
-                      d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" 
-                      stroke="#039994" 
-                      strokeWidth="2" 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round"
-                    />
+              <div className={styles.modalHeader}>
+                <h2 className={styles.modalTitle}>Almost Ready!</h2>
+                <p className={styles.modalSubtitle}>
+                  You're one step away from starting with DCarbon
+                </p>
+              </div>
+
+              <div className={styles.successModalBody}>
+                <div className="flex justify-center mb-6">
+                  <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="12" cy="12" r="10" stroke="#039994" strokeWidth="1.5"/>
+                    <path d="M9 12L11 14L15 10" stroke="#039994" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </div>
 
-                <h2 className="font-[600] text-[16px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro text-center mb-3">
-                  Almost Ready!
-                </h2>
-
-                <p className="text-xs text-gray-600 text-center mb-6 max-w-xs">
-                  Your operator will authorize utility access. You're one step away from starting with DCarbon.
+                <h3 className="text-[20px] font-[600] text-[#039994] mb-3">Registration Complete</h3>
+                <p className="text-[15px] text-gray-600 mb-8 max-w-md mx-auto">
+                  Your operator will authorize utility access. Once complete, you'll be ready to use all DCarbon features.
                 </p>
 
                 <button 
                   onClick={handleGoToDashboard}
-                  className={`${styles.buttonPrimary} w-full`}
+                  className={styles.buttonPrimary}
                 >
                   Go to Dashboard
                 </button>
               </div>
-            </div>
+            </>
           )}
         </div>
       </div>

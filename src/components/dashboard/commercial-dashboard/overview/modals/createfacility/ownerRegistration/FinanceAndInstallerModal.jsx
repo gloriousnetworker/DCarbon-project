@@ -36,7 +36,10 @@ const styles = {
   tooltipIcon: 'h-4 w-4 text-gray-400',
   tooltipContent: 'absolute hidden group-hover:block bg-white p-2 rounded shadow-lg border border-gray-200 text-xs w-64 z-10 left-8 -top-20',
   dateInput: 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E] bg-[#E8E8E8]',
-  closeButton: 'absolute top-6 right-6 text-red-500 hover:text-red-700 cursor-pointer z-50'
+  closeButton: 'absolute top-6 right-6 text-red-500 hover:text-red-700 cursor-pointer z-50',
+  optionGroup: 'px-3 py-2 text-sm text-gray-500 font-sfpro',
+  optionGroupGreenButton: 'px-3 py-2 text-sm text-green-600 font-semibold font-sfpro',
+  greenButtonBadge: 'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 ml-2'
 };
 
 export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
@@ -63,6 +66,8 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const [referrerFinanceCompany, setReferrerFinanceCompany] = useState(null);
   const [commercialRole, setCommercialRole] = useState('owner');
   const [selectedUtilityProvider, setSelectedUtilityProvider] = useState(null);
+  const [greenButtonUtilities, setGreenButtonUtilities] = useState([]);
+  const [regularUtilities, setRegularUtilities] = useState([]);
 
   const [formData, setFormData] = useState({
     financeType: "",
@@ -83,7 +88,6 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const [financeTypes, setFinanceTypes] = useState([]);
   const [installers, setInstallers] = useState([]);
 
-  const greenButtonUtilityIds = ['PG&E', 'SCE', 'SDG&E'];
   const isCashType = formData.financeType.toLowerCase() === 'cash';
   const showUploadField = !isCashType && formData.financeType !== '';
   const showFinanceCompany = !isCashType && formData.financeType !== '';
@@ -94,20 +98,14 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     ? financeCompanies.filter(company => company.name === referrerFinanceCompany.name)
     : financeCompanies;
 
-  const greenButtonProviders = utilityProviders.filter(provider => 
-    greenButtonUtilityIds.includes(provider.id)
-  );
-  const otherProviders = utilityProviders.filter(provider => 
-    !greenButtonUtilityIds.includes(provider.id)
-  );
-
   const currentSelectedProvider = utilityProviders.find(provider => provider.name === formData.utilityProvider);
-  const isGreenButtonUtility = currentSelectedProvider && greenButtonUtilityIds.includes(currentSelectedProvider.id);
+  const isGreenButtonUtility = currentSelectedProvider && greenButtonUtilities.some(gb => gb.id === currentSelectedProvider.id);
 
   const fetchCommercialRole = async () => {
     try {
-      const token = localStorage.getItem('authToken');
-      const userId = localStorage.getItem('userId');
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const userId = loginResponse?.data?.user?.id;
+      const token = loginResponse?.data?.token;
       const response = await axios.get(
         `https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`,
         { headers: { 'Authorization': `Bearer ${token}` } }
@@ -122,8 +120,9 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const fetchReferrerInfo = async () => {
     setLoadingReferrer(true);
     try {
-      const token = localStorage.getItem('authToken');
-      const userId = localStorage.getItem('userId');
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const userId = loginResponse?.data?.user?.id;
+      const token = loginResponse?.data?.token;
       const response = await axios.get(
         `https://services.dcarbon.solutions/api/user/referrer/${userId}`,
         { headers: { 'Authorization': `Bearer ${token}` } }
@@ -160,13 +159,15 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const fetchUtilityProviders = async () => {
     setLoadingUtilityProviders(true);
     try {
-      const token = localStorage.getItem('authToken');
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const token = loginResponse?.data?.token;
       const response = await axios.get(
         'https://services.dcarbon.solutions/api/auth/utility-providers',
         { headers: { 'Authorization': `Bearer ${token}` } }
       );
       if (response.data.status === 'success') {
         setUtilityProviders(response.data.data);
+        categorizeUtilities(response.data.data);
       }
     } catch (err) {
       toast.error('Failed to load utility providers');
@@ -175,17 +176,39 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     }
   };
 
+  const categorizeUtilities = (utilities) => {
+    const greenButtonKeywords = ['green button connect', 'green button', 'san diego gas and electric', 'southern california edison', 'pacific gas and electric', 'PG&E', 'SCE', 'SDG&E'];
+    
+    const greenButtonUtils = [];
+    const regularUtils = [];
+    
+    utilities.forEach(utility => {
+      const nameLower = utility.name.toLowerCase();
+      const isGreenButton = greenButtonKeywords.some(keyword => nameLower.includes(keyword));
+      
+      if (isGreenButton) {
+        greenButtonUtils.push(utility);
+      } else {
+        regularUtils.push(utility);
+      }
+    });
+    
+    setGreenButtonUtilities(greenButtonUtils);
+    setRegularUtilities(regularUtils);
+  };
+
   const fetchFinanceTypes = async () => {
     setLoadingFinanceTypes(true);
     try {
-      const token = localStorage.getItem('authToken');
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const token = loginResponse?.data?.token;
       const response = await axios.get(
         'https://services.dcarbon.solutions/api/user/financial-types',
         { headers: { 'Authorization': `Bearer ${token}` } }
       );
       if (response.data.status === 'success') {
         const approvedTypes = response.data.data.types.filter(type => 
-          type.status === 'APPROVED'
+          type.status === 'APPROVED' || type.name.toLowerCase() === 'cash'
         );
         setFinanceTypes(approvedTypes);
       }
@@ -199,7 +222,8 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const fetchInstallers = async () => {
     setLoadingInstallers(true);
     try {
-      const token = localStorage.getItem('authToken');
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const token = loginResponse?.data?.token;
       const response = await axios.get(
         'https://services.dcarbon.solutions/api/user/partner/get-all-installer',
         { headers: { 'Authorization': `Bearer ${token}` } }
@@ -217,7 +241,8 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const fetchFinanceCompanies = async () => {
     setLoadingFinanceCompanies(true);
     try {
-      const token = localStorage.getItem('authToken');
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const token = loginResponse?.data?.token;
       const response = await axios.get(
         'https://services.dcarbon.solutions/api/user/partner/finance-companies',
         { headers: { 'Authorization': `Bearer ${token}` } }
@@ -233,11 +258,13 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   };
 
   const createCommercialFacility = async () => {
-    const userId = localStorage.getItem('userId');
-    const token = localStorage.getItem('authToken');
+    const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+    const userId = loginResponse?.data?.user?.id;
+    const token = loginResponse?.data?.token;
     const selectedFinanceType = financeTypes.find(type => type.name === formData.financeType);
     const selectedInstaller = installers.find(installer => installer.name === (showCustomInstaller ? formData.customInstaller : formData.installer));
     const selectedUtilityProvider = utilityProviders.find(provider => provider.name === formData.utilityProvider);
+    const selectedFinanceCompany = financeCompanies.find(company => company.name === formData.financeCompany);
 
     const payload = {
       nickname: facilityNickname || 'New Commercial Facility',
@@ -252,14 +279,14 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
       financeNamingCode: selectedFinanceType?.namingCode || ''
     };
 
-    if (formData.financeCompany && formData.financeCompanyId) {
-      payload.financeCompany = formData.financeCompany;
-      payload.financeCompanyId = formData.financeCompanyId;
+    if (selectedFinanceCompany) {
+      payload.financeCompany = selectedFinanceCompany.name;
+      payload.financeCompanyId = selectedFinanceCompany.id;
     }
 
-    if (!noInstallerSelected && formData.installer && formData.installerId) {
-      payload.installer = formData.installer;
-      payload.installerId = formData.installerId;
+    if (!noInstallerSelected && selectedInstaller) {
+      payload.installer = selectedInstaller.name;
+      payload.installerId = selectedInstaller.id;
     }
 
     const response = await axios.post(
@@ -273,21 +300,26 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const uploadFinanceAgreementToFacility = async (facilityId) => {
     if (!file) return;
     
-    const token = localStorage.getItem('authToken');
-    const formData = new FormData();
-    formData.append('financeAgreementUrl', file);
+    const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+    const token = loginResponse?.data?.token;
+    const formDataObj = new FormData();
+    formDataObj.append('financeAgreementUrl', file);
 
     await axios.put(
       `https://services.dcarbon.solutions/api/facility/update-facility-financial-agreement/${facilityId}`,
-      formData,
+      formDataObj,
       { headers: { 'Content-Type': 'multipart/form-data', 'Authorization': `Bearer ${token}` } }
     );
   };
 
   const updateFinanceInfo = async () => {
-    const userId = localStorage.getItem('userId');
-    const token = localStorage.getItem('authToken');
+    const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+    const userId = loginResponse?.data?.user?.id;
+    const token = loginResponse?.data?.token;
+    const selectedInstaller = installers.find(installer => installer.name === (showCustomInstaller ? formData.customInstaller : formData.installer));
+
     const finalInstaller = noInstallerSelected ? 'N/A' : (showCustomInstaller ? formData.customInstaller : formData.installer);
+    const finalInstallerId = noInstallerSelected ? null : (selectedInstaller?.id || null);
 
     const payload = {
       financialType: formData.financeType
@@ -323,8 +355,9 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     }
     setRequestingFinanceType(true);
     try {
-      const userId = localStorage.getItem('userId');
-      const token = localStorage.getItem('authToken');
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const userId = loginResponse?.data?.user?.id;
+      const token = loginResponse?.data?.token;
       const response = await axios.post(
         `https://services.dcarbon.solutions/api/user/request-financial-type/${userId}`,
         { name: requestedFinanceTypeName.trim() },
@@ -348,8 +381,9 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     }
     setRequestingUtility(true);
     try {
-      const userId = localStorage.getItem('userId');
-      const token = localStorage.getItem('authToken');
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const userId = loginResponse?.data?.user?.id;
+      const token = loginResponse?.data?.token;
       const response = await axios.post(
         `https://services.dcarbon.solutions/api/user/request-utility-provider/${userId}`,
         { 
@@ -443,23 +477,18 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   };
 
   const handleSystemSizeChange = (e) => {
-    let value = e.target.value.replace(/[^0-9.]/g, '');
+    const input = e.target.value;
     
-    if (value.includes('.')) {
-      const parts = value.split('.');
-      if (parts.length === 2) {
-        const wholeNumber = parts[0].replace(/[^0-9]/g, '');
-        const decimal = parts[1].replace(/[^0-9]/g, '');
-        value = wholeNumber + '.' + decimal;
-      }
-    } else {
-      value = value.replace(/[^0-9]/g, '');
-      if (value) {
-        value = value + '.0';
-      }
+    if (input === '') {
+      setFormData(prev => ({ ...prev, systemSize: '' }));
+      return;
     }
     
-    setFormData(prev => ({ ...prev, systemSize: value }));
+    const regex = /^\d*\.?\d*$/;
+    
+    if (regex.test(input)) {
+      setFormData(prev => ({ ...prev, systemSize: input }));
+    }
   };
 
   const handleDateChange = (e) => {
@@ -739,23 +768,19 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                     >
                       <option value="">{loadingUtilityProviders ? 'Loading...' : 'Choose provider'}</option>
                       
-                      {greenButtonProviders.length > 0 && (
-                        <optgroup label="Green Button Utilities" className="bg-green-50">
-                          {greenButtonProviders.map((provider) => (
-                            <option 
-                              key={provider.id} 
-                              value={provider.name}
-                              className="text-green-700 font-semibold"
-                            >
-                              {provider.name} ✓
+                      {greenButtonUtilities.length > 0 && (
+                        <optgroup label="Green Button Utilities" className={styles.optionGroupGreenButton}>
+                          {greenButtonUtilities.map((provider) => (
+                            <option key={provider.id} value={provider.name}>
+                              {provider.name} <span className={styles.greenButtonBadge}>Green Button</span>
                             </option>
                           ))}
                         </optgroup>
                       )}
-
-                      {otherProviders.length > 0 && (
-                        <optgroup label="Other Utilities">
-                          {otherProviders.map((provider) => (
+                      
+                      {regularUtilities.length > 0 && (
+                        <optgroup label="Other Utilities" className={styles.optionGroup}>
+                          {regularUtilities.map((provider) => (
                             <option key={provider.id} value={provider.name}>
                               {provider.name}
                             </option>
@@ -763,9 +788,6 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                         </optgroup>
                       )}
                     </select>
-                    {isGreenButtonUtility && (
-                      <div className="absolute inset-0 border-2 border-green-500 rounded-lg animate-pulse pointer-events-none"></div>
-                    )}
                     <div className={styles.uploadIconContainer}>
                       <svg className="w-5 h-5 text-gray-400 pointer-events-none absolute top-1/2 right-3 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/>
