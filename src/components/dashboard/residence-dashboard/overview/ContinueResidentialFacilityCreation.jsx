@@ -1,6 +1,45 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
-import InstapullAuthorizationModal from "../InstapullAuthorizationModal";
+import InstapullAuthorizationModal from "./InstapullAuthorizationModal";
+
+const styles = {
+  modalContainer: 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 p-4 backdrop-blur-sm',
+  modal: 'relative w-full max-w-2xl bg-white rounded-xl shadow-2xl overflow-hidden',
+  modalHeader: 'px-8 pt-8 pb-6 bg-gradient-to-br from-[#039994] to-[#02857f]',
+  modalTitle: 'font-[600] text-[28px] leading-[110%] tracking-[-0.05em] text-white font-sans mb-2',
+  modalSubtitle: 'text-[15px] text-white text-opacity-90 leading-relaxed',
+  closeButton: 'absolute top-6 right-6 text-white hover:text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 cursor-pointer transition-all',
+  modalBody: 'px-8 py-8',
+  buttonPrimary: 'w-full rounded-lg bg-[#039994] text-white font-semibold py-3 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] focus:ring-offset-2 font-sans transition-all disabled:opacity-50 disabled:cursor-not-allowed',
+  spinner: 'inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin',
+  infoBox: 'flex items-start gap-3 p-4 bg-[#039994] bg-opacity-5 border-l-4 border-[#039994] rounded-r-lg mb-6',
+  infoIcon: 'flex-shrink-0 w-5 h-5 text-[#039994] mt-0.5',
+  cardContainer: 'border-2 border-gray-200 rounded-xl p-6 hover:border-[#039994] hover:shadow-lg transition-all cursor-pointer group',
+  iconCircle: 'w-16 h-16 rounded-full bg-[#039994] bg-opacity-10 flex items-center justify-center mb-4 group-hover:bg-[#039994] group-hover:bg-opacity-20 transition-all',
+  cardTitle: 'font-[600] text-[20px] leading-[110%] tracking-[-0.05em] text-[#1E1E1E] font-sans mb-2',
+  cardDescription: 'font-sans text-[14px] leading-[140%] tracking-[-0.03em] font-[400] text-gray-600 mb-6',
+  selectClass: 'w-full p-3 border border-gray-300 rounded-lg text-sm font-sans focus:ring-2 focus:ring-[#039994] focus:border-[#039994] outline-none transition-all',
+  facilityInfoBox: 'mt-4 p-4 border border-gray-200 rounded-lg bg-gray-50',
+  gridContainer: 'grid grid-cols-1 md:grid-cols-2 gap-3 mb-3',
+  infoLabel: 'text-xs text-gray-500 mb-1',
+  infoValue: 'text-sm font-medium text-gray-800',
+  utilityBadgeGreen: 'inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full bg-green-100 text-green-800',
+  utilityBadgeBlue: 'inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800',
+  statusBadgeGreen: 'px-2 py-1 text-xs rounded-full bg-green-100 text-green-800',
+  statusBadgeYellow: 'px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800',
+  statusBadgeGray: 'px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800',
+  statusBadgeBlue: 'px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800',
+  emptyStateIcon: 'w-20 h-20 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center',
+  emptyStateTitle: 'font-[600] text-[16px] text-gray-800 font-sans mb-2',
+  emptyStateText: 'text-sm text-gray-600 max-w-md mx-auto mb-6 font-sans',
+  loadingContainer: 'flex flex-col items-center justify-center py-12',
+  loadingSpinner: 'w-12 h-12 border-4 border-gray-300 border-t-[#039994] rounded-full animate-spin mb-4',
+  loadingText: 'text-gray-600',
+  divider: 'my-6 border-t border-gray-200',
+  footerNote: 'font-sans text-[12px] leading-[140%] tracking-[-0.03em] font-[400] text-gray-500 text-center',
+  facilityCount: 'font-[600] text-[16px] text-gray-800 font-sans',
+  selectHint: 'text-sm text-gray-500'
+};
 
 export default function ResidentialFacilityModal({ isOpen, onClose, currentStep }) {
   const [userFacilities, setUserFacilities] = useState([]);
@@ -11,8 +50,6 @@ export default function ResidentialFacilityModal({ isOpen, onClose, currentStep 
   const [selectedUtilityProvider, setSelectedUtilityProvider] = useState(null);
   const [showInstapullAuthModal, setShowInstapullAuthModal] = useState(false);
   const [instapullOpened, setInstapullOpened] = useState(false);
-  const [greenButtonUtilities, setGreenButtonUtilities] = useState([]);
-  const [regularUtilities, setRegularUtilities] = useState([]);
   const [utilityProviders, setUtilityProviders] = useState([]);
 
   useEffect(() => {
@@ -46,32 +83,10 @@ export default function ResidentialFacilityModal({ isOpen, onClose, currentStep 
       const data = await response.json();
       if (data.status === 'success') {
         setUtilityProviders(data.data);
-        categorizeUtilities(data.data);
       }
     } catch (error) {
       console.error('Error fetching utility providers:', error);
     }
-  };
-
-  const categorizeUtilities = (utilities) => {
-    const greenButtonKeywords = ['green button connect', 'green button', 'san diego gas and electric', 'southern california edison', 'pacific gas and electric', 'PG&E', 'SCE', 'SDG&E'];
-    
-    const greenButtonUtils = [];
-    const regularUtils = [];
-    
-    utilities.forEach(utility => {
-      const nameLower = utility.name.toLowerCase();
-      const isGreenButton = greenButtonKeywords.some(keyword => nameLower.includes(keyword));
-      
-      if (isGreenButton) {
-        greenButtonUtils.push(utility);
-      } else {
-        regularUtils.push(utility);
-      }
-    });
-    
-    setGreenButtonUtilities(greenButtonUtils);
-    setRegularUtilities(regularUtils);
   };
 
   const isGreenButtonUtility = (utilityProvider) => {
@@ -132,35 +147,24 @@ export default function ResidentialFacilityModal({ isOpen, onClose, currentStep 
   };
 
   const getFacilityStatusBadge = (status) => {
-    const statusMap = {
-      'active': { color: 'bg-green-100 text-green-800', label: 'Active' },
-      'pending': { color: 'bg-yellow-100 text-yellow-800', label: 'Pending' },
-      'inactive': { color: 'bg-gray-100 text-gray-800', label: 'Inactive' },
-      'draft': { color: 'bg-blue-100 text-blue-800', label: 'Draft' }
-    };
-    
-    const statusConfig = statusMap[status?.toLowerCase()] || statusMap['draft'];
-    return (
-      <span className={`px-2 py-1 text-xs rounded-full ${statusConfig.color}`}>
-        {statusConfig.label}
-      </span>
-    );
+    const statusLower = status?.toLowerCase();
+    if (statusLower === 'active') return <span className={styles.statusBadgeGreen}>Active</span>;
+    if (statusLower === 'pending') return <span className={styles.statusBadgeYellow}>Pending</span>;
+    if (statusLower === 'inactive') return <span className={styles.statusBadgeGray}>Inactive</span>;
+    return <span className={styles.statusBadgeBlue}>Draft</span>;
   };
 
   const getUtilityTypeBadge = (utilityProvider) => {
     const isGreenButton = isGreenButtonUtility(utilityProvider);
-    
     return isGreenButton ? (
-      <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800 flex items-center gap-1">
+      <span className={styles.utilityBadgeGreen}>
         <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
         </svg>
         Green Button
       </span>
     ) : (
-      <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
-        Standard
-      </span>
+      <span className={styles.utilityBadgeBlue}>Standard</span>
     );
   };
 
@@ -169,44 +173,49 @@ export default function ResidentialFacilityModal({ isOpen, onClose, currentStep 
   return (
     <>
       {isOpen && !showInstapullAuthModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-          <div className="relative w-full max-w-2xl bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
-            <div className="flex-shrink-0 p-6 border-b border-gray-200 bg-gradient-to-r from-[#039994]/10 to-transparent">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h2 className="font-[600] text-[20px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sans mb-1">
-                    Existing Residential Facilities
-                  </h2>
-                  <p className="text-sm text-gray-600 font-sans">
-                    Continue registration with your existing facilities
-                  </p>
-                </div>
-                <button
-                  onClick={onClose}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </button>
-              </div>
+        <div className={styles.modalContainer} onClick={onClose}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={onClose}
+              className={styles.closeButton}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+
+            <div className={styles.modalHeader}>
+              <h2 className={styles.modalTitle}>Existing Residential Facilities</h2>
+              <p className={styles.modalSubtitle}>
+                Continue authorization for your existing solar facilities
+              </p>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className={styles.modalBody}>
+              <div className={styles.infoBox}>
+                <svg className={styles.infoIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                  <p className="text-[14px] font-[500] text-[#039994] mb-1">Complete Your Registration</p>
+                  <p className="text-[13px] text-gray-700 leading-relaxed">Select a facility to continue the authorization process and connect your utility data.</p>
+                </div>
+              </div>
+
               {loading && (
-                <div className="flex flex-col items-center justify-center py-12">
-                  <div className="w-12 h-12 border-4 border-gray-300 border-t-[#039994] rounded-full animate-spin mb-4"></div>
-                  <p className="text-gray-600">Loading your facilities...</p>
+                <div className={styles.loadingContainer}>
+                  <div className={styles.loadingSpinner}></div>
+                  <p className={styles.loadingText}>Loading your facilities...</p>
                 </div>
               )}
 
               {!loading && userFacilities.length > 0 && (
-                <div className="mb-8">
+                <div>
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-[600] text-[16px] text-gray-800 font-sans">
-                      Your Existing Facilities ({userFacilities.length})
+                    <h3 className={styles.facilityCount}>
+                      Your Facilities ({userFacilities.length})
                     </h3>
-                    <div className="text-sm text-gray-500">
+                    <div className={styles.selectHint}>
                       Select one to continue registration
                     </div>
                   </div>
@@ -215,7 +224,7 @@ export default function ResidentialFacilityModal({ isOpen, onClose, currentStep 
                     <select 
                       value={selectedFacility}
                       onChange={(e) => setSelectedFacility(e.target.value)}
-                      className="w-full p-3 border border-gray-300 rounded-lg text-sm font-sans focus:ring-2 focus:ring-[#039994] focus:border-[#039994] outline-none"
+                      className={styles.selectClass}
                     >
                       {userFacilities.map((facility) => (
                         <option key={facility.id} value={facility.id}>
@@ -225,46 +234,46 @@ export default function ResidentialFacilityModal({ isOpen, onClose, currentStep 
                     </select>
 
                     {selectedFacility && (
-                      <div className="mt-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                      <div className={styles.facilityInfoBox}>
                         {userFacilities.map((facility) => {
                           if (facility.id === selectedFacility) {
                             return (
                               <div key={facility.id}>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                                <div className={styles.gridContainer}>
                                   <div>
-                                    <p className="text-xs text-gray-500 mb-1">Facility Name</p>
-                                    <p className="text-sm font-medium text-gray-800">{facility.facilityName}</p>
+                                    <p className={styles.infoLabel}>Facility Name</p>
+                                    <p className={styles.infoValue}>{facility.facilityName}</p>
                                   </div>
                                   <div>
-                                    <p className="text-xs text-gray-500 mb-1">Utility Provider</p>
+                                    <p className={styles.infoLabel}>Utility Provider</p>
                                     <div className="flex items-center gap-2">
-                                      <p className="text-sm font-medium text-gray-800">{facility.utilityProvider}</p>
+                                      <p className={styles.infoValue}>{facility.utilityProvider}</p>
                                       {getUtilityTypeBadge(facility.utilityProvider)}
                                     </div>
                                   </div>
                                   <div>
-                                    <p className="text-xs text-gray-500 mb-1">Status</p>
+                                    <p className={styles.infoLabel}>Status</p>
                                     <div className="flex items-center gap-2">
                                       {getFacilityStatusBadge(facility.status)}
                                     </div>
                                   </div>
                                   <div>
-                                    <p className="text-xs text-gray-500 mb-1">Finance Type</p>
-                                    <p className="text-sm font-medium text-gray-800">{facility.financeType}</p>
+                                    <p className={styles.infoLabel}>Finance Type</p>
+                                    <p className={styles.infoValue}>{facility.financeType}</p>
                                   </div>
                                   <div className="md:col-span-2">
-                                    <p className="text-xs text-gray-500 mb-1">Address</p>
-                                    <p className="text-sm font-medium text-gray-800">{facility.address}</p>
+                                    <p className={styles.infoLabel}>Address</p>
+                                    <p className={styles.infoValue}>{facility.address}</p>
                                   </div>
                                   <div>
-                                    <p className="text-xs text-gray-500 mb-1">Installation Date</p>
-                                    <p className="text-sm font-medium text-gray-800">
+                                    <p className={styles.infoLabel}>Installation Date</p>
+                                    <p className={styles.infoValue}>
                                       {new Date(facility.createdAt).toLocaleDateString()}
                                     </p>
                                   </div>
                                   <div>
-                                    <p className="text-xs text-gray-500 mb-1">Meter ID</p>
-                                    <p className="text-sm font-medium text-gray-800">{facility.meterId}</p>
+                                    <p className={styles.infoLabel}>Meter ID</p>
+                                    <p className={styles.infoValue}>{facility.meterId}</p>
                                   </div>
                                 </div>
                               </div>
@@ -279,11 +288,7 @@ export default function ResidentialFacilityModal({ isOpen, onClose, currentStep 
                   <button
                     onClick={handleContinueRegistration}
                     disabled={!selectedFacility}
-                    className={`w-full rounded-lg py-3 px-4 font-medium font-sans transition-all ${
-                      !selectedFacility
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        : 'bg-[#039994] hover:bg-[#02857f] text-white shadow-sm hover:shadow'
-                    }`}
+                    className={styles.buttonPrimary}
                   >
                     Continue Authorization for Selected Facility
                   </button>
@@ -292,32 +297,25 @@ export default function ResidentialFacilityModal({ isOpen, onClose, currentStep 
 
               {!loading && userFacilities.length === 0 && (
                 <div className="text-center py-8">
-                  <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+                  <div className={styles.emptyStateIcon}>
                     <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                     </svg>
                   </div>
-                  <h4 className="font-[600] text-[16px] text-gray-800 font-sans mb-2">
+                  <h4 className={styles.emptyStateTitle}>
                     No Facilities Found
                   </h4>
-                  <p className="text-sm text-gray-600 max-w-md mx-auto mb-6 font-sans">
+                  <p className={styles.emptyStateText}>
                     You don't have any existing residential facilities to continue registration with.
                   </p>
                 </div>
               )}
-            </div>
 
-            <div className="flex-shrink-0 p-4 border-t border-gray-200 bg-gray-50">
-              <div className="flex items-center justify-between">
-                <div className="text-xs text-gray-500 font-sans">
-                  Need help? Contact support@dcarbon.solutions
-                </div>
-                <div className="flex items-center gap-4 text-xs text-gray-500 font-sans">
-                  <span>Terms</span>
-                  <span>Privacy</span>
-                  <span>Help</span>
-                </div>
-              </div>
+              <div className={styles.divider}></div>
+
+              <p className={styles.footerNote}>
+                Need assistance? Contact our support team at support@dcarbon.solutions
+              </p>
             </div>
           </div>
         </div>

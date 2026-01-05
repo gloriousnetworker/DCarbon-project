@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import SignatureModal from "./SignatureModal";
 import { jsPDF } from "jspdf";
+import InstapullAuthorizationModal from "./InstapullAuthorizationModal";
 import axios from "axios";
 
 export default function GreenButtonTermsAndCondition({ isOpen, onClose, selectedUtilityProvider }) {
@@ -12,23 +13,10 @@ export default function GreenButtonTermsAndCondition({ isOpen, onClose, selected
   const [showSignatureModal, setShowSignatureModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [hasSigned, setHasSigned] = useState(false);
-  const [showIframe, setShowIframe] = useState(false);
-  const [iframeUrl, setIframeUrl] = useState("");
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [showVideoModal, setShowVideoModal] = useState(false);
-  const [videoWatched, setVideoWatched] = useState(false);
-  const [scale, setScale] = useState(1);
-  const [greenButtonEmail, setGreenButtonEmail] = useState('');
-  const [submittingGreenButton, setSubmittingGreenButton] = useState(false);
-  const [showGreenButtonInfo, setShowGreenButtonInfo] = useState(false);
+  const [showInstapullAuthModal, setShowInstapullAuthModal] = useState(false);
+  const [instapullOpened, setInstapullOpened] = useState(false);
   const contentRef1 = useRef(null);
   const contentRef2 = useRef(null);
-
-  const greenButtonUtilities = ['San Diego Gas and Electric', 'Pacific Gas and Electric', 'Southern California Edison'];
-
-  const isGreenButtonUtility = (utilityProvider) => {
-    return greenButtonUtilities.includes(utilityProvider);
-  };
 
   useEffect(() => {
     const handleScroll1 = () => {
@@ -64,11 +52,22 @@ export default function GreenButtonTermsAndCondition({ isOpen, onClose, selected
     };
   }, []);
 
+  const openInstapullTab = () => {
+    const newTab = window.open('https://main.instapull.io/authorize/dcarbonsolutions/', '_blank');
+    if (newTab) {
+      setInstapullOpened(true);
+      toast.success('Instapull opened in new tab');
+    } else {
+      toast.error('Please allow pop-ups for this site to open Instapull');
+    }
+  };
+
   const acceptUserAgreementTerms = async () => {
     try {
       setIsLoading(true);
-      const userId = localStorage.getItem('userId');
-      const authToken = localStorage.getItem('authToken');
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const userId = loginResponse?.data?.user?.id;
+      const authToken = loginResponse?.data?.token;
       
       if (!userId || !authToken) {
         toast.error('Authentication required. Please log in again.');
@@ -104,19 +103,6 @@ export default function GreenButtonTermsAndCondition({ isOpen, onClose, selected
     }
   };
 
-  const getUtilityUrl = (utilityName) => {
-    const utilityUrls = {
-      'PG&E': 'https://myaccount.pge.com/myaccount/s/login/?language=en_US',
-      'Pacific Gas and Electric': 'https://myaccount.pge.com/myaccount/s/login/?language=en_US',
-      'San Diego Gas and Electric': 'https://myenergycenter.com/portal/PreLogin/Validate',
-      'SDG&E': 'https://myenergycenter.com/portal/PreLogin/Validate',
-      'SCE': 'https://myaccount.sce.com/myaccount/s/login/?language=en_US',
-      'Southern California Edison': 'https://myaccount.sce.com/myaccount/s/login/?language=en_US'
-    };
-    
-    return utilityUrls[utilityName] || 'https://www.greenbuttondata.org/index.html';
-  };
-
   const handleSignFirst = () => {
     if (!isChecked1 || !isChecked2) {
       toast.error('Please accept both agreement terms first');
@@ -130,94 +116,13 @@ export default function GreenButtonTermsAndCondition({ isOpen, onClose, selected
     setHasSigned(true);
     const termsAccepted = await acceptUserAgreementTerms();
     if (termsAccepted) {
-      const utilityName = selectedUtilityProvider?.name;
-      if (isGreenButtonUtility(utilityName)) {
-        setShowGreenButtonInfo(true);
-      } else {
-        setShowVideoModal(true);
-      }
+      openInstapullTab();
+      setShowInstapullAuthModal(true);
     }
   };
 
   const handleSignatureCancel = () => {
     setShowSignatureModal(false);
-  };
-
-  const handleGreenButtonInfoContinue = () => {
-    setShowGreenButtonInfo(false);
-    setShowVideoModal(true);
-  };
-
-  const handleVideoComplete = () => {
-    setVideoWatched(true);
-    setShowVideoModal(false);
-    
-    const utilityName = selectedUtilityProvider?.name;
-    const url = getUtilityUrl(utilityName);
-    window.open(url, '_blank');
-    setIframeUrl(url);
-    setShowIframe(true);
-    setScale(1);
-  };
-
-  const handleGreenButtonSubmit = async () => {
-    if (!greenButtonEmail.trim()) {
-      toast.error('Please enter the email address used for Green Button authorization');
-      return;
-    }
-
-    setSubmittingGreenButton(true);
-    try {
-      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
-      const token = loginResponse?.data?.token;
-      const userEmail = loginResponse?.data?.user?.email || loginResponse?.data?.user?.userEmail || '';
-
-      const payload = {
-        email: userEmail,
-        userType: "RESIDENTIAL",
-        utilityType: selectedUtilityProvider?.name,
-        authorizationEmail: greenButtonEmail.trim()
-      };
-
-      const response = await axios.post(
-        `https://services.dcarbon.solutions/api/utility-auth/green-button`,
-        payload,
-        { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } }
-      );
-
-      if (response.data.message) {
-        toast.success(response.data.message);
-        setTimeout(() => {
-          setGreenButtonEmail('');
-          setShowIframe(false);
-          onClose();
-          window.location.reload();
-        }, 2000);
-      }
-    } catch (err) {
-      toast.error(err.response?.data?.message || err.message || 'Failed to submit Green Button authorization');
-    } finally {
-      setSubmittingGreenButton(false);
-    }
-  };
-
-  const zoomIn = () => {
-    setScale(prev => Math.min(prev + 0.25, 3));
-  };
-
-  const zoomOut = () => {
-    setScale(prev => Math.max(prev - 0.25, 0.5));
-  };
-
-  const resetZoom = () => {
-    setScale(1);
-  };
-
-  const handleIframeClose = () => {
-    setShowIframe(false);
-    setScale(1);
-    onClose();
-    window.location.reload();
   };
 
   const handleDownload = () => {
@@ -349,291 +254,33 @@ export default function GreenButtonTermsAndCondition({ isOpen, onClose, selected
     window.location.reload();
   };
 
-  const handleProceedToDashboard = () => {
-    setShowSuccessModal(false);
-    onClose();
-    window.location.reload();
-  };
-
-  if (showGreenButtonInfo) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-        <div className="relative w-full max-w-md bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
-          <div className="p-6">
-            <h2 className="font-[600] text-[20px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro mb-4">
-              Green Button Authorization
-            </h2>
-            
-            <div className="mb-6">
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
-                <div className="flex items-start mb-2">
-                  <svg className="w-5 h-5 text-green-600 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                  <div>
-                    <p className="text-green-800 font-semibold text-sm">Green Button Utility Selected</p>
-                    <p className="text-green-700 text-sm mt-1">{selectedUtilityProvider?.name}</p>
-                  </div>
-                </div>
-                
-                <div className="mt-3 p-3 bg-green-100 rounded border border-green-300">
-                  <p className="text-green-800 text-sm">
-                    You'll be redirected to {selectedUtilityProvider?.name}'s authorization page. Please complete the authorization process in the new tab, then return here to continue.
-                  </p>
-                </div>
-              </div>
-              
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="text-blue-800 text-sm">
-                  <strong>Note:</strong> After clicking "Continue to Green Button", you'll watch an instructional video, then be redirected to complete the authorization.
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowGreenButtonInfo(false)}
-                className="flex-1 rounded-md border border-gray-300 text-gray-700 font-semibold py-3 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300 font-sfpro text-[14px]"
-              >
-                Back
-              </button>
-              <button
-                onClick={handleGreenButtonInfoContinue}
-                className="flex-1 rounded-md bg-green-600 text-white font-semibold py-3 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 font-sfpro text-[14px]"
-              >
-                Continue to Green Button
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (showVideoModal) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-        <div className="relative w-full max-w-4xl bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
-          <div className="flex-shrink-0 p-6 border-b border-gray-200">
-            <div className="flex justify-between items-center">
-              <h2 className="font-[600] text-[20px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sans">
-                {selectedUtilityProvider?.name} Authorization Instructions
-              </h2>
-              <button onClick={() => setShowVideoModal(false)} className="text-red-500 hover:text-red-700">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-6">
-            <div className="bg-gray-100 rounded-lg p-4 mb-6">
-              <p className="text-sm text-gray-700 mb-4">
-                <strong>Important:</strong> Please watch this instructional video to understand how to complete the {selectedUtilityProvider?.name} authorization process.
-              </p>
-              
-              <div className="bg-black rounded-lg aspect-video flex items-center justify-center mb-4">
-                <div className="text-white text-center">
-                  <svg className="w-16 h-16 mx-auto mb-2" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M8 5v14l11-7z"/>
-                  </svg>
-                  <p className="text-lg font-semibold">Instructional Video</p>
-                  <p className="text-sm opacity-75">Video demonstration for {selectedUtilityProvider?.name}</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-between text-sm text-gray-600">
-                <span>Estimated time: 2-3 minutes</span>
-                <span>Mandatory viewing</span>
-              </div>
-            </div>
-
-            <div className="flex justify-between gap-4 mt-8">
-              <button
-                onClick={() => setShowVideoModal(false)}
-                className="flex-1 rounded-md bg-white border border-[#039994] text-[#039994] font-semibold py-3 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#039994] font-sans text-[14px] transition-colors"
-              >
-                Back
-              </button>
-              <button
-                onClick={handleVideoComplete}
-                className="flex-1 rounded-md text-white font-semibold py-3 bg-[#039994] hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sans text-[14px] transition-colors"
-              >
-                I've Watched the Video - Continue
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (showIframe) {
-    const utilityName = selectedUtilityProvider?.name;
-    const isGreenButton = isGreenButtonUtility(utilityName);
-    
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-        <div className="relative w-full max-w-6xl h-[90vh] bg-white rounded-2xl overflow-hidden flex flex-col">
-          <div className="flex items-center justify-between p-4 border-b">
-            <h3 className="text-lg font-semibold text-[#039994]">
-              {utilityName} Authorization
-            </h3>
-            <div className="flex items-center gap-4">
-              {!isGreenButton && (
-                <div className="flex gap-2">
-                  <button
-                    onClick={zoomOut}
-                    className="bg-gray-500 text-white px-3 py-1 rounded-md text-sm hover:bg-gray-600 flex items-center gap-1"
-                    disabled={scale <= 0.5}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                    </svg>
-                    Zoom Out
-                  </button>
-                  <button
-                    onClick={resetZoom}
-                    className="bg-gray-500 text-white px-3 py-1 rounded-md text-sm hover:bg-gray-600 flex items-center gap-1"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M15 3H21V9M21 3L15 9M9 21H3V15M3 21L9 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    Reset
-                  </button>
-                  <button
-                    onClick={zoomIn}
-                    className="bg-gray-500 text-white px-3 py-1 rounded-md text-sm hover:bg-gray-600 flex items-center gap-1"
-                    disabled={scale >= 3}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                    </svg>
-                    Zoom In
-                  </button>
-                </div>
-              )}
-              <button
-                onClick={handleIframeClose}
-                className="text-red-500 hover:text-red-700"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </button>
-            </div>
-          </div>
-          
-          <div className={`p-4 border-b ${isGreenButton ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}>
-            <p className={`text-sm ${isGreenButton ? 'text-green-700' : 'text-yellow-700'}`}>
-              <strong>{utilityName} Authorization:</strong> Follow the steps to securely share your utility data with DCarbon Solutions.
-            </p>
-            <p className={`text-sm ${isGreenButton ? 'text-green-700' : 'text-yellow-700'} mt-1`}>
-              <strong>Selected Utility:</strong> {utilityName}
-            </p>
-            <p className={`text-sm ${isGreenButton ? 'text-green-700' : 'text-yellow-700'} mt-1`}>
-              <strong>Authorization URL:</strong> {iframeUrl}
-            </p>
-          </div>
-
-          {isGreenButton ? (
-            <div className="flex-1 p-6">
-              <div className="mt-4 p-4 border-2 border-green-500 rounded-lg bg-green-50">
-                <div className="font-semibold text-green-700 mb-2">Enter Authorization Email</div>
-                <div className="text-sm text-green-600 mb-3">
-                  Please enter the email address you used to authorize Green Button access with {utilityName}:
-                </div>
-                <input
-                  type="email"
-                  value={greenButtonEmail}
-                  onChange={(e) => setGreenButtonEmail(e.target.value)}
-                  placeholder="Enter the email used for Green Button authorization"
-                  className="w-full rounded-md border border-green-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 font-sfpro mb-2"
-                />
-                <button
-                  onClick={handleGreenButtonSubmit}
-                  disabled={submittingGreenButton || !greenButtonEmail.trim()}
-                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 font-sfpro"
-                >
-                  {submittingGreenButton ? 'Submitting...' : 'Submit Authorization Email'}
-                </button>
-              </div>
-
-              <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm text-blue-700">
-                  <strong>Note:</strong> If you haven't completed the authorization yet, please go to the new tab that opened and complete the {utilityName} Green Button authorization process first.
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="flex-1 p-4 bg-gray-100 overflow-hidden">
-              <div className="w-full h-full bg-white rounded-lg overflow-auto">
-                <div 
-                  className="w-full h-full origin-top-left"
-                  style={{ 
-                    transform: `scale(${scale})`,
-                    width: `${100/scale}%`,
-                    height: `${100/scale}%`
-                  }}
-                >
-                  <iframe
-                    src={iframeUrl}
-                    className="w-full h-full border-0"
-                    title={`${utilityName} Authorization`}
-                    sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {!isGreenButton && (
-            <div className="p-3 border-t bg-gray-50 flex justify-between items-center">
-              <span className="text-sm text-gray-600">
-                Zoom: {Math.round(scale * 100)}%
-              </span>
-              <span className="text-sm text-gray-600">
-                Use scroll to navigate when zoomed in
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  if (showSuccessModal) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-        <div className="relative w-full max-w-md bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
-          <div className="p-6">
-            <div className="text-center">
-              <svg className="mx-auto h-12 w-12 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              <h2 className="mt-3 text-lg font-medium text-gray-900">Authorization Successful</h2>
-              <p className="mt-2 text-sm text-gray-500">Waiting for meters to be fetched. You can proceed to your dashboard.</p>
-            </div>
-            <div className="mt-6">
-              <button
-                onClick={handleProceedToDashboard}
-                className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#039994] hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#039994]"
-              >
-                Proceed to Dashboard
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isOpen && !showSignatureModal && !showGreenButtonInfo) return null;
+  if (!isOpen && !showSignatureModal && !showInstapullAuthModal) return null;
 
   return (
     <>
-      {isOpen && !showSignatureModal && !showGreenButtonInfo && (
+      {showSignatureModal && (
+        <SignatureModal
+          isOpen={showSignatureModal}
+          onClose={handleSignatureCancel}
+          onComplete={handleSignatureComplete}
+        />
+      )}
+
+      {showInstapullAuthModal && (
+        <InstapullAuthorizationModal
+          isOpen={showInstapullAuthModal}
+          onClose={() => {
+            setShowInstapullAuthModal(false);
+            handleCloseModal();
+          }}
+          utilityProvider={selectedUtilityProvider}
+          instapullOpened={instapullOpened}
+          openInstapullTab={openInstapullTab}
+          userId={JSON.parse(localStorage.getItem('loginResponse') || '{}')?.data?.user?.id}
+        />
+      )}
+
+      {isOpen && !showSignatureModal && !showInstapullAuthModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
           <div className="relative w-full max-w-4xl bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
             <div className="flex-shrink-0 p-6 border-b border-gray-200">
@@ -752,12 +399,6 @@ export default function GreenButtonTermsAndCondition({ isOpen, onClose, selected
           </div>
         </div>
       )}
-
-      <SignatureModal
-        isOpen={showSignatureModal}
-        onClose={handleSignatureCancel}
-        onComplete={handleSignatureComplete}
-      />
     </>
   );
 }

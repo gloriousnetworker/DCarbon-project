@@ -1,37 +1,57 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import axios from "axios";
+import InstapullAuthorizationModal from "./InstapullAuthorizationModal";
 import ResidenceTermsAndAgreementModal from "./ResidenceTermsAndAgreementModal";
 import GreenButtonTermsAndCondition from "./GreenButtonTermsAndCondition";
-import {
-  mainContainer,
-  headingContainer,
-  backArrow,
-  pageTitle,
-  progressContainer,
-  progressBarWrapper,
-  progressBarActive,
-  progressStepText,
-  formWrapper,
-  labelClass,
-  selectClass,
-  inputClass,
-  fileInputWrapper,
-  noteText,
-  rowWrapper,
-  halfWidth,
-  grayPlaceholder,
-  buttonPrimary,
-  spinnerOverlay,
-  spinner,
-  termsTextContainer,
-  uploadHeading,
-  uploadFieldWrapper,
-  uploadInputLabel,
-  uploadIconContainer,
-  uploadButtonStyle,
-  uploadNoteStyle
-} from "../../styles";
+
+const styles = {
+  mainContainer: 'min-h-screen w-full flex flex-col items-center justify-center py-8 px-4 bg-white',
+  headingContainer: 'relative w-full flex flex-col items-center mb-2',
+  backArrow: 'absolute left-6 top-0 text-[#039994] cursor-pointer z-10',
+  pageTitle: 'mb-4 font-[600] text-[24px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro text-left',
+  progressContainer: 'w-full max-w-md flex items-center justify-between mb-6',
+  progressBarWrapper: 'flex-1 h-1 bg-gray-200 rounded-full mr-4',
+  progressBarActive: 'h-1 bg-[#039994] w-2/3 rounded-full',
+  progressStepText: 'text-sm font-medium text-gray-500 font-sfpro',
+  formWrapper: 'w-full max-w-md space-y-6',
+  labelClass: 'block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]',
+  selectClass: 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#626060]',
+  inputClass: 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]',
+  fileInputWrapper: 'relative flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-500 bg-gray-50 focus-within:outline-none focus-within:ring-2 focus-within:ring-[#039994] cursor-pointer font-sfpro',
+  noteText: 'mt-2 font-sfpro text-[12px] leading-[100%] tracking-[-0.05em] font-[300] italic text-[#1E1E1E]',
+  rowWrapper: 'flex space-x-4',
+  halfWidth: 'w-1/2',
+  grayPlaceholder: 'bg-[#E8E8E8]',
+  buttonPrimary: 'w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro',
+  spinnerOverlay: 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20',
+  spinner: 'h-12 w-12 border-4 border-t-4 border-gray-300 border-t-[#039994] rounded-full animate-spin',
+  uploadHeading: 'block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]',
+  uploadFieldWrapper: 'flex items-center space-x-3',
+  uploadInputLabel: 'relative flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-500 bg-gray-50 focus-within:outline-none focus-within:ring-2 focus-within:ring-[#039994] cursor-pointer font-sfpro',
+  uploadIconContainer: 'absolute right-3 top-1/2 -translate-y-1/2 text-gray-400',
+  uploadButtonStyle: 'px-4 py-2 bg-[#039994] text-white rounded-md hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro',
+  uploadNoteStyle: 'mt-2 font-sfpro text-[12px] leading-[100%] tracking-[-0.05em] font-[300] italic text-[#1E1E1E]',
+  closeButton: 'absolute top-6 right-6 text-red-500 hover:text-red-700 cursor-pointer z-50',
+  dateInput: 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E] bg-[#E8E8E8]',
+  authModalContainer: 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4',
+  authModal: 'relative w-full max-w-md bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col',
+  authModalHeader: 'p-6 pb-4 border-b border-gray-200',
+  authModalTitle: 'font-[600] text-[20px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro mb-2',
+  authModalSubtitle: 'text-sm text-gray-600 mb-4',
+  authModalBody: 'flex-1 overflow-y-auto p-6',
+  authModalFooter: 'p-6 pt-4 border-t border-gray-200',
+  authCloseButton: 'absolute top-4 right-4 text-gray-500 hover:text-gray-700 cursor-pointer',
+  authButtonSecondary: 'flex-1 rounded-md border border-gray-300 text-gray-700 font-semibold py-2 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300 font-sfpro',
+  authButtonPrimary: 'flex-1 rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro',
+  messageContainer: 'mt-4 p-4 bg-green-50 border border-green-200 rounded-lg',
+  messageText: 'text-green-700 text-sm',
+  instapullButton: 'mt-4 w-full rounded-md bg-blue-600 text-white font-semibold py-2 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 font-sfpro',
+  optionGroup: 'px-3 py-2 text-sm text-gray-500 font-sfpro',
+  optionGroupGreenButton: 'px-3 py-2 text-sm text-green-600 font-semibold font-sfpro',
+  greenButtonBadge: 'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 ml-2',
+  termsTextContainer: 'mt-4 text-center font-sfpro text-[10px] font-[800] leading-[100%] tracking-[-0.05em] underline text-[#1E1E1E]'
+};
 
 export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const [loading, setLoading] = useState(false);
@@ -42,6 +62,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const [loadingUtilityProviders, setLoadingUtilityProviders] = useState(false);
   const [loadingFinanceCompanies, setLoadingFinanceCompanies] = useState(false);
   const [loadingReferrer, setLoadingReferrer] = useState(false);
+  const [loadingUserAgreement, setLoadingUserAgreement] = useState(false);
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [showUtilityRequestModal, setShowUtilityRequestModal] = useState(false);
   const [requestingFinanceType, setRequestingFinanceType] = useState(false);
@@ -49,32 +70,40 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const [requestedFinanceTypeName, setRequestedFinanceTypeName] = useState('');
   const [requestedUtilityName, setRequestedUtilityName] = useState('');
   const [requestedUtilityWebsite, setRequestedUtilityWebsite] = useState('');
-  const [showAgreementModal, setShowAgreementModal] = useState(false);
-  const [showGreenButtonModal, setShowGreenButtonModal] = useState(false);
-  const [selectedUtilityProvider, setSelectedUtilityProvider] = useState(null);
+  const [instapullOpened, setInstapullOpened] = useState(false);
   const [file, setFile] = useState(null);
-  const [currentStep, setCurrentStep] = useState(1);
-  const [totalSteps] = useState(4);
-  const [systemCapacity, setSystemCapacity] = useState('');
   const [facilityNickname, setFacilityNickname] = useState('');
   const [utilityProviders, setUtilityProviders] = useState([]);
   const [financeCompanies, setFinanceCompanies] = useState([]);
   const [referrerFinanceCompany, setReferrerFinanceCompany] = useState(null);
+  const [showInstapullAuthModal, setShowInstapullAuthModal] = useState(false);
+  const [showAgreementModal, setShowAgreementModal] = useState(false);
+  const [showGreenButtonModal, setShowGreenButtonModal] = useState(false);
+  const [userAgreement, setUserAgreement] = useState(null);
+  const [createdFacilityId, setCreatedFacilityId] = useState(null);
+
   const [formData, setFormData] = useState({
     financeType: "",
     financeCompany: "",
+    financeCompanyId: "",
     installer: "",
+    installerId: "",
     customInstaller: "",
     utilityProvider: "",
+    systemSize: "",
+    cod: "",
     facilityTypeNamingCode: 2,
     utilityProviderNamingCode: "",
     installerNamingCode: "",
     financeNamingCode: ""
   });
+
   const [financeTypes, setFinanceTypes] = useState([]);
   const [installers, setInstallers] = useState([]);
+  const [greenButtonUtilities, setGreenButtonUtilities] = useState([]);
+  const [regularUtilities, setRegularUtilities] = useState([]);
+  const [systemCapacity, setSystemCapacity] = useState('');
 
-  const greenButtonUtilityIds = ['PG&E', 'SCE', 'SDG&E'];
   const isCashType = formData.financeType.toLowerCase() === 'cash';
   const showUploadField = !isCashType && formData.financeType !== '';
   const showFinanceCompany = !isCashType && formData.financeType !== '';
@@ -85,61 +114,49 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     ? financeCompanies.filter(company => company.name === referrerFinanceCompany.name)
     : financeCompanies;
 
-  const greenButtonProviders = utilityProviders.filter(provider => 
-    greenButtonUtilityIds.includes(provider.id)
-  );
-  const otherProviders = utilityProviders.filter(provider => 
-    !greenButtonUtilityIds.includes(provider.id)
-  );
-
+  const greenButtonKeywords = ['green button connect', 'green button', 'san diego gas and electric', 'southern california edison', 'pacific gas and electric', 'PG&E', 'SCE', 'SDG&E'];
   const selectedProvider = utilityProviders.find(provider => provider.name === formData.utilityProvider);
-  const isGreenButtonUtility = selectedProvider && greenButtonUtilityIds.includes(selectedProvider.id);
+  const isGreenButtonUtility = selectedProvider && greenButtonKeywords.some(keyword => selectedProvider.name.toLowerCase().includes(keyword));
 
-  const generateUniqueMeterId = () => {
-    const timestamp = Date.now();
-    const random = Math.floor(Math.random() * 1000000);
-    return `METER_${timestamp}_${random}`;
-  };
-
-  const generateUniqueFacilityName = () => {
-    const timestamp = Date.now();
-    const random = Math.floor(Math.random() * 1000);
-    const nickname = facilityNickname.trim() || 'Residential';
-    return `${nickname}_${timestamp}_${random}`;
-  };
-
-  useEffect(() => {
-    if (isOpen) {
-      fetchFinanceTypes();
-      fetchInstallers();
-      fetchUtilityProviders();
-      fetchFinanceCompanies();
-      fetchReferrerInfo();
+  const fetchUserAgreement = async () => {
+    setLoadingUserAgreement(true);
+    try {
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const userId = loginResponse?.data?.user?.id;
+      const token = loginResponse?.data?.token;
+      
+      const response = await axios.get(
+        `https://services.dcarbon.solutions/api/user/agreement/${userId}`,
+        { headers: { 'Authorization': `Bearer ${token}` } }
+      );
+      
+      if (response.data.status === 'success') {
+        setUserAgreement(response.data.data);
+      }
+    } catch (err) {
+      console.error('Error fetching user agreement:', err);
+    } finally {
+      setLoadingUserAgreement(false);
     }
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (isReferredByFinanceCompany) {
-      setFormData(prev => ({
-        ...prev,
-        installer: 'not_available'
-      }));
-    }
-  }, [isReferredByFinanceCompany]);
+  };
 
   const fetchReferrerInfo = async () => {
     setLoadingReferrer(true);
     try {
-      const token = localStorage.getItem('authToken');
-      const userId = localStorage.getItem('userId');
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const userId = loginResponse?.data?.user?.id;
+      const token = loginResponse?.data?.token;
+      
       const response = await axios.get(
         `https://services.dcarbon.solutions/api/user/referrer/${userId}`,
         { headers: { 'Authorization': `Bearer ${token}` } }
       );
+      
       if (response.data.status === 'success' && response.data.data.partnerType === 'FINANCE_COMPANY') {
         setReferrerFinanceCompany(response.data.data.partner);
       }
     } catch (err) {
+      console.error('Error fetching referrer info:', err);
     } finally {
       setLoadingReferrer(false);
     }
@@ -148,13 +165,17 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const fetchUtilityProviders = async () => {
     setLoadingUtilityProviders(true);
     try {
-      const token = localStorage.getItem('authToken');
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const token = loginResponse?.data?.token;
+      
       const response = await axios.get(
         'https://services.dcarbon.solutions/api/auth/utility-providers',
         { headers: { 'Authorization': `Bearer ${token}` } }
       );
+      
       if (response.data.status === 'success') {
         setUtilityProviders(response.data.data);
+        categorizeUtilities(response.data.data);
       }
     } catch (err) {
       toast.error('Failed to load utility providers');
@@ -163,14 +184,36 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     }
   };
 
+  const categorizeUtilities = (utilities) => {
+    const greenButtonUtils = [];
+    const regularUtils = [];
+    
+    utilities.forEach(utility => {
+      const nameLower = utility.name.toLowerCase();
+      const isGreenButton = greenButtonKeywords.some(keyword => nameLower.includes(keyword));
+      
+      if (isGreenButton) {
+        greenButtonUtils.push(utility);
+      } else {
+        regularUtils.push(utility);
+      }
+    });
+    
+    setGreenButtonUtilities(greenButtonUtils);
+    setRegularUtilities(regularUtils);
+  };
+
   const fetchFinanceTypes = async () => {
     setLoadingFinanceTypes(true);
     try {
-      const token = localStorage.getItem('authToken');
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const token = loginResponse?.data?.token;
+      
       const response = await axios.get(
         'https://services.dcarbon.solutions/api/user/financial-types',
         { headers: { 'Authorization': `Bearer ${token}` } }
       );
+      
       if (response.data.status === 'success') {
         const approvedTypes = response.data.data.types.filter(type =>
           type.status === 'APPROVED' || type.name.toLowerCase() === 'cash'
@@ -192,11 +235,14 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const fetchInstallers = async () => {
     setLoadingInstallers(true);
     try {
-      const token = localStorage.getItem('authToken');
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const token = loginResponse?.data?.token;
+      
       const response = await axios.get(
         'https://services.dcarbon.solutions/api/user/partner/get-all-installer',
         { headers: { 'Authorization': `Bearer ${token}` } }
       );
+      
       if (response.data.status === 'success') {
         setInstallers(response.data.data.installers || []);
       }
@@ -210,11 +256,14 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const fetchFinanceCompanies = async () => {
     setLoadingFinanceCompanies(true);
     try {
-      const token = localStorage.getItem('authToken');
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const token = loginResponse?.data?.token;
+      
       const response = await axios.get(
         'https://services.dcarbon.solutions/api/user/partner/finance-companies',
         { headers: { 'Authorization': `Bearer ${token}` } }
       );
+      
       if (response.data.status === 'success') {
         setFinanceCompanies(response.data.data.financeCompanies || []);
       }
@@ -225,9 +274,53 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     }
   };
 
+  useEffect(() => {
+    if (isOpen) {
+      fetchUserAgreement();
+      fetchReferrerInfo();
+      fetchFinanceTypes();
+      fetchInstallers();
+      fetchUtilityProviders();
+      fetchFinanceCompanies();
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isReferredByFinanceCompany) {
+      setFormData(prev => ({
+        ...prev,
+        installer: 'not_available'
+      }));
+    }
+  }, [isReferredByFinanceCompany]);
+
+  const openInstapullTab = () => {
+    const newTab = window.open('https://main.instapull.io/authorize/dcarbonsolutions/', '_blank');
+    if (newTab) {
+      setInstapullOpened(true);
+      toast.success('Instapull opened in new tab');
+    } else {
+      toast.error('Please allow pop-ups for this site to open Instapull');
+    }
+  };
+
+  const generateUniqueMeterId = () => {
+    const timestamp = Date.now();
+    const random = Math.floor(Math.random() * 1000000);
+    return `METER_${timestamp}_${random}`;
+  };
+
+  const generateUniqueFacilityName = () => {
+    const timestamp = Date.now();
+    const random = Math.floor(Math.random() * 1000);
+    const nickname = facilityNickname.trim() || 'Residential';
+    return `${nickname}_${timestamp}_${random}`;
+  };
+
   const createResidentialFacility = async () => {
-    const userId = localStorage.getItem('userId');
-    const token = localStorage.getItem('authToken');
+    const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+    const userId = loginResponse?.data?.user?.id;
+    const token = loginResponse?.data?.token;
     const selectedFinanceType = financeTypes.find(type => type.name === formData.financeType);
     const selectedInstaller = installers.find(installer => installer.name === (showCustomInstaller ? formData.customInstaller : formData.installer));
     const selectedUtilityProvider = utilityProviders.find(provider => provider.name === formData.utilityProvider);
@@ -264,20 +357,22 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const uploadFinanceAgreementToFacility = async (facilityId) => {
     if (!file) return;
 
-    const token = localStorage.getItem('authToken');
-    const formData = new FormData();
-    formData.append('file', file);
+    const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+    const token = loginResponse?.data?.token;
+    const formDataObj = new FormData();
+    formDataObj.append('file', file);
 
     await axios.put(
       `https://services.dcarbon.solutions/api/residential-facility/residential-docs/finance-agreement/${facilityId}`,
-      formData,
+      formDataObj,
       { headers: { 'Content-Type': 'multipart/form-data', 'Authorization': `Bearer ${token}` } }
     );
   };
 
   const updateFinanceInfo = async () => {
-    const userId = localStorage.getItem('userId');
-    const token = localStorage.getItem('authToken');
+    const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+    const userId = loginResponse?.data?.user?.id;
+    const token = loginResponse?.data?.token;
     const finalInstaller = noInstallerSelected ? 'N/A' : (showCustomInstaller ? formData.customInstaller : formData.installer);
 
     const payload = {
@@ -301,13 +396,16 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     }
     setRequestingFinanceType(true);
     try {
-      const userId = localStorage.getItem('userId');
-      const token = localStorage.getItem('authToken');
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const userId = loginResponse?.data?.user?.id;
+      const token = loginResponse?.data?.token;
+      
       const response = await axios.post(
         `https://services.dcarbon.solutions/api/user/request-financial-type/${userId}`,
         { name: requestedFinanceTypeName.trim() },
         { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } }
       );
+      
       toast.success(response.data.message || 'Finance type request submitted successfully!');
       setShowRequestModal(false);
       setRequestedFinanceTypeName('');
@@ -326,8 +424,10 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     }
     setRequestingUtility(true);
     try {
-      const userId = localStorage.getItem('userId');
-      const token = localStorage.getItem('authToken');
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const userId = loginResponse?.data?.user?.id;
+      const token = loginResponse?.data?.token;
+      
       const response = await axios.post(
         `https://services.dcarbon.solutions/api/user/request-utility-provider/${userId}`,
         { 
@@ -336,6 +436,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
         },
         { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } }
       );
+      
       toast.success(response.data.message || 'Utility provider request submitted successfully!');
       setShowUtilityRequestModal(false);
       setRequestedUtilityName('');
@@ -381,31 +482,90 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    
-    if (name === "utilityProvider") {
-      const selectedProvider = utilityProviders.find(provider => provider.name === value);
-      setSelectedUtilityProvider(selectedProvider);
-      setFormData(prev => ({
-        ...prev,
-        utilityProviderNamingCode: selectedProvider?.namingCode || ""
-      }));
-    }
     
     if (name === "financeType") {
       const selectedFinanceType = financeTypes.find(type => type.name === value);
       setFormData(prev => ({
         ...prev,
+        financeType: value,
         financeNamingCode: selectedFinanceType?.namingCode || ""
       }));
     }
-    
-    if (name === "installer") {
+    else if (name === "installer") {
       const selectedInstaller = installers.find(installer => installer.name === value);
       setFormData(prev => ({
         ...prev,
+        installer: value,
+        installerId: selectedInstaller?.id || "",
         installerNamingCode: selectedInstaller?.namingCode || ""
       }));
+    }
+    else if (name === "financeCompany") {
+      const selectedFinanceCompany = financeCompanies.find(company => company.name === value);
+      setFormData(prev => ({
+        ...prev,
+        financeCompany: value,
+        financeCompanyId: selectedFinanceCompany?.id || ""
+      }));
+    }
+    else if (name === "utilityProvider") {
+      const selectedUtilityProvider = utilityProviders.find(provider => provider.name === value);
+      setFormData(prev => ({
+        ...prev,
+        utilityProvider: value,
+        utilityProviderNamingCode: selectedUtilityProvider?.namingCode || ""
+      }));
+    }
+    else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
+  };
+
+  const handleSystemSizeChange = (e) => {
+    const input = e.target.value;
+    if (input === '') {
+      setFormData(prev => ({ ...prev, systemSize: '' }));
+      return;
+    }
+    const regex = /^\d*\.?\d*$/;
+    if (regex.test(input)) {
+      setFormData(prev => ({ ...prev, systemSize: input }));
+    }
+  };
+
+  const handleDateChange = (e) => {
+    let value = e.target.value.replace(/[^0-9/]/g, '');
+    if (value.length === 2 && !value.includes('/')) {
+      const month = parseInt(value);
+      if (month > 12) value = '12';
+      if (month === 0) value = '01';
+      value = value + '/';
+    } else if (value.length === 5) {
+      const parts = value.split('/');
+      if (parts.length === 2) {
+        let day = parseInt(parts[1]);
+        const month = parseInt(parts[0]);
+        const daysInMonth = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+        const maxDay = month >= 1 && month <= 12 ? daysInMonth[month - 1] : 31;
+        if (day > maxDay) day = maxDay;
+        if (day === 0) day = 1;
+        value = parts[0] + '/' + (day < 10 && day > 0 ? '0' + day : day) + '/';
+      }
+    } else if (value.length === 10) {
+      const parts = value.split('/');
+      if (parts.length === 3) {
+        let day = parseInt(parts[1]);
+        const month = parseInt(parts[0]);
+        const year = parts[2];
+        const daysInMonth = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+        const maxDay = month >= 1 && month <= 12 ? daysInMonth[month - 1] : 31;
+        if (day > maxDay) day = maxDay;
+        if (day === 0) day = 1;
+        value = parts[0] + '/' + (day < 10 && day > 0 ? '0' + day : day) + '/' + year;
+      }
+    }
+    if (value.length <= 10) {
+      setFormData(prev => ({ ...prev, cod: value }));
     }
   };
 
@@ -424,18 +584,23 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     try {
       await updateFinanceInfo();
       const response = await createResidentialFacility();
+      setCreatedFacilityId(response.data.id);
 
       if (file && uploadSuccess) {
         await uploadFinanceAgreementToFacility(response.data.id);
       }
 
       toast.success(`Residential facility created successfully: ${response.data.facilityName}`, { id: toastId });
-      setCurrentStep(4);
       
-      if (isGreenButtonUtility) {
-        setShowGreenButtonModal(true);
+      if (userAgreement && userAgreement.termsAccepted && userAgreement.signature) {
+        openInstapullTab();
+        setShowInstapullAuthModal(true);
       } else {
-        setShowAgreementModal(true);
+        if (isGreenButtonUtility) {
+          setShowGreenButtonModal(true);
+        } else {
+          setShowAgreementModal(true);
+        }
       }
     } catch (err) {
       if (err.response?.data?.message?.includes('Meter ID is already registered')) {
@@ -455,9 +620,13 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     setFormData({
       financeType: "",
       financeCompany: "",
+      financeCompanyId: "",
       installer: "",
+      installerId: "",
       customInstaller: "",
       utilityProvider: "",
+      systemSize: "",
+      cod: "",
       facilityTypeNamingCode: 2,
       utilityProviderNamingCode: "",
       installerNamingCode: "",
@@ -467,19 +636,19 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     setSystemCapacity('');
     setFile(null);
     setUploadSuccess(false);
-    setCurrentStep(1);
-    setSelectedUtilityProvider(null);
+    setInstapullOpened(false);
+    setCreatedFacilityId(null);
     onClose();
     window.location.reload();
   };
 
-  if (!isOpen) return null;
+  if (!isOpen && !showInstapullAuthModal && !showAgreementModal && !showGreenButtonModal) return null;
 
   return (
     <>
       {loading && (
-        <div className={spinnerOverlay}>
-          <div className={spinner}></div>
+        <div className={styles.spinnerOverlay}>
+          <div className={styles.spinner}></div>
         </div>
       )}
 
@@ -488,7 +657,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
           <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
             <h3 className="text-lg font-semibold mb-4">Request Finance Type</h3>
             <div className="mb-4">
-              <label className={labelClass}>
+              <label className={styles.labelClass}>
                 Finance Type Name
               </label>
               <input
@@ -496,7 +665,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                 value={requestedFinanceTypeName}
                 onChange={(e) => setRequestedFinanceTypeName(e.target.value)}
                 placeholder="Enter finance type name"
-                className={inputClass}
+                className={styles.inputClass}
               />
             </div>
             <div className="flex gap-3">
@@ -513,7 +682,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
               <button
                 onClick={handleRequestFinanceType}
                 disabled={requestingFinanceType}
-                className={`flex-1 px-4 py-2 ${buttonPrimary}`}
+                className="flex-1 px-4 py-2 bg-[#039994] text-white rounded-md hover:bg-[#028882] disabled:opacity-50"
               >
                 {requestingFinanceType ? 'Submitting...' : 'Submit Request'}
               </button>
@@ -527,7 +696,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
           <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
             <h3 className="text-lg font-semibold mb-4">Request Utility Provider</h3>
             <div className="mb-4">
-              <label className={labelClass}>
+              <label className={styles.labelClass}>
                 Utility Provider Name <span className="text-red-500">*</span>
               </label>
               <input
@@ -535,12 +704,12 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                 value={requestedUtilityName}
                 onChange={(e) => setRequestedUtilityName(e.target.value)}
                 placeholder="Enter utility provider name"
-                className={inputClass}
+                className={styles.inputClass}
                 required
               />
             </div>
             <div className="mb-4">
-              <label className={labelClass}>
+              <label className={styles.labelClass}>
                 Utility Website
               </label>
               <input
@@ -548,7 +717,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                 value={requestedUtilityWebsite}
                 onChange={(e) => setRequestedUtilityWebsite(e.target.value)}
                 placeholder="https://example.com"
-                className={inputClass}
+                className={styles.inputClass}
               />
             </div>
             <div className="flex gap-3">
@@ -566,7 +735,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
               <button
                 onClick={handleRequestUtility}
                 disabled={requestingUtility}
-                className={`flex-1 px-4 py-2 ${buttonPrimary}`}
+                className="flex-1 px-4 py-2 bg-[#039994] text-white rounded-md hover:bg-[#028882] disabled:opacity-50"
               >
                 {requestingUtility ? 'Submitting...' : 'Submit Request'}
               </button>
@@ -575,14 +744,51 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
         </div>
       )}
 
-      {!showAgreementModal && !showGreenButtonModal && !showRequestModal && !showUtilityRequestModal && (
+      {showInstapullAuthModal && (
+        <InstapullAuthorizationModal
+          isOpen={showInstapullAuthModal}
+          onClose={() => {
+            setShowInstapullAuthModal(false);
+            handleCloseModal();
+          }}
+          utilityProvider={formData.utilityProvider}
+          instapullOpened={instapullOpened}
+          openInstapullTab={openInstapullTab}
+          userId={JSON.parse(localStorage.getItem('loginResponse') || '{}')?.data?.user?.id}
+        />
+      )}
+
+      {showAgreementModal && (
+        <ResidenceTermsAndAgreementModal
+          isOpen={showAgreementModal}
+          onClose={() => {
+            setShowAgreementModal(false);
+            handleCloseModal();
+          }}
+          selectedUtilityProvider={formData.utilityProvider}
+          isGreenButtonUtility={isGreenButtonUtility}
+        />
+      )}
+
+      {showGreenButtonModal && (
+        <GreenButtonTermsAndCondition
+          isOpen={showGreenButtonModal}
+          onClose={() => {
+            setShowGreenButtonModal(false);
+            handleCloseModal();
+          }}
+          selectedUtilityProvider={formData.utilityProvider}
+        />
+      )}
+
+      {isOpen && !showInstapullAuthModal && !showAgreementModal && !showGreenButtonModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
           <div className="relative w-full max-w-lg bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
             <div className="relative p-6 pb-4">
               {onBack && (
                 <button
                   onClick={onBack}
-                  className={backArrow}
+                  className={styles.backArrow}
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M19 12H5M12 19L5 12L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -592,7 +798,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
 
               <button
                 onClick={handleCloseModal}
-                className="absolute top-6 right-6 text-red-500 hover:text-red-700 cursor-pointer z-10"
+                className={styles.closeButton}
                 type="button"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -600,29 +806,31 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                 </svg>
               </button>
 
-              <div className={headingContainer}>
-                <h2 className={pageTitle}>
+              <div className={styles.headingContainer}>
+                <h2 className={styles.pageTitle}>
                   Finance & Installer Information
                 </h2>
                 <p className="text-sm text-gray-500 mt-1">
-                  Please provide accurate details below. Hover over the <span className="inline-flex items-center"><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400 mx-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg> icons</span> for important guidance on each field.
+                  Please provide accurate details below. Hover over the <span className="inline-flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400 mx-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg> icons
+                  </span> for important guidance on each field.
                 </p>
               </div>
 
-              <div className={progressContainer}>
-                <div className={progressBarWrapper}>
-                  <div className={progressBarActive} style={{ width: `${(currentStep / totalSteps) * 100}%` }}></div>
+              <div className={styles.progressContainer}>
+                <div className={styles.progressBarWrapper}>
+                  <div className={styles.progressBarActive}></div>
                 </div>
-                <span className={progressStepText}>{currentStep}/{totalSteps}</span>
+                <span className={styles.progressStepText}>04/05</span>
               </div>
             </div>
 
             <div className="flex-1 overflow-y-auto px-6 pb-6">
-              <form onSubmit={handleSubmit} className={formWrapper}>
+              <form onSubmit={handleSubmit} className={styles.formWrapper}>
                 <div>
-                  <label className={labelClass}>
+                  <label className={styles.labelClass}>
                     Facility Nickname <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -630,14 +838,14 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                     value={facilityNickname}
                     onChange={(e) => setFacilityNickname(e.target.value)}
                     placeholder="e.g. Nancy's Nest"
-                    className={`${inputClass} ${grayPlaceholder}`}
+                    className={`${styles.inputClass} ${styles.grayPlaceholder}`}
                     required
                   />
-                  <p className={noteText}>Give your facility a nickname (e.g. "Nancy's Nest")</p>
+                  <p className={styles.noteText}>Give your facility a nickname (e.g. "Nancy's Nest")</p>
                 </div>
 
                 <div>
-                  <label className={labelClass}>
+                  <label className={styles.labelClass}>
                     Utility Provider <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
@@ -645,29 +853,25 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                       name="utilityProvider"
                       value={formData.utilityProvider}
                       onChange={handleInputChange}
-                      className={`${selectClass} ${grayPlaceholder}`}
+                      className={`${styles.selectClass} appearance-none`}
                       required
                       disabled={loadingUtilityProviders}
                     >
                       <option value="">{loadingUtilityProviders ? 'Loading...' : 'Choose provider'}</option>
                       
-                      {greenButtonProviders.length > 0 && (
-                        <optgroup label="Green Button Utilities" className="bg-green-50">
-                          {greenButtonProviders.map((provider) => (
-                            <option 
-                              key={provider.id} 
-                              value={provider.name}
-                              className="text-green-700 font-semibold"
-                            >
-                              {provider.name} ✓
+                      {greenButtonUtilities.length > 0 && (
+                        <optgroup label="Green Button Utilities" className={styles.optionGroupGreenButton}>
+                          {greenButtonUtilities.map((provider) => (
+                            <option key={provider.id} value={provider.name}>
+                              {provider.name} <span className={styles.greenButtonBadge}>Green Button</span>
                             </option>
                           ))}
                         </optgroup>
                       )}
-
-                      {otherProviders.length > 0 && (
-                        <optgroup label="Other Utilities">
-                          {otherProviders.map((provider) => (
+                      
+                      {regularUtilities.length > 0 && (
+                        <optgroup label="Other Utilities" className={styles.optionGroup}>
+                          {regularUtilities.map((provider) => (
                             <option key={provider.id} value={provider.name}>
                               {provider.name}
                             </option>
@@ -675,18 +879,12 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                         </optgroup>
                       )}
                     </select>
-                    {isGreenButtonUtility && (
-                      <div className="absolute inset-0 border-2 border-green-500 rounded-lg animate-pulse pointer-events-none"></div>
-                    )}
-                  </div>
-                  {isGreenButtonUtility && (
-                    <p className="text-xs text-green-600 mt-1 flex items-center">
-                      <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    <div className={styles.uploadIconContainer}>
+                      <svg className="w-5 h-5 text-gray-400 pointer-events-none absolute top-1/2 right-3 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                       </svg>
-                      Selected utility supports Green Button authorization.
-                    </p>
-                  )}
+                    </div>
+                  </div>
                   <button
                     type="button"
                     onClick={() => setShowUtilityRequestModal(true)}
@@ -697,7 +895,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                 </div>
 
                 <div>
-                  <label className={labelClass}>
+                  <label className={styles.labelClass}>
                     Finance type <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
@@ -705,7 +903,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                       name="financeType"
                       value={formData.financeType}
                       onChange={handleInputChange}
-                      className={`${selectClass} ${grayPlaceholder}`}
+                      className={`${styles.selectClass} appearance-none`}
                       required
                       disabled={loadingFinanceTypes}
                     >
@@ -714,6 +912,11 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                         <option key={type.id} value={type.name}>{type.name}</option>
                       ))}
                     </select>
+                    <div className={styles.uploadIconContainer}>
+                      <svg className="w-5 h-5 text-gray-400 pointer-events-none absolute top-1/2 right-3 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
                   </div>
                   <button
                     type="button"
@@ -727,7 +930,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                 {showFinanceCompany && (
                   <div>
                     <div className="flex items-center gap-1">
-                      <label className={labelClass}>
+                      <label className={styles.labelClass}>
                         Finance company <span className="text-red-500">*</span>
                       </label>
                       <div className="group relative">
@@ -744,7 +947,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                         name="financeCompany"
                         value={formData.financeCompany}
                         onChange={handleInputChange}
-                        className={`${selectClass} ${grayPlaceholder}`}
+                        className={`${styles.selectClass} appearance-none`}
                         required
                         disabled={loadingFinanceCompanies}
                       >
@@ -754,52 +957,43 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                         ))}
                         <option value="Other">Other</option>
                       </select>
+                      <div className={styles.uploadIconContainer}>
+                        <svg className="w-5 h-5 text-gray-400 pointer-events-none absolute top-1/2 right-3 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
                     </div>
                   </div>
                 )}
 
                 {showUploadField && (
                   <div>
-                    <label className={uploadHeading}>
+                    <label className={styles.uploadHeading}>
                       Upload Finance Agreement
                     </label>
-                    <div className={`${uploadFieldWrapper} items-center`}>
-                      <label className={`${uploadInputLabel} flex items-center h-10`}>
-                        <span className="truncate flex-1">{file ? file.name : 'Choose file...'}</span>
-                        <div className="flex-shrink-0">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M8.5 12.5l7-7a2.121 2.121 0 013 3L10 17a4 4 0 01-5.657-5.657l7-7" />
-                          </svg>
-                        </div>
-                        <input type="file" className="hidden" onChange={handleFileChange} accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" />
-                      </label>
+                    <div className={styles.uploadFieldWrapper}>
+                      <input
+                        type="file"
+                        onChange={handleFileChange}
+                        className={styles.uploadInputLabel}
+                        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                      />
                       <button
                         type="button"
                         onClick={handleUpload}
                         disabled={!file || uploading || uploadSuccess}
-                        className={`${uploadButtonStyle} h-10 ${(!file || uploading || uploadSuccess) ? 'bg-gray-400 cursor-not-allowed' : ''}`}
+                        className={styles.uploadButtonStyle}
                       >
-                        {uploading ? (
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 animate-spin" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-                          </svg>
-                        ) : uploadSuccess ? (
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                          </svg>
-                        ) : (
-                          'Upload'
-                        )}
+                        {uploading ? 'Uploading...' : uploadSuccess ? '✓' : 'Upload'}
                       </button>
                     </div>
-                    <p className={uploadNoteStyle}>Optional for loan, PPA, and lease agreements</p>
+                    <p className={styles.uploadNoteStyle}>Optional for loan, PPA, and lease agreements</p>
                   </div>
                 )}
 
                 <div>
                   <div className="flex items-center gap-1">
-                    <label className={labelClass}>
+                    <label className={styles.labelClass}>
                       Select installer <span className="text-red-500">*</span>
                     </label>
                     <div className="group relative">
@@ -816,7 +1010,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                       name="installer"
                       value={formData.installer}
                       onChange={handleInputChange}
-                      className={`${selectClass} ${grayPlaceholder}`}
+                      className={`${styles.selectClass} appearance-none`}
                       required
                       disabled={loadingInstallers || isReferredByFinanceCompany}
                     >
@@ -827,6 +1021,11 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                       {!isReferredByFinanceCompany && <option value="others">Others</option>}
                       <option value="not_available">Installer Not Yet Available</option>
                     </select>
+                    <div className={styles.uploadIconContainer}>
+                      <svg className="w-5 h-5 text-gray-400 pointer-events-none absolute top-1/2 right-3 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
                   </div>
                   {isReferredByFinanceCompany && (
                     <p className="text-xs text-gray-500 mt-1">
@@ -837,7 +1036,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
 
                 {showCustomInstaller && (
                   <div>
-                    <label className={labelClass}>
+                    <label className={styles.labelClass}>
                       Installer Name <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -846,21 +1045,21 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                       value={formData.customInstaller}
                       onChange={handleInputChange}
                       placeholder="Enter your installer name"
-                      className={`${inputClass} ${grayPlaceholder}`}
+                      className={`${styles.inputClass} ${styles.grayPlaceholder}`}
                       required
                     />
                   </div>
                 )}
 
                 <div>
-                  <label className={labelClass}>
+                  <label className={styles.labelClass}>
                     (kW AC) (must exactly match value on Utilities Permission to Operate (PTO) letter or email, skip if unknown) ​ <span className="text-gray-500 text-xs">(optional)</span>
                   </label>
                   <input
                     type="number"
                     value={systemCapacity}
                     onChange={(e) => setSystemCapacity(e.target.value)}
-                    className={`${inputClass} ${grayPlaceholder}`}
+                    className={`${styles.inputClass} ${styles.grayPlaceholder}`}
                     placeholder="Enter system capacity"
                     min="0"
                     step="0.1"
@@ -874,7 +1073,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                   <button
                     type="submit"
                     disabled={loading}
-                    className={`${buttonPrimary} flex items-center justify-center gap-2`}
+                    className={`${styles.buttonPrimary} flex items-center justify-center gap-2`}
                   >
                     {loading ? (
                       <>
@@ -887,7 +1086,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                   </button>
                 </div>
 
-                <div className={termsTextContainer}>
+                <div className={styles.termsTextContainer}>
                   <span>Terms and Conditions</span>
                   <span className="mx-2">•</span>
                   <span>Privacy Policy</span>
@@ -896,29 +1095,6 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
             </div>
           </div>
         </div>
-      )}
-
-      {showAgreementModal && (
-        <ResidenceTermsAndAgreementModal
-          isOpen={showAgreementModal}
-          onClose={() => {
-            setShowAgreementModal(false);
-            handleCloseModal();
-          }}
-          selectedUtilityProvider={selectedUtilityProvider}
-          isGreenButtonUtility={isGreenButtonUtility}
-        />
-      )}
-
-      {showGreenButtonModal && (
-        <GreenButtonTermsAndCondition
-          isOpen={showGreenButtonModal}
-          onClose={() => {
-            setShowGreenButtonModal(false);
-            handleCloseModal();
-          }}
-          selectedUtilityProvider={selectedUtilityProvider}
-        />
       )}
     </>
   );

@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { FaBars, FaBell, FaHeadset, FaComments } from "react-icons/fa";
 import FinanceAndInstallerModal from "./overview/modals/createfacility/FinanceAndInstallerModal";
 import ResidenceTermsAndAgreementModal from "./overview/modals/createfacility/ResidenceTermsAndAgreementModal";
-import UtilityAuthorizationModal from "./overview/modals/createfacility/UtilityAuthorizationModal";
+import ContinueResidentialFacilityCreation from "./overview/modals/ContinueResidentialFacilityCreation";
 import AddResidenceFacilityModal from "./overview/modals/createfacility/AddResidentialFacilityModal";
 import FeedbackModal from "./FeedbackModal";
 
@@ -19,10 +19,28 @@ const DashboardNavbar = ({
   const [nextStage, setNextStage] = useState(2);
   const [showFinanceModal, setShowFinanceModal] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
-  const [showUtilityModal, setShowUtilityModal] = useState(false);
+  const [showContinueModal, setShowContinueModal] = useState(false);
   const [showResidenceModal, setShowResidenceModal] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
-  const [notificationCheckInterval, setNotificationCheckInterval] = useState(null);
+  const [hasFacility, setHasFacility] = useState(false);
+
+  const checkFacilityStatus = async (userId, authToken) => {
+    try {
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/residential-facility/get-user-facilities/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        }
+      );
+      const result = await response.json();
+      return result.status === 'success' && result.data && result.data.facilities && result.data.facilities.length > 0;
+    } catch (error) {
+      return false;
+    }
+  };
 
   const fetchNotifications = async () => {
     try {
@@ -126,6 +144,13 @@ const DashboardNavbar = ({
       const authToken = loginResponse?.data?.token;
       if (!userId || !authToken) return;
 
+      const facilityStatus = await checkFacilityStatus(userId, authToken);
+      setHasFacility(facilityStatus);
+
+      if (facilityStatus) {
+        return;
+      }
+
       const stageChecks = [
         { stage: 2, check: () => checkStage2Completion(userId, authToken) },
         { stage: 3, check: () => checkStage3Completion(userId, authToken) },
@@ -168,7 +193,6 @@ const DashboardNavbar = ({
     checkUserProgress();
 
     const notificationInterval = setInterval(fetchNotifications, 30000);
-    setNotificationCheckInterval(notificationInterval);
     const progressInterval = setInterval(checkUserProgress, 15000);
 
     const handleStorageChange = (e) => {
@@ -189,24 +213,24 @@ const DashboardNavbar = ({
     
     return () => {
       window.removeEventListener("storage", handleStorageChange);
-      if (notificationCheckInterval) {
-        clearInterval(notificationCheckInterval);
-      }
+      clearInterval(notificationInterval);
       clearInterval(progressInterval);
     };
   }, []);
 
   const handleProgressClick = () => {
-    if (currentStage === 1) setShowFinanceModal(true);
-    else if (currentStage === 2) setShowTermsModal(true);
-    else if (currentStage === 3) setShowUtilityModal(true);
-    else if (currentStage === 4) setShowResidenceModal(true);
+    if (!hasFacility) {
+      if (currentStage === 1) setShowFinanceModal(true);
+      else if (currentStage === 2) setShowTermsModal(true);
+      else if (currentStage === 3) setShowContinueModal(true);
+      else if (currentStage === 4) setShowResidenceModal(true);
+    }
   };
 
   const handleModalClose = () => {
     setShowFinanceModal(false);
     setShowTermsModal(false);
-    setShowUtilityModal(false);
+    setShowContinueModal(false);
     setShowResidenceModal(false);
     checkUserProgress();
   };
@@ -216,6 +240,7 @@ const DashboardNavbar = ({
   };
 
   const getTooltipText = () => {
+    if (hasFacility) return "Facility created - Progress completed";
     const texts = [
       "Dashboard access completed",
       "Financial information completed",
@@ -226,6 +251,16 @@ const DashboardNavbar = ({
   };
 
   const getProgressBarSegments = () => {
+    if (hasFacility) {
+      return (
+        <>
+          <div className="h-2 flex-1 mx-[1px] rounded-sm bg-[#039994]" />
+          <div className="h-2 flex-1 mx-[1px] rounded-sm bg-[#039994]" />
+          <div className="h-2 flex-1 mx-[1px] rounded-sm bg-[#039994]" />
+          <div className="h-2 flex-1 mx-[1px] rounded-sm bg-[#039994]" />
+        </>
+      );
+    }
     const segments = [];
     for (let i = 1; i <= 4; i++) {
       segments.push(
@@ -242,6 +277,11 @@ const DashboardNavbar = ({
     return segments;
   };
 
+  const getProgressText = () => {
+    if (hasFacility) return "✓ Complete";
+    return `Step ${currentStage} of 4`;
+  };
+
   return (
     <>
       <header className="bg-white border-b border-gray-200">
@@ -255,30 +295,30 @@ const DashboardNavbar = ({
             </h1>
           </div>
 
-          <div className="flex-1 flex justify-center mx-4">
-            
-          </div>
+          <div className="flex-1 flex justify-center mx-4"></div>
 
           <div className="flex items-center space-x-6">
-            <div className="relative group">
-              <div
-                onClick={handleProgressClick}
-                className="cursor-pointer px-4 py-2 bg-gray-100 rounded-md flex items-center hover:bg-gray-200 transition-colors"
-              >
-                <div className="w-32 h-2 flex mr-3">
-                  {getProgressBarSegments()}
+            {!hasFacility && (
+              <div className="relative group">
+                <div
+                  onClick={handleProgressClick}
+                  className="cursor-pointer px-4 py-2 bg-gray-100 rounded-md flex items-center hover:bg-gray-200 transition-colors"
+                >
+                  <div className="w-32 h-2 flex mr-3">
+                    {getProgressBarSegments()}
+                  </div>
+                  <span className="text-xs font-medium">
+                    {getProgressText()}
+                  </span>
                 </div>
-                <span className="text-xs font-medium">
-                  Step {currentStage} of 4
-                </span>
-              </div>
-              <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 transform hidden group-hover:block">
-                <div className="relative bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
-                  {getTooltipText()}
-                  <span className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-800 rotate-45"></span>
+                <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 transform hidden group-hover:block">
+                  <div className="relative bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
+                    {getTooltipText()}
+                    <span className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-800 rotate-45"></span>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             <div className="relative group">
               <button
@@ -339,7 +379,7 @@ const DashboardNavbar = ({
 
       {showFinanceModal && <FinanceAndInstallerModal isOpen={showFinanceModal} onClose={handleModalClose} />}
       {showTermsModal && <ResidenceTermsAndAgreementModal isOpen={showTermsModal} onClose={handleModalClose} />}
-      {showUtilityModal && <UtilityAuthorizationModal isOpen={showUtilityModal} onClose={handleModalClose} />}
+      {showContinueModal && <ContinueResidentialFacilityCreation isOpen={showContinueModal} onClose={handleModalClose} />}
       {showResidenceModal && <AddResidenceFacilityModal isOpen={showResidenceModal} onClose={handleModalClose} />}
 
       <FeedbackModal

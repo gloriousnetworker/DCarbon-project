@@ -2,8 +2,9 @@ import React, { useState, useRef, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import SignatureModal from "./SignatureModal";
 import { jsPDF } from "jspdf";
+import InstapullAuthorizationModal from "./InstapullAuthorizationModal";
 
-export default function ResidenceTermsAndAgreementModal({ isOpen, onClose }) {
+export default function ResidenceTermsAndAgreementModal({ isOpen, onClose, selectedUtilityProvider }) {
   const [isChecked1, setIsChecked1] = useState(false);
   const [isChecked2, setIsChecked2] = useState(false);
   const [scrolledToBottom1, setScrolledToBottom1] = useState(false);
@@ -11,10 +12,8 @@ export default function ResidenceTermsAndAgreementModal({ isOpen, onClose }) {
   const [showSignatureModal, setShowSignatureModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [hasSigned, setHasSigned] = useState(false);
-  const [showIframe, setShowIframe] = useState(false);
-  const [iframeUrl, setIframeUrl] = useState("");
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [scale, setScale] = useState(1);
+  const [showInstapullAuthModal, setShowInstapullAuthModal] = useState(false);
+  const [instapullOpened, setInstapullOpened] = useState(false);
   const contentRef1 = useRef(null);
   const contentRef2 = useRef(null);
 
@@ -52,11 +51,22 @@ export default function ResidenceTermsAndAgreementModal({ isOpen, onClose }) {
     };
   }, []);
 
+  const openInstapullTab = () => {
+    const newTab = window.open('https://main.instapull.io/authorize/dcarbonsolutions/', '_blank');
+    if (newTab) {
+      setInstapullOpened(true);
+      toast.success('Instapull opened in new tab');
+    } else {
+      toast.error('Please allow pop-ups for this site to open Instapull');
+    }
+  };
+
   const acceptUserAgreementTerms = async () => {
     try {
       setIsLoading(true);
-      const userId = localStorage.getItem('userId');
-      const authToken = localStorage.getItem('authToken');
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const userId = loginResponse?.data?.user?.id;
+      const authToken = loginResponse?.data?.token;
       
       if (!userId || !authToken) {
         toast.error('Authentication required. Please log in again.');
@@ -92,52 +102,6 @@ export default function ResidenceTermsAndAgreementModal({ isOpen, onClose }) {
     }
   };
 
-  const initiateUtilityAuth = async () => {
-    const userEmail = localStorage.getItem('userEmail');
-    const authToken = localStorage.getItem('authToken');
-    const userId = localStorage.getItem('userId');
-
-    if (!userEmail || !authToken || !userId) {
-      toast.error('Authentication required. Please log in again.');
-      return false;
-    }
-
-    setIsLoading(true);
-    try {
-      const response = await fetch(
-        `https://services.dcarbon.solutions/api/auth/initiate-utility-auth/${userId}`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${authToken}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            utilityAuthEmail: userEmail
-          })
-        }
-      );
-
-      const data = await response.json();
-      
-      if (data.status === 'success') {
-        toast.success('Utility authorization initiated successfully!');
-        setIframeUrl('https://utilityapi.com/authorize/DCarbon_Solutions');
-        setShowIframe(true);
-        setScale(1);
-        return true;
-      } else {
-        toast.error('Failed to initiate utility authorization');
-        return false;
-      }
-    } catch (error) {
-      toast.error('Failed to initiate utility authorization');
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleSignFirst = () => {
     if (!isChecked1 || !isChecked2) {
       toast.error('Please accept both agreement terms first');
@@ -151,45 +115,13 @@ export default function ResidenceTermsAndAgreementModal({ isOpen, onClose }) {
     setHasSigned(true);
     const termsAccepted = await acceptUserAgreementTerms();
     if (termsAccepted) {
-      await initiateUtilityAuth();
+      openInstapullTab();
+      setShowInstapullAuthModal(true);
     }
   };
 
   const handleSignatureCancel = () => {
     setShowSignatureModal(false);
-  };
-
-  const handleIframeMessage = (event) => {
-    if (event.data && event.data.type === 'utility-auth-complete') {
-      setShowIframe(false);
-      setShowSuccessModal(true);
-    }
-  };
-
-  useEffect(() => {
-    if (showIframe) {
-      window.addEventListener('message', handleIframeMessage);
-      return () => window.removeEventListener('message', handleIframeMessage);
-    }
-  }, [showIframe]);
-
-  const zoomIn = () => {
-    setScale(prev => Math.min(prev + 0.25, 3));
-  };
-
-  const zoomOut = () => {
-    setScale(prev => Math.max(prev - 0.25, 0.5));
-  };
-
-  const resetZoom = () => {
-    setScale(1);
-  };
-
-  const handleIframeClose = () => {
-    setShowIframe(false);
-    setScale(1);
-    onClose();
-    window.location.reload();
   };
 
   const handleDownload = () => {
@@ -322,134 +254,33 @@ export default function ResidenceTermsAndAgreementModal({ isOpen, onClose }) {
     window.location.reload();
   };
 
-  const handleProceedToDashboard = () => {
-    setShowSuccessModal(false);
-    onClose();
-    window.location.reload();
-  };
-
-  if (showIframe) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-        <div className="relative w-full max-w-6xl h-[90vh] bg-white rounded-2xl overflow-hidden flex flex-col">
-          <div className="flex items-center justify-between p-4 border-b">
-            <h3 className="text-lg font-semibold text-[#039994]">Utility Authorization Portal</h3>
-            <div className="flex items-center gap-4">
-              <div className="flex gap-2">
-                <button
-                  onClick={zoomOut}
-                  className="bg-gray-500 text-white px-3 py-1 rounded-md text-sm hover:bg-gray-600 flex items-center gap-1"
-                  disabled={scale <= 0.5}
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  </svg>
-                  Zoom Out
-                </button>
-                <button
-                  onClick={resetZoom}
-                  className="bg-gray-500 text-white px-3 py-1 rounded-md text-sm hover:bg-gray-600 flex items-center gap-1"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M15 3H21V9M21 3L15 9M9 21H3V15M3 21L9 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  Reset
-                </button>
-                <button
-                  onClick={zoomIn}
-                  className="bg-gray-500 text-white px-3 py-1 rounded-md text-sm hover:bg-gray-600 flex items-center gap-1"
-                  disabled={scale >= 3}
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  </svg>
-                  Zoom In
-                </button>
-              </div>
-              <button
-                onClick={handleIframeClose}
-                className="text-red-500 hover:text-red-700"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </button>
-            </div>
-          </div>
-          
-          <div className="p-4 bg-blue-50 border-b border-blue-200">
-            <p className="text-sm text-blue-700">
-              <strong>Step 1:</strong> Enter the email of your DCarbon account you are authorizing for.
-            </p>
-            <p className="text-sm text-blue-700 mt-1">
-              <strong>Step 2:</strong> Enter the credentials (username and password) you use to login to your utility billing portal. This data is secure and not stored on our servers per utility regulations.
-            </p>
-          </div>
-
-          <div className="flex-1 p-4 bg-gray-100 overflow-hidden">
-            <div className="w-full h-full bg-white rounded-lg overflow-auto">
-              <div 
-                className="w-full h-full origin-top-left"
-                style={{ 
-                  transform: `scale(${scale})`,
-                  width: `${100/scale}%`,
-                  height: `${100/scale}%`
-                }}
-              >
-                <iframe
-                  src={iframeUrl}
-                  className="w-full h-full border-0"
-                  title="Utility Authorization"
-                  sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="p-3 border-t bg-gray-50 flex justify-between items-center">
-            <span className="text-sm text-gray-600">
-              Zoom: {Math.round(scale * 100)}%
-            </span>
-            <span className="text-sm text-gray-600">
-              Use scroll to navigate when zoomed in
-            </span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (showSuccessModal) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-        <div className="relative w-full max-w-md bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
-          <div className="p-6">
-            <div className="text-center">
-              <svg className="mx-auto h-12 w-12 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              <h2 className="mt-3 text-lg font-medium text-gray-900">Authorization Successful</h2>
-              <p className="mt-2 text-sm text-gray-500">Waiting for meters to be fetched. You can proceed to your dashboard.</p>
-            </div>
-            <div className="mt-6">
-              <button
-                onClick={handleProceedToDashboard}
-                className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#039994] hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#039994]"
-              >
-                Proceed to Dashboard
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isOpen && !showSignatureModal) return null;
+  if (!isOpen && !showSignatureModal && !showInstapullAuthModal) return null;
 
   return (
     <>
-      {isOpen && !showSignatureModal && (
+      {showSignatureModal && (
+        <SignatureModal
+          isOpen={showSignatureModal}
+          onClose={handleSignatureCancel}
+          onComplete={handleSignatureComplete}
+        />
+      )}
+
+      {showInstapullAuthModal && (
+        <InstapullAuthorizationModal
+          isOpen={showInstapullAuthModal}
+          onClose={() => {
+            setShowInstapullAuthModal(false);
+            handleCloseModal();
+          }}
+          utilityProvider={selectedUtilityProvider}
+          instapullOpened={instapullOpened}
+          openInstapullTab={openInstapullTab}
+          userId={JSON.parse(localStorage.getItem('loginResponse') || '{}')?.data?.user?.id}
+        />
+      )}
+
+      {isOpen && !showSignatureModal && !showInstapullAuthModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
           <div className="relative w-full max-w-4xl bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
             <div className="flex-shrink-0 p-6 border-b border-gray-200">
@@ -568,12 +399,6 @@ export default function ResidenceTermsAndAgreementModal({ isOpen, onClose }) {
           </div>
         </div>
       )}
-
-      <SignatureModal
-        isOpen={showSignatureModal}
-        onClose={handleSignatureCancel}
-        onComplete={handleSignatureComplete}
-      />
     </>
   );
 }

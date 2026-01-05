@@ -418,7 +418,6 @@ export default function SignatureModal({ isOpen, onClose, onComplete }) {
           </div>
         </div>
       </div>
-      `
     </div>
   );
 }

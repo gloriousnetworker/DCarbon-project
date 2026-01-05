@@ -7,7 +7,7 @@ const CustomerCard = dynamic(() => import("./RecentTransactions"), { ssr: false 
 const WelcomeModal = dynamic(() => import("./modals/WelcomeModal"), { ssr: false });
 const FinanceAndInstallerModal = dynamic(() => import("./modals/createfacility/FinanceAndInstallerModal"), { ssr: false });
 const ResidenceTermsAndAgreementModal = dynamic(() => import("./modals/createfacility/ResidenceTermsAndAgreementModal"), { ssr: false });
-const UtilityAuthorizationModal = dynamic(() => import("./modals/createfacility/UtilityAuthorizationModal"), { ssr: false });
+const ContinueResidentialFacilityCreation = dynamic(() => import("./modals/ContinueResidentialFacilityCreation"), { ssr: false });
 
 const ProgressTracker = ({ currentStage, onStageClick }) => {
   const stages = [
@@ -90,7 +90,7 @@ export default function DashboardOverview({ onSectionChange }) {
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [showFinanceModal, setShowFinanceModal] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
-  const [showUtilityModal, setShowUtilityModal] = useState(false);
+  const [showContinueModal, setShowContinueModal] = useState(false);
   const [userData, setUserData] = useState({
     userFirstName: "",
     userId: ""
@@ -99,6 +99,74 @@ export default function DashboardOverview({ onSectionChange }) {
   const [isLoading, setIsLoading] = useState(false);
   const [showProgressTracker, setShowProgressTracker] = useState(true);
   const [completedStages, setCompletedStages] = useState([1]);
+  const [meterStatus, setMeterStatus] = useState({
+    loading: false,
+    hasMeter: null,
+    lastChecked: null
+  });
+  const [hasFacility, setHasFacility] = useState(false);
+
+  const checkFacilityStatus = async (userId, authToken) => {
+    try {
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/residential-facility/get-user-facilities/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        }
+      );
+      const result = await response.json();
+      return result.status === 'success' && result.data && result.data.facilities && result.data.facilities.length > 0;
+    } catch (error) {
+      return false;
+    }
+  };
+
+  const checkMeterStatus = async () => {
+    const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+    const userId = loginResponse?.data?.user?.id;
+    const authToken = loginResponse?.data?.token;
+
+    if (!userId || !authToken) return;
+
+    setMeterStatus(prev => ({ ...prev, loading: true }));
+
+    try {
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/auth/utility-auth/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        }
+      );
+      const result = await response.json();
+
+      if (result.status === 'success' && result.data.length > 0) {
+        const authData = result.data[0];
+        setMeterStatus({
+          loading: false,
+          hasMeter: authData.hasMeter,
+          lastChecked: new Date()
+        });
+      } else {
+        setMeterStatus({
+          loading: false,
+          hasMeter: false,
+          lastChecked: new Date()
+        });
+      }
+    } catch (err) {
+      setMeterStatus({
+        loading: false,
+        hasMeter: null,
+        lastChecked: new Date()
+      });
+    }
+  };
 
   const checkStage2Completion = async (userId, authToken) => {
     try {
@@ -170,6 +238,15 @@ export default function DashboardOverview({ onSectionChange }) {
 
       if (!userId || !authToken) return;
 
+      const facilityStatus = await checkFacilityStatus(userId, authToken);
+      setHasFacility(facilityStatus);
+
+      if (facilityStatus) {
+        setShowProgressTracker(false);
+        setIsLoading(false);
+        return;
+      }
+
       const newCompletedStages = [1];
       let highestCompletedStage = 1;
 
@@ -231,7 +308,7 @@ export default function DashboardOverview({ onSectionChange }) {
     } else if (stageId === 3) {
       setShowTermsModal(true);
     } else if (stageId === 4) {
-      setShowUtilityModal(true);
+      setShowContinueModal(true);
     }
   };
 
@@ -250,9 +327,23 @@ export default function DashboardOverview({ onSectionChange }) {
     checkUserProgress();
   };
 
-  const handleCloseUtilityModal = () => {
-    setShowUtilityModal(false);
+  const handleCloseContinueModal = () => {
+    setShowContinueModal(false);
     checkUserProgress();
+  };
+
+  const getMeterStatusText = () => {
+    if (meterStatus.loading) return "Checking meter status...";
+    if (meterStatus.hasMeter === true) return "✓ Meters Fetched";
+    if (meterStatus.hasMeter === false) return "⏳ Fetching Meters";
+    return "Check Meter Status";
+  };
+
+  const getMeterStatusButtonClass = () => {
+    if (meterStatus.loading) return "px-3 py-1 rounded-md border text-xs font-semibold font-sfpro transition-colors duration-200 border-gray-300 bg-gray-50 text-gray-700";
+    if (meterStatus.hasMeter === true) return "px-3 py-1 rounded-md border text-xs font-semibold font-sfpro transition-colors duration-200 border-green-300 bg-green-50 text-green-700";
+    if (meterStatus.hasMeter === false) return "px-3 py-1 rounded-md border text-xs font-semibold font-sfpro transition-colors duration-200 border-red-300 bg-red-50 text-red-700";
+    return "px-3 py-1 rounded-md border text-xs font-semibold font-sfpro transition-colors duration-200 border-gray-300 bg-gray-50 text-gray-700";
   };
 
   useEffect(() => {
@@ -269,10 +360,21 @@ export default function DashboardOverview({ onSectionChange }) {
       });
 
       await checkUserProgress();
+      await checkMeterStatus();
     };
 
     loadUserData();
   }, []);
+
+  useEffect(() => {
+    if (userData.userId) {
+      const interval = setInterval(() => {
+        checkMeterStatus();
+      }, 300000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [userData.userId]);
 
   if (isLoading) {
     return (
@@ -292,9 +394,26 @@ export default function DashboardOverview({ onSectionChange }) {
             Dashboard Overview
           </h1>
         </div>
+        
+        {hasFacility && (
+          <div className="flex items-center gap-2">
+            {meterStatus.hasMeter === false && (
+              <span className="text-xs text-gray-500">
+                Meters usually fetch in 3-5 mins
+              </span>
+            )}
+            <button
+              onClick={checkMeterStatus}
+              disabled={meterStatus.loading}
+              className={getMeterStatusButtonClass()}
+            >
+              {getMeterStatusText()}
+            </button>
+          </div>
+        )}
       </div>
 
-      {showProgressTracker && (
+      {showProgressTracker && !hasFacility && (
         <ProgressTracker 
           currentStage={currentStage} 
           onStageClick={handleStageClick}
@@ -305,10 +424,6 @@ export default function DashboardOverview({ onSectionChange }) {
       <hr className="border-gray-300" />
 
       <Graph />
-
-      <hr className="border-gray-300" />
-
-      <CustomerCard />
 
       {showWelcomeModal && (
         <WelcomeModal 
@@ -334,10 +449,10 @@ export default function DashboardOverview({ onSectionChange }) {
         />
       )}
 
-      {showUtilityModal && (
-        <UtilityAuthorizationModal
-          isOpen={showUtilityModal}
-          onClose={handleCloseUtilityModal}
+      {showContinueModal && (
+        <ContinueResidentialFacilityCreation
+          isOpen={showContinueModal}
+          onClose={handleCloseContinueModal}
         />
       )}
     </div>
