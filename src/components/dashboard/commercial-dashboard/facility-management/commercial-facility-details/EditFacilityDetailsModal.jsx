@@ -112,6 +112,20 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
     }
   }, [meterSearch, selectedUtilityAuthEmail, userMeterData]);
 
+  useEffect(() => {
+    if (facility.meterIds && facility.meterIds.length > 0 && userMeterData.length > 0) {
+      const meterUid = facility.meterIds[0];
+      const foundMeter = findMeterByUid(meterUid, userMeterData);
+      if (foundMeter) {
+        setSelectedMeter(foundMeter);
+        setFormData(prev => ({
+          ...prev,
+          meterId: meterUid
+        }));
+      }
+    }
+  }, [facility.meterIds, userMeterData]);
+
   const getAuthToken = () => {
     const loginResponse = JSON.parse(localStorage.getItem("loginResponse") || '{}');
     return loginResponse?.data?.token;
@@ -204,12 +218,34 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
       if (response.data.status === "success") {
         const meterData = response.data.data || [];
         setUserMeterData(meterData);
+        
         if (meterData.length > 0) {
           setSelectedUtilityAuthEmail(meterData[0].utilityAuthEmail);
         }
-        const initialMeter = findMeterByUid(facility.meterId, meterData);
-        if (initialMeter) {
-          setSelectedMeter(initialMeter);
+        
+        if (facility.meterIds && facility.meterIds.length > 0) {
+          const meterUid = facility.meterIds[0];
+          const initialMeter = findMeterByUid(meterUid, meterData);
+          if (initialMeter) {
+            setSelectedMeter(initialMeter);
+            setFormData(prev => ({
+              ...prev,
+              meterId: meterUid
+            }));
+            
+            const selectedData = meterData.find(item => 
+              item.meters?.some(m => m.uid === meterUid)
+            );
+            if (selectedData) {
+              setSelectedUtilityAuthEmail(selectedData.utilityAuthEmail);
+              setSelectedUtilityProvider(selectedData.utilityProvider);
+            }
+          }
+        } else {
+          const initialMeter = findMeterByUid(facility.meterId, meterData);
+          if (initialMeter) {
+            setSelectedMeter(initialMeter);
+          }
         }
       }
     } catch (error) {
@@ -221,8 +257,10 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
   };
 
   const findMeterByUid = (uid, meterData) => {
+    if (!uid) return null;
+    
     for (const account of meterData) {
-      for (const meter of account.meters) {
+      for (const meter of account.meters || []) {
         if (meter.uid === uid) {
           return meter;
         }

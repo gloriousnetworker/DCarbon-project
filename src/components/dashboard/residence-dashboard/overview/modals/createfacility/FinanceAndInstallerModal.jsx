@@ -114,10 +114,6 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     ? financeCompanies.filter(company => company.name === referrerFinanceCompany.name)
     : financeCompanies;
 
-  const greenButtonKeywords = ['green button connect', 'green button', 'san diego gas and electric', 'southern california edison', 'pacific gas and electric', 'PG&E', 'SCE', 'SDG&E'];
-  const selectedProvider = utilityProviders.find(provider => provider.name === formData.utilityProvider);
-  const isGreenButtonUtility = selectedProvider && greenButtonKeywords.some(keyword => selectedProvider.name.toLowerCase().includes(keyword));
-
   const fetchUserAgreement = async () => {
     setLoadingUserAgreement(true);
     try {
@@ -185,12 +181,13 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   };
 
   const categorizeUtilities = (utilities) => {
+    const greenButtonUtilitiesList = ['San Diego Gas & Electric', 'Southern California Gas Company', 'Pacific Gas & Electric'];
+    
     const greenButtonUtils = [];
     const regularUtils = [];
     
     utilities.forEach(utility => {
-      const nameLower = utility.name.toLowerCase();
-      const isGreenButton = greenButtonKeywords.some(keyword => nameLower.includes(keyword));
+      const isGreenButton = greenButtonUtilitiesList.includes(utility.name);
       
       if (isGreenButton) {
         greenButtonUtils.push(utility);
@@ -596,7 +593,11 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
         openInstapullTab();
         setShowInstapullAuthModal(true);
       } else {
-        if (isGreenButtonUtility) {
+        const selectedProvider = utilityProviders.find(provider => provider.name === formData.utilityProvider);
+        const greenButtonUtilitiesList = ['San Diego Gas & Electric', 'Southern California Gas Company', 'Pacific Gas & Electric'];
+        const isGreenButton = selectedProvider && greenButtonUtilitiesList.includes(selectedProvider.name);
+        
+        if (isGreenButton) {
           setShowGreenButtonModal(true);
         } else {
           setShowAgreementModal(true);
@@ -766,7 +767,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
             handleCloseModal();
           }}
           selectedUtilityProvider={formData.utilityProvider}
-          isGreenButtonUtility={isGreenButtonUtility}
+          isGreenButtonUtility={false}
         />
       )}
 

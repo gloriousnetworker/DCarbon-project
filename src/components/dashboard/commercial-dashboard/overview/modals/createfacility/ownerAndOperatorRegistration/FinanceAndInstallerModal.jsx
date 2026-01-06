@@ -147,14 +147,13 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   };
 
   const categorizeUtilities = (utilities) => {
-    const greenButtonKeywords = ['green button connect', 'green button', 'san diego gas and electric', 'southern california edison', 'pacific gas and electric', 'PG&E', 'SCE', 'SDG&E'];
+    const greenButtonUtilitiesList = ['San Diego Gas & Electric', 'Southern California Gas Company', 'Pacific Gas & Electric'];
     
     const greenButtonUtils = [];
     const regularUtils = [];
     
     utilities.forEach(utility => {
-      const nameLower = utility.name.toLowerCase();
-      const isGreenButton = greenButtonKeywords.some(keyword => nameLower.includes(keyword));
+      const isGreenButton = greenButtonUtilitiesList.includes(utility.name);
       
       if (isGreenButton) {
         greenButtonUtils.push(utility);
