@@ -291,6 +291,13 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     }
   }, [isReferredByFinanceCompany]);
 
+  useEffect(() => {
+    if (formData.financeType.toLowerCase() === 'cash') {
+      setFile(null);
+      setUploadSuccess(false);
+    }
+  }, [formData.financeType]);
+
   const openInstapullTab = () => {
     const newTab = window.open('https://main.instapull.io/authorize/dcarbonsolutions/', '_blank');
     if (newTab) {
@@ -461,17 +468,10 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     if (!file) return;
     setUploading(true);
     try {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64data = reader.result;
-        localStorage.setItem('tempFinancialAgreement', base64data);
-        setUploadSuccess(true);
-        toast.success('Financial agreement uploaded successfully!');
-      };
-      reader.onerror = () => toast.error('Error reading file');
-      reader.readAsDataURL(file);
+      setUploadSuccess(true);
+      toast.success('Financial agreement ready for upload!');
     } catch (err) {
-      toast.error(err.message || 'Upload failed');
+      toast.error(err.message || 'Upload preparation failed');
     } finally {
       setUploading(false);
     }
