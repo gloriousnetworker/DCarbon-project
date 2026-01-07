@@ -1,39 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
-import InstapullAuthorizationModal from "./InstapullAuthorizationModal";
-
-const styles = {
-  modalContainer: 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4',
-  modal: 'relative w-full max-w-md bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col',
-  modalHeader: 'p-6',
-  modalTitle: 'font-[600] text-[20px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro mb-2',
-  closeButton: 'absolute top-4 right-4 z-10 w-6 h-6 flex items-center justify-center text-red-500 hover:text-red-700',
-  formWrapper: 'w-full space-y-6',
-  labelClass: 'block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]',
-  selectClass: 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#626060]',
-  buttonPrimary: 'w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro',
-  progressContainer: 'w-full flex items-center justify-between mb-6',
-  progressBarWrapper: 'flex-1 h-1 bg-gray-200 rounded-full mr-4',
-  progressBarActive: 'h-1 bg-[#039994] w-2/3 rounded-full',
-  progressStepText: 'text-sm font-medium text-gray-500 font-sfpro',
-  loadingContainer: 'flex flex-col items-center justify-center py-12',
-  loadingSpinner: 'w-12 h-12 border-4 border-gray-300 border-t-[#039994] rounded-full animate-spin mb-4',
-  loadingText: 'text-gray-600 font-sfpro',
-  emptyStateContainer: 'text-center py-8',
-  emptyStateIcon: 'w-20 h-20 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center',
-  emptyStateTitle: 'font-[600] text-[16px] text-gray-800 font-sfpro mb-2',
-  emptyStateText: 'text-sm text-gray-600 max-w-md mx-auto mb-6 font-sfpro',
-  facilityInfoBox: 'mt-4 p-4 border border-gray-200 rounded-lg bg-gray-50',
-  gridContainer: 'grid grid-cols-1 md:grid-cols-2 gap-3 mb-3',
-  infoLabel: 'text-xs text-gray-500 mb-1 font-sfpro',
-  infoValue: 'text-sm font-medium text-gray-800 font-sfpro',
-  statusBadgeGreen: 'px-2 py-1 text-xs rounded-full bg-green-100 text-green-800 font-sfpro',
-  statusBadgeYellow: 'px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800 font-sfpro',
-  statusBadgeGray: 'px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800 font-sfpro',
-  facilityCount: 'font-[600] text-[16px] text-gray-800 font-sfpro mb-4',
-  termsTextContainer: 'mt-4 text-center font-sfpro text-[10px] font-[800] leading-[100%] tracking-[-0.05em] underline text-[#1E1E1E]',
-  greenButtonBadge: 'inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full bg-green-100 text-green-800 font-sfpro'
-};
+import InstapullAuthorizationModal from "../InstapullAuthorizationModal";
 
 export default function ResidentialFacilityModal({ isOpen, onClose, currentStep }) {
   const [userFacilities, setUserFacilities] = useState([]);
@@ -44,9 +11,13 @@ export default function ResidentialFacilityModal({ isOpen, onClose, currentStep 
   const [selectedUtilityProvider, setSelectedUtilityProvider] = useState(null);
   const [showInstapullAuthModal, setShowInstapullAuthModal] = useState(false);
   const [instapullOpened, setInstapullOpened] = useState(false);
+  const [showMainModal, setShowMainModal] = useState(false);
+
+  const greenButtonUtilities = ['San Diego Gas and Electric', 'Pacific Gas and Electric', 'Southern California Edison', 'PG&E', 'SCE', 'SDG&E'];
 
   useEffect(() => {
     if (isOpen) {
+      setShowMainModal(true);
       const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
       const userId = loginResponse?.data?.user?.id;
       const authToken = loginResponse?.data?.token;
@@ -57,13 +28,13 @@ export default function ResidentialFacilityModal({ isOpen, onClose, currentStep 
       if (userId && authToken) {
         fetchUserFacilities(userId, authToken);
       }
+    } else {
+      setShowMainModal(false);
     }
   }, [isOpen]);
 
   const isGreenButtonUtility = (utilityProvider) => {
-    const greenButtonKeywords = ['green button connect', 'green button', 'san diego gas and electric', 'southern california edison', 'pacific gas and electric', 'PG&E', 'SCE', 'SDG&E'];
-    const nameLower = utilityProvider.toLowerCase();
-    return greenButtonKeywords.some(keyword => nameLower.includes(keyword));
+    return greenButtonUtilities.includes(utilityProvider);
   };
 
   const openInstapullTab = () => {
@@ -116,28 +87,27 @@ export default function ResidentialFacilityModal({ isOpen, onClose, currentStep 
     if (facility) {
       setSelectedUtilityProvider(facility.utilityProvider);
       openInstapullTab();
+      setShowMainModal(false);
       setShowInstapullAuthModal(true);
     }
   };
 
-  const getFacilityStatusBadge = (status) => {
-    const statusLower = status?.toLowerCase();
-    if (statusLower === 'active') return <span className={styles.statusBadgeGreen}>Active</span>;
-    if (statusLower === 'pending') return <span className={styles.statusBadgeYellow}>Pending</span>;
-    if (statusLower === 'inactive') return <span className={styles.statusBadgeGray}>Inactive</span>;
-    return <span className={styles.statusBadgeGreen}>Draft</span>;
+  const closeAllModals = () => {
+    setShowMainModal(false);
+    setShowInstapullAuthModal(false);
+    onClose();
   };
 
-  if (!isOpen && !showInstapullAuthModal) return null;
+  if (!isOpen && !showInstapullAuthModal && !showMainModal) return null;
 
   return (
     <>
-      {isOpen && !showInstapullAuthModal && (
-        <div className={styles.modalContainer} onClick={onClose}>
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+      {showMainModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="relative w-full max-w-md bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
             <button
-              onClick={onClose}
-              className={styles.closeButton}
+              onClick={closeAllModals}
+              className="absolute top-4 right-4 z-10 w-6 h-6 flex items-center justify-center text-red-500 hover:text-red-700"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -145,128 +115,99 @@ export default function ResidentialFacilityModal({ isOpen, onClose, currentStep 
             </button>
 
             <div className="flex-1 overflow-y-auto">
-              <div className={styles.modalHeader}>
-                <h2 className={styles.modalTitle}>Continue Pending Registrations</h2>
+              <div className="p-6">
+                <h2 className="font-[600] text-[20px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro mb-2">
+                  Continue Pending Registrations
+                </h2>
 
-                <div className={styles.progressContainer}>
-                  <div className={styles.progressBarWrapper}>
-                    <div className={styles.progressBarActive} style={{ width: '75%' }}></div>
-                  </div>
-                  <span className={styles.progressStepText}>04/05</span>
+                <div className="w-full h-1 bg-gray-200 rounded-full mb-1">
+                  <div className="h-1 bg-[#039994] rounded-full" style={{ width: '75%' }}></div>
+                </div>
+                <div className="text-right mb-6">
+                  <span className="text-[12px] font-medium text-gray-500 font-sfpro">4/5</span>
                 </div>
 
                 {loading && (
-                  <div className={styles.loadingContainer}>
-                    <div className={styles.loadingSpinner}></div>
-                    <p className={styles.loadingText}>Loading your facilities...</p>
+                  <div className="mb-4 p-3 bg-gray-50 rounded-md border border-gray-200">
+                    <div className="animate-pulse">
+                      <div className="h-4 bg-gray-300 rounded w-3/4 mb-2"></div>
+                      <div className="h-3 bg-gray-300 rounded w-full"></div>
+                    </div>
                   </div>
                 )}
 
                 {!loading && userFacilities.length > 0 && (
-                  <div className={styles.formWrapper}>
-                    <div>
-                      <h3 className={styles.facilityCount}>
-                        Existing Facilities ({userFacilities.length})
-                      </h3>
-                      <div className="mb-6">
-                        <select 
-                          value={selectedFacility}
-                          onChange={(e) => setSelectedFacility(e.target.value)}
-                          className={styles.selectClass}
-                        >
-                          {userFacilities.map((facility) => (
-                            <option key={facility.id} value={facility.id}>
-                              {facility.facilityName || 'Residential Facility'} - {facility.utilityProvider}
-                            </option>
-                          ))}
-                        </select>
-
-                        {selectedFacility && (
-                          <div className={styles.facilityInfoBox}>
-                            {userFacilities.map((facility) => {
-                              if (facility.id === selectedFacility) {
-                                return (
-                                  <div key={facility.id}>
-                                    <div className={styles.gridContainer}>
-                                      <div>
-                                        <p className={styles.infoLabel}>Facility Name</p>
-                                        <p className={styles.infoValue}>{facility.facilityName}</p>
-                                      </div>
-                                      <div>
-                                        <p className={styles.infoLabel}>Utility Provider</p>
-                                        <div className="flex items-center gap-2">
-                                          <p className={styles.infoValue}>{facility.utilityProvider}</p>
-                                          {isGreenButtonUtility(facility.utilityProvider) && (
-                                            <span className={styles.greenButtonBadge}>
-                                              Green Button
-                                            </span>
-                                          )}
-                                        </div>
-                                      </div>
-                                      <div>
-                                        <p className={styles.infoLabel}>Status</p>
-                                        <div className="flex items-center gap-2">
-                                          {getFacilityStatusBadge(facility.status)}
-                                        </div>
-                                      </div>
-                                      <div>
-                                        <p className={styles.infoLabel}>Finance Type</p>
-                                        <p className={styles.infoValue}>{facility.financeType}</p>
-                                      </div>
-                                      <div className="md:col-span-2">
-                                        <p className={styles.infoLabel}>Address</p>
-                                        <p className={styles.infoValue}>{facility.address}</p>
-                                      </div>
-                                      <div>
-                                        <p className={styles.infoLabel}>Installation Date</p>
-                                        <p className={styles.infoValue}>
-                                          {new Date(facility.createdAt).toLocaleDateString()}
-                                        </p>
-                                      </div>
-                                      <div>
-                                        <p className={styles.infoLabel}>Meter ID</p>
-                                        <p className={styles.infoValue}>{facility.meterId}</p>
-                                      </div>
-                                    </div>
-                                  </div>
-                                );
-                              }
-                              return null;
-                            })}
+                  <div className="border border-gray-300 rounded-lg p-4 bg-white mb-4">
+                    <div className="font-sfpro font-[600] text-[14px] text-blue-700 mb-2">
+                      Existing Facilities ({userFacilities.length})
+                    </div>
+                    <select 
+                      value={selectedFacility}
+                      onChange={(e) => setSelectedFacility(e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded-md text-sm font-sfpro mb-3"
+                    >
+                      {userFacilities.map((facility) => {
+                        const isGreenButton = isGreenButtonUtility(facility.utilityProvider);
+                        return (
+                          <option key={facility.id} value={facility.id} className={isGreenButton ? "text-green-600 font-medium" : ""}>
+                            {facility.nickname || facility.facilityName} - {facility.utilityProvider}
+                            {isGreenButton && " ✓"}
+                          </option>
+                        );
+                      })}
+                    </select>
+                    {selectedFacility && (
+                      <div className="mt-2 p-2 bg-gray-50 rounded border text-xs font-sfpro mb-3">
+                        {userFacilities.find(f => f.id === selectedFacility)?.status && (
+                          <p>Status: <span className="font-semibold">{userFacilities.find(f => f.id === selectedFacility)?.status}</span></p>
+                        )}
+                        {isGreenButtonUtility(userFacilities.find(f => f.id === selectedFacility)?.utilityProvider) && (
+                          <div className="flex items-center mt-1">
+                            <div className="w-3 h-3 bg-green-500 rounded-full mr-1 flex items-center justify-center">
+                              <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                            <span className="text-green-600 font-medium">Green Button Utility</span>
                           </div>
                         )}
                       </div>
-
-                      <button
-                        onClick={handleContinueRegistration}
-                        disabled={!selectedFacility}
-                        className={styles.buttonPrimary}
-                      >
-                        Continue Registration
-                      </button>
-                    </div>
+                    )}
+                    <button
+                      onClick={handleContinueRegistration}
+                      disabled={loading || !selectedFacility}
+                      className={`w-full rounded-md border border-green-500 bg-white text-green-500 font-semibold py-3 hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-green-500 font-sfpro text-[14px] ${
+                        loading || !selectedFacility
+                          ? 'bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed' 
+                          : ''
+                      }`}
+                    >
+                      Continue Registration
+                    </button>
                   </div>
                 )}
 
                 {!loading && userFacilities.length === 0 && (
-                  <div className={styles.emptyStateContainer}>
-                    <div className={styles.emptyStateIcon}>
-                      <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  <div className="border border-gray-300 rounded-lg p-6 bg-white mb-4 text-center">
+                    <div className="text-gray-500 mb-3">
+                      <svg className="w-12 h-12 mx-auto mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                       </svg>
+                      <p className="font-sfpro text-[14px] font-medium text-gray-600">No pending registrations found.</p>
+                      <p className="font-sfpro text-[12px] text-gray-500 mt-1">Click "Add Residential Facility" to start a new registration.</p>
                     </div>
-                    <h4 className={styles.emptyStateTitle}>
-                      No Pending Facilities Found
-                    </h4>
-                    <p className={styles.emptyStateText}>
-                      You don't have any pending residential facilities to continue registration with.
-                    </p>
+                    <button
+                      onClick={closeAllModals}
+                      className="mt-3 rounded-md border border-[#039994] text-[#039994] font-semibold py-2 px-4 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px]"
+                    >
+                      Close
+                    </button>
                   </div>
                 )}
 
-                <div className={styles.termsTextContainer}>
+                <div className="mt-4 text-center font-sfpro text-[10px] font-[800] leading-[100%] tracking-[-0.05em] underline text-[#1E1E1E]">
                   <span>Terms and Conditions</span>
-                  <span className="mx-2">•</span>
+                  <span className="mx-2">&</span>
                   <span>Privacy Policy</span>
                 </div>
               </div>

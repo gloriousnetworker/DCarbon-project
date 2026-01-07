@@ -18,12 +18,21 @@ const styles = {
   spinner: 'inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin',
   divider: 'my-6 border-t border-gray-200',
   infoBox: 'flex items-start gap-3 p-4 bg-[#039994] bg-opacity-5 border-l-4 border-[#039994] rounded-r-lg',
-  infoIcon: 'flex-shrink-0 w-5 h-5 text-[#039994] mt-0.5'
+  infoIcon: 'flex-shrink-0 w-5 h-5 text-[#039994] mt-0.5',
+  toggleContainer: 'flex items-center justify-between p-4 bg-gray-50 rounded-lg mb-4',
+  toggleLabel: 'text-[14px] font-[500] text-gray-700',
+  toggleButton: 'relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#039994] focus:ring-offset-2',
+  toggleButtonEnabled: 'bg-[#039994]',
+  toggleButtonDisabled: 'bg-gray-300',
+  toggleCircle: 'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
+  toggleCircleEnabled: 'translate-x-6',
+  toggleCircleDisabled: 'translate-x-1'
 };
 
 export default function InstapullAuthorizationModal({ isOpen, onClose, utilityProvider, instapullOpened, openInstapullTab, userId }) {
   const [submitting, setSubmitting] = useState(false);
   const [checkingMeters, setCheckingMeters] = useState(false);
+  const [sameEmail, setSameEmail] = useState(true);
   const [formData, setFormData] = useState({
     email: "",
     userType: "RESIDENTIAL",
@@ -38,14 +47,33 @@ export default function InstapullAuthorizationModal({ isOpen, onClose, utilityPr
       setFormData(prev => ({
         ...prev,
         email: userEmail,
+        authorizationEmail: userEmail,
         utilityType: utilityProvider
       }));
+      setSameEmail(true);
     }
   }, [isOpen, utilityProvider]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleToggleChange = () => {
+    const newSameEmail = !sameEmail;
+    setSameEmail(newSameEmail);
+    
+    if (newSameEmail) {
+      setFormData(prev => ({ 
+        ...prev, 
+        authorizationEmail: prev.email 
+      }));
+    } else {
+      setFormData(prev => ({ 
+        ...prev, 
+        authorizationEmail: "" 
+      }));
+    }
   };
 
   const checkMeterStatus = async () => {
@@ -75,6 +103,7 @@ export default function InstapullAuthorizationModal({ isOpen, onClose, utilityPr
           });
           setTimeout(() => {
             onClose();
+            window.location.reload();
           }, 1500);
         } else {
           toast.loading('Meters are being fetched. This takes 3-5 minutes.', {
@@ -103,7 +132,7 @@ export default function InstapullAuthorizationModal({ isOpen, onClose, utilityPr
       return;
     }
 
-    if (!formData.authorizationEmail.trim()) {
+    if (!sameEmail && !formData.authorizationEmail.trim()) {
       toast.error('Authorization email is required');
       return;
     }
@@ -118,7 +147,7 @@ export default function InstapullAuthorizationModal({ isOpen, onClose, utilityPr
         email: formData.email.trim(),
         userType: formData.userType,
         utilityType: formData.utilityType,
-        authorizationEmail: formData.authorizationEmail.trim() || undefined
+        authorizationEmail: sameEmail ? formData.email.trim() : formData.authorizationEmail.trim()
       };
 
       const response = await axios.post(
@@ -176,6 +205,18 @@ export default function InstapullAuthorizationModal({ isOpen, onClose, utilityPr
         </div>
 
         <div className={styles.modalBody}>
+          <div className={styles.toggleContainer}>
+            <span className={styles.toggleLabel}>Is your account email the same as your authorization email?</span>
+            <button
+              type="button"
+              className={`${styles.toggleButton} ${sameEmail ? styles.toggleButtonEnabled : styles.toggleButtonDisabled}`}
+              onClick={handleToggleChange}
+              aria-pressed={sameEmail}
+            >
+              <span className={`${styles.toggleCircle} ${sameEmail ? styles.toggleCircleEnabled : styles.toggleCircleDisabled}`} />
+            </button>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
               <label className={styles.labelClass}>
@@ -221,21 +262,23 @@ export default function InstapullAuthorizationModal({ isOpen, onClose, utilityPr
               />
             </div>
 
-            <div>
-              <label className={styles.labelClass}>
-                Authorization Email <span className="text-[#039994]">*</span>
-              </label>
-              <input
-                type="email"
-                name="authorizationEmail"
-                value={formData.authorizationEmail}
-                onChange={handleInputChange}
-                className={styles.inputClass}
-                placeholder="auth.email@company.com"
-                required
-              />
-              <p className={styles.noteText}>Required for Green Button authorization</p>
-            </div>
+            {!sameEmail && (
+              <div>
+                <label className={styles.labelClass}>
+                  Authorization Email <span className="text-[#039994]">*</span>
+                </label>
+                <input
+                  type="email"
+                  name="authorizationEmail"
+                  value={formData.authorizationEmail}
+                  onChange={handleInputChange}
+                  className={styles.inputClass}
+                  placeholder="auth.email@company.com"
+                  required
+                />
+                <p className={styles.noteText}>Required for Green Button authorization</p>
+              </div>
+            )}
           </div>
 
           <div className={styles.divider}></div>
@@ -258,13 +301,13 @@ export default function InstapullAuthorizationModal({ isOpen, onClose, utilityPr
               onClick={openInstapullTab}
               className={styles.buttonSecondary}
             >
-              {instapullOpened ? '↻ Reopen Instapull' : 'Open Instapull'}
+              {instapullOpened ? 'Reinitiate Authorization' : 'Open Instapull'}
             </button>
 
             <button
               type="button"
               onClick={handleSubmit}
-              disabled={submitting || checkingMeters}
+              disabled={submitting || checkingMeters || (!sameEmail && !formData.authorizationEmail.trim())}
               className={styles.buttonPrimary}
             >
               {submitting || checkingMeters ? (
