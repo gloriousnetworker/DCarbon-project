@@ -3,42 +3,29 @@ import { toast } from "react-hot-toast";
 import InstapullAuthorizationModal from "./InstapullAuthorizationModal";
 
 const styles = {
-  modalContainer: 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 p-4 backdrop-blur-sm',
-  modal: 'relative w-full max-w-2xl bg-white rounded-xl shadow-2xl overflow-hidden',
-  modalHeader: 'px-8 pt-8 pb-6 bg-gradient-to-br from-[#039994] to-[#02857f]',
-  modalTitle: 'font-[600] text-[28px] leading-[110%] tracking-[-0.05em] text-white font-sans mb-2',
-  modalSubtitle: 'text-[15px] text-white text-opacity-90 leading-relaxed',
-  closeButton: 'absolute top-6 right-6 text-white hover:text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 cursor-pointer transition-all',
-  modalBody: 'px-8 py-8',
-  buttonPrimary: 'w-full rounded-lg bg-[#039994] text-white font-semibold py-3 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] focus:ring-offset-2 font-sans transition-all disabled:opacity-50 disabled:cursor-not-allowed',
-  spinner: 'inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin',
-  infoBox: 'flex items-start gap-3 p-4 bg-[#039994] bg-opacity-5 border-l-4 border-[#039994] rounded-r-lg mb-6',
-  infoIcon: 'flex-shrink-0 w-5 h-5 text-[#039994] mt-0.5',
-  cardContainer: 'border-2 border-gray-200 rounded-xl p-6 hover:border-[#039994] hover:shadow-lg transition-all cursor-pointer group',
-  iconCircle: 'w-16 h-16 rounded-full bg-[#039994] bg-opacity-10 flex items-center justify-center mb-4 group-hover:bg-[#039994] group-hover:bg-opacity-20 transition-all',
-  cardTitle: 'font-[600] text-[20px] leading-[110%] tracking-[-0.05em] text-[#1E1E1E] font-sans mb-2',
-  cardDescription: 'font-sans text-[14px] leading-[140%] tracking-[-0.03em] font-[400] text-gray-600 mb-6',
-  selectClass: 'w-full p-3 border border-gray-300 rounded-lg text-sm font-sans focus:ring-2 focus:ring-[#039994] focus:border-[#039994] outline-none transition-all',
-  facilityInfoBox: 'mt-4 p-4 border border-gray-200 rounded-lg bg-gray-50',
-  gridContainer: 'grid grid-cols-1 md:grid-cols-2 gap-3 mb-3',
-  infoLabel: 'text-xs text-gray-500 mb-1',
-  infoValue: 'text-sm font-medium text-gray-800',
-  utilityBadgeGreen: 'inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full bg-green-100 text-green-800',
-  utilityBadgeBlue: 'inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800',
-  statusBadgeGreen: 'px-2 py-1 text-xs rounded-full bg-green-100 text-green-800',
-  statusBadgeYellow: 'px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800',
-  statusBadgeGray: 'px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800',
-  statusBadgeBlue: 'px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800',
-  emptyStateIcon: 'w-20 h-20 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center',
-  emptyStateTitle: 'font-[600] text-[16px] text-gray-800 font-sans mb-2',
-  emptyStateText: 'text-sm text-gray-600 max-w-md mx-auto mb-6 font-sans',
-  loadingContainer: 'flex flex-col items-center justify-center py-12',
-  loadingSpinner: 'w-12 h-12 border-4 border-gray-300 border-t-[#039994] rounded-full animate-spin mb-4',
-  loadingText: 'text-gray-600',
-  divider: 'my-6 border-t border-gray-200',
-  footerNote: 'font-sans text-[12px] leading-[140%] tracking-[-0.03em] font-[400] text-gray-500 text-center',
-  facilityCount: 'font-[600] text-[16px] text-gray-800 font-sans',
-  selectHint: 'text-sm text-gray-500'
+  modalContainer: 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4',
+  modal: 'relative w-full max-w-md bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col',
+  modalHeader: 'p-6',
+  modalTitle: 'font-[600] text-[20px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro mb-2',
+  closeButton: 'absolute top-4 right-4 z-10 w-6 h-6 flex items-center justify-center text-red-500 hover:text-red-700',
+  selectClass: 'w-full p-2 border border-gray-300 rounded-md text-sm font-sfpro mb-3',
+  buttonPrimary: 'w-full rounded-md border border-green-500 bg-white text-green-500 font-semibold py-3 hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-green-500 font-sfpro text-[14px]',
+  progressContainer: 'w-full h-1 bg-gray-200 rounded-full mb-1',
+  progressBarActive: 'h-1 bg-[#039994] rounded-full',
+  progressStepText: 'text-right mb-6 text-[12px] font-medium text-gray-500 font-sfpro',
+  loadingContainer: 'mb-4 p-3 bg-gray-50 rounded-md border border-gray-200',
+  loadingPulse: 'animate-pulse',
+  loadingLine1: 'h-4 bg-gray-300 rounded w-3/4 mb-2',
+  loadingLine2: 'h-3 bg-gray-300 rounded w-full',
+  facilityContainer: 'border border-gray-300 rounded-lg p-4 bg-white mb-4',
+  facilityCount: 'font-sfpro font-[600] text-[14px] text-blue-700 mb-2',
+  facilityInfo: 'mt-2 p-2 bg-gray-50 rounded border text-xs font-sfpro mb-3',
+  emptyStateContainer: 'border border-gray-300 rounded-lg p-6 bg-white mb-4 text-center',
+  emptyStateIcon: 'w-12 h-12 mx-auto mb-3 text-gray-400',
+  emptyStateText: 'font-sfpro text-[14px] font-medium text-gray-600',
+  emptyStateSubtext: 'font-sfpro text-[12px] text-gray-500 mt-1',
+  closeButtonSecondary: 'mt-3 rounded-md border border-[#039994] text-[#039994] font-semibold py-2 px-4 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px]',
+  termsContainer: 'mt-4 text-center font-sfpro text-[10px] font-[800] leading-[100%] tracking-[-0.05em] underline text-[#1E1E1E]'
 };
 
 export default function ResidentialFacilityModal({ isOpen, onClose, currentStep }) {
@@ -50,7 +37,9 @@ export default function ResidentialFacilityModal({ isOpen, onClose, currentStep 
   const [selectedUtilityProvider, setSelectedUtilityProvider] = useState(null);
   const [showInstapullAuthModal, setShowInstapullAuthModal] = useState(false);
   const [instapullOpened, setInstapullOpened] = useState(false);
-  const [utilityProviders, setUtilityProviders] = useState([]);
+  const [currentStage, setCurrentStage] = useState(1);
+
+  const greenButtonUtilities = ['San Diego Gas and Electric', 'Pacific Gas and Electric', 'Southern California Edison', 'PG&E', 'SCE', 'SDG&E'];
 
   useEffect(() => {
     if (isOpen) {
@@ -63,36 +52,16 @@ export default function ResidentialFacilityModal({ isOpen, onClose, currentStep 
       
       if (userId && authToken) {
         fetchUserFacilities(userId, authToken);
-        fetchUtilityProviders(authToken);
+        checkUserProgress(userId, authToken);
       }
     }
   }, [isOpen]);
 
-  const fetchUtilityProviders = async (token) => {
-    try {
-      const response = await fetch(
-        'https://services.dcarbon.solutions/api/auth/utility-providers',
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        }
-      );
-      
-      const data = await response.json();
-      if (data.status === 'success') {
-        setUtilityProviders(data.data);
-      }
-    } catch (error) {
-      console.error('Error fetching utility providers:', error);
-    }
-  };
-
   const isGreenButtonUtility = (utilityProvider) => {
-    const greenButtonKeywords = ['green button connect', 'green button', 'san diego gas and electric', 'southern california edison', 'pacific gas and electric', 'PG&E', 'SCE', 'SDG&E'];
-    const nameLower = utilityProvider.toLowerCase();
-    return greenButtonKeywords.some(keyword => nameLower.includes(keyword));
+    if (!utilityProvider) return false;
+    return greenButtonUtilities.some(utility => 
+      utilityProvider.toLowerCase().includes(utility.toLowerCase())
+    );
   };
 
   const openInstapullTab = () => {
@@ -122,9 +91,12 @@ export default function ResidentialFacilityModal({ isOpen, onClose, currentStep 
       const data = await response.json();
       if (data.status === 'success' && data.data?.facilities) {
         const facilities = data.data.facilities;
-        setUserFacilities(facilities);
-        if (facilities.length > 0) {
-          setSelectedFacility(facilities[0].id);
+        const pendingFacilities = facilities.filter(facility => 
+          facility.status && facility.status.toLowerCase() === 'pending'
+        );
+        setUserFacilities(pendingFacilities);
+        if (pendingFacilities.length > 0) {
+          setSelectedFacility(pendingFacilities[0].id);
         }
       } else {
         setUserFacilities([]);
@@ -137,6 +109,102 @@ export default function ResidentialFacilityModal({ isOpen, onClose, currentStep 
     }
   };
 
+  const checkUserProgress = async (userId, authToken) => {
+    try {
+      const stageChecks = [
+        { stage: 2, check: () => checkStage2Completion(userId, authToken) },
+        { stage: 3, check: () => checkStage3Completion(userId, authToken) },
+        { stage: 4, check: () => checkStage4Completion(userId, authToken) },
+        { stage: 5, check: () => checkStage5Completion(userId, authToken) }
+      ];
+
+      let highestCompletedStage = 1;
+
+      for (const { stage, check } of stageChecks) {
+        const isCompleted = await check();
+        if (isCompleted) {
+          highestCompletedStage = stage;
+        }
+      }
+
+      setCurrentStage(highestCompletedStage);
+    } catch (error) {
+      console.error('Error checking user progress:', error);
+    }
+  };
+
+  const checkStage2Completion = async (userId, authToken) => {
+    try {
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        }
+      );
+      const result = await response.json();
+      return result.status === 'success' && result.data?.commercialUser?.ownerAddress;
+    } catch (error) {
+      return false;
+    }
+  };
+
+  const checkStage3Completion = async (userId, authToken) => {
+    try {
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/user/agreement/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        }
+      );
+      const result = await response.json();
+      return result.status === 'success' && result.data?.termsAccepted;
+    } catch (error) {
+      return false;
+    }
+  };
+
+  const checkStage4Completion = async (userId, authToken) => {
+    try {
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/user/financial-info/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        }
+      );
+      const result = await response.json();
+      return result.status === 'success' && result.data?.financialInfo;
+    } catch (error) {
+      return false;
+    }
+  };
+
+  const checkStage5Completion = async (userId, authToken) => {
+    try {
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        }
+      );
+      const result = await response.json();
+      return result.status === 'success' && result.data?.length > 0 && result.data.some(item => item.meters?.meters?.length > 0);
+    } catch (error) {
+      return false;
+    }
+  };
+
   const handleContinueRegistration = () => {
     const facility = userFacilities.find(f => f.id === selectedFacility);
     if (facility) {
@@ -144,28 +212,6 @@ export default function ResidentialFacilityModal({ isOpen, onClose, currentStep 
       openInstapullTab();
       setShowInstapullAuthModal(true);
     }
-  };
-
-  const getFacilityStatusBadge = (status) => {
-    const statusLower = status?.toLowerCase();
-    if (statusLower === 'active') return <span className={styles.statusBadgeGreen}>Active</span>;
-    if (statusLower === 'pending') return <span className={styles.statusBadgeYellow}>Pending</span>;
-    if (statusLower === 'inactive') return <span className={styles.statusBadgeGray}>Inactive</span>;
-    return <span className={styles.statusBadgeBlue}>Draft</span>;
-  };
-
-  const getUtilityTypeBadge = (utilityProvider) => {
-    const isGreenButton = isGreenButtonUtility(utilityProvider);
-    return isGreenButton ? (
-      <span className={styles.utilityBadgeGreen}>
-        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-        </svg>
-        Green Button
-      </span>
-    ) : (
-      <span className={styles.utilityBadgeBlue}>Standard</span>
-    );
   };
 
   if (!isOpen && !showInstapullAuthModal) return null;
@@ -179,143 +225,102 @@ export default function ResidentialFacilityModal({ isOpen, onClose, currentStep 
               onClick={onClose}
               className={styles.closeButton}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
 
-            <div className={styles.modalHeader}>
-              <h2 className={styles.modalTitle}>Existing Residential Facilities</h2>
-              <p className={styles.modalSubtitle}>
-                Continue authorization for your existing solar facilities
-              </p>
-            </div>
+            <div className="flex-1 overflow-y-auto">
+              <div className={styles.modalHeader}>
+                <h2 className={styles.modalTitle}>Continue Pending Registrations</h2>
 
-            <div className={styles.modalBody}>
-              <div className={styles.infoBox}>
-                <svg className={styles.infoIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <div>
-                  <p className="text-[14px] font-[500] text-[#039994] mb-1">Complete Your Registration</p>
-                  <p className="text-[13px] text-gray-700 leading-relaxed">Select a facility to continue the authorization process and connect your utility data.</p>
+                <div className={styles.progressContainer}>
+                  <div className={styles.progressBarActive} style={{ width: `${(currentStage-1)*25}%` }}></div>
                 </div>
-              </div>
+                <div className={styles.progressStepText}>{currentStage-1}/4</div>
 
-              {loading && (
-                <div className={styles.loadingContainer}>
-                  <div className={styles.loadingSpinner}></div>
-                  <p className={styles.loadingText}>Loading your facilities...</p>
-                </div>
-              )}
-
-              {!loading && userFacilities.length > 0 && (
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className={styles.facilityCount}>
-                      Your Facilities ({userFacilities.length})
-                    </h3>
-                    <div className={styles.selectHint}>
-                      Select one to continue registration
+                {loading && (
+                  <div className={styles.loadingContainer}>
+                    <div className={styles.loadingPulse}>
+                      <div className={styles.loadingLine1}></div>
+                      <div className={styles.loadingLine2}></div>
                     </div>
                   </div>
+                )}
 
-                  <div className="mb-6">
+                {!loading && userFacilities.length > 0 && (
+                  <div className={styles.facilityContainer}>
+                    <div className={styles.facilityCount}>
+                      Existing Facilities ({userFacilities.length})
+                    </div>
                     <select 
                       value={selectedFacility}
                       onChange={(e) => setSelectedFacility(e.target.value)}
                       className={styles.selectClass}
                     >
-                      {userFacilities.map((facility) => (
-                        <option key={facility.id} value={facility.id}>
-                          {facility.facilityName || 'Residential Facility'} - {facility.utilityProvider} ({facility.status})
-                        </option>
-                      ))}
+                      {userFacilities.map((facility) => {
+                        const isGreenButton = isGreenButtonUtility(facility.utilityProvider);
+                        return (
+                          <option key={facility.id} value={facility.id} className={isGreenButton ? "text-green-600 font-medium" : ""}>
+                            {facility.facilityName || 'Residential Facility'} - {facility.utilityProvider}
+                            {isGreenButton && " ✓"}
+                          </option>
+                        );
+                      })}
                     </select>
-
                     {selectedFacility && (
-                      <div className={styles.facilityInfoBox}>
-                        {userFacilities.map((facility) => {
-                          if (facility.id === selectedFacility) {
-                            return (
-                              <div key={facility.id}>
-                                <div className={styles.gridContainer}>
-                                  <div>
-                                    <p className={styles.infoLabel}>Facility Name</p>
-                                    <p className={styles.infoValue}>{facility.facilityName}</p>
-                                  </div>
-                                  <div>
-                                    <p className={styles.infoLabel}>Utility Provider</p>
-                                    <div className="flex items-center gap-2">
-                                      <p className={styles.infoValue}>{facility.utilityProvider}</p>
-                                      {getUtilityTypeBadge(facility.utilityProvider)}
-                                    </div>
-                                  </div>
-                                  <div>
-                                    <p className={styles.infoLabel}>Status</p>
-                                    <div className="flex items-center gap-2">
-                                      {getFacilityStatusBadge(facility.status)}
-                                    </div>
-                                  </div>
-                                  <div>
-                                    <p className={styles.infoLabel}>Finance Type</p>
-                                    <p className={styles.infoValue}>{facility.financeType}</p>
-                                  </div>
-                                  <div className="md:col-span-2">
-                                    <p className={styles.infoLabel}>Address</p>
-                                    <p className={styles.infoValue}>{facility.address}</p>
-                                  </div>
-                                  <div>
-                                    <p className={styles.infoLabel}>Installation Date</p>
-                                    <p className={styles.infoValue}>
-                                      {new Date(facility.createdAt).toLocaleDateString()}
-                                    </p>
-                                  </div>
-                                  <div>
-                                    <p className={styles.infoLabel}>Meter ID</p>
-                                    <p className={styles.infoValue}>{facility.meterId}</p>
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          }
-                          return null;
-                        })}
+                      <div className={styles.facilityInfo}>
+                        {userFacilities.find(f => f.id === selectedFacility)?.status && (
+                          <p>Status: <span className="font-semibold">{userFacilities.find(f => f.id === selectedFacility)?.status}</span></p>
+                        )}
+                        {isGreenButtonUtility(userFacilities.find(f => f.id === selectedFacility)?.utilityProvider) && (
+                          <div className="flex items-center mt-1">
+                            <div className="w-3 h-3 bg-green-500 rounded-full mr-1 flex items-center justify-center">
+                              <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                            <span className="text-green-600 font-medium">Green Button Utility</span>
+                          </div>
+                        )}
                       </div>
                     )}
+                    <button
+                      onClick={handleContinueRegistration}
+                      disabled={!selectedFacility}
+                      className={`${styles.buttonPrimary} ${
+                        !selectedFacility
+                          ? 'bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed' 
+                          : ''
+                      }`}
+                    >
+                      Continue Registration
+                    </button>
                   </div>
+                )}
 
-                  <button
-                    onClick={handleContinueRegistration}
-                    disabled={!selectedFacility}
-                    className={styles.buttonPrimary}
-                  >
-                    Continue Authorization for Selected Facility
-                  </button>
-                </div>
-              )}
-
-              {!loading && userFacilities.length === 0 && (
-                <div className="text-center py-8">
-                  <div className={styles.emptyStateIcon}>
-                    <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                {!loading && userFacilities.length === 0 && (
+                  <div className={styles.emptyStateContainer}>
+                    <svg className={styles.emptyStateIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                     </svg>
+                    <p className={styles.emptyStateText}>No pending registrations found.</p>
+                    <p className={styles.emptyStateSubtext}>Click "Add Residential Facility" to start a new registration.</p>
+                    <button
+                      onClick={onClose}
+                      className={styles.closeButtonSecondary}
+                    >
+                      Close
+                    </button>
                   </div>
-                  <h4 className={styles.emptyStateTitle}>
-                    No Facilities Found
-                  </h4>
-                  <p className={styles.emptyStateText}>
-                    You don't have any existing residential facilities to continue registration with.
-                  </p>
+                )}
+
+                <div className={styles.termsContainer}>
+                  <span>Terms and Conditions</span>
+                  <span className="mx-2">&</span>
+                  <span>Privacy Policy</span>
                 </div>
-              )}
-
-              <div className={styles.divider}></div>
-
-              <p className={styles.footerNote}>
-                Need assistance? Contact our support team at support@dcarbon.solutions
-              </p>
+              </div>
             </div>
           </div>
         </div>
