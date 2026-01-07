@@ -92,11 +92,14 @@ export default function ExistingFacilitiesModal({ isOpen, onClose, currentStep }
       );
       const data = await response.json();
       const facilities = data.data?.facilities || [];
-      setUserFacilities(facilities);
-      if (facilities.length > 0) {
-        setSelectedFacility(facilities[0].id);
+      const pendingFacilities = facilities.filter(facility => 
+        facility.status && facility.status.toLowerCase() === 'pending'
+      );
+      setUserFacilities(pendingFacilities);
+      if (pendingFacilities.length > 0) {
+        setSelectedFacility(pendingFacilities[0].id);
       }
-      return facilities.length > 0;
+      return pendingFacilities.length > 0;
     } catch (error) {
       return false;
     }
