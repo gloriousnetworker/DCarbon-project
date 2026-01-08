@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import DashboardSidebar from '../../components/dashboard/commercial-dashboard/DashboardSidebar';
 import DashboardNavbar from '../../components/dashboard/commercial-dashboard/DashboardNavbar';
 import DashboardOverview from '../../components/dashboard/commercial-dashboard/overview/DashboardOverview';
@@ -16,6 +17,21 @@ import MyAccount from '../../components/dashboard/commercial-dashboard/account/M
 export default function UserDashboard() {
   const [activeSection, setActiveSection] = useState('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
+
+  useEffect(() => {
+    const checkAuth = () => {
+      const authToken = localStorage.getItem('authToken');
+      if (!authToken) {
+        router.push('/login');
+      } else {
+        setIsLoading(false);
+      }
+    };
+    
+    checkAuth();
+  }, [router]);
 
   const handleSectionChange = (section) => {
     setActiveSection(section);
@@ -73,6 +89,14 @@ export default function UserDashboard() {
       break;
     default:
       SectionComponent = DashboardOverview;
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#039994]"></div>
+      </div>
+    );
   }
 
   return (

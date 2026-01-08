@@ -65,50 +65,99 @@ export default function CustomerReport({ onNavigate }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [allReferrals, setAllReferrals] = useState([]);
+  const [userDetailsCache, setUserDetailsCache] = useState({});
 
   const LIMIT = 10;
   const baseUrl = "https://services.dcarbon.solutions";
 
-  useEffect(() => {
-    const fetchReferrals = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const token = localStorage.getItem("authToken");
-        const userId = localStorage.getItem("userId") || "3893baaf-d43f-4c45-96ca-ed58f743ca45";
-        const params = new URLSearchParams();
-        
-        if (yearFilter && monthFilter) {
-          const y = yearFilter;
-          const m = monthFilter.padStart(2, "0");
-          const lastDay = new Date(y, Number(monthFilter), 0).getDate();
-          params.append("startDate", `${y}-${m}-01`);
-          params.append("endDate", `${y}-${m}-${lastDay}`);
-        } else if (yearFilter) {
-          params.append("startDate", `${yearFilter}-01-01`);
-          params.append("endDate", `${yearFilter}-12-31`);
-        }
-        
-        params.append("page", currentPage);
-        params.append("limit", 1000);
-        
-        const res = await axios.get(
-          `${baseUrl}/api/user/get-users-referrals/${userId}?${params.toString()}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        
-        let { referrals, metadata } = res.data.data;
-        const uniqueReferrals = removeDuplicateReferrals(referrals);
-        setAllReferrals(uniqueReferrals);
-        setTotalPages(metadata.totalPages);
-        
-      } catch (err) {
-        console.error(err);
-        setError(err.message || "Failed to load data");
-      } finally {
-        setLoading(false);
+  const fetchUserDetails = async (email) => {
+    if (!email || userDetailsCache[email]) return;
+    
+    try {
+      const token = localStorage.getItem("authToken");
+      const response = await axios.get(
+        `${baseUrl}/api/user/${email}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      if (response.data.status === 'success') {
+        setUserDetailsCache(prev => ({
+          ...prev,
+          [email]: response.data.data
+        }));
       }
-    };
+    } catch (error) {
+      console.error('Error fetching user details:', error);
+    }
+  };
+
+  const getDisplayName = (referral) => {
+    if (referral.name && referral.name.trim() !== '' && referral.name !== 'N/A') {
+      return referral.name;
+    }
+    
+    const email = referral.inviteeEmail;
+    if (userDetailsCache[email]) {
+      const user = userDetailsCache[email];
+      const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+      if (fullName) return fullName;
+    }
+    
+    return email || 'N/A';
+  };
+
+  const getDisplayEmail = (referral) => {
+    return referral.inviteeEmail || referral.email || 'N/A';
+  };
+
+  const fetchReferrals = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const token = localStorage.getItem("authToken");
+      const userId = localStorage.getItem("userId") || "3893baaf-d43f-4c45-96ca-ed58f743ca45";
+      const params = new URLSearchParams();
+      
+      if (yearFilter && monthFilter) {
+        const y = yearFilter;
+        const m = monthFilter.padStart(2, "0");
+        const lastDay = new Date(y, Number(monthFilter), 0).getDate();
+        params.append("startDate", `${y}-${m}-01`);
+        params.append("endDate", `${y}-${m}-${lastDay}`);
+      } else if (yearFilter) {
+        params.append("startDate", `${yearFilter}-01-01`);
+        params.append("endDate", `${yearFilter}-12-31`);
+      }
+      
+      params.append("page", currentPage);
+      params.append("limit", 1000);
+      
+      const res = await axios.get(
+        `${baseUrl}/api/user/get-users-referrals/${userId}?${params.toString()}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      let { referrals, metadata } = res.data.data;
+      const uniqueReferrals = removeDuplicateReferrals(referrals);
+      
+      uniqueReferrals.forEach(referral => {
+        if (referral.inviteeEmail && (referral.status === 'ACCEPTED' || !referral.name || referral.name === 'N/A')) {
+          fetchUserDetails(referral.inviteeEmail);
+        }
+      });
+      
+      setAllReferrals(uniqueReferrals);
+      setTotalPages(metadata.totalPages);
+      
+    } catch (err) {
+      console.error(err);
+      setError(err.message || "Failed to load data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchReferrals();
   }, [currentPage, yearFilter, monthFilter]);
 
@@ -159,7 +208,11 @@ export default function CustomerReport({ onNavigate }) {
       return filters.time === "Newest" ? db - da : da - db;
     });
     
-    return filteredData;
+    return filteredData.map(ref => ({
+      ...ref,
+      name: getDisplayName(ref),
+      email: getDisplayEmail(ref)
+    }));
   };
 
   const handleOpenFilterModal = () => setShowFilterModal(true);
@@ -199,11 +252,14 @@ export default function CustomerReport({ onNavigate }) {
 
   const renderTableRows = () => {
     return tableData.map((ref, idx) => {
+      const displayName = getDisplayName(ref);
+      const displayEmail = getDisplayEmail(ref);
+      
       return (
         <tr key={ref.id} className="border-b border-gray-200 hover:bg-gray-50">
           <td className="py-2 px-2 text-xs font-medium text-center">{(currentPage - 1) * LIMIT + idx + 1}</td>
-          <td className="py-2 px-2 text-xs" title={ref.name}>{truncateText(ref.name, 20)}</td>
-          <td className="py-2 px-2 text-xs" title={ref.inviteeEmail}>{truncateText(ref.inviteeEmail, 25)}</td>
+          <td className="py-2 px-2 text-xs" title={displayName}>{truncateText(displayName, 20)}</td>
+          <td className="py-2 px-2 text-xs" title={displayEmail}>{truncateText(displayEmail, 25)}</td>
           <td className="py-2 px-2 text-xs text-center">{ref.customerType || "-"}</td>
           <td className="py-2 px-2 text-xs text-center">{ref.role || "-"}</td>
           <td className="py-2 px-2 text-xs text-center">{ref.phoneNumber || "-"}</td>
