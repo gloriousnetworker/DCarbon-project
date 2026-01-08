@@ -41,7 +41,14 @@ const styles = {
   spinner: 'inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin',
   loadingContainer: 'flex flex-col items-center justify-center py-20',
   loadingSpinner: 'w-12 h-12 border-4 border-gray-200 border-t-[#039994] rounded-full animate-spin mb-4',
-  loadingText: 'text-gray-600 text-sm'
+  loadingText: 'text-gray-600 text-sm',
+  invitationStatusBadge: 'px-2 py-1 rounded-full text-xs font-[600] uppercase tracking-wide',
+  ownerDetailsGrid: 'grid grid-cols-1 gap-y-1 text-xs mt-2',
+  ownerDetailRow: 'flex justify-between',
+  ownerDetailLabel: 'text-blue-600 font-medium',
+  ownerDetailValue: 'text-blue-800',
+  statusLabel: 'text-blue-600 font-medium',
+  statusValue: 'font-medium'
 };
 
 export default function CommercialRegistrationModal({ isOpen, onClose }) {
@@ -74,10 +81,10 @@ export default function CommercialRegistrationModal({ isOpen, onClose }) {
     e.stopPropagation();
     setCurrentFacility(facility);
     
-    const owner = owners[facility.inviterId];
+    const owner = owners[facility.commercialUserId];
     if (owner) {
       localStorage.setItem('ownersDetails', JSON.stringify(owner));
-      localStorage.setItem('userId', facility.inviterId);
+      localStorage.setItem('userId', facility.commercialUserId);
       localStorage.setItem('userRole', facility.userRole);
       localStorage.setItem('referralId', facility.invitationId);
       localStorage.setItem('generatedReferralCode', owner.referralCode);
@@ -89,7 +96,7 @@ export default function CommercialRegistrationModal({ isOpen, onClose }) {
           ...loginResponse.data,
           user: {
             ...loginResponse.data.user,
-            id: facility.inviterId,
+            id: facility.commercialUserId,
             role: facility.userRole,
             customerType: "COMMERCIAL"
           }
@@ -174,50 +181,34 @@ export default function CommercialRegistrationModal({ isOpen, onClose }) {
         const ownersMap = {};
         
         for (const invitation of data.data) {
-          if (invitation.facilityId && invitation.inviterId) {
-            try {
-              const facilityResponse = await axios.get(
-                `https://services.dcarbon.solutions/api/facility/get-facility-by-id/${invitation.facilityId}`,
-                { headers: { Authorization: `Bearer ${authToken}` } }
-              );
-              
-              if (facilityResponse.data.status === "success") {
-                const facilityData = facilityResponse.data.data;
-                facilityData.userRole = invitation.role;
-                facilityData.invitationId = invitation.id;
-                facilityData.inviterId = invitation.inviterId;
-                facilitiesWithOwners.push(facilityData);
-                
-                if (!ownersMap[invitation.inviterId]) {
-                  try {
-                    const ownerResponse = await axios.get(
-                      `https://services.dcarbon.solutions/api/user/get-one-user/${invitation.inviterId}`,
-                      { headers: { Authorization: `Bearer ${authToken}` } }
-                    );
-                    
-                    if (ownerResponse.data.status === "success") {
-                      ownersMap[invitation.inviterId] = ownerResponse.data.data;
-                    }
-                  } catch (ownerErr) {
-                    console.error(`Error fetching owner ${invitation.inviterId}:`, ownerErr);
-                  }
-                }
-              }
-            } catch (facilityErr) {
-              console.error(`Error fetching facility ${invitation.facilityId}:`, facilityErr);
+          if (invitation.facilityId && invitation.inviterId && invitation.facility) {
+            const facilityData = invitation.facility;
+            facilityData.userRole = invitation.role;
+            facilityData.invitationStatus = invitation.status;
+            facilityData.invitationId = invitation.id;
+            facilityData.invitationCreatedAt = invitation.createdAt;
+            facilitiesWithOwners.push(facilityData);
+            
+            if (!ownersMap[invitation.inviterId]) {
+              ownersMap[invitation.inviterId] = {
+                id: invitation.inviterId,
+                firstName: invitation.name?.split(' ')[0] || '',
+                lastName: invitation.name?.split(' ').slice(1).join(' ') || '',
+                email: invitation.inviteeEmail,
+                phoneNumber: invitation.phoneNumber,
+                invitationStatus: invitation.status,
+                referralCode: invitation.referralCode
+              };
+            }
+            
+            if (invitation.inviterId) {
+              await checkAuthorizationStatus(invitation.inviterId, invitation.facilityId);
             }
           }
         }
         
         setFacilities(facilitiesWithOwners);
         setOwners(ownersMap);
-
-        for (const facility of facilitiesWithOwners) {
-          const owner = ownersMap[facility.inviterId];
-          if (owner) {
-            await checkAuthorizationStatus(owner.id, facility.id);
-          }
-        }
       } else {
         setFacilities([]);
         setOwners({});
@@ -298,7 +289,7 @@ export default function CommercialRegistrationModal({ isOpen, onClose }) {
             <>
               <div className={styles.facilityGrid}>
                 {facilities.map(facility => {
-                  const owner = owners[facility.inviterId];
+                  const owner = owners[facility.commercialUserId];
                   const isGreenButton = isGreenButtonUtility(facility.utilityProvider);
                   const authStatus = authorizationStatus[facility.id] || { authorized: false, metersFetched: false, status: 'not_authorized' };
                   const showAuthorizeButton = !authStatus.authorized;
@@ -345,9 +336,36 @@ export default function CommercialRegistrationModal({ isOpen, onClose }) {
                       
                       {owner && (
                         <div className={styles.ownerSection}>
-                          <div className={styles.ownerLabel}>Facility Owner</div>
+                          <div className="flex justify-between items-center mb-1">
+                            <div className={styles.ownerLabel}>Facility Owner</div>
+                            <span className={`${styles.invitationStatusBadge} ${
+                              owner.invitationStatus === 'PENDING' 
+                                ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' 
+                                : 'bg-green-100 text-green-800 border border-green-200'
+                            }`}>
+                              {owner.invitationStatus || 'PENDING'}
+                            </span>
+                          </div>
                           <div className={styles.ownerName}>
                             {owner.firstName} {owner.lastName}
+                          </div>
+                          <div className={styles.ownerDetailsGrid}>
+                            <div className={styles.ownerDetailRow}>
+                              <span className={styles.ownerDetailLabel}>Email:</span>
+                              <span className={styles.ownerDetailValue}>{owner.email}</span>
+                            </div>
+                            <div className={styles.ownerDetailRow}>
+                              <span className={styles.ownerDetailLabel}>Phone:</span>
+                              <span className={styles.ownerDetailValue}>{owner.phoneNumber || 'N/A'}</span>
+                            </div>
+                            <div className={styles.ownerDetailRow}>
+                              <span className={styles.statusLabel}>Invitation Status:</span>
+                              <span className={`${styles.statusValue} ${
+                                owner.invitationStatus === 'PENDING' ? 'text-yellow-600' : 'text-green-600'
+                              }`}>
+                                {owner.invitationStatus || 'PENDING'}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       )}

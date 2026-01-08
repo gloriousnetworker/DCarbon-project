@@ -158,8 +158,8 @@ export default function FacilityCardView() {
     try {
       const response = await fetch(`https://services.dcarbon.solutions/api/user/agreement/${userId}`, {
         method: 'GET',
-        headers: { 'Authorization': `Bearer ${authToken}` }
-      });
+        headers: { 'Authorization': `Bearer ${authToken}` } }
+      );
       const result = await response.json();
       return result.status === 'success' && result.data?.termsAccepted;
     } catch (error) {
@@ -171,8 +171,8 @@ export default function FacilityCardView() {
     try {
       const response = await fetch(`https://services.dcarbon.solutions/api/user/financial-info/${userId}`, {
         method: 'GET',
-        headers: { 'Authorization': `Bearer ${authToken}` }
-      });
+        headers: { 'Authorization': `Bearer ${authToken}` } }
+      );
       const result = await response.json();
       return result.status === 'success' && result.data?.financialInfo;
     } catch (error) {
@@ -184,8 +184,8 @@ export default function FacilityCardView() {
     try {
       const response = await fetch(`https://services.dcarbon.solutions/api/auth/user-meters/${userId}`, {
         method: 'GET',
-        headers: { 'Authorization': `Bearer ${authToken}` }
-      });
+        headers: { 'Authorization': `Bearer ${authToken}` } }
+      );
       const result = await response.json();
       return result.status === 'success' && result.data?.length > 0 && result.data.some(item => item.meters?.meters?.length > 0);
     } catch (error) {
@@ -305,48 +305,33 @@ export default function FacilityCardView() {
         const ownersMap = {};
         
         for (const invitation of data.data) {
-          if (invitation.facilityId && invitation.inviterId) {
-            try {
-              const facilityResponse = await axios.get(
-                `https://services.dcarbon.solutions/api/facility/get-facility-by-id/${invitation.facilityId}`,
-                { headers: { Authorization: `Bearer ${authToken}` } }
-              );
-              
-              if (facilityResponse.data.status === "success") {
-                const facilityData = facilityResponse.data.data;
-                facilityData.userRole = invitation.role;
-                facilitiesWithOwners.push(facilityData);
-                
-                if (!ownersMap[invitation.inviterId]) {
-                  try {
-                    const ownerResponse = await axios.get(
-                      `https://services.dcarbon.solutions/api/user/get-one-user/${invitation.inviterId}`,
-                      { headers: { Authorization: `Bearer ${authToken}` } }
-                    );
-                    
-                    if (ownerResponse.data.status === "success") {
-                      ownersMap[invitation.inviterId] = ownerResponse.data.data;
-                    }
-                  } catch (ownerErr) {
-                    console.error(`Error fetching owner ${invitation.inviterId}:`, ownerErr);
-                  }
-                }
-              }
-            } catch (facilityErr) {
-              console.error(`Error fetching facility ${invitation.facilityId}:`, facilityErr);
+          if (invitation.facilityId && invitation.inviterId && invitation.facility) {
+            const facilityData = invitation.facility;
+            facilityData.userRole = invitation.role;
+            facilityData.invitationStatus = invitation.status;
+            facilityData.invitationId = invitation.id;
+            facilityData.invitationCreatedAt = invitation.createdAt;
+            facilitiesWithOwners.push(facilityData);
+            
+            if (!ownersMap[invitation.inviterId]) {
+              ownersMap[invitation.inviterId] = {
+                id: invitation.inviterId,
+                firstName: invitation.name?.split(' ')[0] || '',
+                lastName: invitation.name?.split(' ').slice(1).join(' ') || '',
+                email: invitation.inviteeEmail,
+                phoneNumber: invitation.phoneNumber,
+                invitationStatus: invitation.status
+              };
+            }
+            
+            if (invitation.inviterId) {
+              await checkAuthorizationStatus(invitation.inviterId, invitation.facilityId);
             }
           }
         }
         
         setFacilities(facilitiesWithOwners);
         setOwners(ownersMap);
-
-        for (const facility of facilitiesWithOwners) {
-          const owner = ownersMap[facility.commercialUserId];
-          if (owner) {
-            await checkAuthorizationStatus(owner.id, facility.id);
-          }
-        }
       } else {
         setFacilities([]);
         setOwners({});
@@ -501,7 +486,16 @@ export default function FacilityCardView() {
                   
                   {owner && (
                     <div className="mb-2 p-2 bg-blue-50 rounded border border-blue-100">
-                      <div className="text-xs font-medium text-blue-700 mb-1">Authorizing for:</div>
+                      <div className="flex justify-between items-center mb-1">
+                        <div className="text-xs font-medium text-blue-700">Authorizing for:</div>
+                        <div className={`text-xs px-2 py-1 rounded-full capitalize ${
+                          owner.invitationStatus === 'PENDING' 
+                            ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' 
+                            : 'bg-green-100 text-green-800 border border-green-200'
+                        }`}>
+                          {owner.invitationStatus || 'PENDING'}
+                        </div>
+                      </div>
                       <div className="grid grid-cols-1 gap-y-1 text-xs">
                         <div className="flex justify-between">
                           <span className="text-blue-600 font-medium">Name:</span>
@@ -514,6 +508,14 @@ export default function FacilityCardView() {
                         <div className="flex justify-between">
                           <span className="text-blue-600 font-medium">Phone:</span>
                           <span className="text-blue-800">{owner.phoneNumber || 'N/A'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-blue-600 font-medium">Invitation Status:</span>
+                          <span className={`font-medium ${
+                            owner.invitationStatus === 'PENDING' ? 'text-yellow-600' : 'text-green-600'
+                          }`}>
+                            {owner.invitationStatus || 'PENDING'}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -623,7 +625,4 @@ export default function FacilityCardView() {
       )}
     </div>
   );
-}    
-
-
-   
+}
