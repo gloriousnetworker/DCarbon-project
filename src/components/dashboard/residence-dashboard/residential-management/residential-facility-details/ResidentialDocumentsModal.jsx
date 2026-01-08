@@ -28,14 +28,6 @@ const DOCUMENT_TYPES = {
     rejectionField: "solarInstallationRejectionReason",
     mandatory: true
   },
-  nemAgreement: { 
-    name: "NEM Agreement", 
-    endpoint: "nem-agreement",
-    urlField: "nemAgreementUrl",
-    statusField: "nemAgreementStatus",
-    rejectionField: "nemAgreementRejectionReason",
-    mandatory: true
-  },
   utilityPtoLetter: { 
     name: "Utility PTO Email/Letter", 
     endpoint: "pto-letter",
@@ -208,7 +200,7 @@ const PDFViewerModal = ({ isOpen, onClose, url, title }) => {
       <div className="bg-white rounded-lg w-full max-w-5xl h-full max-h-[95vh] flex flex-col">
         <div className="flex items-center justify-between p-4 border-b bg-gray-50 rounded-t-lg">
           <h3 className="text-lg font-semibold text-gray-800 truncate">{title}</h3>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
             <button
               onClick={handleDownload}
               className="flex items-center gap-2 bg-[#039994] text-white px-3 py-1.5 rounded-md hover:bg-[#028580] transition-colors text-sm"
