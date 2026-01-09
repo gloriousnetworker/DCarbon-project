@@ -8,12 +8,14 @@ const styles = {
   headingContainer: 'relative w-full flex flex-col items-center mb-2',
   backArrow: 'absolute left-6 top-0 text-[#039994] cursor-pointer z-10',
   pageTitle: 'mb-4 font-[600] text-[24px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro text-left',
+  pageSubtitle: 'mb-4 font-sfpro text-[14px] leading-[120%] text-[#1E1E1E]',
   progressContainer: 'w-full max-w-md flex items-center justify-between mb-6',
   progressBarWrapper: 'flex-1 h-1 bg-gray-200 rounded-full mr-4',
   progressBarActive: 'h-1 bg-[#039994] w-2/3 rounded-full',
   progressStepText: 'text-sm font-medium text-gray-500 font-sfpro',
   formWrapper: 'w-full max-w-md space-y-6',
   labelClass: 'block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]',
+  labelWithTooltip: 'flex items-center gap-2 mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]',
   selectClass: 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#626060]',
   inputClass: 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]',
   fileInputWrapper: 'relative flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-500 bg-gray-50 focus-within:outline-none focus-within:ring-2 focus-within:ring-[#039994] cursor-pointer font-sfpro',
@@ -26,28 +28,24 @@ const styles = {
   spinner: 'h-12 w-12 border-4 border-t-4 border-gray-300 border-t-[#039994] rounded-full animate-spin',
   uploadHeading: 'block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]',
   uploadFieldWrapper: 'flex items-center space-x-3',
-  uploadInputLabel: 'relative flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-500 bg-gray-50 focus-within:outline-none focus-within:ring-2 focus-within:ring-[#039994] cursor-pointer font-sfpro',
+  uploadInputWrapper: 'relative flex-1',
+  uploadInput: 'hidden',
+  uploadInputLabel: 'w-full block border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-500 bg-gray-50 hover:bg-gray-100 focus-within:outline-none focus-within:ring-2 focus-within:ring-[#039994] cursor-pointer font-sfpro truncate pr-10',
   uploadIconContainer: 'absolute right-3 top-1/2 -translate-y-1/2 text-gray-400',
-  uploadButtonStyle: 'px-4 py-2 bg-[#039994] text-white rounded-md hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro',
+  uploadButtonStyle: 'px-4 py-2 bg-[#039994] text-white rounded-md hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro disabled:opacity-50 disabled:cursor-not-allowed',
   uploadNoteStyle: 'mt-2 font-sfpro text-[12px] leading-[100%] tracking-[-0.05em] font-[300] italic text-[#1E1E1E]',
-  closeButton: 'absolute top-6 right-6 text-red-500 hover:text-red-700 cursor-pointer z-50',
+  tooltipContainer: 'group relative inline-flex',
+  tooltipIcon: 'h-4 w-4 text-gray-400',
+  tooltipContent: 'absolute hidden group-hover:block bg-white p-2 rounded shadow-lg border border-gray-200 text-xs w-64 z-10 left-8 -top-20',
   dateInput: 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E] bg-[#E8E8E8]',
-  authModalContainer: 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4',
-  authModal: 'relative w-full max-w-md bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col',
-  authModalHeader: 'p-6 pb-4 border-b border-gray-200',
-  authModalTitle: 'font-[600] text-[20px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro mb-2',
-  authModalSubtitle: 'text-sm text-gray-600 mb-4',
-  authModalBody: 'flex-1 overflow-y-auto p-6',
-  authModalFooter: 'p-6 pt-4 border-t border-gray-200',
-  authCloseButton: 'absolute top-4 right-4 text-gray-500 hover:text-gray-700 cursor-pointer',
-  authButtonSecondary: 'flex-1 rounded-md border border-gray-300 text-gray-700 font-semibold py-2 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300 font-sfpro',
-  authButtonPrimary: 'flex-1 rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro',
-  messageContainer: 'mt-4 p-4 bg-green-50 border border-green-200 rounded-lg',
-  messageText: 'text-green-700 text-sm',
-  instapullButton: 'mt-4 w-full rounded-md bg-blue-600 text-white font-semibold py-2 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 font-sfpro',
+  closeButton: 'absolute top-6 right-6 text-red-500 hover:text-red-700 cursor-pointer z-50',
   optionGroup: 'px-3 py-2 text-sm text-gray-500 font-sfpro',
   optionGroupGreenButton: 'px-3 py-2 text-sm text-green-600 font-semibold font-sfpro',
-  greenButtonBadge: 'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 ml-2'
+  greenButtonBadge: 'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 ml-2',
+  modalContainer: 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4',
+  modalContent: 'relative w-full max-w-lg bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col',
+  modalHeader: 'relative p-6 pb-4',
+  modalBody: 'flex-1 overflow-y-auto px-6 pb-6'
 };
 
 export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
@@ -67,6 +65,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
   const [requestedUtilityWebsite, setRequestedUtilityWebsite] = useState('');
   const [instapullOpened, setInstapullOpened] = useState(false);
   const [file, setFile] = useState(null);
+  const [fileName, setFileName] = useState('');
   const [facilityNickname, setFacilityNickname] = useState('');
   const [utilityProviders, setUtilityProviders] = useState([]);
   const [financeCompanies, setFinanceCompanies] = useState([]);
@@ -113,7 +112,9 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
       if (response.data.status === 'success') {
         setCommercialRole(response.data.data.commercialUser.commercialRole);
       }
-    } catch (error) {}
+    } catch (error) {
+      console.error('Error fetching commercial role:', error);
+    }
   };
 
   useEffect(() => {
@@ -386,6 +387,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
       return;
     }
     setFile(selectedFile);
+    setFileName(selectedFile.name);
     setUploadSuccess(false);
   };
 
@@ -395,7 +397,6 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     try {
       const reader = new FileReader();
       reader.onloadend = () => {
-        const base64data = reader.result;
         setUploadSuccess(true);
         toast.success('Financial agreement uploaded successfully!');
       };
@@ -542,7 +543,6 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
       toast.success('Facility created successfully!');
       
       openInstapullTab();
-      
       setShowInstapullAuthModal(true);
     } catch (err) {
       toast.error(err.response?.data?.message || err.message || 'Operation failed', { id: toastId });
@@ -569,6 +569,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     });
     setFacilityNickname('');
     setFile(null);
+    setFileName('');
     setUploadSuccess(false);
     setInstapullOpened(false);
     setCreatedFacilityId(null);
@@ -692,14 +693,17 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
       )}
 
       {isOpen && !showInstapullAuthModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-          <div className="relative w-full max-w-lg bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
-            <div className="relative p-6 pb-4">
+        <div className={styles.modalContainer}>
+          <div className={styles.modalContent}>
+            <div className={styles.modalHeader}>
               {onBack && (
                 <button
                   onClick={onBack}
                   className={styles.backArrow}
                 >
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
                 </button>
               )}
 
@@ -716,12 +720,8 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                 <h2 className={styles.pageTitle}>
                   {commercialRole === 'both' ? "Finance & Installer information for Owner and Operator" : "Finance & Installer information for Owner"}
                 </h2>
-                <p className="text-sm text-gray-500 mt-1">
-                  Please provide accurate details below. Hover over the <span className="inline-flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400 mx-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg> icons
-                  </span> for important guidance on each field.
+                <p className={styles.pageSubtitle}>
+                  Please review all tooltips to ensure correct selections for your financing and installation needs.
                 </p>
               </div>
 
@@ -733,7 +733,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-6 pb-6">
+            <div className={styles.modalBody}>
               <form onSubmit={handleSubmit} className={styles.formWrapper}>
                 <div>
                   <label className={styles.labelClass}>
@@ -786,7 +786,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                       )}
                     </select>
                     <div className={styles.uploadIconContainer}>
-                      <svg className="w-5 h-5 text-gray-400 pointer-events-none absolute top-1/2 right-3 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-5 h-5 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                       </svg>
                     </div>
@@ -819,7 +819,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                       ))}
                     </select>
                     <div className={styles.uploadIconContainer}>
-                      <svg className="w-5 h-5 text-gray-400 pointer-events-none absolute top-1/2 right-3 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-5 h-5 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                       </svg>
                     </div>
@@ -835,15 +835,15 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
 
                 {showFinanceCompany && (
                   <div>
-                    <div className="flex items-center gap-1">
+                    <div className={styles.labelWithTooltip}>
                       <label className={styles.labelClass}>
                         Finance company
                       </label>
-                      <div className="group relative">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <div className={styles.tooltipContainer}>
+                        <svg xmlns="http://www.w3.org/2000/svg" className={styles.tooltipIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        <div className="absolute hidden group-hover:block bg-white p-2 rounded shadow-lg border border-gray-200 text-xs w-64 z-10 -left-32 -top-20">
+                        <div className={styles.tooltipContent}>
                           If you were referred by a finance company, select them here so they can help submit required documents if needed.
                         </div>
                       </div>
@@ -863,7 +863,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                         <option value="Other">Other</option>
                       </select>
                       <div className={styles.uploadIconContainer}>
-                        <svg className="w-5 h-5 text-gray-400 pointer-events-none absolute top-1/2 right-3 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-5 h-5 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                         </svg>
                       </div>
@@ -877,12 +877,21 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                       Upload Finance Agreement
                     </label>
                     <div className={styles.uploadFieldWrapper}>
-                      <input
-                        type="file"
-                        onChange={handleFileChange}
-                        className={styles.uploadInputLabel}
-                        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                      />
+                      <div className={styles.uploadInputWrapper}>
+                        <input
+                          type="file"
+                          id="financeAgreementUpload"
+                          onChange={handleFileChange}
+                          className={styles.uploadInput}
+                          accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                        />
+                        <label
+                          htmlFor="financeAgreementUpload"
+                          className={styles.uploadInputLabel}
+                        >
+                          {fileName || "Choose file"}
+                        </label>
+                      </div>
                       <button
                         type="button"
                         onClick={handleUpload}
@@ -893,22 +902,22 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                       </button>
                     </div>
                     <p className={styles.uploadNoteStyle}>
-                      Optional for loan, PPA, and lease agreements
+                      Optional for all finance types except Cash (PDF, JPEG, PNG, Word)
                     </p>
                   </div>
                 )}
 
                 <div>
-                  <div className="flex items-center gap-1">
+                  <div className={styles.labelWithTooltip}>
                     <label className={styles.labelClass}>
                       Select installer
                     </label>
-                    <div className="group relative flex justify-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className={styles.tooltipContainer}>
+                      <svg xmlns="http://www.w3.org/2000/svg" className={styles.tooltipIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      <div className="absolute hidden group-hover:block bg-white p-2 rounded shadow-lg border border-gray-200 text-xs w-64 z-10 left-8 -top-20">
-                        Select your installer who can submit installation documents if needed. If not listed or unavailable, choose "Not Yet Available" and your finance company can invite them later.
+                      <div className={styles.tooltipContent}>
+                        Select your installer who can submit installation documents if needed. If not listed, choose 'Not Yet Available' and your finance company can invite them later.
                       </div>
                     </div>
                   </div>
@@ -928,7 +937,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                       <option value="not_available">Not Yet Available</option>
                     </select>
                     <div className={styles.uploadIconContainer}>
-                      <svg className="w-5 h-5 text-gray-400 pointer-events-none absolute top-1/2 right-3 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-5 h-5 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                       </svg>
                     </div>
