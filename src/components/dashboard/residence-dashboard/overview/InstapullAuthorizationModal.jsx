@@ -76,47 +76,9 @@ export default function InstapullAuthorizationModal({ isOpen, onClose, utilityPr
     }
   };
 
-  const checkMeterStatus = async () => {
-    if (!userId) return;
-    
-    setCheckingMeters(true);
-    try {
-      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
-      const token = loginResponse?.data?.token;
-      
-      const response = await axios.get(
-        `https://services.dcarbon.solutions/api/auth/utility-auth/${userId}`,
-        { 
-          headers: { 
-            'Authorization': `Bearer ${token}`
-          } 
-        }
-      );
-      
-      if (response.data.status === 'success' && response.data.data.length > 0) {
-        const authData = response.data.data[0];
-        
-        if (authData.hasMeter) {
-          toast.success('Meters fetched successfully! You can now add them to your facilities.', {
-            duration: 5000,
-            icon: '✓'
-          });
-          setTimeout(() => {
-            onClose();
-            window.location.reload();
-          }, 1500);
-        } else {
-          toast.loading('Meters are being fetched. This takes 3-5 minutes.', {
-            duration: 4000,
-            icon: '⏳'
-          });
-        }
-      }
-    } catch (err) {
-      toast.error('Failed to check meter status. Please try again.');
-    } finally {
-      setCheckingMeters(false);
-    }
+  const handleSuccessAndClose = () => {
+    onClose();
+    window.location.reload();
   };
 
   const handleSubmit = async (e) => {
@@ -166,13 +128,10 @@ export default function InstapullAuthorizationModal({ isOpen, onClose, utilityPr
         icon: '✓'
       });
       
-      setTimeout(() => {
-        checkMeterStatus();
-      }, 2000);
+      setTimeout(handleSuccessAndClose, 1500);
       
     } catch (err) {
       toast.error(err.response?.data?.message || err.message || 'Failed to submit authorization');
-    } finally {
       setSubmitting(false);
     }
   };
@@ -310,10 +269,10 @@ export default function InstapullAuthorizationModal({ isOpen, onClose, utilityPr
               disabled={submitting || checkingMeters || (!sameEmail && !formData.authorizationEmail.trim())}
               className={styles.buttonPrimary}
             >
-              {submitting || checkingMeters ? (
+              {submitting ? (
                 <span className="flex items-center justify-center gap-2">
                   <div className={styles.spinner}></div>
-                  <span>{checkingMeters ? 'Checking Status...' : 'Processing...'}</span>
+                  <span>Processing...</span>
                 </span>
               ) : (
                 'Confirm Authorization'

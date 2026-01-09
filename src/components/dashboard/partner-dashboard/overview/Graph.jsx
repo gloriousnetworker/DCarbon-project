@@ -60,9 +60,14 @@ export default function ReferredAndCommissionDashboard() {
     const fetchReferralStats = async () => {
       try {
         setLoadingRefData(true);
+        setErrorRefData(null);
         
         const token = localStorage.getItem("authToken");
-        const userId = localStorage.getItem("userId") || "33385a49-a036-4a8f-a6de-5534ad69601c";
+        const userId = localStorage.getItem("userId");
+        
+        if (!userId || !token) {
+          throw new Error("User authentication data not found");
+        }
         
         const res = await axios.get(
           `https://services.dcarbon.solutions/api/user/referral-statistics/${userId}`,
@@ -78,12 +83,13 @@ export default function ReferredAndCommissionDashboard() {
             totalExpired,
           });
           
+          const currentMonth = new Date().getMonth();
           const data = MONTHS.map((month, index) => ({
             month,
-            pending: Math.floor(totalPending * (Math.random() * 0.3 + 0.7) / 12),
-            registered: Math.floor(totalAccepted * (Math.random() * 0.3 + 0.7) / 12),
-            expired: Math.floor(totalExpired * (Math.random() * 0.3 + 0.7) / 12),
-            active: index === new Date().getMonth(),
+            pending: index === currentMonth ? totalPending : 0,
+            registered: index === currentMonth ? totalAccepted : 0,
+            expired: index === currentMonth ? totalExpired : 0,
+            active: index === currentMonth,
           }));
           
           setChartData(data);
@@ -94,20 +100,23 @@ export default function ReferredAndCommissionDashboard() {
         setLoadingRefData(false);
       } catch (e) {
         console.error(e);
+        setErrorRefData(e.message);
+        
         const mockStats = {
-          totalPending: 5,
-          totalAccepted: 10,
-          totalExpired: 3,
+          totalPending: 0,
+          totalAccepted: 0,
+          totalExpired: 0,
         };
         
         setReferralStats(mockStats);
         
+        const currentMonth = new Date().getMonth();
         const data = MONTHS.map((month, index) => ({
           month,
-          pending: Math.floor(mockStats.totalPending * (Math.random() * 0.3 + 0.7) / 12),
-          registered: Math.floor(mockStats.totalAccepted * (Math.random() * 0.3 + 0.7) / 12),
-          expired: Math.floor(mockStats.totalExpired * (Math.random() * 0.3 + 0.7) / 12),
-          active: index === new Date().getMonth(),
+          pending: 0,
+          registered: 0,
+          expired: 0,
+          active: index === currentMonth,
         }));
         
         setChartData(data);
