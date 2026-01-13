@@ -64,6 +64,31 @@ export default function FacilityCardView() {
     }
   };
 
+  const acceptFacilityInvitation = async (facilityId, invitationId) => {
+    try {
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const authToken = loginResponse?.data?.token;
+      
+      if (!authToken) {
+        toast.error("Authentication required");
+        return;
+      }
+
+      const response = await axios.post(
+        `https://services.dcarbon.solutions/api/user/referral/accept-invitation/${invitationId}`,
+        {},
+        { headers: { 'Authorization': `Bearer ${authToken}` } }
+      );
+      
+      if (response.data.status === 'success') {
+        toast.success('Facility invitation accepted!');
+        fetchUserInvitations();
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to accept invitation');
+    }
+  };
+
   const authorizeFacility = async (facility, e) => {
     e.stopPropagation();
     
@@ -92,6 +117,27 @@ export default function FacilityCardView() {
     } else {
       toast.error('Please allow pop-ups for this site to open Instapull');
     }
+  };
+
+  const fetchOwnerDetails = async (inviterId) => {
+    const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+    const authToken = loginResponse?.data?.token;
+    
+    if (!inviterId || !authToken) return null;
+    
+    try {
+      const response = await axios.get(
+        `https://services.dcarbon.solutions/api/user/get-one-user/${inviterId}`,
+        { headers: { Authorization: `Bearer ${authToken}` } }
+      );
+      
+      if (response.data.status === "success") {
+        return response.data.data;
+      }
+    } catch (error) {
+      console.error('Error fetching owner details:', error);
+    }
+    return null;
   };
 
   const checkAuthorizationStatus = async (ownerId, facilityId) => {
@@ -312,20 +358,33 @@ export default function FacilityCardView() {
             facilityData.invitationStatus = invitation.status;
             facilityData.invitationId = invitation.id;
             facilityData.invitationCreatedAt = invitation.createdAt;
+            facilityData.inviterId = invitation.inviterId;
             facilitiesWithOwners.push(facilityData);
             
             if (!ownersMap[invitation.inviterId]) {
-              ownersMap[invitation.inviterId] = {
-                id: invitation.inviterId,
-                firstName: invitation.name?.split(' ')[0] || '',
-                lastName: invitation.name?.split(' ').slice(1).join(' ') || '',
-                email: invitation.inviteeEmail,
-                phoneNumber: invitation.phoneNumber,
-                invitationStatus: invitation.status
-              };
+              const ownerDetails = await fetchOwnerDetails(invitation.inviterId);
+              if (ownerDetails) {
+                ownersMap[invitation.inviterId] = {
+                  id: invitation.inviterId,
+                  firstName: ownerDetails.firstName || '',
+                  lastName: ownerDetails.lastName || '',
+                  email: ownerDetails.email || '',
+                  phoneNumber: ownerDetails.phoneNumber || 'N/A',
+                  invitationStatus: invitation.status
+                };
+              } else {
+                ownersMap[invitation.inviterId] = {
+                  id: invitation.inviterId,
+                  firstName: invitation.name?.split(' ')[0] || '',
+                  lastName: invitation.name?.split(' ').slice(1).join(' ') || '',
+                  email: invitation.inviteeEmail || '',
+                  phoneNumber: invitation.phoneNumber || 'N/A',
+                  invitationStatus: invitation.status
+                };
+              }
             }
             
-            if (invitation.inviterId) {
+            if (invitation.inviterId && invitation.status === 'ACCEPTED') {
               await checkAuthorizationStatus(invitation.inviterId, invitation.facilityId);
             }
           }
@@ -482,11 +541,12 @@ export default function FacilityCardView() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {filteredFacilities.map(facility => {
-            const owner = owners[facility.commercialUserId];
+            const owner = owners[facility.inviterId];
             const progress = facilityProgress[facility.id] || { completedStages: [1], currentStage: 2 };
             const isGreenButton = isGreenButtonUtility(facility.utilityProvider);
             const authStatus = authorizationStatus[facility.id] || { authorized: false, metersFetched: false, status: 'not_authorized' };
-            const showAuthorizeButton = !authStatus.authorized;
+            const showAuthorizeButton = !authStatus.authorized && facility.invitationStatus === 'ACCEPTED';
+            const isPending = facility.invitationStatus === 'PENDING';
             
             return (
               <div
@@ -514,11 +574,11 @@ export default function FacilityCardView() {
                       <div className="flex justify-between items-center mb-1">
                         <div className="text-xs font-medium text-blue-700">Authorizing for:</div>
                         <div className={`text-xs px-2 py-1 rounded-full capitalize ${
-                          owner.invitationStatus === 'PENDING' 
+                          facility.invitationStatus === 'PENDING' 
                             ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' 
                             : 'bg-green-100 text-green-800 border border-green-200'
                         }`}>
-                          {owner.invitationStatus || 'PENDING'}
+                          {facility.invitationStatus || 'PENDING'}
                         </div>
                       </div>
                       <div className="grid grid-cols-1 gap-y-1 text-xs">
@@ -537,9 +597,9 @@ export default function FacilityCardView() {
                         <div className="flex justify-between">
                           <span className="text-blue-600 font-medium">Invitation Status:</span>
                           <span className={`font-medium ${
-                            owner.invitationStatus === 'PENDING' ? 'text-yellow-600' : 'text-green-600'
+                            facility.invitationStatus === 'PENDING' ? 'text-yellow-600' : 'text-green-600'
                           }`}>
-                            {owner.invitationStatus || 'PENDING'}
+                            {facility.invitationStatus || 'PENDING'}
                           </span>
                         </div>
                       </div>
@@ -568,8 +628,18 @@ export default function FacilityCardView() {
                     <span className="text-gray-800">{formatDate(facility.createdAt)}</span>
                   </div>
                   
-                  {showAuthorizeButton ? (
-                    <div className="mt-3 pt-2 border-t border-gray-200">
+                  <div className="mt-3 pt-2 border-t border-gray-200">
+                    {isPending ? (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          acceptFacilityInvitation(facility.id, facility.invitationId);
+                        }}
+                        className="w-full py-2 px-3 rounded text-sm font-medium transition-colors bg-blue-500 text-white hover:bg-blue-600"
+                      >
+                        Click to Accept This Facility
+                      </button>
+                    ) : showAuthorizeButton ? (
                       <button
                         onClick={(e) => authorizeFacility(facility, e)}
                         disabled={authorizingFacility === facility.id}
@@ -584,9 +654,7 @@ export default function FacilityCardView() {
                           "AUTHORIZE THIS FACILITY"
                         )}
                       </button>
-                    </div>
-                  ) : (
-                    <div className="mt-3 pt-2 border-t border-gray-200">
+                    ) : (
                       <div className="w-full py-2 px-3 rounded text-sm font-medium text-center bg-green-50 border border-green-200 text-green-700">
                         {authStatus.metersFetched ? (
                           <div className="flex items-center justify-center">
@@ -602,8 +670,8 @@ export default function FacilityCardView() {
                           </div>
                         )}
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                   
                   <div className="mt-3 pt-2 border-t border-gray-200">
                     <div className="flex items-center justify-between mb-2">
