@@ -31,6 +31,7 @@ export default function FacilityCardView() {
   const [authorizationStatus, setAuthorizationStatus] = useState({});
   const [showAgreementModal, setShowAgreementModal] = useState(false);
   const [userAgreementStatus, setUserAgreementStatus] = useState(null);
+  const [statusFilter, setStatusFilter] = useState('accepted');
 
   const greenButtonKeywords = ['green button connect', 'green button', 'san diego gas and electric', 'southern california edison', 'pacific gas and electric', 'pg&e', 'sce', 'sdg&e'];
 
@@ -296,7 +297,7 @@ export default function FacilityCardView() {
     
     try {
       const { data } = await axios.get(
-        `https://services.dcarbon.solutions/api/user/referral/by-invitee-email/${userEmail}`,
+        `https://services.dcarbon.solutions/api/user/referral/by-invitee-email/${userEmail}?status=${statusFilter}`,
         { headers: { Authorization: `Bearer ${authToken}` } }
       );
       
@@ -348,7 +349,7 @@ export default function FacilityCardView() {
   useEffect(() => {
     fetchUserInvitations();
     checkUserAgreement();
-  }, []);
+  }, [statusFilter]);
 
   useEffect(() => {
     if (facilities.length > 0) {
@@ -435,9 +436,33 @@ export default function FacilityCardView() {
   return (
     <div className="p-2">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold" style={{ color: "#039994" }}>
-          My Facilities
-        </h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-xl font-bold" style={{ color: "#039994" }}>
+            My Facilities
+          </h2>
+          <div className="flex items-center space-x-2 ml-4">
+            <button
+              onClick={() => setStatusFilter('accepted')}
+              className={`px-3 py-1 rounded text-sm font-medium transition-all ${
+                statusFilter === 'accepted' 
+                  ? 'bg-white text-[#039994] shadow-md border border-[#039994]' 
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-300'
+              }`}
+            >
+              Accepted
+            </button>
+            <button
+              onClick={() => setStatusFilter('pending')}
+              className={`px-3 py-1 rounded text-sm font-medium transition-all ${
+                statusFilter === 'pending' 
+                  ? 'bg-white text-[#039994] shadow-md border border-[#039994]' 
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-300'
+              }`}
+            >
+              Pending
+            </button>
+          </div>
+        </div>
         <button
           onClick={() => setShowFilterModal(true)}
           className="px-3 py-1 border border-[#039994] text-[#039994] text-sm rounded hover:bg-[#03999421]"
@@ -452,7 +477,7 @@ export default function FacilityCardView() {
         </div>
       ) : filteredFacilities.length === 0 ? (
         <div className="text-center py-6 text-sm text-gray-500">
-          No facilities found
+          {statusFilter === 'accepted' ? 'No accepted facilities found' : 'No pending facilities found'}
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
