@@ -16,6 +16,10 @@ const styles = {
   modalSubtitle: 'text-[15px] text-white text-opacity-90 leading-relaxed',
   closeButton: 'absolute top-6 right-6 text-white hover:text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 cursor-pointer transition-all z-10',
   modalBody: 'flex-1 overflow-y-auto px-8 py-6',
+  statusFilterContainer: 'mb-6 flex flex-wrap gap-3 items-center',
+  statusFilterButton: 'px-4 py-2 rounded-lg font-medium text-sm transition-all',
+  statusFilterButtonActive: 'bg-white text-[#039994] shadow-md',
+  statusFilterButtonInactive: 'bg-gray-100 text-gray-600 hover:bg-gray-200',
   facilityGrid: 'grid grid-cols-1 md:grid-cols-2 gap-5',
   facilityCard: 'relative bg-gradient-to-br from-white to-gray-50 border-2 border-gray-200 rounded-xl p-5 hover:border-[#039994] hover:shadow-lg transition-all duration-300',
   facilityCardAuthorized: 'relative bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-5 shadow-md',
@@ -59,6 +63,7 @@ export default function CommercialRegistrationModal({ isOpen, onClose }) {
   const [instapullOpened, setInstapullOpened] = useState(false);
   const [showInstapullAuthModal, setShowInstapullAuthModal] = useState(false);
   const [authorizationStatus, setAuthorizationStatus] = useState({});
+  const [statusFilter, setStatusFilter] = useState('accepted');
 
   const greenButtonKeywords = ['green button connect', 'green button', 'san diego gas and electric', 'southern california edison', 'pacific gas and electric', 'pg&e', 'sce', 'sdg&e'];
 
@@ -172,7 +177,7 @@ export default function CommercialRegistrationModal({ isOpen, onClose }) {
     setIsLoading(true);
     try {
       const { data } = await axios.get(
-        `https://services.dcarbon.solutions/api/user/referral/by-invitee-email/${userEmail}`,
+        `https://services.dcarbon.solutions/api/user/referral/by-invitee-email/${userEmail}?status=${statusFilter}`,
         { headers: { Authorization: `Bearer ${authToken}` } }
       );
       
@@ -226,7 +231,7 @@ export default function CommercialRegistrationModal({ isOpen, onClose }) {
     if (isOpen) {
       fetchUserInvitations();
     }
-  }, [isOpen]);
+  }, [isOpen, statusFilter]);
 
   const handleInstapullAuthModalClose = () => {
     setShowInstapullAuthModal(false);
@@ -270,6 +275,30 @@ export default function CommercialRegistrationModal({ isOpen, onClose }) {
         </div>
 
         <div className={styles.modalBody}>
+          <div className={styles.statusFilterContainer}>
+            <div className="text-sm text-gray-600 font-medium mr-3">Filter by status:</div>
+            <button
+              onClick={() => setStatusFilter('accepted')}
+              className={`${styles.statusFilterButton} ${
+                statusFilter === 'accepted' 
+                  ? styles.statusFilterButtonActive 
+                  : styles.statusFilterButtonInactive
+              }`}
+            >
+              Accepted
+            </button>
+            <button
+              onClick={() => setStatusFilter('pending')}
+              className={`${styles.statusFilterButton} ${
+                statusFilter === 'pending' 
+                  ? styles.statusFilterButtonActive 
+                  : styles.statusFilterButtonInactive
+              }`}
+            >
+              Pending
+            </button>
+          </div>
+
           {isLoading ? (
             <div className={styles.loadingContainer}>
               <div className={styles.loadingSpinner}></div>
@@ -280,9 +309,14 @@ export default function CommercialRegistrationModal({ isOpen, onClose }) {
               <svg className={styles.emptyIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
               </svg>
-              <h3 className={styles.emptyTitle}>No Invitations Found</h3>
+              <h3 className={styles.emptyTitle}>
+                {statusFilter === 'accepted' ? 'No Accepted Invitations' : 'No Pending Invitations'}
+              </h3>
               <p className={styles.emptyText}>
-                You don't have any facility invitations at the moment. Check back later or contact your facility owner.
+                {statusFilter === 'accepted' 
+                  ? "You don't have any accepted facility invitations. Check your pending invitations or contact your facility owner."
+                  : "You don't have any pending facility invitations at the moment. Check back later or contact your facility owner."
+                }
               </p>
             </div>
           ) : (
