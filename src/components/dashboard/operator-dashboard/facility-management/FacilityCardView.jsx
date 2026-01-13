@@ -64,25 +64,33 @@ export default function FacilityCardView() {
     }
   };
 
-  const acceptFacilityInvitation = async (facilityId, invitationId) => {
+  const acceptFacilityInvitation = async (facilityId, invitationId, referralCode) => {
     try {
       const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
       const authToken = loginResponse?.data?.token;
+      const userEmail = loginResponse?.data?.user?.email || loginResponse?.data?.user?.userEmail;
+      const userId = loginResponse?.data?.user?.id;
       
-      if (!authToken) {
+      if (!authToken || !userEmail || !userId) {
         toast.error("Authentication required");
         return;
       }
 
       const response = await axios.post(
-        `https://services.dcarbon.solutions/api/user/referral/accept-invitation/${invitationId}`,
-        {},
+        `https://services.dcarbon.solutions/api/user/accept-invitation`,
+        {
+          referralCode: referralCode,
+          inviteeEmail: userEmail,
+          userId: userId
+        },
         { headers: { 'Authorization': `Bearer ${authToken}` } }
       );
       
       if (response.data.status === 'success') {
         toast.success('Facility invitation accepted!');
         fetchUserInvitations();
+      } else {
+        toast.error(response.data.message || 'Failed to accept invitation');
       }
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to accept invitation');
@@ -359,6 +367,7 @@ export default function FacilityCardView() {
             facilityData.invitationId = invitation.id;
             facilityData.invitationCreatedAt = invitation.createdAt;
             facilityData.inviterId = invitation.inviterId;
+            facilityData.referralCode = invitation.referralCode;
             facilitiesWithOwners.push(facilityData);
             
             if (!ownersMap[invitation.inviterId]) {
@@ -633,7 +642,7 @@ export default function FacilityCardView() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          acceptFacilityInvitation(facility.id, facility.invitationId);
+                          acceptFacilityInvitation(facility.id, facility.invitationId, facility.referralCode);
                         }}
                         className="w-full py-2 px-3 rounded text-sm font-medium transition-colors bg-blue-500 text-white hover:bg-blue-600"
                       >
