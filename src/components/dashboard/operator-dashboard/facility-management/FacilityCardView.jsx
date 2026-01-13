@@ -32,6 +32,7 @@ export default function FacilityCardView() {
   const [showAgreementModal, setShowAgreementModal] = useState(false);
   const [userAgreementStatus, setUserAgreementStatus] = useState(null);
   const [statusFilter, setStatusFilter] = useState('accepted');
+  const [acceptingFacility, setAcceptingFacility] = useState(null);
 
   const greenButtonKeywords = ['green button connect', 'green button', 'san diego gas and electric', 'southern california edison', 'pacific gas and electric', 'pg&e', 'sce', 'sdg&e'];
 
@@ -64,8 +65,10 @@ export default function FacilityCardView() {
     }
   };
 
-  const acceptFacilityInvitation = async (facilityId, invitationId, referralCode) => {
+  const acceptFacilityInvitation = async (facility) => {
     try {
+      setAcceptingFacility(facility.id);
+      
       const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
       const authToken = loginResponse?.data?.token;
       const userEmail = loginResponse?.data?.user?.email || loginResponse?.data?.user?.userEmail;
@@ -73,27 +76,39 @@ export default function FacilityCardView() {
       
       if (!authToken || !userEmail || !userId) {
         toast.error("Authentication required");
+        setAcceptingFacility(null);
         return;
       }
 
       const response = await axios.post(
         `https://services.dcarbon.solutions/api/user/accept-invitation`,
         {
-          referralCode: referralCode,
+          referralCode: facility.referralCode,
           inviteeEmail: userEmail,
           userId: userId
         },
         { headers: { 'Authorization': `Bearer ${authToken}` } }
       );
       
-      if (response.data.status === 'success') {
+      if (response.data.success === true || response.data.status === 'success') {
         toast.success('Facility invitation accepted!');
-        fetchUserInvitations();
+        
+        setFacilities(prevFacilities => 
+          prevFacilities.map(f => 
+            f.id === facility.id 
+              ? { ...f, invitationStatus: 'ACCEPTED' }
+              : f
+          )
+        );
+        
+        setStatusFilter('accepted');
       } else {
         toast.error(response.data.message || 'Failed to accept invitation');
       }
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to accept invitation');
+    } finally {
+      setAcceptingFacility(null);
     }
   };
 
@@ -368,6 +383,7 @@ export default function FacilityCardView() {
             facilityData.invitationCreatedAt = invitation.createdAt;
             facilityData.inviterId = invitation.inviterId;
             facilityData.referralCode = invitation.referralCode;
+            facilityData.inviteeEmail = invitation.inviteeEmail;
             facilitiesWithOwners.push(facilityData);
             
             if (!ownersMap[invitation.inviterId]) {
@@ -642,11 +658,19 @@ export default function FacilityCardView() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          acceptFacilityInvitation(facility.id, facility.invitationId, facility.referralCode);
+                          acceptFacilityInvitation(facility);
                         }}
-                        className="w-full py-2 px-3 rounded text-sm font-medium transition-colors bg-blue-500 text-white hover:bg-blue-600"
+                        disabled={acceptingFacility === facility.id}
+                        className="w-full py-2 px-3 rounded text-sm font-medium transition-colors bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        Click to Accept This Facility
+                        {acceptingFacility === facility.id ? (
+                          <div className="flex items-center justify-center">
+                            <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+                            Accepting...
+                          </div>
+                        ) : (
+                          "Click to Accept This Facility"
+                        )}
                       </button>
                     ) : showAuthorizeButton ? (
                       <button
