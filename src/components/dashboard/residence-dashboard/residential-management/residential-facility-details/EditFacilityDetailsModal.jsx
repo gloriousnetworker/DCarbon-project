@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { FiX } from "react-icons/fi";
+import React, { useState, useEffect, useRef } from "react";
+import { FiX, FiSearch } from "react-icons/fi";
 import axios from "axios";
 import toast from "react-hot-toast";
 import {
@@ -42,9 +42,23 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
   const [selectedMeter, setSelectedMeter] = useState(null);
   const [isSameLocation, setIsSameLocation] = useState(null);
   const [selectedUtilityAuthEmail, setSelectedUtilityAuthEmail] = useState("");
+  const [selectedUtilityProvider, setSelectedUtilityProvider] = useState("");
   const [meterAgreementAccepted, setMeterAgreementAccepted] = useState(false);
   const [acceptingAgreement, setAcceptingAgreement] = useState(false);
   const [originalMeterId, setOriginalMeterId] = useState(facility.meterId || "");
+  const [meterSearch, setMeterSearch] = useState("");
+  const [showMeterDropdown, setShowMeterDropdown] = useState(false);
+  const [filteredMeters, setFilteredMeters] = useState([]);
+  const meterDropdownRef = useRef(null);
+  const meterSelectRef = useRef(null);
+
+  const getAuthToken = () => {
+    return localStorage.getItem("authToken");
+  };
+
+  const getUserId = () => {
+    return localStorage.getItem("userId");
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -59,14 +73,10 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
   useEffect(() => {
     if (selectedMeter && isSameLocation !== null) {
       if (isSameLocation === true) {
-        const serviceAddress = selectedMeter.base.service_address;
-        const zipMatch = serviceAddress.match(/\b\d{5}(?:-\d{4})?\b/);
-        const zipCode = zipMatch ? zipMatch[0] : "";
-        
         setFormData(prev => ({
           ...prev,
-          address: serviceAddress,
-          zipCode: zipCode
+          address: selectedMeter.serviceAddress || "",
+          zipCode: extractZipCode(selectedMeter.serviceAddress)
         }));
       } else {
         setFormData(prev => ({
@@ -78,10 +88,78 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
     }
   }, [selectedMeter, isSameLocation]);
 
+  useEffect(() => {
+    if (selectedUtilityAuthEmail) {
+      const selectedData = userMeterData.find(item => item.utilityAuthEmail === selectedUtilityAuthEmail);
+      if (selectedData) {
+        setSelectedUtilityProvider(selectedData.utilityProvider);
+        setFormData(prev => ({
+          ...prev,
+          utilityProvider: selectedData.utilityProvider
+        }));
+      }
+    }
+  }, [selectedUtilityAuthEmail, userMeterData]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (meterDropdownRef.current && !meterDropdownRef.current.contains(event.target) && 
+          meterSelectRef.current && !meterSelectRef.current.contains(event.target)) {
+        setShowMeterDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    const validMeters = getValidMeters();
+    if (meterSearch) {
+      const searchTerm = meterSearch.toLowerCase();
+      const filtered = validMeters
+        .map(meter => {
+          const meterNumber = String(meter.meterNumbers || '').toLowerCase();
+          return {
+            meter,
+            matches: meterNumber.includes(searchTerm) ? 1 : 0
+          };
+        })
+        .filter(item => item.matches > 0)
+        .sort((a, b) => b.matches - a.matches)
+        .map(item => item.meter);
+      setFilteredMeters(filtered);
+    } else {
+      setFilteredMeters(validMeters);
+    }
+  }, [meterSearch, selectedUtilityAuthEmail, userMeterData]);
+
+  useEffect(() => {
+    if (facility.meterId && userMeterData.length > 0) {
+      const meterUid = facility.meterId;
+      const foundMeter = findMeterByUid(meterUid, userMeterData);
+      if (foundMeter) {
+        setSelectedMeter(foundMeter);
+        const selectedData = userMeterData.find(item => 
+          item.meters?.some(m => m.uid === meterUid)
+        );
+        if (selectedData) {
+          setSelectedUtilityAuthEmail(selectedData.utilityAuthEmail);
+          setSelectedUtilityProvider(selectedData.utilityProvider);
+        }
+      }
+    }
+  }, [facility.meterId, userMeterData]);
+
+  const extractZipCode = (address) => {
+    if (!address) return "";
+    const zipMatch = address.match(/\b\d{5}(?:-\d{4})?\b/);
+    return zipMatch ? zipMatch[0] : "";
+  };
+
   const fetchUtilityProviders = async () => {
     setLoadingUtilityProviders(true);
     try {
-      const token = localStorage.getItem("authToken");
+      const token = getAuthToken();
       const response = await axios.get(
         "https://services.dcarbon.solutions/api/auth/utility-providers",
         {
@@ -105,7 +183,7 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
   const fetchFinanceTypes = async () => {
     setLoadingFinanceTypes(true);
     try {
-      const token = localStorage.getItem("authToken");
+      const token = getAuthToken();
       const response = await axios.get("https://services.dcarbon.solutions/api/user/financial-types", { headers: { Authorization: `Bearer ${token}` } });
       if (response.data.status === "success") {
         const approvedTypes = response.data.data.types.filter(type => type.status === "APPROVED" || type.name.toLowerCase() === "cash");
@@ -121,7 +199,7 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
   const fetchFinanceCompanies = async () => {
     setLoadingFinanceCompanies(true);
     try {
-      const token = localStorage.getItem("authToken");
+      const token = getAuthToken();
       const response = await axios.get("https://services.dcarbon.solutions/api/user/partner/finance-companies", { headers: { Authorization: `Bearer ${token}` } });
       if (response.data.status === "success") {
         setFinanceCompanies(response.data.data.financeCompanies || []);
@@ -136,7 +214,7 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
   const fetchInstallers = async () => {
     setLoadingInstallers(true);
     try {
-      const token = localStorage.getItem("authToken");
+      const token = getAuthToken();
       const response = await axios.get("https://services.dcarbon.solutions/api/user/partner/get-all-installer", { headers: { Authorization: `Bearer ${token}` } });
       if (response.data.status === "success") setInstallers(response.data.data.installers || []);
     } catch (error) {
@@ -147,8 +225,8 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
   };
 
   const fetchUserMeters = async () => {
-    const userId = localStorage.getItem("userId");
-    const authToken = localStorage.getItem("authToken");
+    const userId = getUserId();
+    const authToken = getAuthToken();
 
     if (!userId || !authToken) return;
 
@@ -165,10 +243,26 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
       );
 
       if (response.data.status === "success") {
-        setUserMeterData(response.data.data);
-        const firstWithMeters = response.data.data.find(item => item.meters?.meters?.length > 0);
-        if (firstWithMeters) {
-          setSelectedUtilityAuthEmail(firstWithMeters.utilityAuthEmail);
+        const meterData = response.data.data || [];
+        setUserMeterData(meterData);
+        
+        if (meterData.length > 0) {
+          setSelectedUtilityAuthEmail(meterData[0].utilityAuthEmail);
+        }
+        
+        if (facility.meterId) {
+          const initialMeter = findMeterByUid(facility.meterId, meterData);
+          if (initialMeter) {
+            setSelectedMeter(initialMeter);
+            
+            const selectedData = meterData.find(item => 
+              item.meters?.some(m => m.uid === facility.meterId)
+            );
+            if (selectedData) {
+              setSelectedUtilityAuthEmail(selectedData.utilityAuthEmail);
+              setSelectedUtilityProvider(selectedData.utilityProvider);
+            }
+          }
         }
       }
     } catch (error) {
@@ -179,18 +273,42 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
     }
   };
 
-  const getCurrentMeters = () => {
+  const findMeterByUid = (uid, meterData) => {
+    if (!uid) return null;
+    
+    for (const account of meterData) {
+      for (const meter of account.meters || []) {
+        if (meter.uid === uid) {
+          return meter;
+        }
+      }
+    }
+    return null;
+  };
+
+  const getValidMeters = () => {
     if (!selectedUtilityAuthEmail) return [];
     
     const selectedData = userMeterData.find(
       item => item.utilityAuthEmail === selectedUtilityAuthEmail
     );
     
-    if (!selectedData || !selectedData.meters?.meters) return [];
+    if (!selectedData?.meters) return [];
     
-    return selectedData.meters.meters.filter(
-      meter => meter.base.service_class === "electric"
+    return selectedData.meters.filter(
+      meter => meter.meterNumbers && String(meter.meterNumbers).length > 0 && meter.serviceAddress && meter.billingAddress
     );
+  };
+
+  const handleMeterSelect = (meter) => {
+    setSelectedMeter(meter);
+    setIsSameLocation(null);
+    setMeterAgreementAccepted(false);
+    setFormData(prev => ({
+      ...prev,
+      meterId: meter.uid
+    }));
+    setShowMeterDropdown(false);
   };
 
   const handleChange = (e) => {
@@ -201,31 +319,18 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
     }));
   };
 
-  const handleMeterChange = (e) => {
-    const meterId = e.target.value;
-    const currentMeters = getCurrentMeters();
-    const meter = currentMeters.find(m => m.uid === meterId);
-    
-    setSelectedMeter(meter || null);
-    setIsSameLocation(null);
-    setMeterAgreementAccepted(false);
-    
-    setFormData(prev => ({
-      ...prev,
-      meterId: meterId
-    }));
-  };
-
   const handleUtilityAuthEmailChange = (e) => {
     const email = e.target.value;
     setSelectedUtilityAuthEmail(email);
-    setSelectedMeter(null);
-    setIsSameLocation(null);
-    setMeterAgreementAccepted(false);
     setFormData(prev => ({
       ...prev,
       meterId: ""
     }));
+    setSelectedMeter(null);
+    setIsSameLocation(null);
+    setMeterAgreementAccepted(false);
+    setMeterSearch("");
+    setShowMeterDropdown(false);
   };
 
   const handleLocationChoice = (choice) => {
@@ -233,8 +338,8 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
   };
 
   const handleAcceptMeterAgreement = async () => {
-    const userId = localStorage.getItem("userId");
-    const authToken = localStorage.getItem("authToken");
+    const userId = getUserId();
+    const authToken = getAuthToken();
 
     if (!userId || !authToken) {
       toast.error("Authentication required");
@@ -268,9 +373,15 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (formData.meterId !== originalMeterId && !meterAgreementAccepted) {
+      toast.error("Please accept the meter agreement before saving");
+      return;
+    }
+
     setLoading(true);
     try {
-      const authToken = localStorage.getItem("authToken");
+      const authToken = getAuthToken();
       
       const updateData = {
         installer: formData.installer === "not_available" ? "N/A" : formData.installer,
@@ -309,12 +420,6 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
   const isCashType = formData.financeType.toLowerCase() === 'cash';
   const showFinanceCompany = !isCashType && formData.financeType !== '';
 
-  const utilityAuthEmailsWithMeters = userMeterData.filter(
-    item => item.meters?.meters?.length > 0
-  );
-
-  const currentMeters = getCurrentMeters();
-
   if (!isOpen) return null;
 
   return (
@@ -335,28 +440,6 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className={labelClass}>Utility Provider</label>
-                <select
-                  name="utilityProvider"
-                  value={formData.utilityProvider}
-                  onChange={handleChange}
-                  className={selectClass}
-                  disabled={loading || loadingUtilityProviders}
-                >
-                  <option value="">Select utility provider</option>
-                  {loadingUtilityProviders ? (
-                    <option value="" disabled>Loading providers...</option>
-                  ) : (
-                    utilityProviders.map(provider => (
-                      <option key={provider.id} value={provider.name}>
-                        {provider.name}
-                      </option>
-                    ))
-                  )}
-                </select>
-              </div>
-              
-              <div>
                 <label className={labelClass}>Utility Account</label>
                 <select
                   value={selectedUtilityAuthEmail}
@@ -367,45 +450,132 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
                   <option value="">Select utility account</option>
                   {userMetersLoading ? (
                     <option value="" disabled>Loading accounts...</option>
-                  ) : utilityAuthEmailsWithMeters.length === 0 ? (
+                  ) : userMeterData.length === 0 ? (
                     <option value="" disabled>No utility accounts found</option>
                   ) : (
-                    utilityAuthEmailsWithMeters.map(item => (
+                    userMeterData.map(item => (
                       <option key={item.id} value={item.utilityAuthEmail}>
                         {item.utilityAuthEmail}
                       </option>
                     ))
                   )}
                 </select>
+                <p className="mt-1 text-xs text-gray-500">
+                  Select the utility account containing your meters
+                </p>
               </div>
 
               {selectedUtilityAuthEmail && (
                 <div>
+                  <label className={labelClass}>Utility Provider</label>
+                  <input
+                    type="text"
+                    value={selectedUtilityProvider}
+                    className={`${inputClass} bg-gray-100`}
+                    disabled={true}
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Utility provider from selected account
+                  </p>
+                </div>
+              )}
+
+              {selectedUtilityAuthEmail && (
+                <div className="relative">
                   <label className={labelClass}>Solar Meter</label>
-                  <select
-                    value={formData.meterId}
-                    onChange={handleMeterChange}
-                    className={selectClass}
-                    disabled={loading || currentMeters.length === 0}
-                  >
-                    <option value="">Select meter</option>
-                    {currentMeters.length === 0 ? (
-                      <option value="" disabled>No electric meters found for this account</option>
-                    ) : (
-                      currentMeters.map(meter => (
-                        <option key={meter.uid} value={meter.uid}>
-                          {meter.base.meter_numbers[0]} - {meter.base.service_tariff}
-                        </option>
-                      ))
+                  <div className="relative" ref={meterSelectRef}>
+                    <div 
+                      className={`${inputClass} flex items-center justify-between cursor-pointer ${selectedMeter ? 'bg-gray-50' : ''}`}
+                      onClick={() => setShowMeterDropdown(!showMeterDropdown)}
+                    >
+                      {selectedMeter ? (
+                        <div className="truncate">
+                          {String(selectedMeter.meterNumbers || '')}
+                          {selectedMeter.serviceAddress && ` - ${selectedMeter.serviceAddress.split(',')[0]}`}
+                        </div>
+                      ) : (
+                        <span className="text-gray-500">Select meter</span>
+                      )}
+                      <div className={`transform transition-transform ${showMeterDropdown ? 'rotate-180' : ''}`}>
+                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </div>
+                    
+                    {showMeterDropdown && (
+                      <div 
+                        ref={meterDropdownRef}
+                        className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-96 overflow-hidden"
+                      >
+                        <div className="sticky top-0 bg-white border-b border-gray-300 p-2">
+                          <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                              <FiSearch className="text-gray-400" />
+                            </div>
+                            <input
+                              type="text"
+                              value={meterSearch}
+                              onChange={(e) => setMeterSearch(e.target.value)}
+                              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994] focus:border-[#039994]"
+                              placeholder="Search meter number..."
+                              autoFocus
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="overflow-y-auto max-h-80">
+                          {filteredMeters.length === 0 ? (
+                            <div className="px-4 py-6 text-center">
+                              <p className="text-gray-500 text-sm mb-3">No meters found</p>
+                              <p className="text-xs text-gray-500">
+                                Only meters with meter numbers, service address, and billing address are shown
+                              </p>
+                            </div>
+                          ) : (
+                            <>
+                              {filteredMeters.map(meter => (
+                                <div
+                                  key={meter.uid}
+                                  className={`px-4 py-3 cursor-pointer hover:bg-gray-100 border-b border-gray-100 ${selectedMeter?.uid === meter.uid ? 'bg-blue-50' : ''}`}
+                                  onClick={() => handleMeterSelect(meter)}
+                                >
+                                  <div className="font-medium text-sm text-gray-900">
+                                    {String(meter.meterNumbers || '')}
+                                  </div>
+                                  {meter.serviceAddress && (
+                                    <div className="text-xs text-gray-600 mt-1 truncate">
+                                      Service: {meter.serviceAddress}
+                                    </div>
+                                  )}
+                                  {meter.billingAddress && (
+                                    <div className="text-xs text-gray-600 truncate">
+                                      Billing: {meter.billingAddress}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </>
+                          )}
+                        </div>
+                      </div>
                     )}
-                  </select>
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Only meters with meter numbers, service address, and billing address are shown
+                  </p>
                 </div>
               )}
 
               {selectedMeter && (
                 <div className="md:col-span-2">
                   <div className="mb-3 p-3 bg-gray-50 rounded-md border border-gray-200">
-                    <p className="font-medium mb-2">Service Address: {selectedMeter.base.service_address}</p>
+                    {selectedMeter.serviceAddress && (
+                      <p className="font-medium mb-2">Service Address: {selectedMeter.serviceAddress}</p>
+                    )}
+                    {selectedMeter.billingAddress && (
+                      <p className="font-medium mb-2">Billing Address: {selectedMeter.billingAddress}</p>
+                    )}
                     <p className="font-medium mb-2">
                       Is this the same location for the solar installation?
                     </p>
