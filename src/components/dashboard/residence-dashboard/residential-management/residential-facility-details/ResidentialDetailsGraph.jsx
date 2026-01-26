@@ -1,539 +1,748 @@
 import React, { useState, useEffect } from "react";
-import { FiDownload, FiCalendar, FiFilter } from "react-icons/fi";
 
-export default function CommercialDetailsGraph({ facilityId, meterId }) {
-  const [chartData, setChartData] = useState([]);
-  const [stats, setStats] = useState({
-    recGenerated: 0,
-    recSold: 0,
-    revenueEarned: 0,
-    energyProduced: 0
-  });
+export default function ResidentialDetailsGraph({ facilityId, meterId }) {
+  const [selectedYear, setSelectedYear] = useState("2025");
+  const [selectedMonth, setSelectedMonth] = useState("");
+  const [selectedQuarter, setSelectedQuarter] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [rawData, setRawData] = useState([]);
-  const [filteredData, setFilteredData] = useState([]);
-  const [dateRange, setDateRange] = useState({
-    startDate: '',
-    endDate: ''
-  });
-  const [selectedMonths, setSelectedMonths] = useState([]);
-  const [sortBy, setSortBy] = useState('date-asc');
-  const [showFilters, setShowFilters] = useState(false);
-  const [dataAvailable, setDataAvailable] = useState(false);
+  const [recStatistics, setRecStatistics] = useState([]);
+  const [recOverview, setRecOverview] = useState(null);
+  const [graphData, setGraphData] = useState([]);
+  const [detailStatistics, setDetailStatistics] = useState([]);
+  const [totalLifetimeRecs, setTotalLifetimeRecs] = useState(0);
+  const [viewMode, setViewMode] = useState("monthly");
+  const [facilityDetails, setFacilityDetails] = useState(null);
 
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const monthNames = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+  
+  const monthShortNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+  const quarterOptions = [
+    { value: "1", label: "Q1" },
+    { value: "2", label: "Q2" },
+    { value: "3", label: "Q3" },
+    { value: "4", label: "Q4" }
+  ];
+
+  const getAuthData = () => {
+    const loginResponse = JSON.parse(localStorage.getItem("loginResponse") || '{}');
+    return {
+      userId: loginResponse?.data?.user?.id,
+      authToken: loginResponse?.data?.token
+    };
+  };
+
+  const handleMonthChange = (month) => {
+    setSelectedMonth(month);
+    setSelectedQuarter("");
+  };
+
+  const handleQuarterChange = (quarter) => {
+    setSelectedQuarter(quarter);
+    setSelectedMonth("");
+  };
+
+  const toggleViewMode = () => {
+    const newMode = viewMode === "monthly" ? "quarterly" : "monthly";
+    setViewMode(newMode);
+    setSelectedMonth("");
+    setSelectedQuarter("");
+  };
 
   useEffect(() => {
-    if (meterId) {
-      fetchMeterData();
-    } else {
-      setLoading(false);
-      setError("No meter ID available");
-    }
-  }, [meterId]);
+    const fetchAllData = async () => {
+      try {
+        setLoading(true);
+        const { authToken } = getAuthData();
+        if (!authToken) {
+          throw new Error("Missing authentication data");
+        }
+        await fetchFacilityDetails(authToken);
+        await fetchTotalLifetimeRecs(authToken);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAllData();
+  }, [facilityId]);
 
   useEffect(() => {
-    applyFiltersAndSort();
-  }, [rawData, dateRange, selectedMonths, sortBy]);
+    const fetchData = async () => {
+      const { authToken } = getAuthData();
+      if (!authToken) return;
+      
+      try {
+        await fetchRecStatistics(authToken);
+        await fetchRecOverview(authToken);
+        await fetchDetailStatistics(authToken);
+      } catch (err) {
+        console.error('Error fetching chart data:', err);
+      }
+    };
+    fetchData();
+  }, [selectedYear, selectedMonth, selectedQuarter, viewMode, facilityId]);
 
-  const fetchMeterData = async () => {
-    if (!meterId) return;
-
+  const fetchTotalLifetimeRecs = async (authToken) => {
     try {
-      setLoading(true);
-      setError(null);
-      
-      const authToken = localStorage.getItem('authToken');
-      if (!authToken) {
-        throw new Error('Authentication token not found');
-      }
-
-      const response = await fetch(`https://services.dcarbon.solutions/api/facility/get-meter-rec-data/${meterId}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${authToken}`,
-          'Content-Type': 'application/json'
+      const { userId } = getAuthData();
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/rec/statistics?userId=${userId}&facilityId=${facilityId}`,
+        {
+          headers: { 
+            Authorization: `Bearer ${authToken}`, 
+            "Content-Type": "application/json" 
+          }
         }
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
+      );
       
-      if (result.status === 'success' && result.data) {
-        const readings = result.data.data.intervals[0].readings;
-        
-        if (readings && readings.length > 0) {
-          setRawData(readings);
-          setDataAvailable(true);
-          
-          const startDate = new Date(Math.min(...readings.map(r => new Date(r.start))));
-          const endDate = new Date(Math.max(...readings.map(r => new Date(r.start))));
-          
-          setDateRange({
-            startDate: startDate.toISOString().split('T')[0],
-            endDate: endDate.toISOString().split('T')[0]
-          });
-        } else {
-          setDataAvailable(false);
-          setRawData([]);
-        }
-      } else if (result.status === 'fail') {
-        setDataAvailable(false);
-        setRawData([]);
-      } else {
-        throw new Error(result.message || 'Failed to fetch data');
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      const data = await response.json();
+      
+      if (data.status === "success" && Array.isArray(data.data)) {
+        const total = data.data.reduce((sum, item) => sum + (item.recsGenerated || 0), 0);
+        setTotalLifetimeRecs(total);
       }
     } catch (err) {
-      setError(err.message);
-      console.error('Error fetching meter data:', err);
-      setDataAvailable(false);
-    } finally {
-      setLoading(false);
+      console.error('Error fetching lifetime RECs:', err);
     }
   };
 
-  const applyFiltersAndSort = () => {
-    if (!rawData || rawData.length === 0) {
-      setFilteredData([]);
-      setChartData([]);
-      setStats({
-        recGenerated: 0,
-        recSold: 0,
-        revenueEarned: 0,
-        energyProduced: 0
-      });
-      return;
-    }
-
-    let filtered = [...rawData];
-
-    if (dateRange.startDate && dateRange.endDate) {
-      const start = new Date(dateRange.startDate);
-      const end = new Date(dateRange.endDate);
-      end.setHours(23, 59, 59, 999);
-      
-      filtered = filtered.filter(reading => {
-        const readingDate = new Date(reading.start);
-        return readingDate >= start && readingDate <= end;
-      });
-    }
-
-    if (selectedMonths.length > 0) {
-      filtered = filtered.filter(reading => {
-        const readingMonth = new Date(reading.start).toLocaleString('default', { month: 'short' });
-        return selectedMonths.includes(readingMonth);
-      });
-    }
-
-    filtered.sort((a, b) => {
-      const dateA = new Date(a.start);
-      const dateB = new Date(b.start);
-      
-      switch (sortBy) {
-        case 'date-desc':
-          return dateB - dateA;
-        case 'energy-asc':
-          return (a.kwh || 0) - (b.kwh || 0);
-        case 'energy-desc':
-          return (b.kwh || 0) - (a.kwh || 0);
-        default:
-          return dateA - dateB;
-      }
-    });
-
-    setFilteredData(filtered);
-    processFilteredData(filtered);
-  };
-
-  const processFilteredData = (data) => {
-    if (!data || data.length === 0) {
-      setChartData([]);
-      setStats({
-        recGenerated: 0,
-        recSold: 0,
-        revenueEarned: 0,
-        energyProduced: 0
-      });
-      return;
-    }
-
-    const monthlyData = {};
-    let totalEnergyProduced = 0;
-    
-    data.forEach(reading => {
-      const date = new Date(reading.start);
-      const monthKey = date.toLocaleString('default', { month: 'short' });
-      const energyValue = reading.kwh || 0;
-      
-      if (!monthlyData[monthKey]) {
-        monthlyData[monthKey] = 0;
-      }
-      monthlyData[monthKey] += energyValue;
-      totalEnergyProduced += energyValue;
-    });
-
-    const processedChartData = months.map(month => ({
-      month,
-      value: monthlyData[month] || 0,
-      recs: Math.round((monthlyData[month] || 0) * 1.2)
-    }));
-
-    const maxValue = Math.max(...processedChartData.map(d => d.value));
-    const normalizedData = processedChartData.map(data => ({
-      ...data,
-      normalizedValue: maxValue > 0 ? (data.value / maxValue) * 100 : 0
-    }));
-
-    setChartData(normalizedData);
-    
-    const totalRecs = Math.round(totalEnergyProduced * 1.2);
-    const soldRecs = Math.round(totalRecs * 0.8);
-    const revenue = soldRecs * 45;
-
-    setStats({
-      recGenerated: totalRecs,
-      recSold: soldRecs,
-      revenueEarned: revenue,
-      energyProduced: Math.round(totalEnergyProduced * 100) / 100
-    });
-  };
-
-  const downloadData = () => {
+  const fetchFacilityDetails = async (authToken) => {
     try {
-      const dataToExport = filteredData.length > 0 ? filteredData : rawData;
-      
-      const headers = [
-        'Timestamp',
-        'Start Time',
-        'End Time',
-        'Energy (kWh)',
-        'Net Value',
-        'Forward Value',
-        'Reverse Value',
-        'Month',
-        'Day',
-        'Year',
-        'RECs Generated'
-      ];
-      
-      const csvRows = [];
-      csvRows.push(headers.join(','));
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/residential-facility/get-one-residential-facility/${facilityId}`,
+        {
+          headers: { 
+            Authorization: `Bearer ${authToken}`, 
+            "Content-Type": "application/json" 
+          }
+        }
+      );
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      const data = await response.json();
+      if (data.status === "success" && data.data) {
+        setFacilityDetails(data.data);
+      }
+    } catch (err) {
+      console.error('Error fetching facility details:', err);
+    }
+  };
 
-      if (dataToExport && dataToExport.length > 0) {
-        dataToExport.forEach((reading, index) => {
-          const startDate = new Date(reading.start);
-          const endDate = new Date(reading.end);
-          const month = startDate.toLocaleString('default', { month: 'short' });
-          const day = startDate.getDate();
-          const year = startDate.getFullYear();
-          const recsGenerated = Math.round((reading.kwh || 0) * 1.2);
-          
-          const netDatapoint = reading.datapoints.find(dp => dp.type === 'net');
-          const fwdDatapoint = reading.datapoints.find(dp => dp.type === 'fwd');
-          const revDatapoint = reading.datapoints.find(dp => dp.type === 'rev');
+  const fetchRecStatistics = async (authToken) => {
+    try {
+      const url = new URL(`https://services.dcarbon.solutions/api/rec/statistics`);
+      
+      const params = {
+        year: selectedYear,
+        facilityId: facilityId
+      };
+      
+      Object.keys(params).forEach(key => {
+        url.searchParams.append(key, params[key]);
+      });
+      
+      const response = await fetch(url, {
+        headers: { 
+          Authorization: `Bearer ${authToken}`, 
+          "Content-Type": "application/json" 
+        }
+      });
+      
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      const data = await response.json();
+      
+      if (data.status === "success") {
+        setRecStatistics(data.data || []);
+        processGraphData(data.data || []);
+      }
+    } catch (err) {
+      console.error('Error fetching REC statistics:', err);
+      setGraphData([]);
+    }
+  };
 
-          const row = [
-            index + 1,
-            startDate.toISOString(),
-            endDate.toISOString(),
-            reading.kwh || 0,
-            netDatapoint ? netDatapoint.value : 0,
-            fwdDatapoint ? fwdDatapoint.value : 0,
-            revDatapoint ? revDatapoint.value : 0,
-            month,
-            day,
-            year,
-            recsGenerated
-          ];
-          
-          csvRows.push(row.join(','));
+  const fetchDetailStatistics = async (authToken) => {
+    try {
+      const url = new URL(`https://services.dcarbon.solutions/api/rec/statistics`);
+      
+      const params = {
+        facilityId: facilityId
+      };
+      
+      if (viewMode === "monthly" && selectedMonth) {
+        const monthNumber = monthNames.indexOf(selectedMonth) + 1;
+        params.month = monthNumber;
+      }
+      
+      if (viewMode === "quarterly" && selectedQuarter) {
+        params.quarter = selectedQuarter;
+      }
+      
+      if (selectedYear) {
+        params.year = selectedYear;
+      }
+      
+      Object.keys(params).forEach(key => {
+        url.searchParams.append(key, params[key]);
+      });
+      
+      const response = await fetch(url, {
+        headers: { 
+          Authorization: `Bearer ${authToken}`, 
+          "Content-Type": "application/json" 
+        }
+      });
+      
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      const data = await response.json();
+      
+      if (data.status === "success") {
+        setDetailStatistics(data.data || []);
+      }
+    } catch (err) {
+      console.error('Error fetching detail statistics:', err);
+      setDetailStatistics([]);
+    }
+  };
+
+  const fetchRecOverview = async (authToken) => {
+    try {
+      const url = new URL(`https://services.dcarbon.solutions/api/rec/overview/stats`);
+      
+      const params = {
+        facilityId: facilityId
+      };
+      
+      if (viewMode === "monthly" && selectedMonth) {
+        const monthNumber = monthNames.indexOf(selectedMonth) + 1;
+        params.month = monthNumber;
+      }
+      
+      if (viewMode === "quarterly" && selectedQuarter) {
+        params.quarter = selectedQuarter;
+      }
+      
+      if (selectedYear) {
+        params.year = selectedYear;
+      }
+      
+      Object.keys(params).forEach(key => {
+        url.searchParams.append(key, params[key]);
+      });
+      
+      const response = await fetch(url, {
+        headers: { 
+          Authorization: `Bearer ${authToken}`, 
+          "Content-Type": "application/json" 
+        }
+      });
+      
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      const data = await response.json();
+      
+      if (data.status === "success") {
+        setRecOverview(data.data);
+      }
+    } catch (err) {
+      console.error('Error fetching REC overview:', err);
+    }
+  };
+
+  const processGraphData = (statisticsData) => {
+    if (!statisticsData || !Array.isArray(statisticsData)) {
+      const emptyGraphData = viewMode === "monthly" 
+        ? monthShortNames.map(month => ({ month, value: 0 }))
+        : quarterOptions.map(q => ({ month: q.label, value: 0 }));
+      setGraphData(emptyGraphData);
+      return;
+    }
+    
+    const yearData = statisticsData.filter(item => item.year === parseInt(selectedYear));
+    
+    if (viewMode === "quarterly") {
+      const quarterData = [];
+      quarterOptions.forEach(q => {
+        const quarterMonths = getMonthsForQuarter(parseInt(q.value));
+        const quarterRecs = yearData
+          .filter(item => quarterMonths.includes(item.month))
+          .reduce((sum, item) => sum + (item.recsGenerated || 0), 0);
+        quarterData.push({
+          quarter: q.label,
+          value: quarterRecs
         });
-      }
-
-      csvRows.push('');
-      csvRows.push('Filter Applied');
-      if (dateRange.startDate && dateRange.endDate) {
-        csvRows.push(`Date Range,${dateRange.startDate} to ${dateRange.endDate}`);
-      }
-      if (selectedMonths.length > 0) {
-        csvRows.push(`Selected Months,"${selectedMonths.join(', ')}"`);
-      }
-      csvRows.push(`Sort Order,${sortBy}`);
-      csvRows.push(`Total Records,${dataToExport.length}`);
+      });
       
-      csvRows.push('');
-      csvRows.push('Summary Statistics');
-      csvRows.push(`Total RECs Generated,${stats.recGenerated}`);
-      csvRows.push(`RECs Sold,${stats.recSold}`);
-      csvRows.push(`Revenue Earned,$${stats.revenueEarned}`);
-      csvRows.push(`Total Energy Produced,${stats.energyProduced} MWh`);
-
-      const csvContent = csvRows.join('\n');
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.setAttribute('href', url);
+      const processedData = quarterOptions.map((q, index) => ({
+        month: q.label,
+        value: quarterData[index]?.value || 0
+      }));
       
-      const filterSuffix = selectedMonths.length > 0 ? `_${selectedMonths.join('-')}` : 
-                          (dateRange.startDate && dateRange.endDate) ? `_${dateRange.startDate}_to_${dateRange.endDate}` : '';
+      setGraphData(processedData);
+    } else {
+      const monthlyMap = {};
+      yearData.forEach(item => {
+        monthlyMap[item.month] = item.recsGenerated || 0;
+      });
       
-      link.setAttribute('download', `facility_${facilityId}_meter_${meterId}${filterSuffix}_${new Date().toISOString().split('T')[0]}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error('Error downloading data:', err);
-      alert('Failed to download data. Please try again.');
+      const processedData = monthShortNames.map((monthName, index) => {
+        const monthNumber = index + 1;
+        return {
+          month: monthName,
+          value: monthlyMap[monthNumber] || 0
+        };
+      });
+      
+      setGraphData(processedData);
     }
   };
 
-  const handleMonthToggle = (month) => {
-    setSelectedMonths(prev => 
-      prev.includes(month) 
-        ? prev.filter(m => m !== month)
-        : [...prev, month]
-    );
+  const getMonthsForQuarter = (quarter) => {
+    switch(quarter) {
+      case 1: return [1, 2, 3];
+      case 2: return [4, 5, 6];
+      case 3: return [7, 8, 9];
+      case 4: return [10, 11, 12];
+      default: return [];
+    }
   };
 
-  const clearAllFilters = () => {
-    setSelectedMonths([]);
-    setDateRange({ startDate: '', endDate: '' });
-    setSortBy('date-asc');
+  const getYAxisValues = () => {
+    const maxValue = Math.max(...graphData.map(d => d.value), 0.1);
+    
+    if (maxValue <= 1) {
+      const step = 0.2;
+      const values = [];
+      for (let i = 1; i >= 0; i -= step) {
+        values.push(parseFloat(i.toFixed(1)));
+      }
+      return values;
+    } else if (maxValue <= 5) {
+      const step = 1;
+      const values = [];
+      for (let i = 5; i >= 0; i -= step) {
+        values.push(i);
+      }
+      return values;
+    } else if (maxValue <= 10) {
+      const step = 2;
+      const values = [];
+      for (let i = 10; i >= 0; i -= step) {
+        values.push(i);
+      }
+      return values;
+    } else if (maxValue <= 50) {
+      const step = 10;
+      const values = [];
+      for (let i = 50; i >= 0; i -= step) {
+        values.push(i);
+      }
+      return values;
+    } else {
+      const step = 20;
+      const values = [];
+      for (let i = 100; i >= 0; i -= step) {
+        values.push(i);
+      }
+      return values;
+    }
   };
 
-  const getActiveFiltersCount = () => {
-    let count = 0;
-    if (selectedMonths.length > 0) count++;
-    if (dateRange.startDate && dateRange.endDate) count++;
-    if (sortBy !== 'date-asc') count++;
-    return count;
+  const getActualStats = () => {
+    if (recOverview) {
+      return {
+        totalRecsGenerated: recOverview.totalRecsGenerated || 0,
+        totalRecsSold: recOverview.totalRecsSold || 0,
+        totalRecsAvailable: recOverview.totalRecsAvailable || 0,
+        currentRecPrice: recOverview.currentRecPrice || 0,
+        revenueEarned: (recOverview.totalRecsSold || 0) * (recOverview.currentRecPrice || 0)
+      };
+    }
+    
+    const totalRecs = recStatistics.reduce((sum, stat) => sum + (stat.recsGenerated || 0), 0);
+    return { 
+      totalRecsGenerated: totalRecs, 
+      totalRecsSold: Math.floor(totalRecs * 0.85), 
+      totalRecsAvailable: totalRecs - Math.floor(totalRecs * 0.85),
+      currentRecPrice: totalRecs > 0 ? 45 : 0, 
+      revenueEarned: Math.floor(totalRecs * 0.85 * 45)
+    };
+  };
+
+  const getFilterDescription = () => {
+    if (selectedMonth && selectedYear) {
+      return `${selectedMonth} ${selectedYear}`;
+    } else if (selectedQuarter && selectedYear) {
+      const quarterLabel = quarterOptions.find(q => q.value === selectedQuarter)?.label || `Q${selectedQuarter}`;
+      return `${quarterLabel} ${selectedYear}`;
+    } else if (selectedYear) {
+      return `Year ${selectedYear}`;
+    }
+    return "All time";
+  };
+
+  const getMonthName = (monthNumber) => {
+    return monthNames[monthNumber - 1] || `Month ${monthNumber}`;
+  };
+
+  const getTotalFromDetailStats = (field) => {
+    return detailStatistics.reduce((sum, item) => sum + (item[field] || 0), 0);
   };
 
   if (loading) {
     return (
-      <div className="w-full bg-white border border-gray-200 rounded-lg shadow-sm p-6">
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#039994]"></div>
-          <span className="ml-2 text-gray-600">Loading energy data...</span>
-        </div>
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-pulse text-gray-500 font-sfpro">Loading data...</div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="w-full bg-white border border-gray-200 rounded-lg shadow-sm p-6">
-        <div className="flex flex-col justify-center items-center h-64">
-          <div className="text-red-500 mb-2">⚠️ Error loading data</div>
-          <p className="text-gray-600 text-sm text-center">{error}</p>
-          <button 
-            onClick={fetchMeterData}
-            className="mt-4 bg-[#039994] text-white px-4 py-2 rounded text-sm hover:bg-[#027a75] transition-colors"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
+      <div className="text-red-500 p-4 font-sfpro">Error loading data: {error}</div>
     );
   }
 
-  if (!dataAvailable) {
-    return (
-      <div className="w-full bg-white border border-gray-200 rounded-lg shadow-sm p-6">
-        <div className="flex flex-col justify-center items-center h-64">
-          <div className="text-gray-500 mb-2">No data available</div>
-          <p className="text-gray-600 text-sm text-center">No REC data found for this meter</p>
-          <button 
-            onClick={fetchMeterData}
-            className="mt-4 bg-[#039994] text-white px-4 py-2 rounded text-sm hover:bg-[#027a75] transition-colors"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  const maxValue = Math.max(...chartData.map(d => d.normalizedValue));
-  const activeFilters = getActiveFiltersCount();
+  const yAxisValues = getYAxisValues();
+  const maxYValue = Math.max(...yAxisValues);
+  const stats = getActualStats();
+  const currentYear = new Date().getFullYear();
+  const yearOptions = [currentYear, currentYear - 1, currentYear - 2, currentYear - 3];
 
   return (
-    <div className="w-full bg-white border border-gray-200 rounded-lg shadow-sm p-6">
-      <div className="flex justify-between items-center mb-8">
-        <h3 className="text-lg font-semibold text-[#039994]">Energy Performance</h3>
-        <div className="flex items-center space-x-2">
-          <button 
-            onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center space-x-1 px-3 py-1 rounded text-sm transition-colors relative ${
-              showFilters ? 'bg-[#039994] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
+    <div className="w-full bg-white min-h-screen p-6">
+      <div className="flex flex-wrap items-center justify-between mb-6">
+        <h2 className="font-[600] text-[24px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro">
+          {facilityDetails ? `REC Statistics: ${facilityDetails.facilityName || "Facility"}` : "REC Statistics"}
+        </h2>
+        
+        <div className="flex flex-wrap items-center space-x-3 mt-3 lg:mt-0">
+          <select 
+            value={selectedYear} 
+            onChange={(e) => setSelectedYear(e.target.value)} 
+            className="border border-gray-300 rounded px-3 py-2 text-sm font-sfpro focus:outline-none focus:ring-2 focus:ring-[#039994]"
           >
-            <FiFilter size={14} />
-            <span>Filters</span>
-            {activeFilters > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                {activeFilters}
-              </span>
-            )}
-          </button>
-          <button 
-            onClick={downloadData}
-            className="flex items-center space-x-1 bg-[#039994] text-white px-3 py-1 rounded text-sm hover:bg-[#027a75] transition-colors"
-            disabled={!rawData || rawData.length === 0}
-          >
-            <FiDownload size={14} />
-            <span>Download CSV</span>
-          </button>
+            {yearOptions.map(year => (
+              <option key={year} value={year}>{year}</option>
+            ))}
+          </select>
+
+          <div className="flex items-center space-x-2 bg-gray-100 rounded-full p-1">
+            <button
+              onClick={() => setViewMode("monthly")}
+              className={`px-3 py-1 text-sm rounded-full transition-colors font-sfpro ${
+                viewMode === "monthly" 
+                  ? "bg-[#039994] text-white shadow-sm" 
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              Monthly
+            </button>
+            <button
+              onClick={() => setViewMode("quarterly")}
+              className={`px-3 py-1 text-sm rounded-full transition-colors font-sfpro ${
+                viewMode === "quarterly" 
+                  ? "bg-[#039994] text-white shadow-sm" 
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              Quarterly
+            </button>
+          </div>
         </div>
       </div>
 
-      {showFilters && (
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-12">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
-              <div className="space-y-2">
-                <input
-                  type="date"
-                  value={dateRange.startDate}
-                  onChange={(e) => setDateRange(prev => ({ ...prev, startDate: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-[#039994]"
-                  placeholder="Start Date"
-                />
-                <input
-                  type="date"
-                  value={dateRange.endDate}
-                  onChange={(e) => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-[#039994]"
-                  placeholder="End Date"
-                />
-              </div>
+      <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 mb-6">
+        <div className="flex items-center justify-between mb-6">
+          <span className="text-[#039994] font-sfpro font-[600] text-[18px] leading-[100%] tracking-[-0.05em]">
+            REC Generated (kWh)
+          </span>
+        </div>
+        
+        <div className="flex items-end">
+          <div className="flex flex-col justify-between items-end mr-4 h-64 py-1">
+            {yAxisValues.map((val, idx) => (
+              <span key={idx} className="text-gray-400 text-xs font-medium font-sfpro">
+                {val}
+              </span>
+            ))}
+          </div>
+          
+          <div className="flex-1 flex items-end justify-between h-64 px-2">
+            {graphData.map((data, idx) => {
+              const heightPercentage = maxYValue > 0 ? (data.value / maxYValue) * 100 : 0;
+              const isEmpty = data.value === 0;
+              return (
+                <div key={idx} className="flex flex-col items-center relative group">
+                  <div className="relative w-7 h-56 bg-gray-100 rounded-full border border-gray-200 overflow-hidden shadow-sm">
+                    {!isEmpty && (
+                      <div 
+                        style={{ 
+                          backgroundColor: "#039994", 
+                          height: `${heightPercentage}%` 
+                        }} 
+                        className="absolute bottom-0 left-0 right-0 rounded-full transition-all duration-700 ease-out animate-fill"
+                      />
+                    )}
+                    {isEmpty && (
+                      <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 text-gray-400 text-xs font-sfpro">
+                        0
+                      </div>
+                    )}
+                    <div className="absolute left-0.5 top-2 bottom-2 w-0.5 bg-white opacity-30 rounded-full" />
+                  </div>
+                  <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10 font-sfpro">
+                    {data.value.toFixed(2)} kWh
+                  </div>
+                  <p className="text-xs text-gray-600 mt-2 font-medium font-sfpro">{data.month}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+        
+        {stats.totalRecsGenerated === 0 && graphData.every(d => d.value === 0) && (
+          <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div className="flex items-center">
+              <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              <p className="ml-3 text-sm text-yellow-800 font-sfpro">
+                No REC data available yet. Data will appear once your facility starts generating RECs.
+              </p>
             </div>
+          </div>
+        )}
+      </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Select Months</label>
-              <div className="grid grid-cols-3 gap-1 max-h-32 overflow-y-auto">
-                {months.map(month => (
-                  <button
-                    key={month}
-                    onClick={() => handleMonthToggle(month)}
-                    className={`px-2 py-1 text-xs rounded transition-colors ${
-                      selectedMonths.includes(month)
-                        ? 'bg-[#039994] text-white'
-                        : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-                    }`}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="col-span-1 lg:col-span-2 space-y-4">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-sfpro font-[600] text-[16px] leading-[100%] tracking-[-0.05em] text-[#039994]">REC Overview</h3>
+              <div className="flex space-x-2">
+                {viewMode === "monthly" ? (
+                  <select 
+                    value={selectedMonth} 
+                    onChange={(e) => handleMonthChange(e.target.value)} 
+                    className="border border-gray-300 rounded px-2 py-1 text-xs min-w-[90px] font-sfpro focus:outline-none focus:ring-2 focus:ring-[#039994]"
                   >
-                    {month}
-                  </button>
-                ))}
+                    <option value="">Month</option>
+                    {monthNames.map(month => (
+                      <option key={month} value={month}>
+                        {month}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <select 
+                    value={selectedQuarter} 
+                    onChange={(e) => handleQuarterChange(e.target.value)} 
+                    className="border border-gray-300 rounded px-2 py-1 text-xs min-w-[90px] font-sfpro focus:outline-none focus:ring-2 focus:ring-[#039994]"
+                  >
+                    <option value="">Quarter</option>
+                    {quarterOptions.map(quarter => (
+                      <option key={quarter.value} value={quarter.value}>
+                        {quarter.label}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-[#039994]"
-              >
-                <option value="date-asc">Date (Oldest First)</option>
-                <option value="date-desc">Date (Newest First)</option>
-                <option value="energy-asc">Energy (Low to High)</option>
-                <option value="energy-desc">Energy (High to Low)</option>
-              </select>
+            
+            <div className="grid grid-cols-3 gap-2 mb-2">
+              <div className="bg-gray-50 rounded p-2 flex flex-col">
+                <div className="flex items-center space-x-1 mb-1">
+                  <div className="h-1.5 w-1.5 bg-[#039994] rounded-full"></div>
+                  <p className="text-gray-700 text-xs font-medium font-sfpro">RECs Generated</p>
+                </div>
+                <p className="text-[#056C69] text-sm font-bold font-sfpro">
+                  {stats.totalRecsGenerated.toFixed(2)}
+                </p>
+              </div>
               
-              {activeFilters > 0 && (
-                <button
-                  onClick={clearAllFilters}
-                  className="w-full mt-2 text-sm text-red-600 hover:text-red-800 transition-colors"
-                >
-                  Clear All Filters
-                </button>
-              )}
+              <div className="bg-gray-50 rounded p-2 flex flex-col">
+                <div className="flex items-center space-x-1 mb-1">
+                  <div className="h-1.5 w-1.5 bg-[#039994] rounded-full"></div>
+                  <p className="text-gray-700 text-xs font-medium font-sfpro">RECs Available</p>
+                </div>
+                <p className="text-[#056C69] text-sm font-bold font-sfpro">
+                  {stats.totalRecsAvailable.toFixed(2)}
+                </p>
+              </div>
+              
+              <div className="bg-gray-50 rounded p-2 flex flex-col">
+                <div className="flex items-center space-x-1 mb-1">
+                  <div className="h-1.5 w-1.5 bg-[#FBBF24] rounded-full"></div>
+                  <p className="text-gray-700 text-xs font-medium font-sfpro">REC Price</p>
+                </div>
+                <p className="text-[#056C69] text-sm font-bold font-sfpro">
+                  ${stats.currentRecPrice.toFixed(2)}
+                </p>
+              </div>
+            </div>
+            
+            <div className="bg-gray-50 rounded p-2">
+              <div className="flex items-center space-x-1 mb-1">
+                <div className="h-1.5 w-1.5 bg-black rounded-full"></div>
+                <p className="text-gray-700 text-xs font-medium font-sfpro">Revenue Earned</p>
+              </div>
+              <p className="text-[#056C69] text-sm font-bold font-sfpro">
+                ${stats.revenueEarned.toFixed(2)}
+              </p>
+              <p className="text-gray-500 text-xs mt-1 font-sfpro">
+                {getFilterDescription()}
+              </p>
             </div>
           </div>
           
-          <div className="mt-3 text-sm text-gray-600">
-            Showing {filteredData.length} of {rawData.length} records
-            {selectedMonths.length > 0 && (
-              <span className="ml-2 text-[#039994]">
-                • Months: {selectedMonths.join(', ')}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-sfpro font-[600] text-[16px] leading-[100%] tracking-[-0.05em] text-[#039994]">REC Statistics</h3>
+              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded font-sfpro">
+                {detailStatistics.length} {detailStatistics.length === 1 ? 'record' : 'records'}
               </span>
-            )}
-            {dateRange.startDate && dateRange.endDate && (
-              <span className="ml-2 text-[#039994]">
-                • Date: {dateRange.startDate} to {dateRange.endDate}
-              </span>
-            )}
-          </div>
-        </div>
-      )}
-
-      {!showFilters && <div className="mb-16"></div>}
-
-      <div className="flex items-end">
-        <div className="flex flex-col justify-between items-end mr-4 h-64 py-2">
-          {[100, 75, 50, 25, 0].map((val, idx) => (
-            <span key={idx} className="text-gray-400 text-xs font-medium">
-              {maxValue > 0 ? Math.round((val / 100) * maxValue * 10) / 10 : val}
-            </span>
-          ))}
-        </div>
-        <div className="flex-1 flex items-end justify-between h-64 px-2">
-          {chartData.map((data, idx) => (
-            <div key={idx} className="flex flex-col items-center relative group">
-              <div className="relative w-6 h-64 bg-gray-100 rounded-full border-2 border-gray-200 overflow-hidden shadow-inner">
-                <div 
-                  className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-[#039994] to-[#04b5a8] rounded-full transition-all duration-500"
-                  style={{ height: `${data.normalizedValue}%` }}
-                />
-                <div className="absolute left-1 top-2 bottom-2 w-1 bg-white opacity-20 rounded-full" />
-              </div>
-              <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
-                <div>{data.recs} RECs</div>
-                <div>{data.value.toFixed(2)} kWh</div>
-              </div>
-              <p className="text-xs text-gray-600 mt-3 font-medium">{data.month}</p>
             </div>
-          ))}
+            
+            {detailStatistics.length > 0 ? (
+              <div className="space-y-2">
+                <div className="grid grid-cols-4 gap-2 text-xs text-gray-500 font-medium border-b pb-2 font-sfpro">
+                  <div>{viewMode === "monthly" ? "Month" : "Quarter"}</div>
+                  <div>Generated</div>
+                  <div>Sold</div>
+                  <div>Revenue</div>
+                </div>
+                
+                <div className="max-h-48 overflow-y-auto pr-1">
+                  {detailStatistics.map((stat, index) => (
+                    <div key={index} className="grid grid-cols-4 gap-2 py-2 border-b border-gray-100 text-xs">
+                      <div className="font-medium text-gray-700 font-sfpro">
+                        {viewMode === "monthly" 
+                          ? `${getMonthName(stat.month)} ${stat.year}`
+                          : `Q${Math.ceil(stat.month / 3)} ${stat.year}`
+                        }
+                      </div>
+                      <div className="text-[#056C69] font-medium font-sfpro">
+                        {stat.recsGenerated?.toFixed(2) || '0.00'}
+                      </div>
+                      <div className="text-[#056C69] font-medium font-sfpro">
+                        {stat.recsSold?.toFixed(2) || '0.00'}
+                      </div>
+                      <div className="text-[#056C69] font-medium font-sfpro">
+                        ${stat.salesAmount?.toFixed(2) || '0.00'}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="grid grid-cols-4 gap-2 pt-2 border-t text-xs font-medium font-sfpro">
+                  <div className="text-gray-700">Total</div>
+                  <div className="text-[#056C69]">
+                    {getTotalFromDetailStats('recsGenerated').toFixed(2)}
+                  </div>
+                  <div className="text-[#056C69]">
+                    {getTotalFromDetailStats('recsSold').toFixed(2)}
+                  </div>
+                  <div className="text-[#056C69]">
+                    ${getTotalFromDetailStats('salesAmount').toFixed(2)}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-6 text-gray-400 text-sm font-sfpro">
+                No detailed statistics available for the selected filters.
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+        
+        <div className="col-span-1">
+          <div className="space-y-4">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+              <div className="flex items-center space-x-2 mb-2">
+                <div className="h-2 w-2 bg-green-500 rounded-full"></div>
+                <p className="text-gray-700 text-sm font-medium font-sfpro">Facility Status</p>
+              </div>
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-sm font-sfpro">
+                  <span className="text-gray-600">Status:</span>
+                  <span className={`font-medium ${facilityDetails?.status === "VERIFIED" ? "text-green-600" : "text-yellow-600"}`}>
+                    {facilityDetails?.status === "VERIFIED" ? "Verified" : "Pending"}
+                  </span>
+                </div>
+                {facilityDetails && (
+                  <>
+                    <div className="flex justify-between text-sm font-sfpro">
+                      <span className="text-gray-600">System Capacity:</span>
+                      <span className="font-medium">{facilityDetails.systemCapacity || "0"} kW</span>
+                    </div>
+                    <div className="flex justify-between text-sm font-sfpro">
+                      <span className="text-gray-600">Utility:</span>
+                      <span className="font-medium">{facilityDetails.utilityProvider || "N/A"}</span>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+              <div className="flex items-center space-x-2 mb-2">
+                <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
+                <p className="text-gray-700 text-sm font-medium font-sfpro">Lifetime RECs Generated</p>
+              </div>
+              <div className="text-center py-4">
+                <p className="text-3xl font-bold text-[#056C69] font-sfpro">
+                  {totalLifetimeRecs.toFixed(2)}
+                </p>
+                <p className="text-sm text-gray-500 mt-1 font-sfpro">Total kWh since enrollment</p>
+              </div>
+            </div>
 
-      <div className="grid grid-cols-4 gap-4 mt-16">
-        <div className="bg-white border border-gray-200 rounded-lg p-4 flex flex-col">
-          <div className="flex items-center space-x-2 mb-2">
-            <div className="h-3 w-3 bg-[#039994] rounded-full"></div>
-            <p className="text-gray-700 text-xs font-medium">RECs Generated</p>
+            {facilityDetails && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+                <div className="flex items-center space-x-2 mb-2">
+                  <div className="h-2 w-2 bg-purple-500 rounded-full"></div>
+                  <p className="text-gray-700 text-sm font-medium font-sfpro">Facility Details</p>
+                </div>
+                <div className="space-y-1.5 text-sm font-sfpro">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Address:</span>
+                    <span className="font-medium text-right">{facilityDetails.address}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Meter ID:</span>
+                    <span className="font-medium">{facilityDetails.meterId || "N/A"}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Commercial Operation:</span>
+                    <span className="font-medium">
+                      {facilityDetails.commercialOperationDate ? 
+                       new Date(facilityDetails.commercialOperationDate).toLocaleDateString() : "N/A"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
-          <p className="text-[#056C69] text-lg font-bold">{stats.recGenerated.toLocaleString()}</p>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-4 flex flex-col">
-          <div className="flex items-center space-x-2 mb-2">
-            <div className="h-3 w-3 bg-[#039994] rounded-full"></div>
-            <p className="text-gray-700 text-xs font-medium">RECs Sold</p>
-          </div>
-          <p className="text-[#056C69] text-lg font-bold">{stats.recSold.toLocaleString()}</p>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-4 flex flex-col">
-          <div className="flex items-center space-x-2 mb-2">
-            <div className="h-3 w-3 bg-black rounded-full"></div>
-            <p className="text-gray-700 text-xs font-medium">Revenue Earned</p>
-          </div>
-          <p className="text-[#056C69] text-lg font-bold">${stats.revenueEarned.toLocaleString()}</p>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-4 flex flex-col">
-          <div className="flex items-center space-x-2 mb-2">
-            <div className="h-3 w-3 bg-[#FBBF24] rounded-full"></div>
-            <p className="text-gray-700 text-xs font-medium">Energy Generated</p>
-          </div>
-          <p className="text-[#056C69] text-lg font-bold">{stats.energyProduced} MWh</p>
         </div>
       </div>
+      
+      <style jsx>{`
+        @keyframes fill {
+          from {
+            height: 0%;
+          }
+        }
+        .animate-fill {
+          animation: fill 0.7s ease-out;
+        }
+      `}</style>
     </div>
   );
 }
