@@ -383,10 +383,10 @@ const DocumentsModal = ({
     },
     {
       title: "Panel/Inverter Data Sheet",
-      status: facilityData.inverterDatasheetStatus,
-      url: facilityData.inverterDatasheetUrl,
+      status: facilityData.panelInverterDatasheetStatus,
+      url: facilityData.panelInverterDatasheetUrl,
       docType: "panelInverterDatasheet",
-      rejectionReason: facilityData.inverterDatasheetRejectionReason
+      rejectionReason: facilityData.panelInverterDatasheetRejectionReason
     },
     {
       title: "Revenue Meter Data Sheet",

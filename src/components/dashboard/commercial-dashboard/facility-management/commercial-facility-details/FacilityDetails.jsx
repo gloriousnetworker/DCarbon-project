@@ -105,6 +105,7 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
   const [isFacilityComplete, setIsFacilityComplete] = useState(false);
   const [operators, setOperators] = useState([]);
   const [expandedOperators, setExpandedOperators] = useState(false);
+  const [allDocumentsApproved, setAllDocumentsApproved] = useState(false);
 
   const fetchOperators = async () => {
     try {
@@ -130,6 +131,32 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
 
   const toggleOperatorDropdown = () => {
     setExpandedOperators(prev => !prev);
+  };
+
+  const fetchFacilityDetails = async () => {
+    try {
+      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+      const authToken = loginResponse?.data?.token;
+      
+      if (!authToken) return;
+
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/facility/get-facility-by-id/${facilityData.id}`,
+        { headers: { Authorization: `Bearer ${authToken}` } }
+      );
+      
+      const result = await response.json();
+      if (result.status === "success") {
+        const updatedFacility = result.data;
+        setFacilityData(updatedFacility);
+        checkFacilityCompletion(updatedFacility);
+        checkDocumentCompletion(updatedFacility);
+        return updatedFacility;
+      }
+    } catch (error) {
+      console.error("Error fetching facility details:", error);
+    }
+    return null;
   };
 
   const checkFacilityCompletion = (facility) => {
@@ -160,6 +187,30 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
     return isComplete;
   };
 
+  const checkDocumentCompletion = (facility) => {
+    const requiredDocuments = [
+      facility.assignmentOfRegistrationRightStatus,
+      facility.wregisAssignmentStatus,
+      facility.financeAgreementStatus,
+      facility.solarInstallationContractStatus,
+      facility.interconnectionAgreementStatus,
+      facility.ptoLetterStatus,
+      facility.singleLineDiagramStatus,
+      facility.sitePlanStatus,
+      facility.panelInverterDatasheetStatus,
+      facility.revenueMeterDataStatus,
+      facility.utilityMeterPhotoStatus,
+      facility.acknowledgementOfStationServiceStatus
+    ];
+
+    const allDocumentsApproved = requiredDocuments.every(status => 
+      status?.toUpperCase() === "APPROVED"
+    );
+
+    setAllDocumentsApproved(allDocumentsApproved);
+    return allDocumentsApproved;
+  };
+
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     const date = new Date(dateString);
@@ -175,181 +226,121 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
     return meterIds.join(", ");
   };
 
-  useEffect(() => {
-    const checkUserProgress = async () => {
-      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
-      const userId = loginResponse?.data?.user?.id;
-      const authToken = loginResponse?.data?.token;
+  const checkMeters = async () => {
+    const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+    const userId = loginResponse?.data?.user?.id;
+    const authToken = loginResponse?.data?.token;
 
-      if (!userId || !authToken) return;
+    if (!userId || !authToken) return;
 
-      const checkStage1 = () => {
-        return true;
-      };
-
-      const checkStage2 = async () => {
-        try {
-          const response = await fetch(
-            `https://services.dcarbon.solutions/api/user/agreement/${userId}`,
-            { headers: { 'Authorization': `Bearer ${authToken}` } }
-          );
-          const result = await response.json();
-          return result.status === 'success' && result.data?.termsAccepted;
-        } catch (error) {
-          return false;
-        }
-      };
-
-      const checkStage3 = async () => {
-        try {
-          const response = await fetch(
-            `https://services.dcarbon.solutions/api/user/financial-info/${userId}`,
-            { headers: { 'Authorization': `Bearer ${authToken}` } }
-          );
-          const result = await response.json();
-          return result.status === 'success' && result.data?.financialInfo;
-        } catch (error) {
-          return false;
-        }
-      };
-
-      const checkStage4 = () => {
-        const meterId = facilityData.meterId || (Array.isArray(facilityData.meterIds) && facilityData.meterIds.length > 0 ? facilityData.meterIds[0] : null);
-        const formattedMeterId = meterId ? (typeof meterId === 'string' ? meterId.trim() : String(meterId).trim()) : '';
-        return formattedMeterId !== '' && formattedMeterId !== 'N/A' && formattedMeterId !== 'null' && formattedMeterId !== 'undefined';
-      };
-
-      const checkStage5 = (facility) => {
-        return checkFacilityCompletion(facility);
-      };
-
-      const checkStage6 = () => {
-        return facilityData.status?.toLowerCase() === 'verified';
-      };
-
-      const stageChecks = [
-        { stage: 1, check: checkStage1 },
-        { stage: 2, check: checkStage2 },
-        { stage: 3, check: checkStage3 },
-        { stage: 4, check: checkStage4 },
-        { stage: 5, check: () => checkStage5(facilityData) },
-        { stage: 6, check: checkStage6 }
-      ];
-
-      let highestCompletedStage = 1;
-
-      for (const { stage, check } of stageChecks) {
-        const isCompleted = typeof check === 'function' ? await check() : false;
-        if (isCompleted) {
-          highestCompletedStage = stage;
-        } else {
-          break;
-        }
-      }
-
-      const newStage = highestCompletedStage === 6 ? 6 : highestCompletedStage;
-      const newNextStage = highestCompletedStage === 6 ? 6 : highestCompletedStage + 1;
+    try {
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`,
+        { headers: { 'Authorization': `Bearer ${authToken}` } }
+      );
+      const result = await response.json();
       
-      setCurrentStage(newStage);
-      setNextStage(newNextStage);
-    };
-
-    const checkMeters = async () => {
-      const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
-      const userId = loginResponse?.data?.user?.id;
-      const authToken = loginResponse?.data?.token;
-
-      if (!userId || !authToken) return;
-
-      try {
-        const response = await fetch(
-          `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`,
-          { headers: { 'Authorization': `Bearer ${authToken}` } }
-        );
-        const result = await response.json();
-        
-        const metersExist = result.status === 'success' && 
-                         Array.isArray(result.data) &&
-                         result.data.length > 0 &&
-                         result.data.some(item => 
-                           Array.isArray(item.meters) &&
-                           item.meters.length > 0
-                         );
-        
-        setHasMeters(metersExist);
-      } catch (error) {
-        console.error('Error checking meters:', error);
-      }
-    };
-
-    checkUserProgress();
-    checkMeters();
-    checkFacilityCompletion(facilityData);
-    fetchOperators();
-  }, [facilityData]);
-
-  useEffect(() => {
-    const checkStage4 = () => {
-      const meterId = facilityData.meterId || (Array.isArray(facilityData.meterIds) && facilityData.meterIds.length > 0 ? facilityData.meterIds[0] : null);
-      const formattedMeterId = meterId ? (typeof meterId === 'string' ? meterId.trim() : String(meterId).trim()) : '';
-      return formattedMeterId !== '' && formattedMeterId !== 'N/A' && formattedMeterId !== 'null' && formattedMeterId !== 'undefined';
-    };
-
-    if (checkStage4()) {
-      const updateProgress = async () => {
-        const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
-        const userId = loginResponse?.data?.user?.id;
-        const authToken = loginResponse?.data?.token;
-
-        if (!userId || !authToken) return;
-
-        const checkStage1 = () => true;
-        const checkStage2 = async () => {
-          try {
-            const response = await fetch(
-              `https://services.dcarbon.solutions/api/user/agreement/${userId}`,
-              { headers: { 'Authorization': `Bearer ${authToken}` } }
-            );
-            const result = await response.json();
-            return result.status === 'success' && result.data?.termsAccepted;
-          } catch (error) {
-            return false;
-          }
-        };
-        const checkStage3 = async () => {
-          try {
-            const response = await fetch(
-              `https://services.dcarbon.solutions/api/user/financial-info/${userId}`,
-              { headers: { 'Authorization': `Bearer ${authToken}` } }
-            );
-            const result = await response.json();
-            return result.status === 'success' && result.data?.financialInfo;
-          } catch (error) {
-            return false;
-          }
-        };
-        
-        let highestCompletedStage = 1;
-        const stageResults = [await checkStage1(), await checkStage2(), await checkStage3(), true];
-        
-        for (let i = 0; i < stageResults.length; i++) {
-          if (stageResults[i]) {
-            highestCompletedStage = i + 1;
-          } else {
-            break;
-          }
-        }
-        
-        const newStage = highestCompletedStage === 6 ? 6 : highestCompletedStage;
-        const newNextStage = highestCompletedStage === 6 ? 6 : highestCompletedStage + 1;
-        
-        setCurrentStage(newStage);
-        setNextStage(newNextStage);
-      };
+      const metersExist = result.status === 'success' && 
+                       Array.isArray(result.data) &&
+                       result.data.length > 0 &&
+                       result.data.some(item => 
+                         Array.isArray(item.meters) &&
+                         item.meters.length > 0
+                       );
       
-      updateProgress();
+      setHasMeters(metersExist);
+      return metersExist;
+    } catch (error) {
+      console.error('Error checking meters:', error);
+      return false;
     }
-  }, [facilityData.meterId, facilityData.meterIds]);
+  };
+
+  const checkStage2 = async (authToken, userId) => {
+    try {
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/user/agreement/${userId}`,
+        { headers: { 'Authorization': `Bearer ${authToken}` } }
+      );
+      const result = await response.json();
+      return result.status === 'success' && result.data?.termsAccepted;
+    } catch (error) {
+      return false;
+    }
+  };
+
+  const checkStage3 = async (authToken, userId) => {
+    try {
+      const response = await fetch(
+        `https://services.dcarbon.solutions/api/user/financial-info/${userId}`,
+        { headers: { 'Authorization': `Bearer ${authToken}` } }
+      );
+      const result = await response.json();
+      return result.status === 'success' && result.data?.financialInfo;
+    } catch (error) {
+      return false;
+    }
+  };
+
+  const calculateUserProgress = async () => {
+    const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+    const userId = loginResponse?.data?.user?.id;
+    const authToken = loginResponse?.data?.token;
+
+    if (!userId || !authToken) return;
+
+    const stage1Complete = true;
+    const stage2Complete = await checkStage2(authToken, userId);
+    const stage3Complete = await checkStage3(authToken, userId);
+    
+    const meterId = facilityData.meterId || (Array.isArray(facilityData.meterIds) && facilityData.meterIds.length > 0 ? facilityData.meterIds[0] : null);
+    const formattedMeterId = meterId ? (typeof meterId === 'string' ? meterId.trim() : String(meterId).trim()) : '';
+    const stage4Complete = formattedMeterId !== '' && formattedMeterId !== 'N/A' && formattedMeterId !== 'null' && formattedMeterId !== 'undefined';
+    
+    const stage5Complete = checkFacilityCompletion(facilityData);
+    const stage6Complete = checkDocumentCompletion(facilityData);
+
+    const stages = [
+      stage1Complete,
+      stage2Complete,
+      stage3Complete,
+      stage4Complete,
+      stage5Complete,
+      stage6Complete
+    ];
+
+    let highestCompletedStage = 1;
+    for (let i = 0; i < stages.length; i++) {
+      if (stages[i]) {
+        highestCompletedStage = i + 1;
+      } else {
+        break;
+      }
+    }
+
+    const newStage = highestCompletedStage === 6 ? 6 : highestCompletedStage;
+    const newNextStage = highestCompletedStage === 6 ? 6 : highestCompletedStage + 1;
+    
+    setCurrentStage(newStage);
+    setNextStage(newNextStage);
+  };
+
+  useEffect(() => {
+    const initialize = async () => {
+      await checkMeters();
+      await fetchOperators();
+      const fetchedFacility = await fetchFacilityDetails();
+      if (fetchedFacility) {
+        await calculateUserProgress();
+      }
+    };
+    
+    initialize();
+  }, []);
+
+  useEffect(() => {
+    calculateUserProgress();
+  }, [facilityData, isFacilityComplete, allDocumentsApproved]);
 
   const handleFileSelect = (docType) => {
     const input = document.createElement("input");
@@ -390,7 +381,7 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
       utilityPTO: `${baseUrl}/api/facility/update-commercial-pto-letter/${facilityId}`,
       singleLineDiagram: `${baseUrl}/api/facility/update-commercial-single-line-diagram/${facilityId}`,
       installationSitePlan: `${baseUrl}/api/facility/update-facility-site-plan/${facilityId}`,
-      panelInverterDatasheet: `${baseUrl}/api/facility/update-facility-inverter-datasheet/${facilityId}`,
+      panelInverterDatasheet: `${baseUrl}/api/facility/update-commercial-panel-inverter-datasheet/${facilityId}`,
       revenueMeterDatasheet: `${baseUrl}/api/facility/update-facility-revenue-meter-data/${facilityId}`,
       utilityMeterPhoto: `${baseUrl}/api/facility/update-commercial-utility-meter-photo/${facilityId}`,
       assignmentOfRegistrationRight: `${baseUrl}/api/facility/update-assignment-of-registration-right/${facilityId}`
@@ -404,7 +395,7 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
       utilityPTO: 'ptoLetterUrl',
       singleLineDiagram: 'singleLineDiagramUrl',
       installationSitePlan: 'file',
-      panelInverterDatasheet: 'file',
+      panelInverterDatasheet: 'panelInverterDatasheetUrl',
       revenueMeterDatasheet: 'file',
       utilityMeterPhoto: 'utilityMeterPhotoUrl',
       assignmentOfRegistrationRight: 'file'
@@ -429,8 +420,8 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
       if (result.status === 'success') {
         const updatedData = {
           ...result.data,
-          panelInverterDatasheetUrl: result.data.inverterDatasheetUrl,
-          panelInverterDatasheetStatus: result.data.inverterDatasheetStatus
+          panelInverterDatasheetUrl: result.data.panelInverterDatasheetUrl,
+          panelInverterDatasheetStatus: result.data.panelInverterDatasheetStatus
         };
         
         setFacilityData(prevData => ({
@@ -441,6 +432,8 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
         if (onFacilityUpdated) {
           onFacilityUpdated(updatedData);
         }
+        
+        await fetchFacilityDetails();
         
         toast.success('Document uploaded successfully!', { id: 'upload-toast' });
       } else {
@@ -493,7 +486,7 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
   };
 
   const handleStageClick = (stageId) => {
-    if (stageId === 6 && facilityData.status?.toLowerCase() !== 'verified') {
+    if (stageId === 6 && !allDocumentsApproved) {
       toast('Please complete all document uploads to verify your facility', { icon: 'ℹ️' });
     }
     if (stageId === 5 && !isFacilityComplete) {
