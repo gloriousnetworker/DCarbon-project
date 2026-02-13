@@ -26,6 +26,8 @@ export default function AddCommercialFacilityModal({ isOpen, onClose, onCreateNe
     facilityTypeNamingCode: 1,
     utilityProviderNamingCode: "",
     installerNamingCode: "",
+    installerId: "",
+    installer: "",
     financeNamingCode: "",
     financeType: ""
   });
@@ -297,7 +299,8 @@ export default function AddCommercialFacilityModal({ isOpen, onClose, onCreateNe
       setFormData(prev => ({
         ...prev,
         installerNamingCode: value,
-        installerName: selectedInstaller ? selectedInstaller.name : ""
+        installerId: selectedInstaller ? selectedInstaller.id : "",
+        installer: selectedInstaller ? selectedInstaller.name : ""
       }));
     } else if (name === "financeNamingCode") {
       const selectedFinanceType = financeTypes.find(type => type.namingCode.toString() === value);
@@ -436,6 +439,8 @@ export default function AddCommercialFacilityModal({ isOpen, onClose, onCreateNe
       facilityTypeNamingCode: 1,
       utilityProviderNamingCode: "",
       installerNamingCode: "",
+      installerId: "",
+      installer: "",
       financeNamingCode: "",
       financeType: ""
     });
@@ -496,6 +501,8 @@ export default function AddCommercialFacilityModal({ isOpen, onClose, onCreateNe
         facilityTypeNamingCode: formData.facilityTypeNamingCode,
         utilityProviderNamingCode: selectedProvider ? selectedProvider.namingCode : "",
         installerNamingCode: formData.installerNamingCode,
+        installerId: formData.installerId,
+        installer: formData.installer,
         financeNamingCode: formData.financeNamingCode
       };
 
@@ -611,6 +618,8 @@ export default function AddCommercialFacilityModal({ isOpen, onClose, onCreateNe
     formData.utilityProvider &&
     formData.meterIds.length > 0 &&
     formData.installerNamingCode &&
+    formData.installerId &&
+    formData.installer &&
     formData.financeNamingCode &&
     formData.financeType &&
     (selectedMeter ? isSameLocation !== null : true) &&
