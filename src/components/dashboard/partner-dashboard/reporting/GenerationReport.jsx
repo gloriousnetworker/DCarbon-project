@@ -1,20 +1,45 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 
+const getDynamicQuarters = () => {
+  const today = new Date();
+  const currentYear = today.getFullYear();
+  const currentMonth = today.getMonth() + 1;
+  
+  const quarters = [];
+  const currentQuarter = Math.ceil(currentMonth / 3);
+  
+  for (let i = 0; i < 8; i++) {
+    let year = currentYear - Math.floor((i + (4 - currentQuarter)) / 4);
+    let quarterNum = currentQuarter - i;
+    while (quarterNum < 1) {
+      quarterNum += 4;
+      year -= 1;
+    }
+    
+    quarters.push({
+      label: `Q${quarterNum} (Jan-Mar)`,
+      value: quarterNum.toString()
+    });
+  }
+  
+  return quarters;
+};
+
+const getDynamicYears = () => {
+  const today = new Date();
+  const currentYear = today.getFullYear();
+  return [currentYear.toString(), (currentYear - 1).toString(), (currentYear - 2).toString()];
+};
+
 const REPORT_OPTIONS = [
   { label: "Partner Report", value: "customer" },
   { label: "Generation Report", value: "generation" },
   { label: "Earnings Statement", value: "commission" }
 ];
 
-const QUARTERS = [
-  { label: "Q1 (Jan-Mar)", value: "1" },
-  { label: "Q2 (Apr-Jun)", value: "2" },
-  { label: "Q3 (Jul-Sep)", value: "3" },
-  { label: "Q4 (Oct-Dec)", value: "4" }
-];
-
-const YEARS = ["2025", "2024", "2023"];
+const QUARTERS = getDynamicQuarters();
+const YEARS = getDynamicYears();
 
 export default function GenerationReport({ onNavigate }) {
   const [showExportModal, setShowExportModal] = useState(false);
@@ -24,7 +49,7 @@ export default function GenerationReport({ onNavigate }) {
   const [tableData, setTableData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedQuarter, setSelectedQuarter] = useState("");
-  const [selectedYear, setSelectedYear] = useState("2025");
+  const [selectedYear, setSelectedYear] = useState(YEARS[0] || "2025");
   const [error, setError] = useState("");
   const [generationMetrics, setGenerationMetrics] = useState({
     totalGeneration: "0",
@@ -78,9 +103,13 @@ export default function GenerationReport({ onNavigate }) {
       }
     } catch (error) {
       console.error("Error fetching generation data:", error);
-      setError("Failed to load generation data");
       setTableData([]);
       setTotalPages(1);
+      setGenerationMetrics({
+        totalGeneration: "0",
+        totalCommission: "0",
+        totalCustomers: "0"
+      });
     } finally {
       setLoading(false);
     }
@@ -149,6 +178,21 @@ export default function GenerationReport({ onNavigate }) {
     }
   };
 
+  const defaultTableData = [
+    {
+      id: "1",
+      customerId: "-",
+      name: "No data available",
+      address: "-",
+      zipcode: "-",
+      customerType: "-",
+      generation: "0",
+      commission: "0"
+    }
+  ];
+
+  const displayData = tableData.length > 0 ? tableData : defaultTableData;
+
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="w-full max-w-7xl mx-auto">
@@ -177,10 +221,7 @@ export default function GenerationReport({ onNavigate }) {
           <div className="flex items-center space-x-4">
             <button
               onClick={() => setShowExportModal(true)}
-              disabled={tableData.length === 0}
-              className={`px-4 py-1 rounded text-sm text-white ${
-                tableData.length > 0 ? "bg-[#039994] hover:bg-[#028c87]" : "bg-gray-400 cursor-not-allowed"
-              }`}
+              className="px-4 py-1 rounded text-sm text-white bg-[#039994] hover:bg-[#028c87]"
             >
               Export Report
             </button>
@@ -250,27 +291,7 @@ export default function GenerationReport({ onNavigate }) {
             </div>
           )}
 
-          {!loading && error && (
-            <div className="text-center py-12">
-              <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <p className="mt-4 text-gray-600">{error}</p>
-              <p className="text-sm text-gray-500 mt-2">Please try again or adjust your filters</p>
-            </div>
-          )}
-
-          {!loading && !error && tableData.length === 0 && (
-            <div className="text-center py-12">
-              <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              <p className="mt-4 text-gray-600">No generation records found</p>
-              <p className="text-sm text-gray-500 mt-2">Try adjusting your filters</p>
-            </div>
-          )}
-
-          {!loading && !error && tableData.length > 0 && (
+          {!loading && (
             <div className="w-full overflow-x-auto">
               <table className="w-full border-collapse">
                 <thead>
@@ -285,7 +306,7 @@ export default function GenerationReport({ onNavigate }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {tableData.map((item) => (
+                  {displayData.map((item) => (
                     <tr
                       key={item.id}
                       className="border-b border-gray-200 hover:bg-gray-50"
@@ -305,7 +326,7 @@ export default function GenerationReport({ onNavigate }) {
           )}
         </div>
 
-        {!loading && !error && tableData.length > 0 && totalPages > 1 && (
+        {!loading && tableData.length > 0 && totalPages > 1 && (
           <div className="flex items-center justify-center space-x-4 mt-6">
             <button
               onClick={handlePrevious}
@@ -328,7 +349,7 @@ export default function GenerationReport({ onNavigate }) {
         )}
       </div>
 
-      {showExportModal && tableData.length > 0 && (
+      {showExportModal && (
         <ExportReportModal
           onClose={() => setShowExportModal(false)}
           onExport={handleExportReport}

@@ -1,16 +1,37 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 
-const QUARTERS = [
-  { label: "Q1 2025", value: "1", year: "2025", months: "Jan-Mar" },
-  { label: "Q2 2025", value: "2", year: "2025", months: "Apr-Jun" },
-  { label: "Q3 2025", value: "3", year: "2025", months: "Jul-Sep" },
-  { label: "Q4 2025", value: "4", year: "2025", months: "Oct-Dec" },
-  { label: "Q1 2024", value: "1", year: "2024", months: "Jan-Mar" },
-  { label: "Q2 2024", value: "2", year: "2024", months: "Apr-Jun" },
-  { label: "Q3 2024", value: "3", year: "2024", months: "Jul-Sep" },
-  { label: "Q4 2024", value: "4", year: "2024", months: "Oct-Dec" }
-];
+const getDynamicQuarters = () => {
+  const today = new Date();
+  const currentYear = today.getFullYear();
+  const currentMonth = today.getMonth() + 1;
+  
+  const quarters = [];
+  const currentQuarter = Math.ceil(currentMonth / 3);
+  
+  for (let i = 0; i < 8; i++) {
+    let year = currentYear - Math.floor((i + (4 - currentQuarter)) / 4);
+    let quarterNum = currentQuarter - i;
+    while (quarterNum < 1) {
+      quarterNum += 4;
+      year -= 1;
+    }
+    
+    const quarterLabel = `Q${quarterNum} ${year}`;
+    const months = quarterNum === 1 ? "Jan-Mar" : quarterNum === 2 ? "Apr-Jun" : quarterNum === 3 ? "Jul-Sep" : "Oct-Dec";
+    
+    quarters.push({
+      label: quarterLabel,
+      value: quarterNum.toString(),
+      year: year.toString(),
+      months: months
+    });
+  }
+  
+  return quarters;
+};
+
+const QUARTERS = getDynamicQuarters();
 
 const REPORT_OPTIONS = [
   { label: "Partner Report", value: "customer" },
@@ -22,7 +43,7 @@ export default function CommissionStatement({ onNavigate }) {
   const [showExportModal, setShowExportModal] = useState(false);
   const [showReportDropdown, setShowReportDropdown] = useState(false);
   const [showQuarterDropdown, setShowQuarterDropdown] = useState(false);
-  const [selectedQuarter, setSelectedQuarter] = useState("Q1 2025");
+  const [selectedQuarter, setSelectedQuarter] = useState(QUARTERS[0]?.label || "Q1 2025");
   const [invoiceData, setInvoiceData] = useState(null);
   const [walletBalance, setWalletBalance] = useState(0);
   const [showPayoutModal, setShowPayoutModal] = useState(false);
@@ -66,10 +87,11 @@ export default function CommissionStatement({ onNavigate }) {
 
       if (response.data.status === "success") {
         setInvoiceData(response.data.data);
+      } else {
+        setInvoiceData(null);
       }
     } catch (error) {
       console.error("Error fetching invoice data:", error);
-      setError("No earnings statement available for this quarter");
       setInvoiceData(null);
     } finally {
       setLoading(false);
@@ -138,7 +160,7 @@ export default function CommissionStatement({ onNavigate }) {
         reportType: "commission",
         quarter: quarterObj.value,
         year: quarterObj.year,
-        invoiceNumber: invoiceData?.invoiceNumber
+        invoiceNumber: invoiceData?.invoiceNumber || "N/A"
       };
 
       if (exportParams.format !== "csv") {
@@ -222,9 +244,35 @@ export default function CommissionStatement({ onNavigate }) {
   };
 
   const formatDate = (dateString) => {
+    if (!dateString) return new Date().toLocaleDateString();
     const date = new Date(dateString);
     return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
   };
+
+  const defaultInvoiceData = {
+    invoiceNumber: "N/A",
+    date: new Date().toISOString(),
+    billTo: {
+      firstName: "-",
+      lastName: "-",
+      email: "-",
+      phoneNumber: "-"
+    },
+    items: [
+      {
+        qty: 0,
+        itemCode: "-",
+        description: "No data available",
+        unitPrice: 0,
+        total: 0
+      }
+    ],
+    subtotal: 0,
+    vat: 0,
+    total: 0
+  };
+
+  const displayData = invoiceData || defaultInvoiceData;
 
   return (
     <div className="min-h-screen bg-gray-50 p-6 text-sm">
@@ -278,7 +326,7 @@ export default function CommissionStatement({ onNavigate }) {
                 </svg>
               </button>
               {showQuarterDropdown && (
-                <div className="absolute top-full right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-10 min-w-[140px]">
+                <div className="absolute top-full right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-10 min-w-[140px] max-h-60 overflow-y-auto">
                   {QUARTERS.map((quarter) => (
                     <button
                       key={quarter.label}
@@ -295,10 +343,7 @@ export default function CommissionStatement({ onNavigate }) {
             </div>
             <button
               onClick={() => setShowExportModal(true)}
-              disabled={!invoiceData}
-              className={`border border-green px-4 py-1 rounded text-xs text-white ${
-                invoiceData ? "bg-[#039994]" : "bg-gray-400 cursor-not-allowed"
-              }`}
+              className="border border-green px-4 py-1 rounded text-xs text-white bg-[#039994]"
             >
               Export Report
             </button>
@@ -320,27 +365,15 @@ export default function CommissionStatement({ onNavigate }) {
           </div>
         )}
 
-        {!loading && error && !invoiceData && (
-          <div className="bg-white rounded-lg shadow-sm p-12">
-            <div className="text-center">
-              <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              <p className="mt-4 text-gray-600">{error}</p>
-              <p className="text-sm text-gray-500 mt-2">Try selecting a different quarter</p>
-            </div>
-          </div>
-        )}
-
-        {!loading && invoiceData && (
+        {!loading && (
           <>
             <div className="bg-white rounded-lg shadow-sm p-8 mb-6">
               <div className="flex justify-between items-start mb-8">
                 <div>
                   <h1 className="text-3xl font-bold text-[#039994] mb-2">INVOICE</h1>
                   <div className="text-sm text-gray-600">
-                    <div>INVOICE #{invoiceData.invoiceNumber}</div>
-                    <div>DATE: {formatDate(invoiceData.date)}</div>
+                    <div>INVOICE #{displayData.invoiceNumber}</div>
+                    <div>DATE: {formatDate(displayData.date)}</div>
                   </div>
                 </div>
               </div>
@@ -350,7 +383,7 @@ export default function CommissionStatement({ onNavigate }) {
                   <div className="flex">
                     <span className="font-semibold text-gray-700 w-32">Name</span>
                     <span className="text-gray-900">
-                      {invoiceData.billTo.firstName} {invoiceData.billTo.lastName}
+                      {displayData.billTo.firstName} {displayData.billTo.lastName}
                     </span>
                   </div>
                   <div className="flex">
@@ -359,11 +392,11 @@ export default function CommissionStatement({ onNavigate }) {
                   </div>
                   <div className="flex">
                     <span className="font-semibold text-gray-700 w-32">Email Address</span>
-                    <span className="text-gray-900">{invoiceData.billTo.email}</span>
+                    <span className="text-gray-900">{displayData.billTo.email}</span>
                   </div>
                   <div className="flex">
                     <span className="font-semibold text-gray-700 w-32">Phone number</span>
-                    <span className="text-gray-900">{invoiceData.billTo.phoneNumber || "-"}</span>
+                    <span className="text-gray-900">{displayData.billTo.phoneNumber || "-"}</span>
                   </div>
                 </div>
                 <div className="space-y-3">
@@ -422,7 +455,7 @@ export default function CommissionStatement({ onNavigate }) {
                 </div>
               </div>
 
-              {invoiceData.items.map((item, index) => (
+              {displayData.items.map((item, index) => (
                 <div key={index} className="grid grid-cols-12 gap-2 py-2 text-xs text-gray-900 border-b border-gray-200">
                   <div className="col-span-1">{item.qty}</div>
                   <div className="col-span-2">{item.itemCode}</div>
@@ -443,11 +476,11 @@ export default function CommissionStatement({ onNavigate }) {
                 <div className="w-64 space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="font-semibold text-gray-700">SUBTOTAL</span>
-                    <span className="text-gray-900">${invoiceData.subtotal.toFixed(2)}</span>
+                    <span className="text-gray-900">${displayData.subtotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="font-semibold text-gray-700">V.A.T.</span>
-                    <span className="text-gray-900">${invoiceData.vat.toFixed(2)}</span>
+                    <span className="text-gray-900">${displayData.vat.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="font-semibold text-gray-700">PAID</span>
@@ -464,7 +497,7 @@ export default function CommissionStatement({ onNavigate }) {
                     DCARBON AGENT STATEMENT – {selectedQuarter}
                   </h2>
                   <div className="text-sm text-gray-600">
-                    DATE: {formatDate(invoiceData.date)}
+                    DATE: {formatDate(displayData.date)}
                   </div>
                 </div>
               </div>
@@ -527,7 +560,7 @@ export default function CommissionStatement({ onNavigate }) {
                 </div>
               </div>
 
-              {invoiceData.items.map((item, index) => (
+              {displayData.items.map((item, index) => (
                 <div key={index} className="grid grid-cols-12 gap-2 py-2 text-xs text-gray-900 border-b border-gray-200">
                   <div className="col-span-1">{item.qty}</div>
                   <div className="col-span-2">{item.itemCode}</div>
@@ -552,11 +585,11 @@ export default function CommissionStatement({ onNavigate }) {
                 <div className="w-64 space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="font-semibold text-gray-700">SUBTOTAL</span>
-                    <span className="text-gray-900">${invoiceData.subtotal.toFixed(2)}</span>
+                    <span className="text-gray-900">${displayData.subtotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="font-semibold text-gray-700">V.A.T.</span>
-                    <span className="text-gray-900">${invoiceData.vat.toFixed(2)}</span>
+                    <span className="text-gray-900">${displayData.vat.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="font-semibold text-gray-700">PAID</span>
@@ -564,7 +597,7 @@ export default function CommissionStatement({ onNavigate }) {
                   </div>
                   <div className="flex justify-between border-t-2 border-gray-300 pt-2">
                     <span className="font-bold text-gray-900">TOTAL (USD)</span>
-                    <span className="font-bold text-gray-900">${invoiceData.total.toFixed(2)}</span>
+                    <span className="font-bold text-gray-900">${displayData.total.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -605,30 +638,26 @@ export default function CommissionStatement({ onNavigate }) {
                         </td>
                       </tr>
                     ))}
+                    {payoutHistory.length === 0 && (
+                      <tr>
+                        <td colSpan="7" className="px-4 py-8 text-center text-sm text-gray-500">
+                          No payout history available
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
             </div>
           </>
         )}
-
-        {!loading && !invoiceData && !error && (
-          <div className="bg-white rounded-lg shadow-sm p-12">
-            <div className="text-center">
-              <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              <p className="mt-4 text-gray-600">Select a quarter to view earnings statement</p>
-            </div>
-          </div>
-        )}
       </div>
 
-      {showExportModal && invoiceData && (
+      {showExportModal && (
         <ExportReportModal
           onClose={() => setShowExportModal(false)}
           onExport={handleExportReport}
-          invoiceData={invoiceData}
+          invoiceData={displayData}
           quarterFilter={selectedQuarter}
           walletBalance={walletBalance}
         />
