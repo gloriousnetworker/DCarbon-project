@@ -12,7 +12,6 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
     address: facility.address || "",
     utilityProvider: facility.utilityProvider || "",
     meterId: Array.isArray(facility.meterIds) ? facility.meterIds[0] : facility.meterIds || "",
-    utilityUsername: facility.utilityUsername || "",
     commercialRole: facility.commercialRole || "owner",
     entityType: facility.entityType || "company",
     name: facility.name || "",
@@ -44,8 +43,12 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
 
   useEffect(() => {
     fetchUtilityProviders();
-    fetchUserMeters();
     fetchCommercialUser();
+    
+    const checkMeters = async () => {
+      await fetchUserMeters();
+    };
+    checkMeters();
   }, []);
 
   useEffect(() => {
@@ -145,14 +148,18 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
 
       if (response.data.status === "success") {
         setUserMeterData(response.data.data);
+        
         const firstWithMeters = response.data.data.find(item => item.meters?.meters?.length > 0);
         if (firstWithMeters) {
           setSelectedUtilityAuthEmail(firstWithMeters.utilityAuthEmail);
         }
       }
     } catch (error) {
-      console.error("Error fetching user meters:", error);
-      toast.error("Failed to load meter information");
+      if (error.response && error.response.status === 404) {
+        console.log("No meters found for this user");
+      } else {
+        console.error("Error fetching user meters:", error);
+      }
     } finally {
       setUserMetersLoading(false);
     }
@@ -174,6 +181,20 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
+    
+    const editableFields = [
+      "commercialOperationDate",
+      "interconnectedUtilityId",
+      "eiaPlantId",
+      "energyStorageCapacity",
+      "hasOnSiteLoad",
+      "hasNetMetering"
+    ];
+    
+    if (!editableFields.includes(name) && name !== "meterId") {
+      return;
+    }
+    
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
@@ -255,23 +276,13 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
       setLoading(true);
       
       const processedData = {
-        facilityName: formData.facilityName,
-        nickname: formData.nickname,
-        address: formData.address,
-        utilityProvider: formData.utilityProvider,
-        meterId: formData.meterId,
-        utilityUsername: formData.utilityUsername,
-        commercialRole: formData.commercialRole,
-        entityType: formData.entityType,
-        name: formData.name,
-        website: formData.website,
-        multipleOwners: formData.multipleOwners,
         commercialOperationDate: formData.commercialOperationDate ? `${formData.commercialOperationDate}T00:00:00Z` : null,
         interconnectedUtilityId: formData.interconnectedUtilityId,
         eiaPlantId: formData.eiaPlantId,
-        energyStorageCapacity: parseFloat(formData.energyStorageCapacity),
+        energyStorageCapacity: parseFloat(formData.energyStorageCapacity) || 0,
         hasOnSiteLoad: formData.hasOnSiteLoad,
-        hasNetMetering: formData.hasNetMetering
+        hasNetMetering: formData.hasNetMetering,
+        meterId: formData.meterId
       };
 
       const response = await axios.put(
@@ -287,7 +298,13 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
 
       if (response.data.status === "success") {
         toast.success("Facility updated successfully");
-        onSave(response.data.data);
+        const updatedFacility = {
+          ...facility,
+          ...processedData,
+          commercialOperationDate: formData.commercialOperationDate,
+          meterIds: formData.meterId ? [formData.meterId] : facility.meterIds
+        };
+        onSave(updatedFacility);
         onClose();
       }
     } catch (error) {
@@ -342,6 +359,12 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
         </div>
 
         <div className="p-6">
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+            <p className="text-xs text-blue-700">
+              Only Commercial Operation Date, Interconnected Utility ID, EIA Plant ID, Energy Storage Capacity, On-site Load, Net Metering and Meter selection can be edited. All other fields are read-only.
+            </p>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className={`${labelClass} mb-2`}>
@@ -349,15 +372,11 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
               </label>
               <input
                 type="text"
-                name="facilityName"
                 value={formData.facilityName}
                 className={`${inputClass} bg-gray-100 cursor-not-allowed`}
                 disabled={true}
                 readOnly
               />
-              <p className="mt-1 text-xs text-gray-500">
-                Facility name cannot be edited
-              </p>
             </div>
 
             <div>
@@ -366,11 +385,10 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
               </label>
               <input
                 type="text"
-                name="nickname"
                 value={formData.nickname}
-                onChange={handleChange}
-                className={`${inputClass}`}
-                disabled={loading}
+                className={`${inputClass} bg-gray-100 cursor-not-allowed`}
+                disabled={true}
+                readOnly
               />
             </div>
 
@@ -380,118 +398,87 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
               </label>
               <input
                 type="text"
-                name="name"
                 value={formData.name}
-                onChange={handleChange}
-                className={`${inputClass}`}
-                disabled={loading || commercialUserLoading}
+                className={`${inputClass} bg-gray-100 cursor-not-allowed`}
+                disabled={true}
+                readOnly
               />
             </div>
 
             <div>
               <label className={`${labelClass} mb-2`}>
-                Utility Provider <span className="text-red-500">*</span>
-              </label>
-              <select
-                name="utilityProvider"
-                value={formData.utilityProvider}
-                onChange={handleChange}
-                className={`${selectClass}`}
-                required
-                disabled={loading || utilityProvidersLoading}
-              >
-                <option value="">Select utility provider</option>
-                {utilityProvidersLoading ? (
-                  <option value="" disabled>Loading providers...</option>
-                ) : (
-                  utilityProviders.map(provider => (
-                    <option key={provider.id} value={provider.name}>
-                      {provider.name}
-                    </option>
-                  ))
-                )}
-              </select>
-            </div>
-
-            <div>
-              <label className={`${labelClass} mb-2`}>
-                Utility Username
+                Utility Provider
               </label>
               <input
                 type="text"
-                name="utilityUsername"
-                value={formData.utilityUsername}
-                onChange={handleChange}
-                className={`${inputClass}`}
-                disabled={loading}
+                value={formData.utilityProvider}
+                className={`${inputClass} bg-gray-100 cursor-not-allowed`}
+                disabled={true}
+                readOnly
               />
             </div>
 
-            <div>
+            <div className="md:col-span-2">
               <label className={`${labelClass} mb-2`}>
-                Utility Account <span className="text-red-500">*</span>
+                Meter Selection
               </label>
-              <select
-                value={selectedUtilityAuthEmail}
-                onChange={handleUtilityAuthEmailChange}
-                className={`${selectClass}`}
-                required
-                disabled={loading || userMetersLoading}
-              >
-                <option value="">Select utility account</option>
-                {userMetersLoading ? (
-                  <option value="" disabled>Loading accounts...</option>
-                ) : utilityAuthEmailsWithMeters.length === 0 ? (
-                  <option value="" disabled>No utility accounts found</option>
-                ) : (
-                  utilityAuthEmailsWithMeters.map(item => (
-                    <option key={item.id} value={item.utilityAuthEmail}>
-                      {item.utilityAuthEmail}
-                    </option>
-                  ))
-                )}
-              </select>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <select
+                    value={selectedUtilityAuthEmail}
+                    onChange={handleUtilityAuthEmailChange}
+                    className={`${selectClass}`}
+                    disabled={loading || userMetersLoading || utilityAuthEmailsWithMeters.length === 0}
+                  >
+                    <option value="">Select utility account</option>
+                    {userMetersLoading ? (
+                      <option value="" disabled>Loading accounts...</option>
+                    ) : utilityAuthEmailsWithMeters.length === 0 ? (
+                      <option value="" disabled>No utility accounts found</option>
+                    ) : (
+                      utilityAuthEmailsWithMeters.map(item => (
+                        <option key={item.id} value={item.utilityAuthEmail}>
+                          {item.utilityAuthEmail}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                </div>
+
+                <div>
+                  <select
+                    name="meterId"
+                    value={formData.meterId}
+                    onChange={handleChange}
+                    className={`${selectClass}`}
+                    disabled={loading || currentMeters.length === 0 || !selectedUtilityAuthEmail}
+                  >
+                    <option value="">Select meter</option>
+                    {currentMeters.length === 0 ? (
+                      <option value="" disabled>No electric meters found</option>
+                    ) : (
+                      currentMeters.map(meter => (
+                        <option key={meter.uid} value={meter.uid}>
+                          {meter.base.meter_numbers[0]} - {meter.base.service_tariff}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                </div>
+              </div>
               <p className="mt-1 text-xs text-gray-500">
-                Select the utility account containing your meters
+                Only electric meters are shown
               </p>
             </div>
 
-            {selectedUtilityAuthEmail && (
-              <div>
-                <label className={`${labelClass} mb-2`}>
-                  Solar Meter <span className="text-red-500">*</span>
-                </label>
-                <select
-                  name="meterId"
-                  value={formData.meterId}
-                  onChange={handleChange}
-                  className={`${selectClass}`}
-                  required
-                  disabled={loading || currentMeters.length === 0}
-                >
-                  <option value="">Select meter</option>
-                  {currentMeters.length === 0 ? (
-                    <option value="" disabled>No electric meters found for this account</option>
-                  ) : (
-                    currentMeters.map(meter => (
-                      <option key={meter.uid} value={meter.uid}>
-                        {meter.base.meter_numbers[0]} - {meter.base.service_tariff}
-                      </option>
-                    ))
-                  )}
-                </select>
-                <p className="mt-1 text-xs text-gray-500">
-                  Only electric meters are shown
-                </p>
-              </div>
-            )}
-
-            {selectedMeter && (
+            {selectedMeter && formData.meterId !== originalMeterId && (
               <div className="md:col-span-2">
                 <div className="mb-3 p-3 bg-gray-50 rounded-md border border-gray-200">
-                  <p className="font-medium mb-2">Service Address: {selectedMeter.base.service_address}</p>
                   <p className="font-medium mb-2">
-                    Is this the same location for the solar installation? <span className="text-red-500">*</span>
+                    Service Address: {selectedMeter.base.service_address}
+                  </p>
+                  <p className="font-medium mb-2">
+                    Is this the same location for the solar installation?
                   </p>
                   <div className="flex gap-2">
                     <button
@@ -546,38 +533,15 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
 
             <div className="md:col-span-2">
               <label className={`${labelClass} mb-2`}>
-                Installation Address <span className="text-red-500">*</span>
+                Installation Address
               </label>
-              {selectedMeter && isSameLocation === true ? (
-                <textarea
-                  name="address"
-                  value={formData.address}
-                  rows={3}
-                  className={`${inputClass} bg-gray-100`}
-                  disabled={true}
-                  placeholder="Address will be auto-filled from meter service address"
-                />
-              ) : (
-                <textarea
-                  name="address"
-                  value={formData.address}
-                  onChange={handleChange}
-                  rows={3}
-                  className={`${inputClass}`}
-                  disabled={loading}
-                  required
-                />
-              )}
-              {selectedMeter && (
-                <p className="mt-1 text-xs text-gray-500">
-                  {isSameLocation === true 
-                    ? "Using meter service address" 
-                    : isSameLocation === false 
-                    ? "Enter the facility address manually"
-                    : "Please choose if installation is at the same location as meter"
-                  }
-                </p>
-              )}
+              <textarea
+                value={formData.address}
+                rows={3}
+                className={`${inputClass} bg-gray-100 cursor-not-allowed`}
+                disabled={true}
+                readOnly
+              />
             </div>
 
             <div>
@@ -586,12 +550,10 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
               </label>
               <input
                 type="url"
-                name="website"
                 value={formData.website}
-                onChange={handleChange}
-                placeholder="https://example.com"
-                className={`${inputClass}`}
-                disabled={loading}
+                className={`${inputClass} bg-gray-100 cursor-not-allowed`}
+                disabled={true}
+                readOnly
               />
             </div>
 
@@ -599,59 +561,39 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
               <label className={`${labelClass} mb-2`}>
                 Multiple Owners
               </label>
-              <select
-                name="multipleOwners"
+              <input
+                type="text"
                 value={formData.multipleOwners}
-                onChange={handleChange}
-                className={`${selectClass}`}
-                disabled={loading || multipleOwnersData.length === 0}
-              >
-                <option value="">Select owner</option>
-                {multipleOwnersData.length === 0 ? (
-                  <option value="" disabled>No additional owners found</option>
-                ) : (
-                  multipleOwnersData.map((owner, index) => (
-                    <option key={index} value={owner.fullName}>
-                      {owner.fullName}
-                    </option>
-                  ))
-                )}
-              </select>
+                className={`${inputClass} bg-gray-100 cursor-not-allowed`}
+                disabled={true}
+                readOnly
+              />
             </div>
 
             <div>
               <label className={`${labelClass} mb-2`}>
-                Commercial Role <span className="text-red-500">*</span>
+                Commercial Role
               </label>
-              <select
-                name="commercialRole"
+              <input
+                type="text"
                 value={formData.commercialRole}
-                onChange={handleChange}
-                className={`${selectClass}`}
-                disabled={loading}
-                required
-              >
-                <option value="owner">Owner</option>
-                <option value="operator">Operator</option>
-                <option value="both">Both</option>
-              </select>
+                className={`${inputClass} bg-gray-100 cursor-not-allowed capitalize`}
+                disabled={true}
+                readOnly
+              />
             </div>
 
             <div>
               <label className={`${labelClass} mb-2`}>
-                Entity Type <span className="text-red-500">*</span>
+                Entity Type
               </label>
-              <select
-                name="entityType"
+              <input
+                type="text"
                 value={formData.entityType}
-                onChange={handleChange}
-                className={`${selectClass}`}
-                disabled={loading}
-                required
-              >
-                <option value="individual">Individual</option>
-                <option value="company">Company</option>
-              </select>
+                className={`${inputClass} bg-gray-100 cursor-not-allowed capitalize`}
+                disabled={true}
+                readOnly
+              />
             </div>
 
             <div>

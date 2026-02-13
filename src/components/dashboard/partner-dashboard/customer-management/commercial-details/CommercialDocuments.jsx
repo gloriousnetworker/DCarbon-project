@@ -1,34 +1,9 @@
 import React, { useState } from "react";
-import {
-  FiFileText,
-  FiEye,
-  FiUpload,
-  FiRefreshCw,
-  FiChevronDown,
-  FiAlertCircle
-} from "react-icons/fi";
+import { FiFileText, FiEye, FiRefreshCw, FiUpload, FiAlertCircle, FiX, FiDownload, FiAlertTriangle, FiChevronDown } from "react-icons/fi";
 import { toast } from 'react-hot-toast';
 
-const CommercialDocuments = ({ facilityData, partnerType, onFacilityUpdated }) => {
-  const [showAllDocs, setShowAllDocs] = useState(false);
-  const [expandedRejections, setExpandedRejections] = useState({});
-  const [uploadingDoc, setUploadingDoc] = useState("");
-
-  const getStatusBgColor = (status) => {
-    switch (status?.toUpperCase()) {
-      case "APPROVED":
-        return "bg-green-500";
-      case "PENDING":
-      case "SUBMITTED":
-        return "bg-yellow-500";
-      case "REJECTED":
-        return "bg-red-500";
-      case "REQUIRED":
-        return "bg-orange-500";
-      default:
-        return "bg-gray-500";
-    }
-  };
+const DocumentCard = ({ title, status, url, onUpload, onView, docType, rejectionReason }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const getDocumentFileName = (url) => {
     if (!url) return null;
@@ -41,307 +16,317 @@ const CommercialDocuments = ({ facilityData, partnerType, onFacilityUpdated }) =
     }
   };
 
-  const toggleRejectionReason = (docType) => {
-    setExpandedRejections(prev => ({
-      ...prev,
-      [docType]: !prev[docType]
-    }));
-  };
+  const fileName = getDocumentFileName(url);
+  const isRejected = status?.toUpperCase() === "REJECTED";
+  const displayStatus = !url ? "REQUIRED" : status || "PENDING";
 
-  const canUploadDocument = (docType, currentStatus) => {
-    if (!partnerType) return true;
-    
-    const approvedStatuses = ["APPROVED", "SUBMITTED", "PENDING"];
-    if (approvedStatuses.includes(currentStatus?.toUpperCase())) {
-      return false;
-    }
-    
-    if (partnerType === "INSTALLER") {
-      return docType === "solarInstallationContract" || docType === "installationSitePlan";
-    }
-    
-    if (partnerType === "FINANCE_COMPANY") {
-      return docType === "financeAgreement" || docType === "solarInstallationContract" || docType === "installationSitePlan";
-    }
-    
-    if (partnerType === "SALES_AGENT") {
-      return false;
-    }
-    
-    return true;
-  };
-
-  const uploadDocument = async (docType, file) => {
-    const currentStatus = facilityData[`${docType}Status`];
-    if (!canUploadDocument(docType, currentStatus)) {
-      toast.error('You cannot modify this document at this stage');
-      return;
-    }
-
-    setUploadingDoc(docType);
-    
-    const authToken = localStorage.getItem('authToken');
-    if (!authToken) {
-      toast.error('Authentication token not found. Please login again.');
-      setUploadingDoc("");
-      return;
-    }
-
-    const facilityId = facilityData.id;
-    const baseUrl = 'https://services.dcarbon.solutions';
-    
-    const endpoints = {
-      wregisAssignment: `${baseUrl}/api/facility/update-wregis-assignment/${facilityId}`,
-      financeAgreement: `${baseUrl}/api/facility/update-facility-financial-agreement/${facilityId}`,
-      solarInstallationContract: `${baseUrl}/api/facility/update-commercial-solar-installation-contract/${facilityId}`,
-      utilityInterconnectionAgreement: `${baseUrl}/api/facility/update-commercial-interconnection-agreement/${facilityId}`,
-      utilityPTO: `${baseUrl}/api/facility/update-commercial-pto-letter/${facilityId}`,
-      singleLineDiagram: `${baseUrl}/api/facility/update-commercial-single-line-diagram/${facilityId}`,
-      installationSitePlan: `${baseUrl}/api/facility/update-facility-site-plan/${facilityId}`,
-      panelInverterDatasheet: `${baseUrl}/api/facility/update-facility-inverter-datasheet/${facilityId}`,
-      revenueMeterDatasheet: `${baseUrl}/api/facility/update-facility-revenue-meter-data/${facilityId}`,
-      utilityMeterPhoto: `${baseUrl}/api/facility/update-commercial-utility-meter-photo/${facilityId}`,
-      assignmentOfRegistrationRight: `${baseUrl}/api/facility/update-assignment-of-registration-right/${facilityId}`
-    };
-
-    const fieldNames = {
-      wregisAssignment: 'wregisAssignmentUrl',
-      financeAgreement: 'financeAgreementUrl',
-      solarInstallationContract: 'solarInstallationContractUrl',
-      utilityInterconnectionAgreement: 'interconnectionAgreementUrl',
-      utilityPTO: 'ptoLetterUrl',
-      singleLineDiagram: 'singleLineDiagramUrl',
-      installationSitePlan: 'file',
-      panelInverterDatasheet: 'file',
-      revenueMeterDatasheet: 'file',
-      utilityMeterPhoto: 'utilityMeterPhotoUrl',
-      assignmentOfRegistrationRight: 'file'
-    };
-
-    const formData = new FormData();
-    formData.append(fieldNames[docType], file);
-
-    try {
-      toast.loading('Uploading document...', { id: 'upload-toast' });
-      
-      const response = await fetch(endpoints[docType], {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${authToken}`
-        },
-        body: formData
-      });
-
-      const result = await response.json();
-
-      if (result.status === 'success') {
-        const updatedData = {
-          ...result.data,
-          panelInverterDatasheetUrl: result.data.inverterDatasheetUrl,
-          panelInverterDatasheetStatus: result.data.inverterDatasheetStatus
-        };
-        
-        if (onFacilityUpdated) {
-          onFacilityUpdated(updatedData);
-        }
-        
-        toast.success('Document uploaded successfully!', { id: 'upload-toast' });
-      } else {
-        toast.error(`Upload failed: ${result.message || 'Unknown error'}`, { id: 'upload-toast' });
-      }
-    } catch (error) {
-      console.error('Upload error:', error);
-      toast.error(`Upload failed: ${error.message}`, { id: 'upload-toast' });
-    } finally {
-      setUploadingDoc("");
-    }
-  };
-
-  const handleFileSelect = (docType) => {
-    const currentStatus = facilityData[`${docType}Status`];
-    if (!canUploadDocument(docType, currentStatus)) {
-      toast.error('You cannot modify this document at this stage');
-      return;
-    }
-
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = ".pdf,.doc,.docx,.png,.jpg,.jpeg";
-    input.onchange = (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        if (file.size > 10 * 1024 * 1024) {
-          toast.error('File size must be less than 10MB');
-          return;
-        }
-        uploadDocument(docType, file);
-      }
-    };
-    input.click();
-  };
-
-  const handleViewDocument = (url) => {
-    if (url) {
-      window.open(url, '_blank');
-    }
-  };
-
-  const DocumentCard = ({ title, status, url, onUpload, onView, docType, rejectionReason }) => {
-    const fileName = getDocumentFileName(url);
-    const isUploading = uploadingDoc === docType;
-    const isRejected = status?.toUpperCase() === "REJECTED";
-    const isExpanded = expandedRejections[docType];
-    const displayStatus = !url ? "REQUIRED" : status || "PENDING";
-    const canUpload = canUploadDocument(docType, status);
-    
-    return (
-      <div className="mb-3">
-        <div className="flex justify-between items-center mb-2">
-          <span className="text-black text-sm font-medium">{title}</span>
-          <div className="flex items-center space-x-2">
-            {isRejected && (
-              <button
-                onClick={() => toggleRejectionReason(docType)}
-                className="p-1 hover:bg-gray-100 rounded"
-                title="View rejection reason"
-              >
-                <FiAlertCircle className="text-red-500" size={14} />
-              </button>
-            )}
-            <span className={`px-2 py-1 rounded-full text-xs font-medium text-white ${getStatusBgColor(displayStatus)}`}>
-              {displayStatus}
-            </span>
-          </div>
-        </div>
-
-        {isRejected && rejectionReason && isExpanded && (
-          <div className="mb-2 p-2 bg-red-50 border border-red-200 rounded-md">
-            <div className="flex items-start space-x-2">
-              <FiAlertCircle className="text-red-500 mt-0.5 flex-shrink-0" size={14} />
-              <div>
-                <p className="text-xs font-medium text-red-800 mb-1">Rejection Reason:</p>
-                <p className="text-xs text-red-700">{rejectionReason}</p>
-              </div>
-            </div>
-          </div>
-        )}
-        
-        <div 
-          className={`bg-[#F0F0F0] rounded-lg p-3 cursor-pointer hover:bg-gray-200 transition-colors flex items-center justify-center h-12 ${
-            isRejected ? 'border-2 border-red-200' : ''
-          } ${!canUpload ? 'opacity-50 cursor-not-allowed' : ''}`}
-          onClick={() => !isUploading && canUpload && onUpload(docType)}
-        >
-          {isUploading ? (
-            <div className="flex items-center space-x-2">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#039994]"></div>
-              <span className="text-sm text-gray-700">Uploading...</span>
-            </div>
-          ) : url ? (
-            <div className="flex items-center space-x-3 w-full">
-              <FiFileText className="text-gray-600" size={18} />
-              <span className="text-sm text-gray-700 flex-1 truncate">
-                {fileName || 'Document uploaded'}
-              </span>
-              <div className="flex items-center space-x-1">
-                {isRejected && canUpload && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onUpload(docType);
-                    }}
-                    className="p-1 hover:bg-gray-300 rounded flex-shrink-0"
-                    title="Re-upload document"
-                  >
-                    <FiRefreshCw className="text-orange-600" size={16} />
-                  </button>
-                )}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onView(url);
-                  }}
-                  className="p-1 hover:bg-gray-300 rounded flex-shrink-0"
-                  title="View document"
-                >
-                  <FiEye className="text-[#039994]" size={16} />
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="flex items-center space-x-2">
-              <FiUpload className="text-gray-600" size={18} />
-              <span className="text-sm text-gray-700">{canUpload ? "Click to upload" : "Upload not permitted"}</span>
-            </div>
+  return (
+    <div className="mb-3">
+      <div className="flex justify-between items-center mb-2">
+        <span className="text-black text-sm font-medium">{title}</span>
+        <div className="flex items-center space-x-2">
+          {isRejected && (
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="p-1 hover:bg-gray-100 rounded"
+              title="View rejection reason"
+            >
+              <FiAlertCircle className="text-red-500" size={14} />
+            </button>
           )}
-        </div>
-
-        {isRejected && url && canUpload && (
-          <div className="mt-1 text-xs text-red-600 flex items-center space-x-1">
-            <FiAlertCircle size={10} />
-            <span>Document rejected. Click to re-upload or use the refresh icon above.</span>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const AcknowledgementCard = ({ title, status, url, onView, rejectionReason }) => {
-    const [isExpanded, setIsExpanded] = useState(false);
-
-    const getDocumentFileName = (url) => {
-      if (!url) return null;
-      try {
-        const urlParts = url.split('/');
-        const fileName = urlParts[urlParts.length - 1];
-        return decodeURIComponent(fileName).replace(/^\d+-/, '');
-      } catch (error) {
-        return 'Document';
-      }
-    };
-
-    const fileName = getDocumentFileName(url);
-    const isRejected = status?.toUpperCase() === "REJECTED";
-    const displayStatus = status || "PENDING";
-
-    return (
-      <div className="mb-4 bg-green-50 border border-green-200 rounded-md p-3">
-        <div className="flex items-center justify-between mb-2">
-          <span className="font-medium text-sm text-green-800">{title}</span>
-          <span className={`px-2 py-0.5 rounded text-xs font-semibold bg-green-600 text-white`}>
+          <span className={`px-2 py-1 rounded-full text-xs font-medium text-white ${
+            displayStatus === "APPROVED" ? "bg-green-500" :
+            displayStatus === "PENDING" || displayStatus === "SUBMITTED" ? "bg-yellow-500" :
+            displayStatus === "REJECTED" ? "bg-red-500" :
+            displayStatus === "REQUIRED" ? "bg-orange-500" : "bg-gray-500"
+          }`}>
             {displayStatus}
           </span>
         </div>
-        
-        {isRejected && rejectionReason && (
-          <div className="mb-2 p-2 bg-red-50 border border-red-200 rounded-md flex items-start gap-2">
+      </div>
+
+      {isRejected && rejectionReason && isExpanded && (
+        <div className="mb-2 p-2 bg-red-50 border border-red-200 rounded-md">
+          <div className="flex items-start space-x-2">
             <FiAlertCircle className="text-red-500 mt-0.5 flex-shrink-0" size={14} />
             <div>
-              <p className="font-semibold text-xs text-red-700 mb-1">Rejection Reason:</p>
-              <p className="text-xs text-red-600">{rejectionReason}</p>
+              <p className="text-xs font-medium text-red-800 mb-1">Rejection Reason:</p>
+              <p className="text-xs text-red-700">{rejectionReason}</p>
             </div>
           </div>
-        )}
-        
+        </div>
+      )}
+      
+      <div 
+        className={`rounded-lg p-3 cursor-pointer hover:bg-gray-200 transition-colors flex items-center h-12 ${
+          (displayStatus === "APPROVED" || displayStatus === "SUBMITTED") ? 
+          'bg-gray-200 cursor-not-allowed' : 
+          'bg-[#F0F0F0]'
+        } ${isRejected ? 'border-2 border-red-200' : ''}`}
+        onClick={() => {
+          if (displayStatus === "APPROVED" || displayStatus === "SUBMITTED") return;
+          onUpload(docType);
+        }}
+      >
         {url ? (
-          <div 
-            className="bg-green-100 rounded-md p-2.5 flex items-center justify-center cursor-pointer hover:bg-green-200"
-            onClick={() => onView(url)}
-          >
-            <div className="flex items-center space-x-2">
-              <FiEye className="text-green-700" size={16} />
-              <span className="text-sm text-green-700">View Acknowledgement</span>
+          <div className="flex items-center space-x-3 w-full">
+            <FiFileText className="text-gray-600" size={18} />
+            <span className="text-sm text-gray-700 flex-1 truncate">
+              {fileName || 'Document uploaded'}
+            </span>
+            <div className="flex items-center space-x-1">
+              {isRejected && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onUpload(docType);
+                  }}
+                  className="p-1 hover:bg-gray-300 rounded flex-shrink-0"
+                  title="Re-upload document"
+                >
+                  <FiRefreshCw className="text-orange-600" size={16} />
+                </button>
+              )}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onView(url);
+                }}
+                className="p-1 hover:bg-gray-300 rounded flex-shrink-0"
+                title="View document"
+              >
+                <FiEye className="text-[#039994]" size={16} />
+              </button>
             </div>
           </div>
         ) : (
-          <div className="bg-green-100 rounded-md p-2.5 flex items-center justify-center">
-            <span className="text-sm text-green-700">Acknowledgement {displayStatus}</span>
+          <div className="flex items-center space-x-2 w-full">
+            <FiUpload className="text-gray-600" size={18} />
+            <span className="text-sm text-gray-700">Click to upload</span>
           </div>
         )}
       </div>
-    );
+
+      {isRejected && url && (
+        <div className="mt-1 text-xs text-red-600 flex items-center space-x-1">
+          <FiAlertCircle size={10} />
+          <span>Document rejected. Click to re-upload or use the refresh icon above.</span>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const AcknowledgementCard = ({ title, status, url, onView, rejectionReason }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const getDocumentFileName = (url) => {
+    if (!url) return null;
+    try {
+      const urlParts = url.split('/');
+      const fileName = urlParts[urlParts.length - 1];
+      return decodeURIComponent(fileName).replace(/^\d+-/, '');
+    } catch (error) {
+      return 'Document';
+    }
   };
 
+  const fileName = getDocumentFileName(url);
+  const isRejected = status?.toUpperCase() === "REJECTED";
+  const displayStatus = !url ? "REQUIRED" : status || "PENDING";
+
+  return (
+    <div className="mb-4 bg-green-50 border border-green-200 rounded-md p-3">
+      <div className="flex items-center justify-between mb-2">
+        <span className="font-medium text-sm text-green-800">{title}</span>
+        <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
+          displayStatus === "APPROVED" ? "bg-green-600 text-white" :
+          displayStatus === "PENDING" || displayStatus === "SUBMITTED" ? "bg-yellow-500 text-white" :
+          displayStatus === "REJECTED" ? "bg-red-500 text-white" :
+          displayStatus === "REQUIRED" ? "bg-orange-500 text-white" : "bg-gray-500 text-white"
+        }`}>
+          {displayStatus}
+        </span>
+      </div>
+      
+      {isRejected && rejectionReason && (
+        <div className="mb-2 p-2 bg-red-50 border border-red-200 rounded-md flex items-start gap-2">
+          <FiAlertTriangle className="text-red-500 mt-0.5 flex-shrink-0" size={14} />
+          <div>
+            <p className="font-semibold text-xs text-red-700 mb-1">Rejection Reason:</p>
+            <p className="text-xs text-red-600">{rejectionReason}</p>
+          </div>
+        </div>
+      )}
+      
+      {url ? (
+        <div 
+          className="bg-green-100 rounded-md p-2.5 flex items-center justify-center cursor-pointer hover:bg-green-200"
+          onClick={() => onView(url)}
+        >
+          <div className="flex items-center space-x-2">
+            <FiEye className="text-green-700" size={16} />
+            <span className="text-sm text-green-700">View Acknowledgement</span>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-green-100 rounded-md p-2.5 flex items-center justify-center">
+          <span className="text-sm text-green-700">Acknowledgement {displayStatus}</span>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export const PDFViewerModal = ({ isOpen, onClose, url, title }) => {
+  if (!isOpen) return null;
+
+  const getFileExtension = (url) => {
+    if (!url) return '';
+    return url.split('.').pop().toLowerCase();
+  };
+
+  const renderFileContent = () => {
+    if (!url) return <div>No document available</div>;
+    
+    const extension = getFileExtension(url);
+    
+    if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(extension)) {
+      return (
+        <div className="flex items-center justify-center h-full">
+          <img 
+            src={url} 
+            alt={title} 
+            className="max-w-full max-h-full object-contain"
+            onError={(e) => {
+              e.target.style.display = 'none';
+              e.target.nextSibling.style.display = 'block';
+            }}
+          />
+          <div style={{display: 'none'}} className="text-center">
+            <FiFileText size={48} className="mx-auto mb-4 text-gray-400" />
+            <p className="text-gray-600">Unable to load image</p>
+          </div>
+        </div>
+      );
+    } else if (extension === 'pdf') {
+      const pdfViewerUrl = url.includes('drive.google.com') 
+        ? url.replace('/view', '/preview')
+        : `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+      
+      return (
+        <div className="w-full h-full relative">
+          <iframe
+            src={pdfViewerUrl}
+            className="w-full h-full border-0"
+            title={title}
+            onError={() => {
+              console.error('PDF viewer failed to load');
+            }}
+          />
+          <div className="absolute inset-0 pointer-events-none"></div>
+        </div>
+      );
+    } else if (['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].includes(extension)) {
+      const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+      
+      return (
+        <div className="w-full h-full">
+          <iframe
+            src={viewerUrl}
+            className="w-full h-full border-0"
+            title={title}
+          />
+        </div>
+      );
+    } else if (['txt', 'csv', 'json', 'xml'].includes(extension)) {
+      return (
+        <div className="w-full h-full p-4">
+          <iframe
+            src={url}
+            className="w-full h-full border border-gray-300 rounded"
+            title={title}
+          />
+        </div>
+      );
+    } else {
+      return (
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center">
+            <FiFileText size={48} className="mx-auto mb-4 text-gray-400" />
+            <p className="text-gray-600 mb-2">Preview not available for this file type</p>
+            <p className="text-sm text-gray-500 mb-4">File extension: .{extension}</p>
+            <button
+              onClick={() => {
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = title || 'document';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+              }}
+              className="inline-flex items-center gap-2 bg-[#039994] text-white px-4 py-2 rounded-md hover:bg-[#028580] transition-colors"
+            >
+              <FiDownload size={16} />
+              Download File
+            </button>
+          </div>
+        </div>
+      );
+    }
+  };
+
+  const handleDownload = (e) => {
+    e.preventDefault();
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = title || 'document';
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg w-full max-w-5xl h-full max-h-[95vh] flex flex-col">
+        <div className="flex items-center justify-between p-4 border-b bg-gray-50 rounded-t-lg">
+          <h3 className="text-lg font-semibold text-gray-800 truncate">{title}</h3>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleDownload}
+              className="flex items-center gap-2 bg-[#039994] text-white px-3 py-1.5 rounded-md hover:bg-[#028580] transition-colors text-sm"
+              title="Download file"
+            >
+              <FiDownload size={14} />
+              Download
+            </button>
+            <button 
+              onClick={onClose} 
+              className="p-2 hover:bg-gray-200 rounded-full transition-colors"
+              title="Close preview"
+            >
+              <FiX size={20} className="text-gray-600" />
+            </button>
+          </div>
+        </div>
+        <div className="flex-1 overflow-hidden bg-gray-100">
+          {renderFileContent()}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const DocumentsModal = ({ 
+  facilityData, 
+  onFileSelect, 
+  onViewDocument, 
+  showAllDocs, 
+  setShowAllDocs,
+  partnerType,
+  onFacilityUpdated
+}) => {
   const allDocuments = [
     {
       title: "Assignment of Registration Right",
@@ -401,10 +386,10 @@ const CommercialDocuments = ({ facilityData, partnerType, onFacilityUpdated }) =
     },
     {
       title: "Panel/Inverter Data Sheet",
-      status: facilityData.inverterDatasheetStatus,
-      url: facilityData.inverterDatasheetUrl,
+      status: facilityData.panelInverterDatasheetStatus,
+      url: facilityData.panelInverterDatasheetUrl,
       docType: "panelInverterDatasheet",
-      rejectionReason: facilityData.inverterDatasheetRejectionReason
+      rejectionReason: facilityData.panelInverterDatasheetRejectionReason
     },
     {
       title: "Revenue Meter Data Sheet",
@@ -439,34 +424,36 @@ const CommercialDocuments = ({ facilityData, partnerType, onFacilityUpdated }) =
         title={acknowledgementDocument.title}
         status={acknowledgementDocument.status}
         url={acknowledgementDocument.url}
-        onView={handleViewDocument}
+        onView={(url) => onViewDocument(url, acknowledgementDocument.title)}
         rejectionReason={acknowledgementDocument.rejectionReason}
       />
       
-      <div className={`${showAllDocs ? 'max-h-80 overflow-y-auto' : ''}`}>
+      <div className={`${showAllDocs ? 'max-h-[500px] overflow-y-auto' : ''}`}>
         {visibleDocuments.map((doc, index) => (
           <DocumentCard
             key={index}
             title={doc.title}
             status={doc.status}
             url={doc.url}
-            onUpload={handleFileSelect}
-            onView={handleViewDocument}
+            onUpload={onFileSelect}
+            onView={(url) => onViewDocument(url, doc.title)}
             docType={doc.docType}
             rejectionReason={doc.rejectionReason}
           />
         ))}
       </div>
 
-      <button 
-        onClick={() => setShowAllDocs(!showAllDocs)}
-        className="w-full mt-3 py-1.5 text-xs text-[#039994] hover:text-[#027a75] transition-colors flex items-center justify-center space-x-1"
-      >
-        <span>{showAllDocs ? 'View less' : 'View more'}</span>
-        <FiChevronDown className={`transform transition-transform ${showAllDocs ? 'rotate-180' : ''}`} size={12} />
-      </button>
+      {allDocuments.length > 3 && (
+        <button 
+          onClick={() => setShowAllDocs(!showAllDocs)}
+          className="w-full mt-3 py-1.5 text-xs text-[#039994] hover:text-[#027a75] transition-colors flex items-center justify-center space-x-1"
+        >
+          <span>{showAllDocs ? 'View less' : 'View more'}</span>
+          <FiChevronDown className={`transform transition-transform ${showAllDocs ? 'rotate-180' : ''}`} size={12} />
+        </button>
+      )}
     </div>
   );
 };
 
-export default CommercialDocuments;
+export default DocumentsModal;
