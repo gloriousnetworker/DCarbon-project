@@ -5,29 +5,32 @@ const getDynamicQuarters = () => {
   const today = new Date();
   const currentYear = today.getFullYear();
   const currentMonth = today.getMonth() + 1;
-  
-  const quarters = [];
   const currentQuarter = Math.ceil(currentMonth / 3);
-  
+
+  const quarters = [];
+
   for (let i = 0; i < 8; i++) {
-    let year = currentYear - Math.floor((i + (4 - currentQuarter)) / 4);
-    let quarterNum = currentQuarter - i;
-    while (quarterNum < 1) {
-      quarterNum += 4;
-      year -= 1;
+    let q = currentQuarter - i;
+    let y = currentYear;
+
+    while (q < 1) {
+      q += 4;
+      y -= 1;
     }
-    
-    const quarterLabel = `Q${quarterNum} ${year}`;
-    const months = quarterNum === 1 ? "Jan-Mar" : quarterNum === 2 ? "Apr-Jun" : quarterNum === 3 ? "Jul-Sep" : "Oct-Dec";
-    
+
+    const months =
+      q === 1 ? "Jan-Mar" :
+      q === 2 ? "Apr-Jun" :
+      q === 3 ? "Jul-Sep" : "Oct-Dec";
+
     quarters.push({
-      label: quarterLabel,
-      value: quarterNum.toString(),
-      year: year.toString(),
-      months: months
+      label: `Q${q} ${y}`,
+      value: q.toString(),
+      year: y.toString(),
+      months,
     });
   }
-  
+
   return quarters;
 };
 
@@ -36,14 +39,14 @@ const QUARTERS = getDynamicQuarters();
 const REPORT_OPTIONS = [
   { label: "Partner Report", value: "customer" },
   { label: "Generation Report", value: "generation" },
-  { label: "Earnings Statement", value: "commission" }
+  { label: "Earnings Statement", value: "commission" },
 ];
 
 export default function CommissionStatement({ onNavigate }) {
   const [showExportModal, setShowExportModal] = useState(false);
   const [showReportDropdown, setShowReportDropdown] = useState(false);
   const [showQuarterDropdown, setShowQuarterDropdown] = useState(false);
-  const [selectedQuarter, setSelectedQuarter] = useState(QUARTERS[0]?.label || "Q1 2025");
+  const [selectedQuarter, setSelectedQuarter] = useState(QUARTERS[0]?.label || "");
   const [invoiceData, setInvoiceData] = useState(null);
   const [walletBalance, setWalletBalance] = useState(0);
   const [showPayoutModal, setShowPayoutModal] = useState(false);
@@ -69,19 +72,14 @@ export default function CommissionStatement({ onNavigate }) {
     setLoading(true);
     setError("");
     try {
-      const quarterObj = QUARTERS.find(q => q.label === selectedQuarter);
+      const quarterObj = QUARTERS.find((q) => q.label === selectedQuarter);
       if (!quarterObj) return;
 
       const response = await axios.get(
         `https://services.dcarbon.solutions/api/commission/invoice/${userId}`,
         {
-          params: {
-            quarter: quarterObj.value,
-            year: quarterObj.year
-          },
-          headers: {
-            Authorization: `Bearer ${authToken}`
-          }
+          params: { quarter: quarterObj.value, year: quarterObj.year },
+          headers: { Authorization: `Bearer ${authToken}` },
         }
       );
 
@@ -102,13 +100,8 @@ export default function CommissionStatement({ onNavigate }) {
     try {
       const response = await fetch(
         `https://services.dcarbon.solutions/api/revenue/${userId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${authToken}`
-          }
-        }
+        { headers: { Authorization: `Bearer ${authToken}` } }
       );
-
       const result = await response.json();
       if (result.status === "success" && result.data) {
         setWalletBalance(result.data.availableBalance || 0);
@@ -122,13 +115,8 @@ export default function CommissionStatement({ onNavigate }) {
     try {
       const response = await fetch(
         `https://services.dcarbon.solutions/api/payout-request?userId=${userId}&userType=PARTNER`,
-        {
-          headers: {
-            Authorization: `Bearer ${authToken}`
-          }
-        }
+        { headers: { Authorization: `Bearer ${authToken}` } }
       );
-
       const result = await response.json();
       if (result.status === "success" && result.data) {
         setPayoutHistory(result.data);
@@ -140,9 +128,7 @@ export default function CommissionStatement({ onNavigate }) {
 
   const handleReportNavigation = (reportType) => {
     setShowReportDropdown(false);
-    if (onNavigate) {
-      onNavigate(reportType);
-    }
+    if (onNavigate) onNavigate(reportType);
   };
 
   const handleQuarterSelect = (quarter) => {
@@ -152,15 +138,15 @@ export default function CommissionStatement({ onNavigate }) {
 
   const handleExportReport = async (exportParams) => {
     try {
-      const quarterObj = QUARTERS.find(q => q.label === selectedQuarter);
-      
+      const quarterObj = QUARTERS.find((q) => q.label === selectedQuarter);
+
       const requestBody = {
         format: exportParams.format,
         email: exportParams.email,
         reportType: "commission",
         quarter: quarterObj.value,
         year: quarterObj.year,
-        invoiceNumber: invoiceData?.invoiceNumber || "N/A"
+        invoiceNumber: invoiceData?.invoiceNumber || "N/A",
       };
 
       if (exportParams.format !== "csv") {
@@ -169,7 +155,7 @@ export default function CommissionStatement({ onNavigate }) {
           requestBody,
           {
             headers: { Authorization: `Bearer ${authToken}` },
-            responseType: "blob"
+            responseType: "blob",
           }
         );
 
@@ -201,19 +187,22 @@ export default function CommissionStatement({ onNavigate }) {
       }
 
       const requestBody = {
-        userId: userId,
+        userId,
         amount: parseFloat(payoutAmount),
-        userType: "PARTNER"
+        userType: "PARTNER",
       };
 
-      const response = await fetch("https://services.dcarbon.solutions/api/payout-request/request", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`
-        },
-        body: JSON.stringify(requestBody)
-      });
+      const response = await fetch(
+        "https://services.dcarbon.solutions/api/payout-request/request",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`,
+          },
+          body: JSON.stringify(requestBody),
+        }
+      );
 
       const result = await response.json();
 
@@ -252,24 +241,11 @@ export default function CommissionStatement({ onNavigate }) {
   const defaultInvoiceData = {
     invoiceNumber: "N/A",
     date: new Date().toISOString(),
-    billTo: {
-      firstName: "-",
-      lastName: "-",
-      email: "-",
-      phoneNumber: "-"
-    },
-    items: [
-      {
-        qty: 0,
-        itemCode: "-",
-        description: "No data available",
-        unitPrice: 0,
-        total: 0
-      }
-    ],
+    billTo: { firstName: "-", lastName: "-", email: "-", phoneNumber: "-" },
+    items: [{ qty: 0, itemCode: "-", description: "No data available", unitPrice: 0, total: 0 }],
     subtotal: 0,
     vat: 0,
-    total: 0
+    total: 0,
   };
 
   const displayData = invoiceData || defaultInvoiceData;
@@ -284,10 +260,10 @@ export default function CommissionStatement({ onNavigate }) {
               className="flex items-center text-2xl font-semibold text-[#039994]"
             >
               Earnings Statement
-              <svg 
+              <svg
                 className={`ml-2 w-5 h-5 transition-transform ${showReportDropdown ? "rotate-180" : ""}`}
-                fill="none" 
-                stroke="currentColor" 
+                fill="none"
+                stroke="currentColor"
                 viewBox="0 0 24 24"
               >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -309,6 +285,7 @@ export default function CommissionStatement({ onNavigate }) {
               </div>
             )}
           </div>
+
           <div className="flex items-center space-x-4">
             <div className="relative">
               <button
@@ -316,10 +293,10 @@ export default function CommissionStatement({ onNavigate }) {
                 className="flex items-center border border-gray-300 px-4 py-1 rounded text-xs hover:bg-gray-50"
               >
                 {selectedQuarter}
-                <svg 
+                <svg
                   className={`ml-2 w-4 h-4 transition-transform ${showQuarterDropdown ? "rotate-180" : ""}`}
-                  fill="none" 
-                  stroke="currentColor" 
+                  fill="none"
+                  stroke="currentColor"
                   viewBox="0 0 24 24"
                 >
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -627,9 +604,7 @@ export default function CommissionStatement({ onNavigate }) {
                         <td className={`px-4 py-3 text-sm font-medium ${getStatusColor(payout.status)}`}>
                           {payout.status}
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-900 max-w-xs">
-                          {payout.adminNote || "-"}
-                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-900 max-w-xs">{payout.adminNote || "-"}</td>
                         <td className="px-4 py-3 text-sm text-gray-900">
                           {new Date(payout.createdAt).toLocaleDateString()}
                         </td>
@@ -668,9 +643,7 @@ export default function CommissionStatement({ onNavigate }) {
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
             <h3 className="text-lg font-semibold text-[#039994] mb-4">Request Payout</h3>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Amount ($)
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Amount ($)</label>
               <input
                 type="number"
                 value={payoutAmount}
@@ -680,9 +653,13 @@ export default function CommissionStatement({ onNavigate }) {
               />
             </div>
             {payoutMessage && (
-              <div className={`mb-4 p-3 rounded-md ${
-                payoutMessage.includes("success") ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-              }`}>
+              <div
+                className={`mb-4 p-3 rounded-md ${
+                  payoutMessage.includes("success")
+                    ? "bg-green-100 text-green-800"
+                    : "bg-red-100 text-red-800"
+                }`}
+              >
                 {payoutMessage}
               </div>
             )}
@@ -736,20 +713,14 @@ function ExportReportModal({ onClose, onExport, invoiceData, quarterFilter, wall
       <div className="bg-white rounded-lg p-6 w-full max-w-md">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-[#039994]">Export Earnings Statement</h2>
-          <button
-            onClick={onClose}
-            className="text-[#F04438] hover:text-red-600 text-xl"
-            disabled={loading}
-          >
+          <button onClick={onClose} className="text-[#F04438] hover:text-red-600 text-xl" disabled={loading}>
             ✕
           </button>
         </div>
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Format
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Format</label>
             <select
               value={format}
               onChange={(e) => setFormat(e.target.value)}
@@ -762,9 +733,7 @@ function ExportReportModal({ onClose, onExport, invoiceData, quarterFilter, wall
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Email (optional)
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Email (optional)</label>
             <input
               type="email"
               value={email}
