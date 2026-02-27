@@ -336,7 +336,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
       facilityName: uniqueFacilityName,
       utilityProvider: formData.utilityProvider || "N/A",
       installer: noInstallerSelected ? "N/A" : (showCustomInstaller ? formData.customInstaller : formData.installer || "N/A"),
-      installerId: noInstallerSelected ? "N/A" : (selectedInstaller?.id || "N/A"),
+      installerId: noInstallerSelected ? "N/A" : (selectedInstaller?.userId || "N/A"),
       financeType: formData.financeType || "N/A",
       financeCompany: formData.financeCompany || "N/A",
       financeAgreement: file ? file.name : "N/A",
@@ -493,7 +493,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
       setFormData(prev => ({
         ...prev,
         installer: value,
-        installerId: selectedInstaller?.id || "",
+        installerId: selectedInstaller?.userId || "",
         installerNamingCode: selectedInstaller?.namingCode || ""
       }));
     }
@@ -502,7 +502,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
       setFormData(prev => ({
         ...prev,
         financeCompany: value,
-        financeCompanyId: selectedFinanceCompany?.id || ""
+        financeCompanyId: selectedFinanceCompany?.userId || ""
       }));
     }
     else if (name === "utilityProvider") {
