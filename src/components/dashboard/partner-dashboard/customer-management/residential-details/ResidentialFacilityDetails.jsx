@@ -111,7 +111,7 @@ const InviteFacilityModal = ({ isOpen, onClose, facilityData, customerEmail, onI
         return;
       }
 
-      const response = await axios.post(
+      const response = await axiosInstance.post(
         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/invite-facility/${userId}`,
         {
           inviteeEmail: customerEmail,
@@ -246,7 +246,7 @@ export default function FacilityDetails({ facility, customerEmail, onBack, onFac
 
       if (!userId || !authToken) return;
 
-      const response = await axios.get(
+      const response = await axiosInstance.get(
         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/partner/user/${userId}`,
         {
           headers: {
@@ -319,7 +319,7 @@ export default function FacilityDetails({ facility, customerEmail, onBack, onFac
 
   const checkStage5Completion = async (facilityId, authToken) => {
     try {
-      const response = await axios.get(
+      const response = await axiosInstance.get(
         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/residential-facility/residential-docs/${facilityId}`,
         {
           headers: {
@@ -408,7 +408,7 @@ export default function FacilityDetails({ facility, customerEmail, onBack, onFac
 
     try {
       setLoading(true);
-      const response = await axios.get(
+      const response = await axiosInstance.get(
         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/residential-facility/get-one-residential-facility/${facilityData.id}`,
         {
           headers: {
@@ -436,7 +436,7 @@ export default function FacilityDetails({ facility, customerEmail, onBack, onFac
     if (!userId || !authToken) return;
 
     try {
-      const response = await axios.get(
+      const response = await axiosInstance.get(
         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/financial-info/${userId}`,
         {
           headers: {

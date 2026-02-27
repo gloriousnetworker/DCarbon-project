@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import axios from 'axios';
+import { axiosInstance } from '@/lib/config';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import Loader from '@/components/loader/Loader';
@@ -40,7 +40,7 @@ export default function StepOneCard() {
       }
 
       // Make API call
-      const response = await axios.put(
+      const response = await axiosInstance.put(
         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/commercial-registration/${userId}`,
         payload,
         {

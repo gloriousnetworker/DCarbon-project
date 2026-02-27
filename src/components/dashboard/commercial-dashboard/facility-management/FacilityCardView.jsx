@@ -42,7 +42,7 @@ export default function FacilityCardView() {
       
       if (!userId || !authToken) return;
 
-      const response = await axios.get(
+      const response = await axiosInstance.get(
         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-operators/${userId}`,
         { headers: { Authorization: `Bearer ${authToken}` } }
       );
@@ -225,7 +225,7 @@ export default function FacilityCardView() {
       return;
     }
     try {
-      const { data } = await axios.get(
+      const { data } = await axiosInstance.get(
         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/facility/get-user-facilities-by-userId/${userId}`,
         { headers: { Authorization: `Bearer ${authToken}` } }
       );

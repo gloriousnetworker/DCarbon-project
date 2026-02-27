@@ -49,7 +49,7 @@ export default function FacilityCardView() {
       
       if (!userId || !authToken) return false;
 
-      const response = await axios.get(
+      const response = await axiosInstance.get(
         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/agreement/${userId}`,
         { headers: { 'Authorization': `Bearer ${authToken}` } }
       );
@@ -80,7 +80,7 @@ export default function FacilityCardView() {
         return;
       }
 
-      const response = await axios.post(
+      const response = await axiosInstance.post(
         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/accept-invitation`,
         {
           referralCode: facility.referralCode,
@@ -149,7 +149,7 @@ export default function FacilityCardView() {
     if (!inviterId || !authToken) return null;
     
     try {
-      const response = await axios.get(
+      const response = await axiosInstance.get(
         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-one-user/${inviterId}`,
         { headers: { Authorization: `Bearer ${authToken}` } }
       );
@@ -170,7 +170,7 @@ export default function FacilityCardView() {
     if (!ownerId || !authToken) return null;
     
     try {
-      const response = await axios.get(
+      const response = await axiosInstance.get(
         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/user-meters/${ownerId}`,
         { headers: { Authorization: `Bearer ${authToken}` } }
       );
@@ -365,7 +365,7 @@ export default function FacilityCardView() {
     }
     
     try {
-      const { data } = await axios.get(
+      const { data } = await axiosInstance.get(
         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/referral/by-invitee-email/${userEmail}?status=${statusFilter}`,
         { headers: { Authorization: `Bearer ${authToken}` } }
       );

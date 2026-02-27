@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import axios from 'axios';
+import { axiosInstance } from '@/lib/config';
 import Loader from '../../../components/loader/Loader';
 import EmailModal from '../../../components/modals/EmailModal';
 import { toast } from 'react-hot-toast';
@@ -197,7 +197,7 @@ function RegisterCardContent() {
 
     try {
       const baseUrl = 'https://naijatrips-app-dcarbon-server.cafyit.easypanel.host';
-      let url = `${baseUrl}/api/user/register`;
+      let url = `/api/user/register`;
       
       if (urlReferralCode) {
         url += `?referralCode=${urlReferralCode}`;
@@ -205,7 +205,7 @@ function RegisterCardContent() {
         payload.bodyReferralCode = manualReferralCode.trim();
       }
 
-      const response = await axios.post(url, payload, { 
+      const response = await axiosInstance.post(url, payload, { 
         headers: { 'Content-Type': 'application/json' } 
       });
 

@@ -53,7 +53,7 @@ export default function OwnersDetailsCard() {
         ownerAddress: address,
       };
 
-      await axios.put(
+      await axiosInstance.put(
         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/commercial-registration/${userId}`,
         payload,
         {

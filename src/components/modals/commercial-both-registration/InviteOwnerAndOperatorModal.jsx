@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
-import axios from 'axios';
+import { axiosInstance } from '@/lib/config';
 
 export default function EmailVerificationModal({ closeModal, onSkip }) {
   const [formData, setFormData] = useState({
@@ -67,7 +67,7 @@ export default function EmailVerificationModal({ closeModal, onSkip }) {
     };
 
     try {
-      const response = await axios.post(
+      const response = await axiosInstance.post(
         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/invite-user/${userId}`,
         payload,
         {

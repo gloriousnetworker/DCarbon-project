@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { axiosInstance } from '@/lib/config';
 import { FiX } from 'react-icons/fi';
 import { FaCheck, FaTimes } from 'react-icons/fa';
 import { toast } from 'react-hot-toast';
@@ -58,7 +58,7 @@ const SendReminderModal = ({ isOpen, onClose, customerEmail }) => {
         description: reminderDescription,
       };
 
-      const response = await axios.post(
+      const response = await axiosInstance.post(
         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/operator-reminders/${userId}`,
         body,
         {

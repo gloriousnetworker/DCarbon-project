@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import axios from 'axios';
+import { axiosInstance } from '@/lib/config';
 import Loader from '../../../components/loader/Loader';
 import toast, { Toaster } from 'react-hot-toast';
 
@@ -31,7 +31,7 @@ export default function ForgotPasswordCard() {
     }
     setLoading(true);
     try {
-      await axios.post(
+      await axiosInstance.post(
         'https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/forgot-password',
         { email },
         { headers: { 'Content-Type': 'application/json' } }

@@ -1,10 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import axios from 'axios';
+import { axiosInstance } from '../../../../lib/config';
 import Loader from '../../../components/loader/Loader';
 import toast from 'react-hot-toast';
-import CONFIG from '../../../../lib/config';
 
 export default function LoginCard() {
   const [loading, setLoading] = useState(false);
@@ -21,9 +20,9 @@ export default function LoginCard() {
     try {
       const normalizedEmail = email.toLowerCase();
       
-      const url = `${CONFIG.API_BASE_URL}/api/auth/login`;
+      const url = `/api/auth/login`;
 
-      const response = await axios.post(
+      const response = await axiosInstance.post(
         url,
         { email: normalizedEmail, password },
         { headers: { 'Content-Type': 'application/json' } }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import { axiosInstance } from '@/lib/config';
 import Loader from '../../components/loader/Loader';
 import toast from 'react-hot-toast';
 
@@ -13,7 +13,7 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, redirectPa
   const handleLogin = async () => {
     setLoading(true);
     try {
-      const response = await axios.post(
+      const response = await axiosInstance.post(
         'https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/login',
         { email, password },
         { headers: { 'Content-Type': 'application/json' } }

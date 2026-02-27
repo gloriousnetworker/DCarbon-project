@@ -38,7 +38,7 @@ export default function EditResidentialFacilityModal({ facility, customerEmail, 
     if (!authToken || !userId) return;
     setLoading(true);
     try {
-      const response = await axios.get(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/partner/user/${userId}`, {
+      const response = await axiosInstance.get(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/partner/user/${userId}`, {
         headers: { Authorization: `Bearer ${authToken}` }
       });
       if (response.data.status === "success") {
@@ -57,7 +57,7 @@ export default function EditResidentialFacilityModal({ facility, customerEmail, 
     if (!authToken) return null;
     
     try {
-      const response = await axios.get(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/${email}`, {
+      const response = await axiosInstance.get(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/${email}`, {
         headers: { Authorization: `Bearer ${authToken}` }
       });
       if (response.data.status === "success") {
@@ -75,7 +75,7 @@ export default function EditResidentialFacilityModal({ facility, customerEmail, 
     if (!authToken || !userId) return;
     setLoadingInstallers(true);
     try {
-      const response = await axios.get(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-users-referrals/${userId}`, {
+      const response = await axiosInstance.get(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-users-referrals/${userId}`, {
         headers: { Authorization: `Bearer ${authToken}` }
       });
       if (response.data.status === "success") {
@@ -124,7 +124,7 @@ export default function EditResidentialFacilityModal({ facility, customerEmail, 
         installerName: selectedInstaller.name
       };
 
-      const response = await axios.put(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/referral/assign-installer/${userId}`, payload, {
+      const response = await axiosInstance.put(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/referral/assign-installer/${userId}`, payload, {
         headers: { Authorization: `Bearer ${authToken}` }
       });
 
@@ -149,7 +149,7 @@ export default function EditResidentialFacilityModal({ facility, customerEmail, 
         installer: formData.installer === "not_available" ? "N/A" : formData.installer
       };
       
-      const response = await axios.put(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/residential-facility/update-facility/${facility.id}`, updateData, {
+      const response = await axiosInstance.put(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/residential-facility/update-facility/${facility.id}`, updateData, {
         headers: { Authorization: `Bearer ${authToken}` }
       });
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import axios from 'axios';
+import { axiosInstance } from '@/lib/config';
 import Loader from '../../../components/loader/Loader';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -54,7 +54,7 @@ export default function ResetPasswordCard() {
 
     setLoading(true);
     try {
-      await axios.post(
+      await axiosInstance.post(
         'https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/reset-password',
         { email, otp: Number(enteredOtp), password: newPassword },
         { headers: { 'Content-Type': 'application/json' } }

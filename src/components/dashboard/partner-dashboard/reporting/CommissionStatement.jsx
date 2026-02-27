@@ -75,7 +75,7 @@ export default function CommissionStatement({ onNavigate }) {
       const quarterObj = QUARTERS.find((q) => q.label === selectedQuarter);
       if (!quarterObj) return;
 
-      const response = await axios.get(
+      const response = await axiosInstance.get(
         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/commission/invoice/${userId}`,
         {
           params: { quarter: quarterObj.value, year: quarterObj.year },
@@ -150,7 +150,7 @@ export default function CommissionStatement({ onNavigate }) {
       };
 
       if (exportParams.format !== "csv") {
-        const response = await axios.post(
+        const response = await axiosInstance.post(
           "https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/reports/export-commission-statement",
           requestBody,
           {

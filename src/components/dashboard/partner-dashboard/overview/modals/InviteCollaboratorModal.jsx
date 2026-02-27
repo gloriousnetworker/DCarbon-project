@@ -45,7 +45,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
       if (!userId || !authToken) return;
 
       try {
-        const response = await axios.get(
+        const response = await axiosInstance.get(
           `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/partner/user/${userId}`,
           {
             headers: {
@@ -89,7 +89,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
 
     setInstallersLoading(true);
     try {
-      const response = await axios.get(
+      const response = await axiosInstance.get(
         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-users-referrals/${userId}`,
         {
           headers: {
@@ -197,7 +197,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
     try {
       const fullAddress = `${formData.address1}${formData.address2 ? ', ' + formData.address2 : ''}, ${formData.city}, ${formData.state} ${formData.zipCode}`;
       
-      const response = await axios.post(
+      const response = await axiosInstance.post(
         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/invite-facility/${userId}`,
         {
           inviteeEmail: formData.email,
@@ -226,7 +226,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
 
   const assignInstallerToCustomer = async (userId, authToken, installerEmail, installerName) => {
     try {
-      const installerResponse = await axios.get(
+      const installerResponse = await axiosInstance.get(
         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/${installerEmail}`,
         {
           headers: {
@@ -238,7 +238,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
       if (installerResponse.data.status === "success") {
         const installerId = installerResponse.data.data.id;
         
-        const assignResponse = await axios.put(
+        const assignResponse = await axiosInstance.put(
           `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/referral/assign-installer/${userId}`,
           {
             inviteeEmail: formData.email,
@@ -355,7 +355,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
           ]
         };
 
-        const userResponse = await axios.post(
+        const userResponse = await axiosInstance.post(
           `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/invite-user/${userId}`,
           payload,
           {

@@ -82,7 +82,7 @@ export default function GenerationReport({ onNavigate }) {
         params.year = selectedYear;
       }
 
-      const response = await axios.get(
+      const response = await axiosInstance.get(
         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/generation/${userId}`,
         {
           params: params,
@@ -152,7 +152,7 @@ export default function GenerationReport({ onNavigate }) {
       };
 
       if (exportParams.format !== "csv") {
-        const response = await axios.post(
+        const response = await axiosInstance.post(
           "https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/reports/export-generation-report",
           requestBody,
           {

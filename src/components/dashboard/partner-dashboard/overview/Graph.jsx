@@ -69,7 +69,7 @@ export default function ReferredAndCommissionDashboard() {
           throw new Error("User authentication data not found");
         }
         
-        const res = await axios.get(
+        const res = await axiosInstance.get(
           `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/referral-statistics/${userId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );

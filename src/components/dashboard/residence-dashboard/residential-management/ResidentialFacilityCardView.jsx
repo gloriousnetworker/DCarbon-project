@@ -119,7 +119,7 @@ export default function FacilityCardView() {
     if (!authToken) return null;
 
     try {
-      const response = await axios.get(
+      const response = await axiosInstance.get(
         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/residential-facility/get-one-residential-facility/${facilityId}`,
         {
           headers: {
@@ -220,7 +220,7 @@ export default function FacilityCardView() {
       return;
     }
     try {
-      const { data } = await axios.get(
+      const { data } = await axiosInstance.get(
         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/residential-facility/get-user-facilities/${userId}`,
         { headers: { Authorization: `Bearer ${authToken}` } }
       );
@@ -270,7 +270,7 @@ export default function FacilityCardView() {
     setIsDeleting(true);
     try {
       const authToken = localStorage.getItem("authToken");
-      const { data } = await axios.delete(
+      const { data } = await axiosInstance.delete(
         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/residential-facility/${facilityToDelete.id}`,
         { headers: { Authorization: `Bearer ${authToken}` } }
       );
@@ -327,7 +327,7 @@ const filteredFacilities = facilities
           onDelete={async () => {
             try {
               const authToken = localStorage.getItem("authToken");
-              await axios.delete(
+              await axiosInstance.delete(
                 `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/residential-facility/${selectedFacility.id}`,
                 { headers: { Authorization: `Bearer ${authToken}` } }
               );

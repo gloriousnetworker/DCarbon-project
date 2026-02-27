@@ -55,7 +55,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
 
   const fetchCommercialRole = async () => {
     try {
-      const response = await fetch(`${baseUrl}/api/user/get-commercial-user/${getUserId()}`, {
+      const response = await fetch(`/api/user/get-commercial-user/${getUserId()}`, {
         headers: {
           'Authorization': `Bearer ${getAuthToken()}`,
           'Content-Type': 'application/json'
@@ -72,7 +72,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
 
   const checkUserMeters = async () => {
     try {
-      const response = await fetch(`${baseUrl}/api/auth/user-meters/${getUserId()}`, {
+      const response = await fetch(`/api/auth/user-meters/${getUserId()}`, {
         headers: {
           'Authorization': `Bearer ${getAuthToken()}`,
           'Content-Type': 'application/json'
@@ -105,7 +105,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
 
   const fetchAuthorizedUtilities = async () => {
     try {
-      const response = await fetch(`${baseUrl}/api/auth/utility-auth/${getUserId()}`, {
+      const response = await fetch(`/api/auth/utility-auth/${getUserId()}`, {
         headers: {
           'Authorization': `Bearer ${getAuthToken()}`,
           'Content-Type': 'application/json'
@@ -122,7 +122,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
 
   const fetchUserMeters = async (utilityId) => {
     try {
-      const response = await fetch(`${baseUrl}/api/auth/user-meters/${getUserId()}`, {
+      const response = await fetch(`/api/auth/user-meters/${getUserId()}`, {
         headers: {
           'Authorization': `Bearer ${getAuthToken()}`,
           'Content-Type': 'application/json'
@@ -191,7 +191,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
     const toastId = toast.loading('Initiating utility authorization...');
 
     try {
-      const response = await fetch(`${baseUrl}/api/auth/initiate-utility-auth/${getUserId()}`, {
+      const response = await fetch(`/api/auth/initiate-utility-auth/${getUserId()}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${getAuthToken()}`,
@@ -225,7 +225,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
     const toastId = toast.loading('Verifying utility authorization...');
 
     try {
-      const response = await fetch(`${baseUrl}/api/auth/check-utility-auth`, {
+      const response = await fetch(`/api/auth/check-utility-auth`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${getAuthToken()}`,

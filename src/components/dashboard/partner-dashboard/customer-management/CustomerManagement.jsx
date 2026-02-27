@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { axiosInstance } from '@/lib/config';
 import { HiOutlineChevronLeft, HiOutlineChevronRight, HiOutlineChevronDown } from 'react-icons/hi';
 import FilterModal from './FilterModal';
 import SendReminderModal from './SendReminderModal';
@@ -126,7 +126,7 @@ export default function PartnerCustomerReport() {
         return;
       }
 
-      const primaryResponse = await axios.get(
+      const primaryResponse = await axiosInstance.get(
         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-users-referrals/${userId}`,
         {
           params: {
@@ -171,7 +171,7 @@ export default function PartnerCustomerReport() {
       const userId = localStorage.getItem('userId');
       const authToken = localStorage.getItem('authToken');
 
-      const response = await axios.get(
+      const response = await axiosInstance.get(
         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/partner/user/${userId}`,
         {
           headers: {
@@ -218,7 +218,7 @@ export default function PartnerCustomerReport() {
 
       let response;
       if (isInstaller) {
-        response = await axios.get(
+        response = await axiosInstance.get(
           `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/referrals/installer/${userId}`,
           {
             params,
@@ -228,7 +228,7 @@ export default function PartnerCustomerReport() {
           }
         );
       } else {
-        response = await axios.get(
+        response = await axiosInstance.get(
           `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-users-referrals/${userId}`,
           {
             params,
@@ -273,7 +273,7 @@ export default function PartnerCustomerReport() {
   const fetchAcceptedUserDetails = async (email) => {
     try {
       const authToken = localStorage.getItem('authToken');
-      const response = await axios.get(
+      const response = await axiosInstance.get(
         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/${email}`,
         { headers: { Authorization: `Bearer ${authToken}` } }
       );
@@ -341,7 +341,7 @@ export default function PartnerCustomerReport() {
           totalExpired: 0
         });
       } else {
-        const response = await axios.get(
+        const response = await axiosInstance.get(
           `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/referral-statistics/${userId}`,
           {
             headers: {
@@ -362,7 +362,7 @@ export default function PartnerCustomerReport() {
   const fetchCustomerDetails = async (email) => {
     try {
       const authToken = localStorage.getItem('authToken');
-      const response = await axios.get(
+      const response = await axiosInstance.get(
         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/partner/details/${email}`,
         { headers: { Authorization: `Bearer ${authToken}` } }
       );

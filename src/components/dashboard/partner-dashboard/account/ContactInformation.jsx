@@ -44,8 +44,8 @@ const ContactInformation = ({ userData }) => {
       }
 
       try {
-        const userResponse = await axios.get(
-          `${baseUrl}/api/user/get-one-user/${userId}`,
+        const userResponse = await axiosInstance.get(
+          `/api/user/get-one-user/${userId}`,
           {
             headers: {
               Authorization: `Bearer ${authToken}`,
@@ -61,8 +61,8 @@ const ContactInformation = ({ userData }) => {
         setReferralCode(user.referralCode || "");
         setUserPhoneNumber(user.phoneNumber || "");
 
-        const partnerResponse = await axios.get(
-          `${baseUrl}/api/user/partner/user/${userId}`,
+        const partnerResponse = await axiosInstance.get(
+          `/api/user/partner/user/${userId}`,
           {
             headers: {
               Authorization: `Bearer ${authToken}`,
@@ -82,8 +82,8 @@ const ContactInformation = ({ userData }) => {
           setSalesAgentName(partner.salesAgentName || "");
         }
 
-        const agreementResponse = await axios.get(
-          `${baseUrl}/api/user/agreement/${userId}`,
+        const agreementResponse = await axiosInstance.get(
+          `/api/user/agreement/${userId}`,
           {
             headers: {
               Authorization: `Bearer ${authToken}`,
@@ -119,8 +119,8 @@ const ContactInformation = ({ userData }) => {
     };
 
     try {
-      await axios.put(
-        `${baseUrl}/api/user/${userId}`,
+      await axiosInstance.put(
+        `/api/user/${userId}`,
         payload,
         {
           headers: {
@@ -143,8 +143,8 @@ const ContactInformation = ({ userData }) => {
           partnerPayload.salesAgentName = salesAgentName;
         }
 
-        await axios.put(
-          `${baseUrl}/api/user/partner/${partnerData.id}`,
+        await axiosInstance.put(
+          `/api/user/partner/${partnerData.id}`,
           partnerPayload,
           {
             headers: {

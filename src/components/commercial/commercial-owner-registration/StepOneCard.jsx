@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import axios from 'axios';
+import { axiosInstance } from '@/lib/config';
 import toast from 'react-hot-toast';
 import Loader from '@/components/loader/Loader';
 
@@ -84,7 +84,7 @@ export default function StepOneCard() {
         throw new Error('Authentication required');
       }
 
-      const response = await axios.get(
+      const response = await axiosInstance.get(
         'https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/financial-types',
         {
           headers: {
@@ -127,7 +127,7 @@ export default function StepOneCard() {
         throw new Error('Authentication required');
       }
 
-      const response = await axios.get(
+      const response = await axiosInstance.get(
         'https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/partner/get-all-installer',
         {
           headers: {
@@ -162,7 +162,7 @@ export default function StepOneCard() {
         throw new Error('Authentication required');
       }
 
-      const response = await axios.post(
+      const response = await axiosInstance.post(
         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/request-financial-type/${userId}`,
         {
           name: requestedFinanceTypeName.trim()
@@ -271,7 +271,7 @@ export default function StepOneCard() {
       };
 
       // First save the financial info
-      const infoResponse = await axios.put(
+      const infoResponse = await axiosInstance.put(
         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/financial-info/${userId}`,
         payload,
         {
@@ -299,7 +299,7 @@ export default function StepOneCard() {
           const formData = new FormData();
           formData.append('financialAgreement', fileToUpload);
 
-          await axios.put(
+          await axiosInstance.put(
             `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/update-financial-agreement/${userId}`,
             formData,
             {

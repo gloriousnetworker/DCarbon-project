@@ -112,7 +112,7 @@ export default function InstapullAuthorizationModal({ isOpen, onClose, utilityPr
         authorizationEmail: sameEmail ? formData.email.trim() : formData.authorizationEmail.trim()
       };
 
-      const response = await axios.post(
+      const response = await axiosInstance.post(
         'https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/utility-auth/green-button',
         payload,
         { 

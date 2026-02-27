@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import axios from 'axios';
+import { axiosInstance } from '@/lib/config';
 import toast from 'react-hot-toast';
 
 export default function StepOneCard() {
@@ -48,7 +48,7 @@ export default function StepOneCard() {
         address,
       };
 
-      const response = await axios.post(
+      const response = await axiosInstance.post(
         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/create-partner/${userId}`,
         payload,
         {

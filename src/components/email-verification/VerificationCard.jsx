@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
+import { axiosInstance } from '@/lib/config';
 import Loader from '../../components/loader/Loader';
 import EmailVerificationModal from '../../components/modals/EmailVerificationModal';
 import toast, { Toaster } from 'react-hot-toast';
@@ -78,7 +78,7 @@ export default function EmailVerificationCard() {
       return;
     }
     try {
-      await axios.post(
+      await axiosInstance.post(
         'https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/verify-otp',
         { email: userEmail, otp: Number(enteredOtp) },
         { headers: { 'Content-Type': 'application/json' } }
@@ -111,7 +111,7 @@ export default function EmailVerificationCard() {
       const endpoint = isFrom423
         ? 'https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/send-otp'
         : 'https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/resend-otp';
-      await axios.post(
+      await axiosInstance.post(
         endpoint,
         { email: userEmail },
         { headers: { 'Content-Type': 'application/json' } }

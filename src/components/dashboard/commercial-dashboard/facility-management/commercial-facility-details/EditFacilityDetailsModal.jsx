@@ -143,7 +143,7 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
 
     setCommercialUserLoading(true);
     try {
-      const response = await axios.get(
+      const response = await axiosInstance.get(
         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-commercial-user/${userId}`,
         {
           headers: {
@@ -176,7 +176,7 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
 
     setUtilityProvidersLoading(true);
     try {
-      const response = await axios.get(
+      const response = await axiosInstance.get(
         "https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/utility-providers",
         {
           headers: {
@@ -205,7 +205,7 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
 
     setUserMetersLoading(true);
     try {
-      const response = await axios.get(
+      const response = await axiosInstance.get(
         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/user-meters/${userId}`,
         {
           headers: {
@@ -340,7 +340,7 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
 
     setAcceptingAgreement(true);
     try {
-      const response = await axios.put(
+      const response = await axiosInstance.put(
         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/accept-user-agreement-terms/${userId}`,
         {},
         {
@@ -398,7 +398,7 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
         hasNetMetering: formData.hasNetMetering
       };
 
-      const response = await axios.put(
+      const response = await axiosInstance.put(
         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/facility/update-facility/${facility.id}`,
         processedData,
         {

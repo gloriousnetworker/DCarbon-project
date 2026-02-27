@@ -72,7 +72,7 @@ export default function UserSalesStatement() {
         userId: userId
       });
       
-      const response = await fetch(`${baseUrl}?${queryParams}`, {
+      const response = await fetch(`?${queryParams}`, {
         method: 'GET', 
         headers: { 
           Authorization: `Bearer ${authToken}`, 

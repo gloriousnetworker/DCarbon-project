@@ -390,16 +390,16 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
     const baseUrl = 'https://naijatrips-app-dcarbon-server.cafyit.easypanel.host';
     
     const endpoints = {
-      wregisAssignment: `${baseUrl}/api/facility/update-wregis-assignment/${facilityId}`,
-      financeAgreement: `${baseUrl}/api/facility/update-facility-financial-agreement/${facilityId}`,
-      solarInstallationContract: `${baseUrl}/api/facility/update-commercial-solar-installation-contract/${facilityId}`,
-      utilityInterconnectionAgreement: `${baseUrl}/api/facility/update-commercial-interconnection-agreement/${facilityId}`,
-      utilityPTO: `${baseUrl}/api/facility/update-commercial-pto-letter/${facilityId}`,
-      singleLineDiagram: `${baseUrl}/api/facility/update-commercial-single-line-diagram/${facilityId}`,
-      installationSitePlan: `${baseUrl}/api/facility/update-facility-site-plan/${facilityId}`,
-      panelInverterDatasheet: `${baseUrl}/api/facility/update-facility-inverter-datasheet/${facilityId}`,
-      revenueMeterDatasheet: `${baseUrl}/api/facility/update-facility-revenue-meter-data/${facilityId}`,
-      utilityMeterPhoto: `${baseUrl}/api/facility/update-commercial-utility-meter-photo/${facilityId}`
+      wregisAssignment: `/api/facility/update-wregis-assignment/${facilityId}`,
+      financeAgreement: `/api/facility/update-facility-financial-agreement/${facilityId}`,
+      solarInstallationContract: `/api/facility/update-commercial-solar-installation-contract/${facilityId}`,
+      utilityInterconnectionAgreement: `/api/facility/update-commercial-interconnection-agreement/${facilityId}`,
+      utilityPTO: `/api/facility/update-commercial-pto-letter/${facilityId}`,
+      singleLineDiagram: `/api/facility/update-commercial-single-line-diagram/${facilityId}`,
+      installationSitePlan: `/api/facility/update-facility-site-plan/${facilityId}`,
+      panelInverterDatasheet: `/api/facility/update-facility-inverter-datasheet/${facilityId}`,
+      revenueMeterDatasheet: `/api/facility/update-facility-revenue-meter-data/${facilityId}`,
+      utilityMeterPhoto: `/api/facility/update-commercial-utility-meter-photo/${facilityId}`
     };
 
     const fieldNames = {

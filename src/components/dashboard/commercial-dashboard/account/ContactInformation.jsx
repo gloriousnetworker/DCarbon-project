@@ -37,7 +37,7 @@ const ContactInformation = () => {
       }
 
       try {
-        const response = await axios.get(
+        const response = await axiosInstance.get(
           `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-commercial-user/${userId}`,
           {
             headers: {
@@ -121,7 +121,7 @@ const ContactInformation = () => {
     });
 
     try {
-      const response = await axios.put(
+      const response = await axiosInstance.put(
         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/commercial-registration/${userId}`,
         payload,
         {

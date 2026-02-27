@@ -264,7 +264,7 @@ export default function ResidentialFacilityDetails({ facility, onBack, onFacilit
 
     try {
       setLoading(true);
-      const response = await axios.get(
+      const response = await axiosInstance.get(
         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/residential-facility/get-one-residential-facility/${facilityData.id}`,
         {
           headers: {
@@ -298,7 +298,7 @@ export default function ResidentialFacilityDetails({ facility, onBack, onFacilit
 
     try {
       setLoading(true);
-      const response = await axios.get(
+      const response = await axiosInstance.get(
         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/residential-facility/residential-docs/${facilityData.id}`,
         {
           headers: {
@@ -328,7 +328,7 @@ export default function ResidentialFacilityDetails({ facility, onBack, onFacilit
     if (!userId || !authToken) return;
 
     try {
-      const response = await axios.get(
+      const response = await axiosInstance.get(
         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/financial-info/${userId}`,
         {
           headers: {

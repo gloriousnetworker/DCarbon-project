@@ -75,8 +75,8 @@ export default function CustomerReport({ onNavigate }) {
     
     try {
       const token = localStorage.getItem("authToken");
-      const response = await axios.get(
-        `${baseUrl}/api/user/${email}`,
+      const response = await axiosInstance.get(
+        `/api/user/${email}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
@@ -132,8 +132,8 @@ export default function CustomerReport({ onNavigate }) {
       params.append("page", currentPage);
       params.append("limit", 1000);
       
-      const res = await axios.get(
-        `${baseUrl}/api/user/get-users-referrals/${userId}?${params.toString()}`,
+      const res = await axiosInstance.get(
+        `/api/user/get-users-referrals/${userId}?${params.toString()}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       

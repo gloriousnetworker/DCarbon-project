@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { axiosInstance } from '@/lib/config';
 import { HiOutlineArrowLeft } from 'react-icons/hi';
 import { FiChevronRight } from 'react-icons/fi';
 import CommercialFacilityDetails from './commercial-details/CommercialFacilityDetails';
@@ -275,7 +275,7 @@ export default function CustomerDetails({ customer, onBack }) {
   const fetchCommercialFacilities = async (userId) => {
     const authToken = localStorage.getItem('authToken');
     try {
-      const { data } = await axios.get(
+      const { data } = await axiosInstance.get(
         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/facility/get-user-facilities-by-userId/${userId}`,
         { headers: { Authorization: `Bearer ${authToken}` } }
       );
@@ -290,7 +290,7 @@ export default function CustomerDetails({ customer, onBack }) {
   const fetchResidentialFacilities = async (userId) => {
     const authToken = localStorage.getItem('authToken');
     try {
-      const { data } = await axios.get(
+      const { data } = await axiosInstance.get(
         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/residential-facility/get-user-facilities/${userId}`,
         { headers: { Authorization: `Bearer ${authToken}` } }
       );
@@ -314,7 +314,7 @@ export default function CustomerDetails({ customer, onBack }) {
         const email = customer.inviteeEmail || customer.email;
         if (!email) throw new Error('No email for customer');
         
-        const { data } = await axios.get(
+        const { data } = await axiosInstance.get(
           `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/partner/details/${email}`,
           { headers: { Authorization: `Bearer ${authToken}` } }
         );

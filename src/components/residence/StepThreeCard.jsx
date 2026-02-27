@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import axios from 'axios';
+import { axiosInstance } from '@/lib/config';
 import toast from 'react-hot-toast';
 
 // Import styles from styles.js
@@ -135,7 +135,7 @@ export default function StepThreeCard() {
       };
 
       // First save the financial info
-      const infoResponse = await axios.put(
+      const infoResponse = await axiosInstance.put(
         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/financial-info/${userId}`,
         payload,
         {
@@ -162,7 +162,7 @@ export default function StepThreeCard() {
         const formData = new FormData();
         formData.append('financialAgreement', fileToUpload);
 
-        const uploadResponse = await axios.put(
+        const uploadResponse = await axiosInstance.put(
           `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/update-financial-agreement/${userId}`,
           formData,
           {
@@ -199,7 +199,7 @@ export default function StepThreeCard() {
         details: utilityDetails
       };
 
-      const response = await axios.put(
+      const response = await axiosInstance.put(
         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/utility-info/${userId}`,
         payload,
         {

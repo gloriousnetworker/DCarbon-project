@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import axios from 'axios';
+import { axiosInstance } from '@/lib/config';
 import toast from 'react-hot-toast';
 
 export default function StepOneCard() {
@@ -55,7 +55,7 @@ export default function StepOneCard() {
     }
 
     try {
-      const response = await axios.get(
+      const response = await axiosInstance.get(
         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/partner/user/${userId}`,
         {
           headers: {
@@ -68,7 +68,7 @@ export default function StepOneCard() {
       if (response.data && response.data.status === 'success' && response.data.data) {
         const partnerId = response.data.data.id;
         
-        await axios.delete(
+        await axiosInstance.delete(
           `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/partner/${partnerId}`,
           {
             headers: {
@@ -402,7 +402,7 @@ export default function StepOneCard() {
         payload.salesAgentName = salesAgentName.trim();
       }
 
-      const response = await axios.post(
+      const response = await axiosInstance.post(
         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/create-partner/${userId}`,
         payload,
         {

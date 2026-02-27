@@ -66,7 +66,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
     };
 
     try {
-      const response = await axios.post(
+      const response = await axiosInstance.post(
         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/invite-user/${userId}`,
         payload,
         {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import axios from 'axios';
+import { axiosInstance } from '@/lib/config';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { FaEdit, FaTimes } from 'react-icons/fa';
@@ -119,7 +119,7 @@ export default function OwnersDetailsCard() {
       // Save the company details to local storage for later retrieval
       localStorage.setItem('companyDetails', JSON.stringify(payload));
 
-      await axios.put(
+      await axiosInstance.put(
         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/commercial-registration/${userId}`,
         payload,
         {

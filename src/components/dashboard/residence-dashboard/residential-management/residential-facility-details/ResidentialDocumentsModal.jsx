@@ -263,7 +263,7 @@ const DocumentUploadModal = ({ isOpen, onClose, onUpload, docType, facilityId })
         return;
       }
 
-      const response = await axios.put(
+      const response = await axiosInstance.put(
         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/residential-facility/residential-docs/${endpoint}/${facilityId}`,
         formData,
         {

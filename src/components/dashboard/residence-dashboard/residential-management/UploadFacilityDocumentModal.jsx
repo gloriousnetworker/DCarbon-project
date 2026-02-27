@@ -57,7 +57,7 @@ export default function UploadFacilityDocumentModal({
 
       const endpoint = endpoints[docType];
 
-      const { data } = await axios.put(endpoint, form, {
+      const { data } = await axiosInstance.put(endpoint, form, {
         headers: {
           Authorization: `Bearer ${authToken}`,
           "Content-Type": "multipart/form-data"

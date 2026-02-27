@@ -34,8 +34,8 @@ const ContactInformation = () => {
       }
 
       try {
-        const response = await axios.get(
-          `${baseUrl}/api/user/get-one-user/${userId}`,
+        const response = await axiosInstance.get(
+          `/api/user/get-one-user/${userId}`,
           {
             headers: {
               Authorization: `Bearer ${authToken}`,
@@ -79,8 +79,8 @@ const ContactInformation = () => {
     };
 
     try {
-      await axios.put(
-        `${baseUrl}/api/user/${userId}`,
+      await axiosInstance.put(
+        `/api/user/${userId}`,
         payload,
         {
           headers: {

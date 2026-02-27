@@ -468,7 +468,7 @@ export default function DashboardOverview() {
       const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
       const token = loginResponse?.data?.token;
       
-      const response = await axios.get(
+      const response = await axiosInstance.get(
         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/utility-auth/${userData.userId}`,
         { 
           headers: { 

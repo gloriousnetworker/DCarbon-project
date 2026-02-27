@@ -166,7 +166,7 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, selectedU
         ]
       };
 
-      const response = await axios.post(
+      const response = await axiosInstance.post(
         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/invite-operator/${userId}`,
         payload,
         {

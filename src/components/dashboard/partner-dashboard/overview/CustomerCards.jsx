@@ -52,15 +52,15 @@ export default function ThreeCardsDashboard({ onSectionChange }) {
         setLoadingWorkProgress(true);
         
         const [statsResponse, pendingResponse, workProgressResponse] = await Promise.all([
-          axios.get(
+          axiosInstance.get(
             `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/referral-statistics/${storedUserId}`,
             { headers: { Authorization: `Bearer ${authToken}` } }
           ),
-          axios.get(
+          axiosInstance.get(
             `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/pending-referrals/${storedUserId}`,
             { headers: { Authorization: `Bearer ${authToken}` } }
           ),
-          axios.get(
+          axiosInstance.get(
             `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/partner-working-progress/${storedUserId}`,
             { headers: { Authorization: `Bearer ${authToken}` } }
           )
