@@ -92,7 +92,7 @@ export default function ResidentialDetailsGraph({ facilityId, meterId }) {
     try {
       const { userId } = getAuthData();
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/rec/statistics?userId=${userId}&facilityId=${facilityId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/rec/statistics?userId=${userId}&facilityId=${facilityId}`,
         {
           headers: { 
             Authorization: `Bearer ${authToken}`, 
@@ -116,7 +116,7 @@ export default function ResidentialDetailsGraph({ facilityId, meterId }) {
   const fetchFacilityDetails = async (authToken) => {
     try {
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/residential-facility/get-one-residential-facility/${facilityId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/residential-facility/get-one-residential-facility/${facilityId}`,
         {
           headers: { 
             Authorization: `Bearer ${authToken}`, 
@@ -136,7 +136,7 @@ export default function ResidentialDetailsGraph({ facilityId, meterId }) {
 
   const fetchRecStatistics = async (authToken) => {
     try {
-      const url = new URL(`https://services.dcarbon.solutions/api/rec/statistics`);
+      const url = new URL(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/rec/statistics`);
       
       const params = {
         year: selectedYear,
@@ -169,7 +169,7 @@ export default function ResidentialDetailsGraph({ facilityId, meterId }) {
 
   const fetchDetailStatistics = async (authToken) => {
     try {
-      const url = new URL(`https://services.dcarbon.solutions/api/rec/statistics`);
+      const url = new URL(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/rec/statistics`);
       
       const params = {
         facilityId: facilityId
@@ -213,7 +213,7 @@ export default function ResidentialDetailsGraph({ facilityId, meterId }) {
 
   const fetchRecOverview = async (authToken) => {
     try {
-      const url = new URL(`https://services.dcarbon.solutions/api/rec/overview/stats`);
+      const url = new URL(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/rec/overview/stats`);
       
       const params = {
         facilityId: facilityId

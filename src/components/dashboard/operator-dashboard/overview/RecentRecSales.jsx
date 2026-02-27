@@ -20,7 +20,7 @@ export default function UserSalesStatement() {
 
       try {
         const response = await fetch(
-          `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`,
+          `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/user-meters/${userId}`,
           {
             method: 'GET',
             headers: {
@@ -58,7 +58,7 @@ export default function UserSalesStatement() {
         throw new Error("Missing user authentication data");
       }
 
-      const response = await fetch(`https://services.dcarbon.solutions/api/rec/sale-statement?quarter=${selectedQuarter}&userId=${userId}`, {
+      const response = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/rec/sale-statement?quarter=${selectedQuarter}&userId=${userId}`, {
         method: 'GET', 
         headers: { 
           Authorization: `Bearer ${authToken}`, 

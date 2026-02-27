@@ -114,8 +114,8 @@ const SendReminderModal = ({ email: initialEmail, onClose }) => {
       };
 
       const url = userId 
-        ? `https://services.dcarbon.solutions/api/user/referral-reminders/${userId}`
-        : 'https://services.dcarbon.solutions/api/user/referral-reminders';
+        ? `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/referral-reminders/${userId}`
+        : 'https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/referral-reminders';
 
       const response = await axios.post(
         url,

@@ -30,7 +30,7 @@ const DashboardNotifications = () => {
         }
 
         const response = await fetch(
-          `https://services.dcarbon.solutions/api/user/notifications/${userId}`,
+          `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/notifications/${userId}`,
           {
             headers: {
               'Authorization': `Bearer ${authToken}`
@@ -60,7 +60,7 @@ const DashboardNotifications = () => {
       const authToken = localStorage.getItem('authToken');
       
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/user/notifications/${notificationId}/mark-read`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/notifications/${notificationId}/mark-read`,
         {
           method: 'PUT',
           headers: {

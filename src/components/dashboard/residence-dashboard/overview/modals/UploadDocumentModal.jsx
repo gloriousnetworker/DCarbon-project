@@ -30,7 +30,7 @@ const DOCUMENT_TYPES = [
   { id: 'alternate-location', label: 'Alternate Location Agreement' },
 ];
 
-const API_BASE_URL = 'https://services.dcarbon.solutions';
+const API_BASE_URL = 'https://naijatrips-app-dcarbon-server.cafyit.easypanel.host';
 
 export default function UploadDocumentsModal({ isOpen, onClose }) {
   const [facilities, setFacilities] = useState([]);

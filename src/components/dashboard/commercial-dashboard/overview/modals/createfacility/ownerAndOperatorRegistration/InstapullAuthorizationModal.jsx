@@ -113,7 +113,7 @@ export default function InstapullAuthorizationModal({ isOpen, onClose, utilityPr
       };
 
       const response = await axios.post(
-        'https://services.dcarbon.solutions/api/utility-auth/green-button',
+        'https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/utility-auth/green-button',
         payload,
         { 
           headers: { 

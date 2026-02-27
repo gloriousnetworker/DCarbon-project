@@ -34,7 +34,7 @@ const QuarterlyStatement = () => {
       }
 
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/revenue/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/revenue/${userId}`,
         {
           method: 'GET',
           headers: {
@@ -70,7 +70,7 @@ const QuarterlyStatement = () => {
       }
 
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/quarterly-statements?quarter=${selectedQuarter}&year=${selectedYear}&userId=${userId}&userType=${userType || 'COMMERCIAL'}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/quarterly-statements?quarter=${selectedQuarter}&year=${selectedYear}&userId=${userId}&userType=${userType || 'COMMERCIAL'}`,
         {
           method: 'GET',
           headers: {

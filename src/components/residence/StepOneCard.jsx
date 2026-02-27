@@ -80,7 +80,7 @@ export default function StepOneCard() {
       }
 
       const response = await axios.get(
-        'https://services.dcarbon.solutions/api/user/financial-types',
+        'https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/financial-types',
         {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -110,7 +110,7 @@ export default function StepOneCard() {
       }
 
       const response = await axios.get(
-        'https://services.dcarbon.solutions/api/user/partner/get-all-installer',
+        'https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/partner/get-all-installer',
         {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -145,7 +145,7 @@ export default function StepOneCard() {
       }
 
       const response = await axios.post(
-        `https://services.dcarbon.solutions/api/user/request-financial-type/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/request-financial-type/${userId}`,
         {
           name: requestedFinanceTypeName.trim()
         },
@@ -243,7 +243,7 @@ export default function StepOneCard() {
 
       // First save the financial info
       const infoResponse = await axios.put(
-        `https://services.dcarbon.solutions/api/user/financial-info/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/financial-info/${userId}`,
         payload,
         {
           headers: {
@@ -274,7 +274,7 @@ export default function StepOneCard() {
           formData.append('financialAgreement', fileToUpload);
 
           const uploadResponse = await axios.put(
-            `https://services.dcarbon.solutions/api/user/update-financial-agreement/${userId}`,
+            `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/update-financial-agreement/${userId}`,
             formData,
             {
               headers: {

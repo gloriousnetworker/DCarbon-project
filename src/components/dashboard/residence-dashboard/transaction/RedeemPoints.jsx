@@ -15,7 +15,7 @@ export default function RedeemPoints({ onClose, onComplete, redemptionData, proc
 
   const checkProcessingStatus = async () => {
     try {
-      const response = await fetch(`https://services.dcarbon.solutions/api/payout/processing-status/${userId}`, {
+      const response = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/payout/processing-status/${userId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${authToken}`

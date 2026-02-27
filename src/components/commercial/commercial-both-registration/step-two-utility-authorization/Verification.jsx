@@ -52,7 +52,7 @@ export default function VerificationContent({ token: propToken }) {
     }, 250);
   
     try {
-      const response = await fetch('https://services.dcarbon.solutions/api/auth/check-utility-auth', {
+      const response = await fetch('https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/check-utility-auth', {
         method: 'POST',
         headers: {
           'Accept': 'application/json',

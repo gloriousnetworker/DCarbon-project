@@ -30,7 +30,7 @@ const ContactInformation = ({ userData }) => {
   const [salesAgentName, setSalesAgentName] = useState("");
   const [userPhoneNumber, setUserPhoneNumber] = useState("");
 
-  const baseUrl = "https://services.dcarbon.solutions";
+  const baseUrl = "https://naijatrips-app-dcarbon-server.cafyit.easypanel.host";
 
   useEffect(() => {
     const fetchUserInfo = async () => {

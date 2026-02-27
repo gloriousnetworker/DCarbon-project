@@ -38,7 +38,7 @@ export default function RequestRedemption({ onClose, onSubmit, availablePoints, 
     try {
       const amount = parseFloat(calculateActualAmount(pointsValue));
       
-      const response = await fetch(`https://services.dcarbon.solutions/api/payout-request/request`, {
+      const response = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/payout-request/request`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

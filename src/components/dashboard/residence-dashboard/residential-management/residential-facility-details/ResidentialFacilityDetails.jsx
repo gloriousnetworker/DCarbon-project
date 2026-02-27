@@ -111,7 +111,7 @@ export default function ResidentialFacilityDetails({ facility, onBack, onFacilit
   const checkStage2Completion = async (userId, authToken) => {
     try {
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/user/financial-info/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/financial-info/${userId}`,
         {
           method: 'GET',
           headers: {
@@ -129,7 +129,7 @@ export default function ResidentialFacilityDetails({ facility, onBack, onFacilit
   const checkStage3Completion = async (userId, authToken) => {
     try {
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/user/agreement/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/agreement/${userId}`,
         {
           method: 'GET',
           headers: {
@@ -147,7 +147,7 @@ export default function ResidentialFacilityDetails({ facility, onBack, onFacilit
   const checkStage4Completion = async (userId, authToken) => {
     try {
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/user-meters/${userId}`,
         {
           method: 'GET',
           headers: {
@@ -265,7 +265,7 @@ export default function ResidentialFacilityDetails({ facility, onBack, onFacilit
     try {
       setLoading(true);
       const response = await axios.get(
-        `https://services.dcarbon.solutions/api/residential-facility/get-one-residential-facility/${facilityData.id}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/residential-facility/get-one-residential-facility/${facilityData.id}`,
         {
           headers: {
             Authorization: `Bearer ${authToken}`
@@ -299,7 +299,7 @@ export default function ResidentialFacilityDetails({ facility, onBack, onFacilit
     try {
       setLoading(true);
       const response = await axios.get(
-        `https://services.dcarbon.solutions/api/residential-facility/residential-docs/${facilityData.id}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/residential-facility/residential-docs/${facilityData.id}`,
         {
           headers: {
             Authorization: `Bearer ${authToken}`
@@ -329,7 +329,7 @@ export default function ResidentialFacilityDetails({ facility, onBack, onFacilit
 
     try {
       const response = await axios.get(
-        `https://services.dcarbon.solutions/api/user/financial-info/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/financial-info/${userId}`,
         {
           headers: {
             Authorization: `Bearer ${authToken}`

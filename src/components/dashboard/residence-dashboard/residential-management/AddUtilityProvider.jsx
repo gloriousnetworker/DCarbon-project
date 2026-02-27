@@ -44,7 +44,7 @@ export default function AddUtilityProvider({ isOpen, onClose }) {
       }
 
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/user/update-utility-auth-email/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/update-utility-auth-email/${userId}`,
         {
           method: "PUT",
           headers: {

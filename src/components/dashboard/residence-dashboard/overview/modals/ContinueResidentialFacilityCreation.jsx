@@ -51,7 +51,7 @@ export default function ResidentialFacilityModal({ isOpen, onClose, currentStep 
     try {
       setLoading(true);
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/residential-facility/get-user-facilities/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/residential-facility/get-user-facilities/${userId}`,
         {
           method: 'GET',
           headers: {

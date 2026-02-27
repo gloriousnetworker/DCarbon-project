@@ -67,7 +67,7 @@ export default function VerificationContent({ token: propToken }) {
 
     try {
       const response = await fetch(
-        "https://services.dcarbon.solutions/api/auth/check-utility-auth",
+        "https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/check-utility-auth",
         {
           method: "POST",
           headers: {

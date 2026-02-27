@@ -59,7 +59,7 @@ export default function ResidentialFacilityModal({ isOpen, onClose, currentStep 
     try {
       setLoading(true);
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/residential-facility/get-user-facilities/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/residential-facility/get-user-facilities/${userId}`,
         {
           method: 'GET',
           headers: {
@@ -130,7 +130,7 @@ export default function ResidentialFacilityModal({ isOpen, onClose, currentStep 
       };
 
       const greenButtonResponse = await fetch(
-        `https://services.dcarbon.solutions/api/utility-auth/green-button`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/utility-auth/green-button`,
         {
           method: 'POST',
           headers: {
@@ -145,7 +145,7 @@ export default function ResidentialFacilityModal({ isOpen, onClose, currentStep 
       
       if (greenButtonResult.message === "Authorization process enqueued successfully") {
         const submitEmailResponse = await fetch(
-          `https://services.dcarbon.solutions/api/user/submit-green-button-email/${userId}`,
+          `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/submit-green-button-email/${userId}`,
           {
             method: 'POST',
             headers: {

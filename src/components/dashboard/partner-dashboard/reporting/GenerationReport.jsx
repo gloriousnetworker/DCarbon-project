@@ -83,7 +83,7 @@ export default function GenerationReport({ onNavigate }) {
       }
 
       const response = await axios.get(
-        `https://services.dcarbon.solutions/api/generation/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/generation/${userId}`,
         {
           params: params,
           headers: {
@@ -153,7 +153,7 @@ export default function GenerationReport({ onNavigate }) {
 
       if (exportParams.format !== "csv") {
         const response = await axios.post(
-          "https://services.dcarbon.solutions/api/reports/export-generation-report",
+          "https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/reports/export-generation-report",
           requestBody,
           {
             headers: { Authorization: `Bearer ${authToken}` },

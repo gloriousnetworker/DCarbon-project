@@ -32,7 +32,7 @@ export default function ReminderModal({ isOpen, onClose }) {
     setFetching(true);
     try {
       const response = await axios.get(
-        `https://services.dcarbon.solutions/api/user/get-operators/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-operators/${userId}`,
         {
           headers: {
             "Content-Type": "application/json",
@@ -98,7 +98,7 @@ export default function ReminderModal({ isOpen, onClose }) {
 
     try {
       const response = await axios.post(
-        `https://services.dcarbon.solutions/api/user/operator-reminders/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/operator-reminders/${userId}`,
         payload,
         {
           headers: {

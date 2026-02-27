@@ -57,7 +57,7 @@ export default function AddFacilityModal({ onClose, onFacilityAdded }) {
       };
 
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/facility/create-new-facility/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/facility/create-new-facility/${userId}`,
         {
           method: "POST",
           headers: {

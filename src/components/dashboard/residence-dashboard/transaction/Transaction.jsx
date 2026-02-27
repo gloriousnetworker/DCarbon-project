@@ -41,7 +41,7 @@ export default function RedemptionTransactions() {
 
   const fetchWalletData = async () => {
     try {
-      const response = await fetch(`https://services.dcarbon.solutions/api/revenue/${userId}`, {
+      const response = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/revenue/${userId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${authToken}`
@@ -64,7 +64,7 @@ export default function RedemptionTransactions() {
 
   const fetchPayoutHistory = async () => {
     try {
-      const response = await fetch(`https://services.dcarbon.solutions/api/payout-request?userId=${userId}&userType=RESIDENTIAL`, {
+      const response = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/payout-request?userId=${userId}&userType=RESIDENTIAL`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${authToken}`

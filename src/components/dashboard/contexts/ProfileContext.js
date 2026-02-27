@@ -19,7 +19,7 @@ export const ProfileProvider = ({ children }) => {
       if (!userId || !authToken) return;
 
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/user/get-one-user/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-one-user/${userId}`,
         {
           method: 'GET',
           headers: {

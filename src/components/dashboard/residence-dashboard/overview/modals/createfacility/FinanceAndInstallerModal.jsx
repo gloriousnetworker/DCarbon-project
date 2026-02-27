@@ -122,7 +122,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
       const token = loginResponse?.data?.token;
       
       const response = await axios.get(
-        `https://services.dcarbon.solutions/api/user/agreement/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/agreement/${userId}`,
         { headers: { 'Authorization': `Bearer ${token}` } }
       );
       
@@ -144,7 +144,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
       const token = loginResponse?.data?.token;
       
       const response = await axios.get(
-        `https://services.dcarbon.solutions/api/user/referrer/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/referrer/${userId}`,
         { headers: { 'Authorization': `Bearer ${token}` } }
       );
       
@@ -165,7 +165,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
       const token = loginResponse?.data?.token;
       
       const response = await axios.get(
-        'https://services.dcarbon.solutions/api/auth/utility-providers',
+        'https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/utility-providers',
         { headers: { 'Authorization': `Bearer ${token}` } }
       );
       
@@ -207,7 +207,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
       const token = loginResponse?.data?.token;
       
       const response = await axios.get(
-        'https://services.dcarbon.solutions/api/user/financial-types',
+        'https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/financial-types',
         { headers: { 'Authorization': `Bearer ${token}` } }
       );
       
@@ -236,7 +236,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
       const token = loginResponse?.data?.token;
       
       const response = await axios.get(
-        'https://services.dcarbon.solutions/api/user/partner/get-all-installer',
+        'https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/partner/get-all-installer',
         { headers: { 'Authorization': `Bearer ${token}` } }
       );
       
@@ -257,7 +257,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
       const token = loginResponse?.data?.token;
       
       const response = await axios.get(
-        'https://services.dcarbon.solutions/api/user/partner/finance-companies',
+        'https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/partner/finance-companies',
         { headers: { 'Authorization': `Bearer ${token}` } }
       );
       
@@ -351,7 +351,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     };
 
     const response = await axios.post(
-      `https://services.dcarbon.solutions/api/residential-facility/create-residential-facility/${userId}`,
+      `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/residential-facility/create-residential-facility/${userId}`,
       payload,
       { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } }
     );
@@ -367,7 +367,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     formDataObj.append('file', file);
 
     await axios.put(
-      `https://services.dcarbon.solutions/api/residential-facility/residential-docs/finance-agreement/${facilityId}`,
+      `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/residential-facility/residential-docs/finance-agreement/${facilityId}`,
       formDataObj,
       { headers: { 'Content-Type': 'multipart/form-data', 'Authorization': `Bearer ${token}` } }
     );
@@ -387,7 +387,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     };
 
     await axios.put(
-      `https://services.dcarbon.solutions/api/user/financial-info/${userId}`,
+      `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/financial-info/${userId}`,
       payload,
       { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } }
     );
@@ -405,7 +405,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
       const token = loginResponse?.data?.token;
       
       const response = await axios.post(
-        `https://services.dcarbon.solutions/api/user/request-financial-type/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/request-financial-type/${userId}`,
         { name: requestedFinanceTypeName.trim() },
         { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } }
       );
@@ -433,7 +433,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
       const token = loginResponse?.data?.token;
       
       const response = await axios.post(
-        `https://services.dcarbon.solutions/api/user/request-utility-provider/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/request-utility-provider/${userId}`,
         { 
           name: requestedUtilityName.trim(),
           websiteUrl: requestedUtilityWebsite.trim() || "https://example.com"

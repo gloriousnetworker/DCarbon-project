@@ -71,7 +71,7 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
       }
 
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/user/by-referral-code/${referralCode}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/by-referral-code/${referralCode}`,
         {
           method: 'GET',
           headers: {
@@ -211,7 +211,7 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
       }
 
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/user/commercial-registration/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/commercial-registration/${userId}`,
         {
           method: 'PUT',
           headers: {

@@ -89,7 +89,7 @@ export default function InviteInstallerModal({ isOpen, onClose }) {
 
     try {
       const response = await axios.post(
-        `https://services.dcarbon.solutions/api/user/invite-user/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/invite-user/${userId}`,
         payload,
         {
           headers: {

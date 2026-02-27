@@ -59,7 +59,7 @@ const SendReminderModal = ({ isOpen, onClose, customerEmail }) => {
       };
 
       const response = await axios.post(
-        `https://services.dcarbon.solutions/api/user/operator-reminders/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/operator-reminders/${userId}`,
         body,
         {
           headers: {

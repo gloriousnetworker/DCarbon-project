@@ -53,7 +53,7 @@ const AdminInvoices = ({ onBack }) => {
       }
 
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/payout-request?userId=${userId}&userType=COMMERCIAL`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/payout-request?userId=${userId}&userType=COMMERCIAL`,
         {
           method: 'GET',
           headers: {

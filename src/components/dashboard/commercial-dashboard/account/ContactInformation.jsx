@@ -38,7 +38,7 @@ const ContactInformation = () => {
 
       try {
         const response = await axios.get(
-          `https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`,
+          `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-commercial-user/${userId}`,
           {
             headers: {
               Authorization: `Bearer ${authToken}`,
@@ -122,7 +122,7 @@ const ContactInformation = () => {
 
     try {
       const response = await axios.put(
-        `https://services.dcarbon.solutions/api/user/commercial-registration/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/commercial-registration/${userId}`,
         payload,
         {
           headers: {

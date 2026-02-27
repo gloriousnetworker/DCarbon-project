@@ -126,7 +126,7 @@ export default function SignatureModal({ isOpen, onClose, onComplete }) {
       }, 200);
 
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/user/update-user-agreement/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/update-user-agreement/${userId}`,
         {
           method: 'PUT',
           headers: {

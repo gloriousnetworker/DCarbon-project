@@ -29,7 +29,7 @@ export default function FeedbackModal({ isOpen, onClose }) {
         return;
       }
 
-      const response = await fetch(`https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`, {
+      const response = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-commercial-user/${userId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${authToken}`
@@ -138,7 +138,7 @@ export default function FeedbackModal({ isOpen, onClose }) {
         throw new Error('User authentication required');
       }
 
-      const response = await fetch(`https://services.dcarbon.solutions/api/feature-suggestion/${userId}`, {
+      const response = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/feature-suggestion/${userId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

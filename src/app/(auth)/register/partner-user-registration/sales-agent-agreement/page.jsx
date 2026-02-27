@@ -54,7 +54,7 @@ export default function SalesAgentAgreement() {
       }
 
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/user/agreement/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/agreement/${userId}`,
         {
           method: 'GET',
           headers: {
@@ -86,7 +86,7 @@ export default function SalesAgentAgreement() {
       }
 
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/user/partner/user/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/partner/user/${userId}`,
         {
           method: 'GET',
           headers: {
@@ -117,7 +117,7 @@ export default function SalesAgentAgreement() {
       }
 
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/user/partner/${partnerId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/partner/${partnerId}`,
         {
           method: 'DELETE',
           headers: {
@@ -151,7 +151,7 @@ export default function SalesAgentAgreement() {
       }
 
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/user/accept-user-agreement-terms/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/accept-user-agreement-terms/${userId}`,
         {
           method: "PUT",
           headers: {

@@ -35,7 +35,7 @@ export default function FacilityCardView() {
   const checkStage2Completion = async (userId, authToken) => {
     try {
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/user/financial-info/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/financial-info/${userId}`,
         {
           method: 'GET',
           headers: {
@@ -53,7 +53,7 @@ export default function FacilityCardView() {
   const checkStage3Completion = async (userId, authToken) => {
     try {
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/user/agreement/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/agreement/${userId}`,
         {
           method: 'GET',
           headers: {
@@ -71,7 +71,7 @@ export default function FacilityCardView() {
   const checkStage4Completion = async (userId, authToken) => {
     try {
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/user-meters/${userId}`,
         {
           method: 'GET',
           headers: {
@@ -120,7 +120,7 @@ export default function FacilityCardView() {
 
     try {
       const response = await axios.get(
-        `https://services.dcarbon.solutions/api/residential-facility/get-one-residential-facility/${facilityId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/residential-facility/get-one-residential-facility/${facilityId}`,
         {
           headers: {
             Authorization: `Bearer ${authToken}`
@@ -221,7 +221,7 @@ export default function FacilityCardView() {
     }
     try {
       const { data } = await axios.get(
-        `https://services.dcarbon.solutions/api/residential-facility/get-user-facilities/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/residential-facility/get-user-facilities/${userId}`,
         { headers: { Authorization: `Bearer ${authToken}` } }
       );
       if (data.status === "success") {
@@ -271,7 +271,7 @@ export default function FacilityCardView() {
     try {
       const authToken = localStorage.getItem("authToken");
       const { data } = await axios.delete(
-        `https://services.dcarbon.solutions/api/residential-facility/${facilityToDelete.id}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/residential-facility/${facilityToDelete.id}`,
         { headers: { Authorization: `Bearer ${authToken}` } }
       );
 
@@ -328,7 +328,7 @@ const filteredFacilities = facilities
             try {
               const authToken = localStorage.getItem("authToken");
               await axios.delete(
-                `https://services.dcarbon.solutions/api/residential-facility/${selectedFacility.id}`,
+                `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/residential-facility/${selectedFacility.id}`,
                 { headers: { Authorization: `Bearer ${authToken}` } }
               );
               toast.success("Facility deleted successfully");

@@ -109,7 +109,7 @@ export default function OwnersDetailsCard() {
       localStorage.setItem('companyDetails', JSON.stringify(payload));
 
       await axios.put(
-        `https://services.dcarbon.solutions/api/user/commercial-registration/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/commercial-registration/${userId}`,
         payload,
         {
           headers: {

@@ -35,7 +35,7 @@ export default function WelcomeModal({ isOpen, onClose, userData }) {
         throw new Error('Authentication data not found');
       }
 
-      const response = await fetch(`https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`, {
+      const response = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-commercial-user/${userId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${authToken}`
@@ -113,7 +113,7 @@ export default function WelcomeModal({ isOpen, onClose, userData }) {
         body.companyName = formData.companyName;
       }
 
-      const response = await fetch(`https://services.dcarbon.solutions/api/user/commercial-registration/${userId}`, {
+      const response = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/commercial-registration/${userId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

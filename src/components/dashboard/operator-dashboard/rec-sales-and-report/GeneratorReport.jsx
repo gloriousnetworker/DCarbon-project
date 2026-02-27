@@ -31,7 +31,7 @@ const GeneratorReport = () => {
     setLoading(true);
     try {
       const { userId, authToken } = getUserData();
-      let url = `https://services.dcarbon.solutions/api/facility/generator-report/${userId}?page=${currentPage}`;
+      let url = `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/facility/generator-report/${userId}?page=${currentPage}`;
       
       // Add filters to URL if they exist
       if (filters.dateFrom) url += `&dateFrom=${filters.dateFrom}`;

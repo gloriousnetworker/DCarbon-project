@@ -65,7 +65,7 @@ export default function OperatorRegistrationCard() {
 
     try {
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/user/commercial-registration/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/commercial-registration/${userId}`,
         {
           method: 'PUT',
           headers: {

@@ -40,7 +40,7 @@ export default function WelcomeModal({ isOpen, onClose, userData }) {
         throw new Error('Authentication data not found');
       }
 
-      const response = await fetch(`https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`, {
+      const response = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-commercial-user/${userId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${authToken}`
@@ -145,7 +145,7 @@ export default function WelcomeModal({ isOpen, onClose, userData }) {
         body.companyAddress = `${formData.companyAddress.address1}, ${formData.companyAddress.address2}, ${formData.companyAddress.city}, ${formData.companyAddress.state} ${formData.companyAddress.zipCode}`;
       }
 
-      const response = await fetch(`https://services.dcarbon.solutions/api/user/commercial-registration/${userId}`, {
+      const response = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/commercial-registration/${userId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -189,7 +189,7 @@ export default function WelcomeModal({ isOpen, onClose, userData }) {
         throw new Error('Authentication token not found');
       }
 
-      const referralResponse = await fetch(`https://services.dcarbon.solutions/api/user/referral/by-inviter-code/${referralCode}`, {
+      const referralResponse = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/referral/by-inviter-code/${referralCode}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${authToken}`
@@ -201,7 +201,7 @@ export default function WelcomeModal({ isOpen, onClose, userData }) {
       if (referralResult.status === 'success' && referralResult.statusCode === 200) {
         const inviterId = referralResult.data.inviterId;
         
-        const ownerResponse = await fetch(`https://services.dcarbon.solutions/api/user/get-one-user/${inviterId}`, {
+        const ownerResponse = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-one-user/${inviterId}`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${authToken}`

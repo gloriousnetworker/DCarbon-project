@@ -46,7 +46,7 @@ const DashboardSidebar = ({
       if (!userId || !authToken) return;
 
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/user/notifications/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/notifications/${userId}`,
         {
           method: 'GET',
           headers: {
@@ -132,7 +132,7 @@ const DashboardSidebar = ({
       formData.append('profilePicture', file);
 
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/user/upload-profile-picture/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/upload-profile-picture/${userId}`,
         {
           method: 'POST',
           headers: {
@@ -195,7 +195,7 @@ const DashboardSidebar = ({
       }
 
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/user/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/${userId}`,
         {
           method: 'PUT',
           headers: {

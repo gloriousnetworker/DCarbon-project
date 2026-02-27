@@ -101,7 +101,7 @@
 //   const checkStage2Completion = async (userId, authToken) => {
 //     try {
 //       const response = await fetch(
-//         `https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`,
+//         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-commercial-user/${userId}`,
 //         {
 //           method: 'GET',
 //           headers: {
@@ -119,7 +119,7 @@
 //   const checkStage3Completion = async (userId, authToken) => {
 //     try {
 //       const response = await fetch(
-//         `https://services.dcarbon.solutions/api/user/agreement/${userId}`,
+//         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/agreement/${userId}`,
 //         {
 //           method: 'GET',
 //           headers: {
@@ -137,7 +137,7 @@
 //   const checkStage4Completion = async (userId, authToken) => {
 //     try {
 //       const response = await fetch(
-//         `https://services.dcarbon.solutions/api/user/financial-info/${userId}`,
+//         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/financial-info/${userId}`,
 //         {
 //           method: 'GET',
 //           headers: {
@@ -155,7 +155,7 @@
 //   const checkStage5Completion = async (userId, authToken) => {
 //     try {
 //       const response = await fetch(
-//         `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`,
+//         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/user-meters/${userId}`,
 //         {
 //           method: 'GET',
 //           headers: {
@@ -279,7 +279,7 @@
 //         throw new Error('Authentication data not found');
 //       }
 
-//       const response = await fetch(`https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`, {
+//       const response = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-commercial-user/${userId}`, {
 //         method: 'GET',
 //         headers: {
 //           'Authorization': `Bearer ${authToken}`
@@ -438,7 +438,7 @@ export default function DashboardOverview() {
         throw new Error('Authentication data not found');
       }
 
-      const response = await fetch(`https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`, {
+      const response = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-commercial-user/${userId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${authToken}`
@@ -469,7 +469,7 @@ export default function DashboardOverview() {
       const token = loginResponse?.data?.token;
       
       const response = await axios.get(
-        `https://services.dcarbon.solutions/api/auth/utility-auth/${userData.userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/utility-auth/${userData.userId}`,
         { 
           headers: { 
             'Authorization': `Bearer ${token}`

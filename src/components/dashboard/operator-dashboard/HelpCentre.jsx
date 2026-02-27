@@ -25,7 +25,7 @@ export default function DashboardHelpCentre() {
         const token = localStorage.getItem('authToken')
         const userId = localStorage.getItem('userId')
         
-        const userResponse = await fetch(`https://services.dcarbon.solutions/api/user/get-one-user/${userId}`, {
+        const userResponse = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-one-user/${userId}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -36,7 +36,7 @@ export default function DashboardHelpCentre() {
           setUserType(userData.data.userType)
         }
 
-        const faqResponse = await fetch('https://services.dcarbon.solutions/api/faq/faqs', {
+        const faqResponse = await fetch('https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/faq/faqs', {
           headers: {
             'Authorization': `Bearer ${token}`
           }

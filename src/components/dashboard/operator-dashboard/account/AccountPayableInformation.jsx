@@ -81,7 +81,7 @@ const AccountPayableInformation = ({ stripeEnabled, setStripeEnabled }) => {
 
     try {
       const response = await axios.put(
-        `https://services.dcarbon.solutions/api/user/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/${userId}`,
         payload,
         {
           headers: {

@@ -68,7 +68,7 @@ export default function CustomerReport({ onNavigate }) {
   const [userDetailsCache, setUserDetailsCache] = useState({});
 
   const LIMIT = 10;
-  const baseUrl = "https://services.dcarbon.solutions";
+  const baseUrl = "https://naijatrips-app-dcarbon-server.cafyit.easypanel.host";
 
   const fetchUserDetails = async (email) => {
     if (!email || userDetailsCache[email]) return;

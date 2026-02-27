@@ -32,7 +32,7 @@ const CompanyInformation = () => {
 
       try {
         const response = await axios.get(
-          `https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`,
+          `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-commercial-user/${userId}`,
           {
             headers: {
               Authorization: `Bearer ${authToken}`,

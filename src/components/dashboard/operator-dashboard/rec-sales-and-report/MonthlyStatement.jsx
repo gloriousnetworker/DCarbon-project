@@ -29,7 +29,7 @@ const MonthlyStatement = () => {
     setLoading(true);
     try {
       const { userId, authToken } = getUserData();
-      let url = `https://services.dcarbon.solutions/api/rec/user-rec-report/${userId}`;
+      let url = `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/rec/user-rec-report/${userId}`;
       
       // Add period filters if not "All"
       if (periodType === 'monthly' && selectedPeriod.month !== 'All') {
@@ -60,7 +60,7 @@ const MonthlyStatement = () => {
   const fetchSalesData = async () => {
     try {
       const { userId, authToken } = getUserData();
-      const response = await fetch(`https://services.dcarbon.solutions/api/rec/sale-statement/${userId}`, {
+      const response = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/rec/sale-statement/${userId}`, {
         headers: {
           'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json'

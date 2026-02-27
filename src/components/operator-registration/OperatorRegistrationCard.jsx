@@ -71,7 +71,7 @@ export default function OperatorRegistrationCard() {
   const [hasMounted, setHasMounted] = useState(false);
   const router = useRouter();
 
-  const localURL = 'https://services.dcarbon.solutions';
+  const localURL = 'https://naijatrips-app-dcarbon-server.cafyit.easypanel.host';
 
   useEffect(() => {
     setHasMounted(true);

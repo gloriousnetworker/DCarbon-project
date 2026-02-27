@@ -136,7 +136,7 @@ export default function StepThreeCard() {
 
       // First save the financial info
       const infoResponse = await axios.put(
-        `https://services.dcarbon.solutions/api/user/financial-info/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/financial-info/${userId}`,
         payload,
         {
           headers: {
@@ -163,7 +163,7 @@ export default function StepThreeCard() {
         formData.append('financialAgreement', fileToUpload);
 
         const uploadResponse = await axios.put(
-          `https://services.dcarbon.solutions/api/user/update-financial-agreement/${userId}`,
+          `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/update-financial-agreement/${userId}`,
           formData,
           {
             headers: {
@@ -200,7 +200,7 @@ export default function StepThreeCard() {
       };
 
       const response = await axios.put(
-        `https://services.dcarbon.solutions/api/user/utility-info/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/utility-info/${userId}`,
         payload,
         {
           headers: {

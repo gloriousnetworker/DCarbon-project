@@ -70,7 +70,7 @@ export default function UploadFacilityDocumentsModal({ isOpen, onClose }) {
       formData.append(documentKeys[index], files[index]);
 
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/facility/${endpoints[index]}/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/facility/${endpoints[index]}/${userId}`,
         {
           method: 'PUT',
           headers: {

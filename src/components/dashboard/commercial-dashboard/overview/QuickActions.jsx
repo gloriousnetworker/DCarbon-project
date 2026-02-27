@@ -41,7 +41,7 @@ export default function QuickActions() {
 
       try {
         const response = await fetch(
-          `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`,
+          `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/user-meters/${userId}`,
           {
             method: 'GET',
             headers: {

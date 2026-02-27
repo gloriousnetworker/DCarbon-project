@@ -109,7 +109,7 @@ export default function DashboardOverview({ onSectionChange }) {
   const checkFacilityStatus = async (userId, authToken) => {
     try {
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/residential-facility/get-user-facilities/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/residential-facility/get-user-facilities/${userId}`,
         {
           method: 'GET',
           headers: {
@@ -135,7 +135,7 @@ export default function DashboardOverview({ onSectionChange }) {
 
     try {
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/auth/utility-auth/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/utility-auth/${userId}`,
         {
           method: 'GET',
           headers: {
@@ -171,7 +171,7 @@ export default function DashboardOverview({ onSectionChange }) {
   const checkStage2Completion = async (userId, authToken) => {
     try {
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/user/financial-info/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/financial-info/${userId}`,
         {
           method: 'GET',
           headers: {
@@ -189,7 +189,7 @@ export default function DashboardOverview({ onSectionChange }) {
   const checkStage3Completion = async (userId, authToken) => {
     try {
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/user/agreement/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/agreement/${userId}`,
         {
           method: 'GET',
           headers: {
@@ -207,7 +207,7 @@ export default function DashboardOverview({ onSectionChange }) {
   const checkStage4Completion = async (userId, authToken) => {
     try {
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/user-meters/${userId}`,
         {
           method: 'GET',
           headers: {

@@ -161,7 +161,7 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
     try {
       const token = getAuthToken();
       const response = await axios.get(
-        "https://services.dcarbon.solutions/api/auth/utility-providers",
+        "https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/utility-providers",
         {
           headers: {
             "Content-Type": "application/json",
@@ -184,7 +184,7 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
     setLoadingFinanceTypes(true);
     try {
       const token = getAuthToken();
-      const response = await axios.get("https://services.dcarbon.solutions/api/user/financial-types", { headers: { Authorization: `Bearer ${token}` } });
+      const response = await axios.get("https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/financial-types", { headers: { Authorization: `Bearer ${token}` } });
       if (response.data.status === "success") {
         const approvedTypes = response.data.data.types.filter(type => type.status === "APPROVED" || type.name.toLowerCase() === "cash");
         setFinanceTypes(approvedTypes);
@@ -200,7 +200,7 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
     setLoadingFinanceCompanies(true);
     try {
       const token = getAuthToken();
-      const response = await axios.get("https://services.dcarbon.solutions/api/user/partner/finance-companies", { headers: { Authorization: `Bearer ${token}` } });
+      const response = await axios.get("https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/partner/finance-companies", { headers: { Authorization: `Bearer ${token}` } });
       if (response.data.status === "success") {
         setFinanceCompanies(response.data.data.financeCompanies || []);
       }
@@ -215,7 +215,7 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
     setLoadingInstallers(true);
     try {
       const token = getAuthToken();
-      const response = await axios.get("https://services.dcarbon.solutions/api/user/partner/get-all-installer", { headers: { Authorization: `Bearer ${token}` } });
+      const response = await axios.get("https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/partner/get-all-installer", { headers: { Authorization: `Bearer ${token}` } });
       if (response.data.status === "success") setInstallers(response.data.data.installers || []);
     } catch (error) {
       toast.error("Failed to load installers");
@@ -233,7 +233,7 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
     setUserMetersLoading(true);
     try {
       const response = await axios.get(
-        `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/user-meters/${userId}`,
         {
           headers: {
             "Content-Type": "application/json",
@@ -349,7 +349,7 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
     setAcceptingAgreement(true);
     try {
       const response = await axios.put(
-        `https://services.dcarbon.solutions/api/user/accept-user-agreement-terms/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/accept-user-agreement-terms/${userId}`,
         {},
         {
           headers: {
@@ -400,7 +400,7 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
         meterId: formData.meterId
       };
       
-      const { data } = await axios.put(`https://services.dcarbon.solutions/api/residential-facility/update-facility/${facility.id}`, updateData, { headers: { Authorization: `Bearer ${authToken}` } });
+      const { data } = await axios.put(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/residential-facility/update-facility/${facility.id}`, updateData, { headers: { Authorization: `Bearer ${authToken}` } });
       if (data.status === "success") {
         toast.success("Facility updated successfully");
         onSave(data.data);

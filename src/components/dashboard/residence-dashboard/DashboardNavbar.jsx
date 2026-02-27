@@ -27,7 +27,7 @@ const DashboardNavbar = ({
   const checkFacilityStatus = async (userId, authToken) => {
     try {
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/residential-facility/get-user-facilities/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/residential-facility/get-user-facilities/${userId}`,
         {
           method: 'GET',
           headers: {
@@ -51,7 +51,7 @@ const DashboardNavbar = ({
       if (!userId || !authToken) return;
 
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/user/notifications/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/notifications/${userId}`,
         {
           method: 'GET',
           headers: {
@@ -79,7 +79,7 @@ const DashboardNavbar = ({
   const checkStage2Completion = async (userId, authToken) => {
     try {
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/user/financial-info/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/financial-info/${userId}`,
         {
           method: 'GET',
           headers: {
@@ -97,7 +97,7 @@ const DashboardNavbar = ({
   const checkStage3Completion = async (userId, authToken) => {
     try {
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/user/agreement/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/agreement/${userId}`,
         {
           method: 'GET',
           headers: {
@@ -115,7 +115,7 @@ const DashboardNavbar = ({
   const checkStage4Completion = async (userId, authToken) => {
     try {
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/user-meters/${userId}`,
         {
           method: 'GET',
           headers: {

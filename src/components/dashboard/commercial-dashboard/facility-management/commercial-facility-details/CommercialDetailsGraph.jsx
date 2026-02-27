@@ -109,7 +109,7 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
       if (!meterId) return;
 
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/facility/get-meter-rec-data/${meterId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/facility/get-meter-rec-data/${meterId}`,
         {
           method: 'GET',
           headers: {
@@ -150,7 +150,7 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
 
   const fetchRecStatistics = async (authToken) => {
     try {
-      const url = new URL(`https://services.dcarbon.solutions/api/rec/statistics`);
+      const url = new URL(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/rec/statistics`);
       const params = {
         year: selectedYear,
         facilityId: facilityId
@@ -180,7 +180,7 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
 
   const fetchRecOverview = async (authToken) => {
     try {
-      const url = new URL(`https://services.dcarbon.solutions/api/rec/overview/stats`);
+      const url = new URL(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/rec/overview/stats`);
       
       const params = {
         facilityId: facilityId
@@ -234,7 +234,7 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
 
   const fetchDetailStatistics = async (authToken) => {
     try {
-      const url = new URL(`https://services.dcarbon.solutions/api/rec/statistics`);
+      const url = new URL(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/rec/statistics`);
       
       const params = {
         facilityId: facilityId
@@ -278,7 +278,7 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
 
   const fetchMonthlyChartData = async (authToken) => {
     try {
-      const url = new URL(`https://services.dcarbon.solutions/api/rec/chart/monthly`);
+      const url = new URL(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/rec/chart/monthly`);
       const params = {
         type: 'commercial',
         year: selectedYear,

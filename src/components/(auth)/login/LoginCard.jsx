@@ -4,6 +4,7 @@ import { useState } from 'react';
 import axios from 'axios';
 import Loader from '../../../components/loader/Loader';
 import toast from 'react-hot-toast';
+import CONFIG from '../../../../lib/config';
 
 export default function LoginCard() {
   const [loading, setLoading] = useState(false);
@@ -20,8 +21,7 @@ export default function LoginCard() {
     try {
       const normalizedEmail = email.toLowerCase();
       
-      const baseUrl = 'https://services.dcarbon.solutions';
-      const url = `${baseUrl}/api/auth/login`;
+      const url = `${CONFIG.API_BASE_URL}/api/auth/login`;
 
       const response = await axios.post(
         url,

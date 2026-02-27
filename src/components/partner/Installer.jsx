@@ -49,7 +49,7 @@ export default function StepOneCard() {
       };
 
       const response = await axios.post(
-        `https://services.dcarbon.solutions/api/user/create-partner/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/create-partner/${userId}`,
         payload,
         {
           headers: {

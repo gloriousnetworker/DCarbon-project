@@ -59,7 +59,7 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
       }
 
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-commercial-user/${userId}`,
         {
           method: 'GET',
           headers: {
@@ -133,7 +133,7 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
       }
 
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/facility/get-user-facilities-by-userId/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/facility/get-user-facilities-by-userId/${userId}`,
         {
           method: 'GET',
           headers: {
@@ -384,7 +384,7 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
       }
 
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/user/commercial-registration/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/commercial-registration/${userId}`,
         {
           method: 'PUT',
           headers: {

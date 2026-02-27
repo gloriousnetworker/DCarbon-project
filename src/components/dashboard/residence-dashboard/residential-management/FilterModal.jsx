@@ -20,13 +20,13 @@ export default function FilterModal({ onClose, onApplyFilter }) {
       const authToken = localStorage.getItem("authToken");
       try {
         const utilitiesRes = await axios.get(
-          "https://services.dcarbon.solutions/api/auth/utility-providers",
+          "https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/utility-providers",
           { headers: { Authorization: `Bearer ${authToken}` } }
         );
         setUtilities(utilitiesRes.data.data || []);
 
         const installersRes = await axios.get(
-          "https://services.dcarbon.solutions/api/installers",
+          "https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/installers",
           { headers: { Authorization: `Bearer ${authToken}` } }
         );
         setInstallers(installersRes.data.data || []);

@@ -114,7 +114,7 @@ export default function FacilityDetails({ facility, customerEmail, onBack, onFac
       if (!userId || !authToken) return;
 
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/user/partner/user/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/partner/user/${userId}`,
         {
           method: 'GET',
           headers: {
@@ -142,7 +142,7 @@ export default function FacilityDetails({ facility, customerEmail, onBack, onFac
       if (!userId || !authToken) return;
 
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/user/get-operators/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-operators/${userId}`,
         { headers: { Authorization: `Bearer ${authToken}` } }
       );
       
@@ -166,7 +166,7 @@ export default function FacilityDetails({ facility, customerEmail, onBack, onFac
       if (!authToken) return;
 
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/commercial-facility/${facilityData.id}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/commercial-facility/${facilityData.id}`,
         { headers: { Authorization: `Bearer ${authToken}` } }
       );
       
@@ -253,7 +253,7 @@ export default function FacilityDetails({ facility, customerEmail, onBack, onFac
       const checkStage2 = async () => {
         try {
           const response = await fetch(
-            `https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`,
+            `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-commercial-user/${userId}`,
             { headers: { 'Authorization': `Bearer ${authToken}` } }
           );
           const result = await response.json();
@@ -266,7 +266,7 @@ export default function FacilityDetails({ facility, customerEmail, onBack, onFac
       const checkStage3 = async () => {
         try {
           const response = await fetch(
-            `https://services.dcarbon.solutions/api/user/agreement/${userId}`,
+            `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/agreement/${userId}`,
             { headers: { 'Authorization': `Bearer ${authToken}` } }
           );
           const result = await response.json();
@@ -279,7 +279,7 @@ export default function FacilityDetails({ facility, customerEmail, onBack, onFac
       const checkStage4 = async () => {
         try {
           const response = await fetch(
-            `https://services.dcarbon.solutions/api/user/financial-info/${userId}`,
+            `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/financial-info/${userId}`,
             { headers: { 'Authorization': `Bearer ${authToken}` } }
           );
           const result = await response.json();
@@ -292,7 +292,7 @@ export default function FacilityDetails({ facility, customerEmail, onBack, onFac
       const checkStage5 = async () => {
         try {
           const response = await fetch(
-            `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`,
+            `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/user-meters/${userId}`,
             { headers: { 'Authorization': `Bearer ${authToken}` } }
           );
           const result = await response.json();
@@ -371,7 +371,7 @@ export default function FacilityDetails({ facility, customerEmail, onBack, onFac
     }
 
     const facilityId = facilityData.id;
-    const baseUrl = 'https://services.dcarbon.solutions';
+    const baseUrl = 'https://naijatrips-app-dcarbon-server.cafyit.easypanel.host';
     
     const endpoints = {
       wregisAssignment: `${baseUrl}/api/facility/update-wregis-assignment/${facilityId}`,
@@ -470,7 +470,7 @@ export default function FacilityDetails({ facility, customerEmail, onBack, onFac
 
     try {
       setLoading(true);
-      const response = await fetch(`https://services.dcarbon.solutions/api/commercial-facility/${facilityData.id}`, {
+      const response = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/commercial-facility/${facilityData.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${authToken}`

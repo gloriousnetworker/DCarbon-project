@@ -25,7 +25,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
   const [showInviteOperatorModal, setShowInviteOperatorModal] = useState(false);
   const [scale, setScale] = useState(1);
 
-  const baseUrl = 'https://services.dcarbon.solutions';
+  const baseUrl = 'https://naijatrips-app-dcarbon-server.cafyit.easypanel.host';
 
   useEffect(() => {
     if (isOpen) {

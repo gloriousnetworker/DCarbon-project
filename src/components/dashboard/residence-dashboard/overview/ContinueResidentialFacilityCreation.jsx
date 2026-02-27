@@ -78,7 +78,7 @@ export default function ResidentialFacilityModal({ isOpen, onClose, currentStep 
     try {
       setLoading(true);
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/residential-facility/get-user-facilities/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/residential-facility/get-user-facilities/${userId}`,
         {
           method: 'GET',
           headers: {
@@ -136,7 +136,7 @@ export default function ResidentialFacilityModal({ isOpen, onClose, currentStep 
   const checkStage2Completion = async (userId, authToken) => {
     try {
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-commercial-user/${userId}`,
         {
           method: 'GET',
           headers: {
@@ -154,7 +154,7 @@ export default function ResidentialFacilityModal({ isOpen, onClose, currentStep 
   const checkStage3Completion = async (userId, authToken) => {
     try {
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/user/agreement/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/agreement/${userId}`,
         {
           method: 'GET',
           headers: {
@@ -172,7 +172,7 @@ export default function ResidentialFacilityModal({ isOpen, onClose, currentStep 
   const checkStage4Completion = async (userId, authToken) => {
     try {
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/user/financial-info/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/financial-info/${userId}`,
         {
           method: 'GET',
           headers: {
@@ -190,7 +190,7 @@ export default function ResidentialFacilityModal({ isOpen, onClose, currentStep 
   const checkStage5Completion = async (userId, authToken) => {
     try {
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/user-meters/${userId}`,
         {
           method: 'GET',
           headers: {

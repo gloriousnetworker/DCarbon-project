@@ -26,7 +26,7 @@ const DashboardSidebar = ({
       if (!userId || !authToken) return;
 
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/user/notifications/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/notifications/${userId}`,
         {
           method: 'GET',
           headers: {

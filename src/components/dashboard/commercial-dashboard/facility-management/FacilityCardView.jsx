@@ -43,7 +43,7 @@ export default function FacilityCardView() {
       if (!userId || !authToken) return;
 
       const response = await axios.get(
-        `https://services.dcarbon.solutions/api/user/get-operators/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-operators/${userId}`,
         { headers: { Authorization: `Bearer ${authToken}` } }
       );
       
@@ -69,7 +69,7 @@ export default function FacilityCardView() {
 
   const checkStage2Completion = async (userId, authToken) => {
     try {
-      const response = await fetch(`https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`, {
+      const response = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-commercial-user/${userId}`, {
         method: 'GET',
         headers: { 'Authorization': `Bearer ${authToken}` }
       });
@@ -82,7 +82,7 @@ export default function FacilityCardView() {
 
   const checkStage3Completion = async (userId, authToken) => {
     try {
-      const response = await fetch(`https://services.dcarbon.solutions/api/user/agreement/${userId}`, {
+      const response = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/agreement/${userId}`, {
         method: 'GET',
         headers: { 'Authorization': `Bearer ${authToken}` }
       });
@@ -95,7 +95,7 @@ export default function FacilityCardView() {
 
   const checkStage4Completion = async (userId, authToken) => {
     try {
-      const response = await fetch(`https://services.dcarbon.solutions/api/user/financial-info/${userId}`, {
+      const response = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/financial-info/${userId}`, {
         method: 'GET',
         headers: { 'Authorization': `Bearer ${authToken}` }
       });
@@ -226,7 +226,7 @@ export default function FacilityCardView() {
     }
     try {
       const { data } = await axios.get(
-        `https://services.dcarbon.solutions/api/facility/get-user-facilities-by-userId/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/facility/get-user-facilities-by-userId/${userId}`,
         { headers: { Authorization: `Bearer ${authToken}` } }
       );
       if (data.status === "success") {

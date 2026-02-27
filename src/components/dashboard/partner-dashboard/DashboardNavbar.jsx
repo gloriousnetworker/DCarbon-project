@@ -32,7 +32,7 @@ const DashboardNavbar = ({
         }
         
         const response = await fetch(
-          `https://services.dcarbon.solutions/api/user/partner/user/${userId}`,
+          `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/partner/user/${userId}`,
           { headers: { 'Authorization': `Bearer ${authToken}` } }
         );
         

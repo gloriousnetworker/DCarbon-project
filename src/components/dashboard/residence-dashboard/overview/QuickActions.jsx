@@ -27,7 +27,7 @@ export default function QuickActions({ onSectionChange }) {
       }
 
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/revenue/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/revenue/${userId}`,
         {
           method: 'GET',
           headers: {
@@ -58,7 +58,7 @@ export default function QuickActions({ onSectionChange }) {
       }
 
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/user/referred-progress/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/referred-progress/${userId}`,
         {
           method: 'GET',
           headers: {
@@ -97,7 +97,7 @@ export default function QuickActions({ onSectionChange }) {
       }
 
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/user-meters/${userId}`,
         {
           method: 'GET',
           headers: {

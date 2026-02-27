@@ -76,7 +76,7 @@ export default function CommissionStatement({ onNavigate }) {
       if (!quarterObj) return;
 
       const response = await axios.get(
-        `https://services.dcarbon.solutions/api/commission/invoice/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/commission/invoice/${userId}`,
         {
           params: { quarter: quarterObj.value, year: quarterObj.year },
           headers: { Authorization: `Bearer ${authToken}` },
@@ -99,7 +99,7 @@ export default function CommissionStatement({ onNavigate }) {
   const fetchWalletBalance = async () => {
     try {
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/revenue/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/revenue/${userId}`,
         { headers: { Authorization: `Bearer ${authToken}` } }
       );
       const result = await response.json();
@@ -114,7 +114,7 @@ export default function CommissionStatement({ onNavigate }) {
   const fetchPayoutHistory = async () => {
     try {
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/payout-request?userId=${userId}&userType=PARTNER`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/payout-request?userId=${userId}&userType=PARTNER`,
         { headers: { Authorization: `Bearer ${authToken}` } }
       );
       const result = await response.json();
@@ -151,7 +151,7 @@ export default function CommissionStatement({ onNavigate }) {
 
       if (exportParams.format !== "csv") {
         const response = await axios.post(
-          "https://services.dcarbon.solutions/api/reports/export-commission-statement",
+          "https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/reports/export-commission-statement",
           requestBody,
           {
             headers: { Authorization: `Bearer ${authToken}` },
@@ -193,7 +193,7 @@ export default function CommissionStatement({ onNavigate }) {
       };
 
       const response = await fetch(
-        "https://services.dcarbon.solutions/api/payout-request/request",
+        "https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/payout-request/request",
         {
           method: "POST",
           headers: {

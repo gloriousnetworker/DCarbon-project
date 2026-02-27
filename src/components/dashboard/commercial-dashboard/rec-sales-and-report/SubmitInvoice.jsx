@@ -130,7 +130,7 @@ const SubmitInvoice = ({ onBack, onInvoiceSubmitted }) => {
       const formDataUpload = new FormData();
       formDataUpload.append('file', selectedFile);
 
-      const response = await fetch(`https://services.dcarbon.solutions/api/file-storage/upload/${formData.invoiceNumber}`, {
+      const response = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/file-storage/upload/${formData.invoiceNumber}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${authToken}`,
@@ -184,7 +184,7 @@ const SubmitInvoice = ({ onBack, onInvoiceSubmitted }) => {
         invoiceId: uploadedFileUrl
       };
 
-      const response = await fetch('https://services.dcarbon.solutions/api/payout-request/request', {
+      const response = await fetch('https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/payout-request/request', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

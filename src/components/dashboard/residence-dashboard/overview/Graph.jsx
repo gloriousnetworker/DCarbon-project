@@ -71,7 +71,7 @@ export default function Graph() {
       }
       try {
         const response = await fetch(
-          `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`,
+          `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/user-meters/${userId}`,
           {
             method: 'GET',
             headers: { 'Authorization': `Bearer ${authToken}` }
@@ -137,7 +137,7 @@ export default function Graph() {
   const fetchTotalLifetimeRecs = async (userId, authToken) => {
     try {
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/rec/statistics?userId=${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/rec/statistics?userId=${userId}`,
         {
           headers: { 
             Authorization: `Bearer ${authToken}`, 
@@ -161,7 +161,7 @@ export default function Graph() {
   const fetchFacilities = async (userId, authToken) => {
     try {
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/facility/get-user-facilities-by-userId/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/facility/get-user-facilities-by-userId/${userId}`,
         {
           headers: { 
             Authorization: `Bearer ${authToken}`, 
@@ -183,7 +183,7 @@ export default function Graph() {
 
   const fetchRecStatistics = async (userId, authToken) => {
     try {
-      const url = new URL(`https://services.dcarbon.solutions/api/rec/statistics`);
+      const url = new URL(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/rec/statistics`);
       
       const params = {
         year: selectedYear
@@ -221,7 +221,7 @@ export default function Graph() {
 
   const fetchDetailStatistics = async (userId, authToken) => {
     try {
-      const url = new URL(`https://services.dcarbon.solutions/api/rec/statistics`);
+      const url = new URL(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/rec/statistics`);
       
       const params = {};
       
@@ -269,7 +269,7 @@ export default function Graph() {
 
   const fetchRecOverview = async (userId, authToken) => {
     try {
-      const url = new URL(`https://services.dcarbon.solutions/api/rec/overview/stats`);
+      const url = new URL(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/rec/overview/stats`);
       
       const params = {};
       

@@ -33,7 +33,7 @@ export default function CurrentStatementModal({ isOpen, onClose }) {
       }
 
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/rec/sale-statement?month=${selectedMonth}&year=${selectedYear}&userId=${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/rec/sale-statement?month=${selectedMonth}&year=${selectedYear}&userId=${userId}`,
         {
           method: 'GET',
           headers: { 

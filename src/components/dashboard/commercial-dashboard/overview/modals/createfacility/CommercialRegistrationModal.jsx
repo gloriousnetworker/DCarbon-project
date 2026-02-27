@@ -63,7 +63,7 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
   const checkUserFacilities = async (userId, authToken) => {
     try {
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/facility/get-user-facilities-by-userId/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/facility/get-user-facilities-by-userId/${userId}`,
         {
           method: 'GET',
           headers: {
@@ -87,7 +87,7 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
   const checkStage2Completion = async (userId, authToken) => {
     try {
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-commercial-user/${userId}`,
         {
           method: 'GET',
           headers: {
@@ -105,7 +105,7 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
   const checkStage3Completion = async (userId, authToken) => {
     try {
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/user/agreement/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/agreement/${userId}`,
         {
           method: 'GET',
           headers: {
@@ -123,7 +123,7 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
   const checkStage4Completion = async (userId, authToken) => {
     try {
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/user/financial-info/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/financial-info/${userId}`,
         {
           method: 'GET',
           headers: {
@@ -141,7 +141,7 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
   const checkStage5Completion = async (userId, authToken) => {
     try {
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/auth/user-meters/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/user-meters/${userId}`,
         {
           method: 'GET',
           headers: {
@@ -203,7 +203,7 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
       if (!userId || !authToken) return;
 
       const commercialUserResponse = await fetch(
-        `https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-commercial-user/${userId}`,
         {
           method: 'GET',
           headers: {
@@ -221,7 +221,7 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
       };
 
       const updateResponse = await fetch(
-        `https://services.dcarbon.solutions/api/user/commercial-registration/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/commercial-registration/${userId}`,
         {
           method: 'PUT',
           headers: {
@@ -266,7 +266,7 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
       };
 
       const greenButtonResponse = await fetch(
-        `https://services.dcarbon.solutions/api/utility-auth/green-button`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/utility-auth/green-button`,
         {
           method: 'POST',
           headers: {
@@ -283,7 +283,7 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
         toast.success("Green Button authorization submitted successfully!");
         
         const submitEmailResponse = await fetch(
-          `https://services.dcarbon.solutions/api/user/submit-green-button-email/${userId}`,
+          `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/submit-green-button-email/${userId}`,
           {
             method: 'POST',
             headers: {
@@ -344,7 +344,7 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
       };
 
       const response = await fetch(
-        `https://services.dcarbon.solutions/api/green-button/start`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/green-button/start`,
         {
           method: 'POST',
           headers: {
@@ -407,7 +407,7 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
           const authToken = loginResponse?.data?.token;
           
           if (userId && authToken) {
-            const response = await fetch(`https://services.dcarbon.solutions/api/user/get-commercial-user/${userId}`, {
+            const response = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-commercial-user/${userId}`, {
               headers: {
                 'Authorization': `Bearer ${authToken}`
               }

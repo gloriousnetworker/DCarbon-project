@@ -56,7 +56,7 @@ export default function StepOneCard() {
 
     try {
       const response = await axios.get(
-        `https://services.dcarbon.solutions/api/user/partner/user/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/partner/user/${userId}`,
         {
           headers: {
             Authorization: `Bearer ${authToken}`,
@@ -69,7 +69,7 @@ export default function StepOneCard() {
         const partnerId = response.data.data.id;
         
         await axios.delete(
-          `https://services.dcarbon.solutions/api/user/partner/${partnerId}`,
+          `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/partner/${partnerId}`,
           {
             headers: {
               Authorization: `Bearer ${authToken}`,
@@ -403,7 +403,7 @@ export default function StepOneCard() {
       }
 
       const response = await axios.post(
-        `https://services.dcarbon.solutions/api/user/create-partner/${userId}`,
+        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/create-partner/${userId}`,
         payload,
         {
           headers: {
