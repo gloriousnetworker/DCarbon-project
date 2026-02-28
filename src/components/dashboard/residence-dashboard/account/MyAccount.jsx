@@ -29,15 +29,15 @@ const MyAccount = () => {
           throw new Error("User not authenticated");
         }
 
-        const response = await fetch(
-          `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-one-user/${userId}`,
+        const response = await axiosInstance.
+          `/api/user/get-one-user/${userId}`,
           {
             method: "GET",
             headers: { Authorization: `Bearer ${authToken}` },
           }
         );
 
-        const data = await response.json();
+        const data = response.data;
         if (!response.ok) {
           throw new Error(data.message || "Failed to fetch user data");
         }

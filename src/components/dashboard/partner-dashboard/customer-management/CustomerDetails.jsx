@@ -28,11 +28,10 @@ export default function CustomerDetails({ customer, onBack }) {
   const fetchCommercialUserDetails = async (userId) => {
     try {
       const authToken = localStorage.getItem('authToken');
-      const response = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-commercial-user/${userId}`, {
-        method: 'GET',
+      const response = await axiosInstance.get(`/api/user/get-commercial-user/${userId}`, {
         headers: { 'Authorization': `Bearer ${authToken}` }
       });
-      const result = await response.json();
+      const result = response.data;
       if (result.status === 'success') {
         setCommercialUserDetails(result.data.commercialUser);
       }
@@ -43,11 +42,10 @@ export default function CustomerDetails({ customer, onBack }) {
 
   const checkStage2CompletionCommercial = async (userId, authToken) => {
     try {
-      const response = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-commercial-user/${userId}`, {
-        method: 'GET',
+      const response = await axiosInstance.get(`/api/user/get-commercial-user/${userId}`, {
         headers: { 'Authorization': `Bearer ${authToken}` }
       });
-      const result = await response.json();
+      const result = response.data;
       return result.status === 'success' && result.data?.commercialUser?.ownerAddress;
     } catch (error) {
       return false;
@@ -56,11 +54,10 @@ export default function CustomerDetails({ customer, onBack }) {
 
   const checkStage3CompletionCommercial = async (userId, authToken) => {
     try {
-      const response = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/agreement/${userId}`, {
-        method: 'GET',
+      const response = await axiosInstance.get(`/api/user/agreement/${userId}`, {
         headers: { 'Authorization': `Bearer ${authToken}` }
       });
-      const result = await response.json();
+      const result = response.data;
       return result.status === 'success' && result.data?.termsAccepted;
     } catch (error) {
       return false;
@@ -69,11 +66,10 @@ export default function CustomerDetails({ customer, onBack }) {
 
   const checkStage4CompletionCommercial = async (userId, authToken) => {
     try {
-      const response = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/financial-info/${userId}`, {
-        method: 'GET',
+      const response = await axiosInstance.get(`/api/user/financial-info/${userId}`, {
         headers: { 'Authorization': `Bearer ${authToken}` }
       });
-      const result = await response.json();
+      const result = response.data;
       return result.status === 'success' && result.data?.financialInfo;
     } catch (error) {
       return false;
@@ -82,11 +78,10 @@ export default function CustomerDetails({ customer, onBack }) {
 
   const checkStage5CompletionCommercial = async (userId, authToken) => {
     try {
-      const response = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/user-meters/${userId}`, {
-        method: 'GET',
+      const response = await axiosInstance.get(`/api/auth/user-meters/${userId}`, {
         headers: { 'Authorization': `Bearer ${authToken}` }
       });
-      const result = await response.json();
+      const result = response.data;
       return result.status === 'success' && result.data?.length > 0 && result.data.some(item => item.meters?.meters?.length > 0);
     } catch (error) {
       return false;
@@ -99,16 +94,15 @@ export default function CustomerDetails({ customer, onBack }) {
 
   const checkStage2CompletionResidential = async (userId, authToken) => {
     try {
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/financial-info/${userId}`,
+      const response = await axiosInstance.get(
+        `/api/user/financial-info/${userId}`,
         {
-          method: 'GET',
           headers: {
             'Authorization': `Bearer ${authToken}`
           }
         }
       );
-      const result = await response.json();
+      const result = response.data;
       return result.status === 'success' && result.data?.financialInfo;
     } catch (error) {
       return false;
@@ -117,16 +111,15 @@ export default function CustomerDetails({ customer, onBack }) {
 
   const checkStage3CompletionResidential = async (userId, authToken) => {
     try {
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/agreement/${userId}`,
+      const response = await axiosInstance.get(
+        `/api/user/agreement/${userId}`,
         {
-          method: 'GET',
           headers: {
             'Authorization': `Bearer ${authToken}`
           }
         }
       );
-      const result = await response.json();
+      const result = response.data;
       return result.status === 'success' && result.data?.termsAccepted;
     } catch (error) {
       return false;
@@ -135,16 +128,15 @@ export default function CustomerDetails({ customer, onBack }) {
 
   const checkStage4CompletionResidential = async (userId, authToken) => {
     try {
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/user-meters/${userId}`,
+      const response = await axiosInstance.get(
+        `/api/auth/user-meters/${userId}`,
         {
-          method: 'GET',
           headers: {
             'Authorization': `Bearer ${authToken}`
           }
         }
       );
-      const result = await response.json();
+      const result = response.data;
       return result.status === 'success' && result.data?.length > 0;
     } catch (error) {
       return false;
@@ -276,7 +268,7 @@ export default function CustomerDetails({ customer, onBack }) {
     const authToken = localStorage.getItem('authToken');
     try {
       const { data } = await axiosInstance.get(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/facility/get-user-facilities-by-userId/${userId}`,
+        `/api/facility/get-user-facilities-by-userId/${userId}`,
         { headers: { Authorization: `Bearer ${authToken}` } }
       );
       if (data.status === "success") {
@@ -291,7 +283,7 @@ export default function CustomerDetails({ customer, onBack }) {
     const authToken = localStorage.getItem('authToken');
     try {
       const { data } = await axiosInstance.get(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/residential-facility/get-user-facilities/${userId}`,
+        `/api/residential-facility/get-user-facilities/${userId}`,
         { headers: { Authorization: `Bearer ${authToken}` } }
       );
       if (data.status === "success") {
@@ -315,7 +307,7 @@ export default function CustomerDetails({ customer, onBack }) {
         if (!email) throw new Error('No email for customer');
         
         const { data } = await axiosInstance.get(
-          `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/partner/details/${email}`,
+          `/api/user/partner/details/${email}`,
           { headers: { Authorization: `Bearer ${authToken}` } }
         );
 

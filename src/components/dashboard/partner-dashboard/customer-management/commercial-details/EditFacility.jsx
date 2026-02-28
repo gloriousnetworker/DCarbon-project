@@ -75,7 +75,7 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
     setCommercialUserLoading(true);
     try {
       const response = await axiosInstance.get(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-commercial-user/${userId}`,
+        `/api/user/get-commercial-user/${userId}`,
         {
           headers: {
             "Content-Type": "application/json",
@@ -108,7 +108,7 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
     setUtilityProvidersLoading(true);
     try {
       const response = await axiosInstance.get(
-        "https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/utility-providers",
+        "/api/auth/utility-providers",
         {
           headers: {
             "Content-Type": "application/json",
@@ -137,7 +137,7 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
     setUserMetersLoading(true);
     try {
       const response = await axiosInstance.get(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/user-meters/${userId}`,
+        `/api/auth/user-meters/${userId}`,
         {
           headers: {
             "Content-Type": "application/json",
@@ -237,7 +237,7 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
     setAcceptingAgreement(true);
     try {
       const response = await axiosInstance.put(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/accept-user-agreement-terms/${userId}`,
+        `/api/user/accept-user-agreement-terms/${userId}`,
         {},
         {
           headers: {
@@ -286,7 +286,7 @@ export default function EditFacilityDetailsModal({ facility, onClose = () => {},
       };
 
       const response = await axiosInstance.put(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/facility/update-facility/${facility.id}`,
+        `/api/facility/update-facility/${facility.id}`,
         processedData,
         {
           headers: {

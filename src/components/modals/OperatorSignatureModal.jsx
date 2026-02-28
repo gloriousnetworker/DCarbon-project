@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { FaTimes } from "react-icons/fa";
 import toast from "react-hot-toast";
+import { axiosInstance } from "../../lib/config";
 import LoginModal from "./LoginModal";
 
 const SignatureModal = ({ isOpen, onClose, onSaveSignature }) => {
@@ -132,7 +133,7 @@ const SignatureModal = ({ isOpen, onClose, onSaveSignature }) => {
           toast.error("Draw your signature first");
           return;
         }
-        const resp = await fetch(signatureData);
+        const resp = await axiosInstance.signatureData;
         const blob = await resp.blob();
         formData.append("signature", blob, "signature.png");
         method = "drawn";
@@ -164,14 +165,13 @@ const SignatureModal = ({ isOpen, onClose, onSaveSignature }) => {
       formData.append("termsAccepted", "true");
       formData.append("agreementCompleted", "true");
 
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/update-user-agreement/${userId}`,
+      const response = await axiosInstance.put(
+        `/api/user/update-user-agreement/${userId}`,
+        formData,
         {
-          method: 'PUT',
           headers: {
             Authorization: `Bearer ${authToken}`,
           },
-          body: formData,
         }
       );
 

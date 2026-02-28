@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { axiosInstance } from "../../../../../../lib/config";
 import {
   FiArrowLeft,
   FiEdit,
@@ -113,17 +114,16 @@ export default function FacilityDetails({ facility, customerEmail, onBack, onFac
 
       if (!userId || !authToken) return;
 
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/partner/user/${userId}`,
+      const response = await axiosInstance.get(
+        `/api/user/partner/user/${userId}`,
         {
-          method: 'GET',
           headers: {
             'Authorization': `Bearer ${authToken}`
           }
         }
       );
 
-      const result = await response.json();
+      const result = response.data;
 
       if (result?.status === 'success') {
         setPartnerType(result.data.user.partnerType);
@@ -141,8 +141,8 @@ export default function FacilityDetails({ facility, customerEmail, onBack, onFac
       
       if (!userId || !authToken) return;
 
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-operators/${userId}`,
+      const response = await axiosInstance.get(
+        `/api/user/get-operators/${userId}`,
         { headers: { Authorization: `Bearer ${authToken}` } }
       );
       
@@ -165,12 +165,12 @@ export default function FacilityDetails({ facility, customerEmail, onBack, onFac
       
       if (!authToken) return;
 
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/commercial-facility/${facilityData.id}`,
+      const response = await axiosInstance.get(
+        `/api/commercial-facility/${facilityData.id}`,
         { headers: { Authorization: `Bearer ${authToken}` } }
       );
       
-      const result = await response.json();
+      const result = response.data;
       if (result.status === "success") {
         const updatedFacility = result.data;
         setFacilityData(updatedFacility);
@@ -252,11 +252,11 @@ export default function FacilityDetails({ facility, customerEmail, onBack, onFac
 
       const checkStage2 = async () => {
         try {
-          const response = await fetch(
-            `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-commercial-user/${userId}`,
+          const response = await axiosInstance.get(
+            `/api/user/get-commercial-user/${userId}`,
             { headers: { 'Authorization': `Bearer ${authToken}` } }
           );
-          const result = await response.json();
+          const result = response.data;
           return result.status === 'success' && result.data?.commercialUser?.ownerAddress;
         } catch (error) {
           return false;
@@ -265,11 +265,11 @@ export default function FacilityDetails({ facility, customerEmail, onBack, onFac
 
       const checkStage3 = async () => {
         try {
-          const response = await fetch(
-            `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/agreement/${userId}`,
+          const response = await axiosInstance.get(
+            `/api/user/agreement/${userId}`,
             { headers: { 'Authorization': `Bearer ${authToken}` } }
           );
-          const result = await response.json();
+          const result = response.data;
           return result.status === 'success' && result.data?.termsAccepted;
         } catch (error) {
           return false;
@@ -278,11 +278,11 @@ export default function FacilityDetails({ facility, customerEmail, onBack, onFac
 
       const checkStage4 = async () => {
         try {
-          const response = await fetch(
-            `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/financial-info/${userId}`,
+          const response = await axiosInstance.get(
+            `/api/user/financial-info/${userId}`,
             { headers: { 'Authorization': `Bearer ${authToken}` } }
           );
-          const result = await response.json();
+          const result = response.data;
           return result.status === 'success' && result.data?.financialInfo;
         } catch (error) {
           return false;
@@ -291,11 +291,11 @@ export default function FacilityDetails({ facility, customerEmail, onBack, onFac
 
       const checkStage5 = async () => {
         try {
-          const response = await fetch(
-            `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/user-meters/${userId}`,
+          const response = await axiosInstance.get(
+            `/api/auth/user-meters/${userId}`,
             { headers: { 'Authorization': `Bearer ${authToken}` } }
           );
-          const result = await response.json();
+          const result = response.data;
           
           const metersExist = result.status === 'success' && 
                            Array.isArray(result.data) &&
@@ -371,7 +371,7 @@ export default function FacilityDetails({ facility, customerEmail, onBack, onFac
     }
 
     const facilityId = facilityData.id;
-    const baseUrl = 'https://naijatrips-app-dcarbon-server.cafyit.easypanel.host';
+    const baseUrl = '';
     
     const endpoints = {
       wregisAssignment: `/api/facility/update-wregis-assignment/${facilityId}`,
@@ -407,13 +407,15 @@ export default function FacilityDetails({ facility, customerEmail, onBack, onFac
     try {
       toast.loading('Uploading document...', { id: 'upload-toast' });
       
-      const response = await fetch(endpoints[docType], {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${authToken}`
-        },
-        body: formData
-      });
+      const response = await axiosInstance.put(
+        endpoints[docType],
+        formData,
+        {
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        }
+      );
 
       const result = await response.json();
 
@@ -470,14 +472,13 @@ export default function FacilityDetails({ facility, customerEmail, onBack, onFac
 
     try {
       setLoading(true);
-      const response = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/commercial-facility/${facilityData.id}`, {
-        method: 'DELETE',
+      const response = await axiosInstance.delete(`/api/commercial-facility/${facilityData.id}`, {
         headers: {
           'Authorization': `Bearer ${authToken}`
         }
       });
 
-      const result = await response.json();
+      const result = response.data;
 
       if (result.status === 'success') {
         toast.success('Facility deleted successfully');

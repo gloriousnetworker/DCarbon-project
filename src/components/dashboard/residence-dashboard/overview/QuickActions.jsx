@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { axiosInstance } from "../../../../../lib/config";
 import AddResidenceModal from "./modals/AddResidenceModal";
 import ReferOwnerModal from "./modals/ReferOwnerModal";
 import CreateNewFacilityModal from "./AddNewResidentialFacility.jsx";
@@ -26,16 +27,15 @@ export default function QuickActions({ onSectionChange }) {
         return;
       }
 
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/revenue/${userId}`,
+      const response = await axiosInstance.get(
+        `/api/revenue/${userId}`,
         {
-          method: 'GET',
           headers: {
             'Authorization': `Bearer ${authToken}`
           }
         }
       );
-      const result = await response.json();
+      const result = response.data;
       if (result.status === "success") {
         setWalletData(result.data);
       }
@@ -57,16 +57,15 @@ export default function QuickActions({ onSectionChange }) {
         return;
       }
 
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/referred-progress/${userId}`,
+      const response = await axiosInstance.get(
+        `/api/user/referred-progress/${userId}`,
         {
-          method: 'GET',
           headers: {
             'Authorization': `Bearer ${authToken}`
           }
         }
       );
-      const result = await response.json();
+      const result = response.data;
       if (result.success) {
         setReferralData(result.data);
       }
@@ -96,16 +95,15 @@ export default function QuickActions({ onSectionChange }) {
         return;
       }
 
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/user-meters/${userId}`,
+      const response = await axiosInstance.get(
+        `/api/auth/user-meters/${userId}`,
         {
-          method: 'GET',
           headers: {
             'Authorization': `Bearer ${authToken}`
           }
         }
       );
-      const result = await response.json();
+      const result = response.data;
       
       setUserMeters(result.data || []);
       

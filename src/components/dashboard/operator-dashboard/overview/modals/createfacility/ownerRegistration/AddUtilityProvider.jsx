@@ -43,8 +43,8 @@ export default function AddUtilityProvider({ isOpen, onClose }) {
         return;
       }
 
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/update-utility-auth-email/${userId}`,
+      const response = await axiosInstance.
+        `/api/user/update-utility-auth-email/${userId}`,
         {
           method: "PUT",
           headers: {
@@ -57,7 +57,7 @@ export default function AddUtilityProvider({ isOpen, onClose }) {
         }
       );
 
-      const data = await response.json();
+      const data = response.data;
 
       if (response.ok && data.status === "success") {
         toast.success("Utility authorization email added successfully!");

@@ -108,8 +108,8 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
     try {
       if (!meterId) return;
 
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/facility/get-meter-rec-data/${meterId}`,
+      const response = await axiosInstance.
+        `/api/facility/get-meter-rec-data/${meterId}`,
         {
           method: 'GET',
           headers: {
@@ -150,7 +150,7 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
 
   const fetchRecStatistics = async (authToken) => {
     try {
-      const url = new URL(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/rec/statistics`);
+      const url = new URL(`/api/rec/statistics`);
       const params = {
         year: selectedYear,
         facilityId: facilityId
@@ -158,7 +158,7 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
       
       Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
       
-      const response = await fetch(url, {
+      const response = await axiosInstance.url, {
         headers: { 
           Authorization: `Bearer ${authToken}`, 
           "Content-Type": "application/json" 
@@ -166,7 +166,7 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
       });
       
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const data = await response.json();
+      const data = response.data;
       
       if (data.status === "success") {
         setRecStatistics(data.data || []);
@@ -180,7 +180,7 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
 
   const fetchRecOverview = async (authToken) => {
     try {
-      const url = new URL(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/rec/overview/stats`);
+      const url = new URL(`/api/rec/overview/stats`);
       
       const params = {
         facilityId: facilityId
@@ -203,7 +203,7 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
         url.searchParams.append(key, params[key]);
       });
       
-      const response = await fetch(url, {
+      const response = await axiosInstance.url, {
         headers: { 
           Authorization: `Bearer ${authToken}`, 
           "Content-Type": "application/json" 
@@ -211,7 +211,7 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
       });
       
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const data = await response.json();
+      const data = response.data;
       
       if (data.status === "success") {
         setRecOverview(data.data);
@@ -234,7 +234,7 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
 
   const fetchDetailStatistics = async (authToken) => {
     try {
-      const url = new URL(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/rec/statistics`);
+      const url = new URL(`/api/rec/statistics`);
       
       const params = {
         facilityId: facilityId
@@ -257,7 +257,7 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
         url.searchParams.append(key, params[key]);
       });
       
-      const response = await fetch(url, {
+      const response = await axiosInstance.url, {
         headers: { 
           Authorization: `Bearer ${authToken}`, 
           "Content-Type": "application/json" 
@@ -265,7 +265,7 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
       });
       
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const data = await response.json();
+      const data = response.data;
       
       if (data.status === "success") {
         setDetailStatistics(data.data || []);
@@ -278,7 +278,7 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
 
   const fetchMonthlyChartData = async (authToken) => {
     try {
-      const url = new URL(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/rec/chart/monthly`);
+      const url = new URL(`/api/rec/chart/monthly`);
       const params = {
         type: 'commercial',
         year: selectedYear,
@@ -287,7 +287,7 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
       
       Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
       
-      const response = await fetch(url, {
+      const response = await axiosInstance.url, {
         headers: { 
           Authorization: `Bearer ${authToken}`, 
           "Content-Type": "application/json" 
@@ -295,7 +295,7 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
       });
       
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const data = await response.json();
+      const data = response.data;
       
       if (data.status === "success") {
         setMonthlyChartData(data.data || []);

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
+import { axiosInstance } from "../../../../../lib/config";
 
 const QuickActions = dynamic(() => import("./QuickActions"), { ssr: false });
 const Graph = dynamic(() => import("./Graph"), { ssr: false });
@@ -108,17 +109,12 @@ export default function DashboardOverview({ onSectionChange }) {
 
   const checkFacilityStatus = async (userId, authToken) => {
     try {
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/residential-facility/get-user-facilities/${userId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`
-          }
+      const response = await axiosInstance.get(`/api/residential-facility/get-user-facilities/${userId}`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`
         }
-      );
-      const result = await response.json();
-      return result.status === 'success' && result.data && result.data.facilities && result.data.facilities.length > 0;
+      });
+      return response.data.status === 'success' && response.data.data && response.data.data.facilities && response.data.data.facilities.length > 0;
     } catch (error) {
       return false;
     }
@@ -134,16 +130,12 @@ export default function DashboardOverview({ onSectionChange }) {
     setMeterStatus(prev => ({ ...prev, loading: true }));
 
     try {
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/utility-auth/${userId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`
-          }
+      const response = await axiosInstance.get(`/api/auth/utility-auth/${userId}`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`
         }
-      );
-      const result = await response.json();
+      });
+      const result = response.data;
 
       if (result.status === 'success' && result.data.length > 0) {
         const authData = result.data[0];
@@ -170,16 +162,12 @@ export default function DashboardOverview({ onSectionChange }) {
 
   const checkStage2Completion = async (userId, authToken) => {
     try {
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/financial-info/${userId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`
-          }
+      const response = await axiosInstance.get(`/api/user/financial-info/${userId}`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`
         }
-      );
-      const result = await response.json();
+      });
+      const result = response.data;
       return result.status === 'success' && result.data?.financialInfo;
     } catch (error) {
       return false;
@@ -188,16 +176,12 @@ export default function DashboardOverview({ onSectionChange }) {
 
   const checkStage3Completion = async (userId, authToken) => {
     try {
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/agreement/${userId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`
-          }
+      const response = await axiosInstance.get(`/api/user/agreement/${userId}`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`
         }
-      );
-      const result = await response.json();
+      });
+      const result = response.data;
       return result.status === 'success' && result.data?.termsAccepted;
     } catch (error) {
       return false;
@@ -206,16 +190,12 @@ export default function DashboardOverview({ onSectionChange }) {
 
   const checkStage4Completion = async (userId, authToken) => {
     try {
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/user-meters/${userId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`
-          }
+      const response = await axiosInstance.get(`/api/auth/user-meters/${userId}`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`
         }
-      );
-      const result = await response.json();
+      });
+      const result = response.data;
       
       if (result.status === 'success' && result.data && result.data.length > 0) {
         const userMeterData = result.data[0];

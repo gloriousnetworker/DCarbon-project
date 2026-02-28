@@ -18,8 +18,8 @@ export const ProfileProvider = ({ children }) => {
       
       if (!userId || !authToken) return;
 
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-one-user/${userId}`,
+      const response = await axiosInstance.
+        `/api/user/get-one-user/${userId}`,
         {
           method: 'GET',
           headers: {
@@ -31,7 +31,7 @@ export const ProfileProvider = ({ children }) => {
 
       if (!response.ok) throw new Error('Failed to fetch user data');
 
-      const data = await response.json();
+      const data = response.data;
       
       if (data.status === 'success' && data.data) {
         const newProfile = {

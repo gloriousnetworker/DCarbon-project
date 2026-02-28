@@ -80,7 +80,7 @@ export default function StepOneCard() {
       }
 
       const response = await axiosInstance.get(
-        'https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/financial-types',
+        '/api/user/financial-types',
         {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -110,7 +110,7 @@ export default function StepOneCard() {
       }
 
       const response = await axiosInstance.get(
-        'https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/partner/get-all-installer',
+        '/api/user/partner/get-all-installer',
         {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -145,7 +145,7 @@ export default function StepOneCard() {
       }
 
       const response = await axiosInstance.post(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/request-financial-type/${userId}`,
+        `/api/user/request-financial-type/${userId}`,
         {
           name: requestedFinanceTypeName.trim()
         },
@@ -243,7 +243,7 @@ export default function StepOneCard() {
 
       // First save the financial info
       const infoResponse = await axiosInstance.put(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/financial-info/${userId}`,
+        `/api/user/financial-info/${userId}`,
         payload,
         {
           headers: {
@@ -266,7 +266,7 @@ export default function StepOneCard() {
           if (!base64data) throw new Error('File data not found');
           
           // Convert base64 to blob for upload
-          const response = await fetch(base64data);
+          const response = await axiosInstance.base64data);
           const blob = await response.blob();
           const fileToUpload = new File([blob], file.name, { type: blob.type });
 
@@ -274,7 +274,7 @@ export default function StepOneCard() {
           formData.append('financialAgreement', fileToUpload);
 
           const uploadResponse = await axiosInstance.put(
-            `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/update-financial-agreement/${userId}`,
+            `/api/user/update-financial-agreement/${userId}`,
             formData,
             {
               headers: {

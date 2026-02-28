@@ -34,7 +34,7 @@ export default function FacilityTableView({ onSelectFacility }) {
 
     try {
       const res = await axiosInstance.get(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/facility/get-user-facilities-by-userId/${userId}`,
+        `/api/facility/get-user-facilities-by-userId/${userId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }

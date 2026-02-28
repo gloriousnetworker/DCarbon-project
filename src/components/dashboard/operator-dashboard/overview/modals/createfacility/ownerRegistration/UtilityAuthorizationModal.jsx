@@ -25,7 +25,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
   const [showInviteOperatorModal, setShowInviteOperatorModal] = useState(false);
   const [scale, setScale] = useState(1);
 
-  const baseUrl = 'https://naijatrips-app-dcarbon-server.cafyit.easypanel.host';
+  const baseUrl = '';
 
   useEffect(() => {
     if (isOpen) {
@@ -55,13 +55,13 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
 
   const fetchCommercialRole = async () => {
     try {
-      const response = await fetch(`/api/user/get-commercial-user/${getUserId()}`, {
+      const response = await axiosInstance.`/api/user/get-commercial-user/${getUserId()}`, {
         headers: {
           'Authorization': `Bearer ${getAuthToken()}`,
           'Content-Type': 'application/json'
         }
       });
-      const data = await response.json();
+      const data = response.data;
       if (data.status === 'success') {
         setCommercialRole(data.data?.commercialUser?.commercialRole || '');
       }
@@ -72,13 +72,13 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
 
   const checkUserMeters = async () => {
     try {
-      const response = await fetch(`/api/auth/user-meters/${getUserId()}`, {
+      const response = await axiosInstance.`/api/auth/user-meters/${getUserId()}`, {
         headers: {
           'Authorization': `Bearer ${getAuthToken()}`,
           'Content-Type': 'application/json'
         }
       });
-      const data = await response.json();
+      const data = response.data;
       
       if (data.status === 'success' && data.data) {
         setUserMetersData(data.data);
@@ -105,13 +105,13 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
 
   const fetchAuthorizedUtilities = async () => {
     try {
-      const response = await fetch(`/api/auth/utility-auth/${getUserId()}`, {
+      const response = await axiosInstance.`/api/auth/utility-auth/${getUserId()}`, {
         headers: {
           'Authorization': `Bearer ${getAuthToken()}`,
           'Content-Type': 'application/json'
         }
       });
-      const data = await response.json();
+      const data = response.data;
       if (data.status === 'success') {
         setAuthorizedUtilities(data.data);
       }
@@ -122,13 +122,13 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
 
   const fetchUserMeters = async (utilityId) => {
     try {
-      const response = await fetch(`/api/auth/user-meters/${getUserId()}`, {
+      const response = await axiosInstance.`/api/auth/user-meters/${getUserId()}`, {
         headers: {
           'Authorization': `Bearer ${getAuthToken()}`,
           'Content-Type': 'application/json'
         }
       });
-      const data = await response.json();
+      const data = response.data;
       
       if (data.status === 'success') {
         const utility = data.data.find(u => u.id === utilityId);
@@ -191,7 +191,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
     const toastId = toast.loading('Initiating utility authorization...');
 
     try {
-      const response = await fetch(`/api/auth/initiate-utility-auth/${getUserId()}`, {
+      const response = await axiosInstance.`/api/auth/initiate-utility-auth/${getUserId()}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${getAuthToken()}`,
@@ -202,7 +202,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
         })
       });
 
-      const data = await response.json();
+      const data = response.data;
       
       if (data.status === 'success') {
         toast.success('Utility authorization initiated successfully!', { id: toastId });
@@ -225,7 +225,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
     const toastId = toast.loading('Verifying utility authorization...');
 
     try {
-      const response = await fetch(`/api/auth/check-utility-auth`, {
+      const response = await axiosInstance.`/api/auth/check-utility-auth`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${getAuthToken()}`,
@@ -236,7 +236,7 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
         })
       });
 
-      const data = await response.json();
+      const data = response.data;
       
       if (data.status === 'success') {
         toast.success(data.message, { id: toastId });

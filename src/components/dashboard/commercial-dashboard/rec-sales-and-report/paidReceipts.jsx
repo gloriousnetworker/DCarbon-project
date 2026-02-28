@@ -52,8 +52,8 @@ const AdminInvoices = ({ onBack }) => {
         return;
       }
 
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/payout-request?userId=${userId}&userType=COMMERCIAL`,
+      const response = await axiosInstance.
+        `/api/payout-request?userId=${userId}&userType=COMMERCIAL`,
         {
           method: 'GET',
           headers: {

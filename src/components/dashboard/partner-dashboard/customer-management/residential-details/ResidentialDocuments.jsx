@@ -216,7 +216,7 @@ const DocumentUploadModal = ({ isOpen, onClose, onUpload, docType, facilityId })
       }
 
       const response = await axiosInstance.put(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/residential-facility/residential-docs/${endpoint}/${facilityId}`,
+        `/api/residential-facility/residential-docs/${endpoint}/${facilityId}`,
         formData,
         {
           headers: {
@@ -323,7 +323,7 @@ const ResidentialDocuments = ({ facilityId, financeType, partnerType, onProgress
     try {
       setLoading(true);
       const response = await axiosInstance.get(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/residential-facility/residential-docs/${facilityId}`,
+        `/api/residential-facility/residential-docs/${facilityId}`,
         {
           headers: {
             Authorization: `Bearer ${authToken}`

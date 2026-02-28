@@ -54,7 +54,7 @@ export default function OwnersDetailsCard() {
       };
 
       await axiosInstance.put(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/commercial-registration/${userId}`,
+        `/api/user/commercial-registration/${userId}`,
         payload,
         {
           headers: {

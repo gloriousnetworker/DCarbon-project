@@ -56,8 +56,8 @@ export default function AddFacilityModal({ onClose, onFacilityAdded }) {
         entityType: formData.entityType,
       };
 
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/facility/create-new-facility/${userId}`,
+      const response = await axiosInstance.
+        `/api/facility/create-new-facility/${userId}`,
         {
           method: "POST",
           headers: {
@@ -73,7 +73,7 @@ export default function AddFacilityModal({ onClose, onFacilityAdded }) {
         throw new Error(errorData.message || "Failed to create facility");
       }
 
-      const data = await response.json();
+      const data = response.data;
       toast.success("Facility added successfully");
       onFacilityAdded(data.data); // Pass the created facility data to parent
       onClose();

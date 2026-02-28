@@ -31,14 +31,14 @@ const GeneratorReport = () => {
     setLoading(true);
     try {
       const { userId, authToken } = getUserData();
-      let url = `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/facility/generator-report/${userId}?page=${currentPage}`;
+      let url = `/api/facility/generator-report/${userId}?page=${currentPage}`;
       
       // Add filters to URL if they exist
       if (filters.dateFrom) url += `&dateFrom=${filters.dateFrom}`;
       if (filters.dateTo) url += `&dateTo=${filters.dateTo}`;
       if (filters.status !== 'all') url += `&status=${filters.status}`;
 
-      const response = await fetch(url, {
+      const response = await axiosInstance.url, {
         headers: {
           'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json'
@@ -49,7 +49,7 @@ const GeneratorReport = () => {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
-      const data = await response.json();
+      const data = response.data;
       if (data.status === 'success') {
         setGeneratorData(data.data);
       } else {

@@ -196,7 +196,7 @@ function RegisterCardContent() {
     }
 
     try {
-      const baseUrl = 'https://naijatrips-app-dcarbon-server.cafyit.easypanel.host';
+      const baseUrl = '';
       let url = `/api/user/register`;
       
       if (urlReferralCode) {

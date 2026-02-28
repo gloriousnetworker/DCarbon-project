@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { axiosInstance } from "../../../../../lib/config";
 import RequestRedemption from "./RequestRedemption";
 import RedeemPoints from "./RedeemPoints";
 import ResidentialBonusTable from "./ResidentialBonusTable";
@@ -41,14 +42,13 @@ export default function RedemptionTransactions() {
 
   const fetchWalletData = async () => {
     try {
-      const response = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/revenue/${userId}`, {
-        method: 'GET',
+      const response = await axiosInstance.get(`/api/revenue/${userId}`, {
         headers: {
           'Authorization': `Bearer ${authToken}`
         }
       });
 
-      const result = await response.json();
+      const result = response.data;
       
       if (result.status === "success") {
         setWalletData(result.data);
@@ -64,14 +64,13 @@ export default function RedemptionTransactions() {
 
   const fetchPayoutHistory = async () => {
     try {
-      const response = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/payout-request?userId=${userId}&userType=RESIDENTIAL`, {
-        method: 'GET',
+      const response = await axiosInstance.get(`/api/payout-request?userId=${userId}&userType=RESIDENTIAL`, {
         headers: {
           'Authorization': `Bearer ${authToken}`
         }
       });
 
-      const result = await response.json();
+      const result = response.data;
       
       if (result.status === "success") {
         const formattedTransactions = result.data.map((item, index) => ({

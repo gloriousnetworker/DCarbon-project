@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import { axiosInstance } from '../../lib/config';
 
 const styles = {
   container: 'w-full flex flex-col items-center justify-center py-8 px-4',
@@ -53,8 +54,8 @@ export default function VerificationContent({ token: propToken }) {
     }, 250);
 
     try {
-      const response = await fetch(
-        'https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/check-utility-auth',
+      const response = await axiosInstance.
+        '/api/auth/check-utility-auth',
         {
           method: 'POST',
           headers: {
@@ -71,7 +72,7 @@ export default function VerificationContent({ token: propToken }) {
         throw new Error(text || 'Invalid response from server');
       }
 
-      const data = await response.json();
+      const data = response.data;
       if (!response.ok) {
         throw new Error(data.message || 'Verification failed');
       }

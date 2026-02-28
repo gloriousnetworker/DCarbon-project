@@ -120,7 +120,7 @@ export default function OwnersDetailsCard() {
       localStorage.setItem('companyDetails', JSON.stringify(payload));
 
       await axiosInstance.put(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/commercial-registration/${userId}`,
+        `/api/user/commercial-registration/${userId}`,
         payload,
         {
           headers: {

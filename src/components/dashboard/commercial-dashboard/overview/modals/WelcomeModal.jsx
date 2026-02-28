@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { axiosInstance } from "../../../../../lib/config";
 import CreateNewFacilityModal from "./createfacility/CreateNewFacilityModal";
 import * as styles from './styles';
 import { toast } from 'react-hot-toast';
@@ -35,14 +36,13 @@ export default function WelcomeModal({ isOpen, onClose, userData }) {
         throw new Error('Authentication data not found');
       }
 
-      const response = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-commercial-user/${userId}`, {
-        method: 'GET',
+      const response = await axiosInstance.get(`/api/user/get-commercial-user/${userId}`, {
         headers: {
           'Authorization': `Bearer ${authToken}`
         }
       });
 
-      const result = await response.json();
+      const result = response.data;
 
       if (result.statusCode === 422 && result.status === 'fail') {
         const { firstName, lastName } = loginResponse.data.user;
@@ -113,16 +113,13 @@ export default function WelcomeModal({ isOpen, onClose, userData }) {
         body.companyName = formData.companyName;
       }
 
-      const response = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/commercial-registration/${userId}`, {
-        method: 'PUT',
+      const response = await axiosInstance.put(`/api/user/commercial-registration/${userId}`, body, {
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${authToken}`
-        },
-        body: JSON.stringify(body)
+        }
       });
 
-      const result = await response.json();
+      const result = response.data;
 
       if (result.status === 'success') {
         toast.success(result.message);

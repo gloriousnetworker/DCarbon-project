@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { axiosInstance } from "../../../../../lib/config";
 import * as styles from './styles';
 import { toast } from 'react-hot-toast';
 
@@ -29,14 +30,13 @@ export default function FeedbackModal({ isOpen, onClose }) {
         return;
       }
 
-      const response = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-one-user/${userId}`, {
-        method: 'GET',
+      const response = await axiosInstance.get(`/api/user/get-one-user/${userId}`, {
         headers: {
           'Authorization': `Bearer ${authToken}`
         }
       });
 
-      const result = await response.json();
+      const result = response.data;
 
       if (result.status === 'success') {
         setUserData(result.data);
@@ -130,21 +130,18 @@ export default function FeedbackModal({ isOpen, onClose }) {
         throw new Error('User authentication required');
       }
 
-      const response = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/feature-suggestion/${userId}`, {
-        method: 'POST',
+      const response = await axiosInstance.post(`/api/feature-suggestion/${userId}`, {
+        userType: formData.userType,
+        category: formData.category,
+        title: formData.title.trim(),
+        description: formData.description.trim()
+      }, {
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${authToken}`
-        },
-        body: JSON.stringify({
-          userType: formData.userType,
-          category: formData.category,
-          title: formData.title.trim(),
-          description: formData.description.trim()
-        })
+        }
       });
 
-      const result = await response.json();
+      const result = response.data;
 
       if (result.status === 'success') {
         toast.success('Feature suggestion submitted successfully!');

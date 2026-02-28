@@ -91,8 +91,8 @@ export default function ResidentialDetailsGraph({ facilityId, meterId }) {
   const fetchTotalLifetimeRecs = async (authToken) => {
     try {
       const { userId } = getAuthData();
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/rec/statistics?userId=${userId}&facilityId=${facilityId}`,
+      const response = await axiosInstance.
+        `/api/rec/statistics?userId=${userId}&facilityId=${facilityId}`,
         {
           headers: { 
             Authorization: `Bearer ${authToken}`, 
@@ -102,7 +102,7 @@ export default function ResidentialDetailsGraph({ facilityId, meterId }) {
       );
       
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const data = await response.json();
+      const data = response.data;
       
       if (data.status === "success" && Array.isArray(data.data)) {
         const total = data.data.reduce((sum, item) => sum + (item.recsGenerated || 0), 0);
@@ -115,8 +115,8 @@ export default function ResidentialDetailsGraph({ facilityId, meterId }) {
 
   const fetchFacilityDetails = async (authToken) => {
     try {
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/residential-facility/get-one-residential-facility/${facilityId}`,
+      const response = await axiosInstance.
+        `/api/residential-facility/get-one-residential-facility/${facilityId}`,
         {
           headers: { 
             Authorization: `Bearer ${authToken}`, 
@@ -125,7 +125,7 @@ export default function ResidentialDetailsGraph({ facilityId, meterId }) {
         }
       );
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const data = await response.json();
+      const data = response.data;
       if (data.status === "success" && data.data) {
         setFacilityDetails(data.data);
       }
@@ -136,7 +136,7 @@ export default function ResidentialDetailsGraph({ facilityId, meterId }) {
 
   const fetchRecStatistics = async (authToken) => {
     try {
-      const url = new URL(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/rec/statistics`);
+      const url = new URL(`/api/rec/statistics`);
       
       const params = {
         year: selectedYear,
@@ -147,7 +147,7 @@ export default function ResidentialDetailsGraph({ facilityId, meterId }) {
         url.searchParams.append(key, params[key]);
       });
       
-      const response = await fetch(url, {
+      const response = await axiosInstance.url, {
         headers: { 
           Authorization: `Bearer ${authToken}`, 
           "Content-Type": "application/json" 
@@ -155,7 +155,7 @@ export default function ResidentialDetailsGraph({ facilityId, meterId }) {
       });
       
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const data = await response.json();
+      const data = response.data;
       
       if (data.status === "success") {
         setRecStatistics(data.data || []);
@@ -169,7 +169,7 @@ export default function ResidentialDetailsGraph({ facilityId, meterId }) {
 
   const fetchDetailStatistics = async (authToken) => {
     try {
-      const url = new URL(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/rec/statistics`);
+      const url = new URL(`/api/rec/statistics`);
       
       const params = {
         facilityId: facilityId
@@ -192,7 +192,7 @@ export default function ResidentialDetailsGraph({ facilityId, meterId }) {
         url.searchParams.append(key, params[key]);
       });
       
-      const response = await fetch(url, {
+      const response = await axiosInstance.url, {
         headers: { 
           Authorization: `Bearer ${authToken}`, 
           "Content-Type": "application/json" 
@@ -200,7 +200,7 @@ export default function ResidentialDetailsGraph({ facilityId, meterId }) {
       });
       
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const data = await response.json();
+      const data = response.data;
       
       if (data.status === "success") {
         setDetailStatistics(data.data || []);
@@ -213,7 +213,7 @@ export default function ResidentialDetailsGraph({ facilityId, meterId }) {
 
   const fetchRecOverview = async (authToken) => {
     try {
-      const url = new URL(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/rec/overview/stats`);
+      const url = new URL(`/api/rec/overview/stats`);
       
       const params = {
         facilityId: facilityId
@@ -236,7 +236,7 @@ export default function ResidentialDetailsGraph({ facilityId, meterId }) {
         url.searchParams.append(key, params[key]);
       });
       
-      const response = await fetch(url, {
+      const response = await axiosInstance.url, {
         headers: { 
           Authorization: `Bearer ${authToken}`, 
           "Content-Type": "application/json" 
@@ -244,7 +244,7 @@ export default function ResidentialDetailsGraph({ facilityId, meterId }) {
       });
       
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const data = await response.json();
+      const data = response.data;
       
       if (data.status === "success") {
         setRecOverview(data.data);

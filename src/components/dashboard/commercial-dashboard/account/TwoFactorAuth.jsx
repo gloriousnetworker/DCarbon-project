@@ -23,8 +23,8 @@ const TwoFactorAuth = ({ onBack }) => {
 
     const getQRCode = async () => {
       try {
-        const response = await fetch(
-          `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/2fa/generate/${userId}`,
+        const response = await axiosInstance.
+          `/api/auth/2fa/generate/${userId}`,
           {
             method: "GET",
             headers: {
@@ -32,7 +32,7 @@ const TwoFactorAuth = ({ onBack }) => {
             },
           }
         );
-        const data = await response.json();
+        const data = response.data;
 
         if (response.ok && data.status === "success") {
           setQrCode(data.data.qrCode);
@@ -94,7 +94,7 @@ const TwoFactorAuth = ({ onBack }) => {
     }
 
     try {
-      const response = await fetch(
+      const response = await axiosInstance.
         `https://dcarbon-server.onrender.com/api/auth/2fa/verify/${userId}`,
         {
           method: "POST",
@@ -105,7 +105,7 @@ const TwoFactorAuth = ({ onBack }) => {
           body: JSON.stringify({ token: code }),
         }
       );
-      const data = await response.json();
+      const data = response.data;
 
       if (response.ok && data.status === "success") {
         toast.success(data.message || "2FA enabled successfully!");

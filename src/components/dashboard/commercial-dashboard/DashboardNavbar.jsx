@@ -27,8 +27,8 @@
 
 //       if (!userId || !authToken) return;
 
-//       const response = await fetch(
-//         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/notifications/${userId}`,
+//       const response = await axiosInstance.
+//         `/api/user/notifications/${userId}`,
 //         {
 //           method: 'GET',
 //           headers: {
@@ -55,7 +55,7 @@
 
 //   const checkStage2Completion = async (userId, authToken) => {
 //     try {
-//       const response = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-commercial-user/${userId}`, {
+//       const response = await axiosInstance.`/api/user/get-commercial-user/${userId}`, {
 //         method: 'GET',
 //         headers: { 'Authorization': `Bearer ${authToken}` }
 //       });
@@ -68,7 +68,7 @@
 
 //   const checkStage3Completion = async (userId, authToken) => {
 //     try {
-//       const response = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/agreement/${userId}`, {
+//       const response = await axiosInstance.`/api/user/agreement/${userId}`, {
 //         method: 'GET',
 //         headers: { 'Authorization': `Bearer ${authToken}` }
 //       });
@@ -81,7 +81,7 @@
 
 //   const checkStage4Completion = async (userId, authToken) => {
 //     try {
-//       const response = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/financial-info/${userId}`, {
+//       const response = await axiosInstance.`/api/user/financial-info/${userId}`, {
 //         method: 'GET',
 //         headers: { 'Authorization': `Bearer ${authToken}` }
 //       });
@@ -94,8 +94,8 @@
 
 //   const checkStage5Completion = async (userId, authToken) => {
 //     try {
-//       const response = await fetch(
-//         `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/user-meters/${userId}`,
+//       const response = await axiosInstance.
+//         `/api/auth/user-meters/${userId}`,
 //         {
 //           method: 'GET',
 //           headers: {
@@ -375,8 +375,8 @@ const DashboardNavbar = ({
 
       if (!userId || !authToken) return;
 
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/notifications/${userId}`,
+      const response = await axiosInstance.
+        `/api/user/notifications/${userId}`,
         {
           method: 'GET',
           headers: {

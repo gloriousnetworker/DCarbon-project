@@ -19,7 +19,7 @@ export default function FilterModal({ onClose, onApplyFilter }) {
       const authToken = localStorage.getItem("authToken");
       try {
         const res = await axiosInstance.get(
-          "https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/utility-providers",
+          "/api/auth/utility-providers",
           { headers: { Authorization: `Bearer ${authToken}` } }
         );
         setUtilities(res.data.data || []);

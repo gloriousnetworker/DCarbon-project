@@ -10,6 +10,7 @@ import {
   FiChevronDown
 } from "react-icons/fi";
 import { toast } from 'react-hot-toast';
+import { axiosInstance } from "../../../../../lib/config";
 import InviteCollaboratorModal from "./OperatorReminder";
 import EditFacilityDetailsModal from "./EditFacilityDetailsModal";
 import CommercialDetailsGraph from "./CommercialDetailsGraph";
@@ -115,8 +116,8 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
       
       if (!userId || !authToken) return;
 
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-operators/${userId}`,
+      const response = await axiosInstance.get(
+        `/api/user/get-operators/${userId}`,
         { headers: { Authorization: `Bearer ${authToken}` } }
       );
       
@@ -140,12 +141,12 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
       
       if (!authToken) return;
 
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/facility/get-facility-by-id/${facilityData.id}`,
+      const response = await axiosInstance.get(
+        `/api/facility/get-facility-by-id/${facilityData.id}`,
         { headers: { Authorization: `Bearer ${authToken}` } }
       );
       
-      const result = await response.json();
+      const result = response.data;
       if (result.status === "success") {
         const updatedFacility = result.data;
         setFacilityData(updatedFacility);
@@ -234,8 +235,8 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
     if (!userId || !authToken) return;
 
     try {
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/user-meters/${userId}`,
+      const response = await axiosInstance.get(
+        `/api/auth/user-meters/${userId}`,
         { headers: { 'Authorization': `Bearer ${authToken}` } }
       );
       const result = await response.json();
@@ -258,8 +259,8 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
 
   const checkStage2 = async (authToken, userId) => {
     try {
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/agreement/${userId}`,
+      const response = await axiosInstance.get(
+        `/api/user/agreement/${userId}`,
         { headers: { 'Authorization': `Bearer ${authToken}` } }
       );
       const result = await response.json();
@@ -271,8 +272,8 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
 
   const checkStage3 = async (authToken, userId) => {
     try {
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/financial-info/${userId}`,
+      const response = await axiosInstance.get(
+        `/api/user/financial-info/${userId}`,
         { headers: { 'Authorization': `Bearer ${authToken}` } }
       );
       const result = await response.json();
@@ -371,7 +372,7 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
     }
 
     const facilityId = facilityData.id;
-    const baseUrl = 'https://naijatrips-app-dcarbon-server.cafyit.easypanel.host';
+    const baseUrl = '';
     
     const endpoints = {
       wregisAssignment: `/api/facility/update-wregis-assignment/${facilityId}`,
@@ -462,14 +463,13 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
 
     try {
       setLoading(true);
-      const response = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/facility/delete-facility/${facilityData.id}`, {
-        method: 'DELETE',
+      const response = await axiosInstance.delete(`/api/facility/delete-facility/${facilityData.id}`, {
         headers: {
           'Authorization': `Bearer ${authToken}`
         }
       });
 
-      const result = await response.json();
+      const result = response.data;
 
       if (result.status === 'success') {
         toast.success('Facility deleted successfully');

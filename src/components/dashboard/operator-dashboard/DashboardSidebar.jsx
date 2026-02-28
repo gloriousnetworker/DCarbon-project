@@ -45,8 +45,8 @@ const DashboardSidebar = ({
 
       if (!userId || !authToken) return;
 
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/notifications/${userId}`,
+      const response = await axiosInstance.
+        `/api/user/notifications/${userId}`,
         {
           method: 'GET',
           headers: {
@@ -131,8 +131,8 @@ const DashboardSidebar = ({
       const formData = new FormData();
       formData.append('profilePicture', file);
 
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/upload-profile-picture/${userId}`,
+      const response = await axiosInstance.
+        `/api/user/upload-profile-picture/${userId}`,
         {
           method: 'POST',
           headers: {
@@ -194,8 +194,8 @@ const DashboardSidebar = ({
         throw new Error('Authentication data not found');
       }
 
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/${userId}`,
+      const response = await axiosInstance.
+        `/api/user/${userId}`,
         {
           method: 'PUT',
           headers: {

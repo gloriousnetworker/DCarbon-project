@@ -26,8 +26,8 @@ const DashboardNavbar = ({
 
       if (!userId || !authToken) return;
 
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/notifications/${userId}`,
+      const response = await axiosInstance.
+        `/api/user/notifications/${userId}`,
         {
           method: 'GET',
           headers: {

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import { axiosInstance } from '../../lib/config';
 import UtilityAuthorizationModal from './UtilityAuthorizationModal';
 
 const styles = {
@@ -64,18 +65,17 @@ export default function OperatorRegistrationCard() {
     setLoading(true);
 
     try {
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/commercial-registration/${userId}`,
+      const response = await axiosInstance.put(
+        `/api/user/commercial-registration/${userId}`,
         {
-          method: 'PUT',
+          entityType,
+          commercialRole,
+        },
+        {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${authToken}`,
           },
-          body: JSON.stringify({
-            entityType,
-            commercialRole,
-          }),
         }
       );
 

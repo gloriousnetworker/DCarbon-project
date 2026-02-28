@@ -41,7 +41,7 @@ export default function StepOneCard() {
 
       // Make API call
       const response = await axiosInstance.put(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/commercial-registration/${userId}`,
+        `/api/user/commercial-registration/${userId}`,
         payload,
         {
           headers: {

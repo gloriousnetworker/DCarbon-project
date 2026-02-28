@@ -71,7 +71,7 @@ export default function OperatorRegistrationCard() {
   const [hasMounted, setHasMounted] = useState(false);
   const router = useRouter();
 
-  const localURL = 'https://naijatrips-app-dcarbon-server.cafyit.easypanel.host';
+  const localURL = '';
 
   useEffect(() => {
     setHasMounted(true);
@@ -80,8 +80,8 @@ export default function OperatorRegistrationCard() {
   useEffect(() => {
     const fetchUtilityProviders = async () => {
       try {
-        const response = await fetch(`${localURL}/api/auth/utility-providers`);
-        const data = await response.json();
+        const response = await axiosInstance.`${localURL}/api/auth/utility-providers`);
+        const data = response.data;
         
         if (response.ok && data.status === 'success') {
           setUtilityProviders(data.data);
@@ -233,7 +233,7 @@ export default function OperatorRegistrationCard() {
     setEmailVerifying(true);
 
     try {
-      const response = await fetch(
+      const response = await axiosInstance.
         `${localURL}/api/user/update-utility-auth-email/${userId}`,
         {
           method: 'PUT',
@@ -247,7 +247,7 @@ export default function OperatorRegistrationCard() {
         }
       );
 
-      const data = await response.json();
+      const data = response.data;
       
       if (response.status === 409) {
         setEmailConflictError(true);
@@ -301,7 +301,7 @@ export default function OperatorRegistrationCard() {
     setLoading(true);
 
     try {
-      const response = await fetch(
+      const response = await axiosInstance.
         `${localURL}/api/user/request-utility-provider/${userId}`,
         {
           method: 'POST',
@@ -313,7 +313,7 @@ export default function OperatorRegistrationCard() {
         }
       );
 
-      const data = await response.json();
+      const data = response.data;
       if (!response.ok || data.status !== 'success') {
         throw new Error(data.message || 'Failed to submit provider request');
       }
@@ -386,7 +386,7 @@ export default function OperatorRegistrationCard() {
 
     try {
       // First, submit the operator registration data
-      const registrationResponse = await fetch(
+      const registrationResponse = await axiosInstance.
         `${localURL}/api/user/commercial-registration/${userId}`,
         {
           method: 'PUT',
@@ -412,7 +412,7 @@ export default function OperatorRegistrationCard() {
       localStorage.setItem('selectedUtilityProvider', JSON.stringify(selectedProvider));
 
       // Then initiate utility authorization with the verified email
-      const initiateResponse = await fetch(
+      const initiateResponse = await axiosInstance.
         `${localURL}/api/auth/initiate-utility-auth/${userId}`,
         {
           method: 'POST',

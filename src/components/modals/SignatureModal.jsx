@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { FaTimes } from "react-icons/fa";
 import toast from "react-hot-toast";
+import { axiosInstance } from "../../lib/config";
 
 const SignatureModal = ({ isOpen, onClose, onSaveSignature }) => {
   const [activeTab, setActiveTab] = useState("draw");
@@ -136,7 +137,7 @@ const SignatureModal = ({ isOpen, onClose, onSaveSignature }) => {
           return;
         }
         // Convert data URL to blob
-        const response = await fetch(signatureData);
+        const response = await axiosInstance.signatureData;
         const blob = await response.blob();
         formData.append("signature", blob, "signature.png");
         signatureMethod = "drawn";
@@ -167,18 +168,17 @@ const SignatureModal = ({ isOpen, onClose, onSaveSignature }) => {
         signatureMethod = "uploaded";
       }
 
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/update-user-agreement/${userId}`,
+      const response = await axiosInstance.put(
+        `/api/user/update-user-agreement/${userId}`,
+        formData,
         {
-          method: "PUT",
           headers: {
             Authorization: `Bearer ${authToken}`,
           },
-          body: formData,
         }
       );
 
-      const data = await response.json();
+      const data = response.data;
       if (response.ok) {
         toast.success(`Signature (${signatureMethod}) saved successfully`);
         onSaveSignature(signatureMethod);

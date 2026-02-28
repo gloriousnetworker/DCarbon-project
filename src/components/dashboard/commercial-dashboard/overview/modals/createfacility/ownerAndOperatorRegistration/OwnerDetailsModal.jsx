@@ -58,8 +58,8 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
         throw new Error('Authentication required. Please log in again.');
       }
 
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-commercial-user/${userId}`,
+      const response = await axiosInstance.
+        `/api/user/get-commercial-user/${userId}`,
         {
           method: 'GET',
           headers: {
@@ -69,7 +69,7 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
         }
       );
 
-      const data = await response.json();
+      const data = response.data;
 
       if (!response.ok) {
         throw new Error(data.message || 'Failed to fetch user data');
@@ -132,8 +132,8 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
         return;
       }
 
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/facility/get-user-facilities-by-userId/${userId}`,
+      const response = await axiosInstance.
+        `/api/facility/get-user-facilities-by-userId/${userId}`,
         {
           method: 'GET',
           headers: {
@@ -143,7 +143,7 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
         }
       );
 
-      const data = await response.json();
+      const data = response.data;
 
       if (response.ok && data.data && data.data.facilities && data.data.facilities.length > 0) {
         setHasFacilities(true);
@@ -383,8 +383,8 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
         }
       }
 
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/commercial-registration/${userId}`,
+      const response = await axiosInstance.
+        `/api/user/commercial-registration/${userId}`,
         {
           method: 'PUT',
           headers: {
@@ -395,7 +395,7 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
         }
       );
 
-      const data = await response.json();
+      const data = response.data;
 
       if (!response.ok) {
         throw new Error(data.message || 'Failed to save owner details');

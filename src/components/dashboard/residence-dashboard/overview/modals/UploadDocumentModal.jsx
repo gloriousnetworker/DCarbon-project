@@ -30,7 +30,7 @@ const DOCUMENT_TYPES = [
   { id: 'alternate-location', label: 'Alternate Location Agreement' },
 ];
 
-const API_BASE_URL = 'https://naijatrips-app-dcarbon-server.cafyit.easypanel.host';
+const API_BASE_URL = '';
 
 export default function UploadDocumentsModal({ isOpen, onClose }) {
   const [facilities, setFacilities] = useState([]);
@@ -59,7 +59,7 @@ export default function UploadDocumentsModal({ isOpen, onClose }) {
         return;
       }
 
-      const response = await fetch(
+      const response = await axiosInstance.
         `${API_BASE_URL}/api/residential-facility/get-user-facilities/${userId}`,
         {
           method: 'GET',
@@ -74,7 +74,7 @@ export default function UploadDocumentsModal({ isOpen, onClose }) {
         throw new Error(`Failed to fetch facilities (Status: ${response.status})`);
       }
 
-      const data = await response.json();
+      const data = response.data;
       
       if (data.status === 'success' && data.data?.facilities) {
         setFacilities(data.data.facilities);
@@ -164,7 +164,7 @@ export default function UploadDocumentsModal({ isOpen, onClose }) {
       console.log('Document type:', selectedDocumentType);
       console.log('Facility ID:', selectedFacility);
 
-      const response = await fetch(endpoint, {
+      const response = await axiosInstance.endpoint, {
         method: 'PUT',
         body: formData,
         headers: {

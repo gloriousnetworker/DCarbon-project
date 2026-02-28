@@ -80,6 +80,6 @@ jobs:
             docker stop dcarbonweb || true && docker rm dcarbonweb || true
 
             docker run -d --name dcarbonweb \
-              -e NEXT_PUBLIC_API_URL=https://naijatrips-app-dcarbon-server.cafyit.easypanel.host \
+              -e NEXT_PUBLIC_API_URL= \
               -p 3100:3000 \
               ${{ secrets.AZURE_ACR_LOGIN_SERVER }}/dcarbonweb:latest

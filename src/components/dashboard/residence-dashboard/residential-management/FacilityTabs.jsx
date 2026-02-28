@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { axiosInstance } from "../../../../../lib/config";
 import { FiGrid, FiList } from "react-icons/fi";
 import AddResidentialFacilityModal from "../overview/modals/AddResidenceModal";
 import { buttonPrimary } from "./styles";
@@ -27,21 +28,14 @@ export default function ResidentialFacilityTabs({
         return;
       }
 
-      const response = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/user-meters/${userId}`, {
-        method: 'GET',
+      const response = await axiosInstance.get(`/api/auth/user-meters/${userId}`, {
         headers: {
           'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json'
         }
       });
 
-      if (!response.ok) {
-        setIsButtonDisabled(true);
-        setDisabledReason("Failed to fetch meters");
-        return;
-      }
-
-      const meterData = await response.json();
+      const meterData = response.data;
 
       if (meterData.status !== "success") {
         setIsButtonDisabled(true);

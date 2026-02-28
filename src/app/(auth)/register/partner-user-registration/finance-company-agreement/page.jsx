@@ -53,8 +53,8 @@ export default function FinanceCompanyAgreement() {
         return null;
       }
 
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/agreement/${userId}`,
+      const response = await axiosInstance.
+        `/api/user/agreement/${userId}`,
         {
           method: 'GET',
           headers: {
@@ -63,7 +63,7 @@ export default function FinanceCompanyAgreement() {
         }
       );
 
-      const data = await response.json();
+      const data = response.data;
 
       if (response.ok && data.status === 'success') {
         return data.data;
@@ -85,8 +85,8 @@ export default function FinanceCompanyAgreement() {
         throw new Error('Authentication required');
       }
 
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/partner/user/${userId}`,
+      const response = await axiosInstance.
+        `/api/user/partner/user/${userId}`,
         {
           method: 'GET',
           headers: {
@@ -95,7 +95,7 @@ export default function FinanceCompanyAgreement() {
         }
       );
 
-      const data = await response.json();
+      const data = response.data;
 
       if (response.ok && data.status === 'success') {
         return data.data;
@@ -116,8 +116,8 @@ export default function FinanceCompanyAgreement() {
         throw new Error('Authentication required');
       }
 
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/partner/${partnerId}`,
+      const response = await axiosInstance.
+        `/api/user/partner/${partnerId}`,
         {
           method: 'DELETE',
           headers: {
@@ -126,7 +126,7 @@ export default function FinanceCompanyAgreement() {
         }
       );
 
-      const data = await response.json();
+      const data = response.data;
 
       if (response.ok && data.status === 'success') {
         return true;
@@ -150,8 +150,8 @@ export default function FinanceCompanyAgreement() {
         return false;
       }
 
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/accept-user-agreement-terms/${userId}`,
+      const response = await axiosInstance.
+        `/api/user/accept-user-agreement-terms/${userId}`,
         {
           method: "PUT",
           headers: {
@@ -161,7 +161,7 @@ export default function FinanceCompanyAgreement() {
         }
       );
 
-      const data = await response.json();
+      const data = response.data;
 
       if (response.ok && data.status === 'success') {
         toast.success('Terms and conditions accepted successfully!');

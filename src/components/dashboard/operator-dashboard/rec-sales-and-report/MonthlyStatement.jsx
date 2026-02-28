@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { axiosInstance } from '../../../../../lib/config';
 import { HiOutlineDownload, HiOutlineChevronLeft, HiOutlineChevronRight } from 'react-icons/hi';
 import MonthlyStatementExportReport from './MonthlyStatementExportReport';
 
@@ -29,7 +30,7 @@ const MonthlyStatement = () => {
     setLoading(true);
     try {
       const { userId, authToken } = getUserData();
-      let url = `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/rec/user-rec-report/${userId}`;
+      let url = `/api/rec/user-rec-report/${userId}`;
       
       // Add period filters if not "All"
       if (periodType === 'monthly' && selectedPeriod.month !== 'All') {
@@ -39,13 +40,13 @@ const MonthlyStatement = () => {
         url += `${periodType === 'monthly' && selectedPeriod.month !== 'All' ? '&' : '?'}year=${selectedPeriod.year}`;
       }
 
-      const response = await fetch(url, {
+      const response = await axiosInstance.get(url, {
         headers: {
           'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json'
         }
       });
-      const data = await response.json();
+      const data = response.data;
       if (data.status === 'success') {
         setMonthlyData(data.data);
       }
@@ -60,13 +61,13 @@ const MonthlyStatement = () => {
   const fetchSalesData = async () => {
     try {
       const { userId, authToken } = getUserData();
-      const response = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/rec/sale-statement/${userId}`, {
+      const response = await axiosInstance.get(`/api/rec/sale-statement/${userId}`, {
         headers: {
           'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json'
         }
       });
-      const data = await response.json();
+      const data = response.data;
       if (data.status === 'success') {
         setSalesData(data.data);
       }

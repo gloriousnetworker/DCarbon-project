@@ -58,8 +58,8 @@ export default function ResidentialFacilityModal({ isOpen, onClose, currentStep 
   const fetchUserFacilities = async (userId, authToken) => {
     try {
       setLoading(true);
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/residential-facility/get-user-facilities/${userId}`,
+      const response = await axiosInstance.
+        `/api/residential-facility/get-user-facilities/${userId}`,
         {
           method: 'GET',
           headers: {
@@ -69,7 +69,7 @@ export default function ResidentialFacilityModal({ isOpen, onClose, currentStep 
         }
       );
       
-      const data = await response.json();
+      const data = response.data;
       if (data.status === 'success' && data.data?.facilities) {
         const facilities = data.data.facilities;
         setUserFacilities(facilities);
@@ -129,8 +129,8 @@ export default function ResidentialFacilityModal({ isOpen, onClose, currentStep 
         authorizationEmail: greenButtonEmail.trim()
       };
 
-      const greenButtonResponse = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/utility-auth/green-button`,
+      const greenButtonResponse = await axiosInstance.
+        `/api/utility-auth/green-button`,
         {
           method: 'POST',
           headers: {
@@ -144,8 +144,8 @@ export default function ResidentialFacilityModal({ isOpen, onClose, currentStep 
       const greenButtonResult = await greenButtonResponse.json();
       
       if (greenButtonResult.message === "Authorization process enqueued successfully") {
-        const submitEmailResponse = await fetch(
-          `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/submit-green-button-email/${userId}`,
+        const submitEmailResponse = await axiosInstance.
+          `/api/user/submit-green-button-email/${userId}`,
           {
             method: 'POST',
             headers: {

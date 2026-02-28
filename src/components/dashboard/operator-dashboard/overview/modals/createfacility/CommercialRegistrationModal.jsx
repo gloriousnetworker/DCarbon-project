@@ -123,7 +123,7 @@ export default function CommercialRegistrationModal({ isOpen, onClose }) {
     
     try {
       const response = await axiosInstance.get(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/user-meters/${ownerId}`,
+        `/api/auth/user-meters/${ownerId}`,
         { headers: { Authorization: `Bearer ${authToken}` } }
       );
       
@@ -177,7 +177,7 @@ export default function CommercialRegistrationModal({ isOpen, onClose }) {
     setIsLoading(true);
     try {
       const { data } = await axiosInstance.get(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/referral/by-invitee-email/${userEmail}?status=${statusFilter}`,
+        `/api/user/referral/by-invitee-email/${userEmail}?status=${statusFilter}`,
         { headers: { Authorization: `Bearer ${authToken}` } }
       );
       

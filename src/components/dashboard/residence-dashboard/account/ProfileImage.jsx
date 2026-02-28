@@ -44,8 +44,8 @@ const ProfileImage = () => {
 
     try {
       setIsLoading(true);
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/upload-profile-picture/${userId}`,
+      const response = await axiosInstance.
+        `/api/user/upload-profile-picture/${userId}`,
         {
           method: "POST",
           headers: {
@@ -55,7 +55,7 @@ const ProfileImage = () => {
         }
       );
 
-      const data = await response.json();
+      const data = response.data;
 
       if (!response.ok) {
         throw new Error(data.message || "Upload failed");

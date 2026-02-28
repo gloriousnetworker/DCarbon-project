@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import { axiosInstance } from '../../lib/config';
 import UtilityAuthorizationModal from './UtilityAuthorizationModal';
 
 const styles = {
@@ -69,7 +70,7 @@ export default function OperatorRegistrationCard() {
   const [hasMounted, setHasMounted] = useState(false);
   const router = useRouter();
 
-  const localURL = 'https://naijatrips-app-dcarbon-server.cafyit.easypanel.host';
+  const localURL = '';
 
   useEffect(() => {
     setHasMounted(true);
@@ -78,8 +79,8 @@ export default function OperatorRegistrationCard() {
   useEffect(() => {
     const fetchUtilityProviders = async () => {
       try {
-        const response = await fetch(`${localURL}/api/auth/utility-providers`);
-        const data = await response.json();
+        const response = await axiosInstance.get(`${localURL}/api/auth/utility-providers`);
+        const data = response.data;
         
         if (response.ok && data.status === 'success') {
           setUtilityProviders(data.data);
@@ -206,21 +207,20 @@ export default function OperatorRegistrationCard() {
     setEmailVerifying(true);
 
     try {
-      const response = await fetch(
+      const response = await axiosInstance.put(
         `${localURL}/api/user/update-utility-auth-email/${userId}`,
         {
-          method: 'PUT',
+          utilityAuthEmail: formData.utilityAuthEmail
+        },
+        {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${authToken}`
-          },
-          body: JSON.stringify({
-            utilityAuthEmail: formData.utilityAuthEmail
-          })
+          }
         }
       );
 
-      const data = await response.json();
+      const data = response.data;
       
       if (response.status === 409) {
         setEmailConflictError(true);
@@ -279,17 +279,16 @@ export default function OperatorRegistrationCard() {
       localStorage.setItem('selectedUtilityProvider', JSON.stringify(selectedProvider));
 
       // Then initiate utility authorization with the verified email
-      const initiateResponse = await fetch(
+      const initiateResponse = await axiosInstance.post(
         `${localURL}/api/auth/initiate-utility-auth/${userId}`,
         {
-          method: 'POST',
+          utilityAuthEmail: formData.utilityAuthEmail
+        },
+        {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${authToken}`
-          },
-          body: JSON.stringify({
-            utilityAuthEmail: formData.utilityAuthEmail
-          })
+          }
         }
       );
 
@@ -345,19 +344,18 @@ export default function OperatorRegistrationCard() {
     setLoading(true);
 
     try {
-      const response = await fetch(
+      const response = await axiosInstance.post(
         `${localURL}/api/user/request-utility-provider/${userId}`,
+        requestData,
         {
-          method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${authToken}`
-          },
-          body: JSON.stringify(requestData)
+          }
         }
       );
 
-      const data = await response.json();
+      const data = response.data;
       if (!response.ok || data.status !== 'success') {
         throw new Error(data.message || 'Failed to submit provider request');
       }

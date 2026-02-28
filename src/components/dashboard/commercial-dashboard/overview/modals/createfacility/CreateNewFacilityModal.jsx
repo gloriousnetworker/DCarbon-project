@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { axiosInstance } from "../../../../../../../lib/config";
 import OwnerDetailsModal from "./ownerRegistration/OwnerDetailsModal";
 import OwnerAndOperatorDetailsModal from "./ownerAndOperatorRegistration/OwnerDetailsModal";
 import OwnerTermsAndAgreementModal from "./ownerRegistration/OwnerTermsAndAgreementModal";
@@ -59,14 +60,14 @@ export default function CreateNewFacilityModal({ isOpen, onClose, currentStep })
       const authToken = loginResponse?.data?.token;
       
       if (userId && authToken) {
-        const response = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-commercial-user/${userId}`, {
+        const response = await axiosInstance.get(`/api/user/get-commercial-user/${userId}`, {
           headers: {
             'Authorization': `Bearer ${authToken}`
           }
         });
         
-        if (response.ok) {
-          const data = await response.json();
+        if (response.status === 200) {
+          const data = response.data;
           setCommercialData(data.data);
           
           if (data.data?.commercialUser?.commercialRole === 'owner') {
@@ -102,17 +103,16 @@ export default function CreateNewFacilityModal({ isOpen, onClose, currentStep })
 
   const checkUserFacilities = async (userId, authToken) => {
     try {
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/facility/get-user-facilities-by-userId/${userId}`,
+      const response = await axiosInstance.get(
+        `/api/facility/get-user-facilities-by-userId/${userId}`,
         {
-          method: 'GET',
           headers: {
             'Authorization': `Bearer ${authToken}`,
             'Content-Type': 'application/json'
           }
         }
       );
-      const data = await response.json();
+      const data = response.data;
       const facilities = data.data?.facilities || [];
       setUserFacilities(facilities);
       if (facilities.length > 0) {
@@ -126,17 +126,15 @@ export default function CreateNewFacilityModal({ isOpen, onClose, currentStep })
 
   const checkStage2Completion = async (userId, authToken) => {
     try {
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-commercial-user/${userId}`,
+      const response = await axiosInstance.get(
+        `/api/user/get-commercial-user/${userId}`,
         {
-          method: 'GET',
           headers: {
             'Authorization': `Bearer ${authToken}`
           }
         }
       );
-      const result = await response.json();
-      return result.status === 'success' && result.data?.commercialUser?.ownerAddress;
+      return response.status === 200 && response.data?.data?.commercialUser?.ownerAddress;
     } catch (error) {
       return false;
     }
@@ -144,17 +142,15 @@ export default function CreateNewFacilityModal({ isOpen, onClose, currentStep })
 
   const checkStage3Completion = async (userId, authToken) => {
     try {
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/agreement/${userId}`,
+      const response = await axiosInstance.get(
+        `/api/user/agreement/${userId}`,
         {
-          method: 'GET',
           headers: {
             'Authorization': `Bearer ${authToken}`
           }
         }
       );
-      const result = await response.json();
-      return result.status === 'success' && result.data?.termsAccepted;
+      return response.status === 200 && response.data?.data?.termsAccepted;
     } catch (error) {
       return false;
     }
@@ -162,17 +158,15 @@ export default function CreateNewFacilityModal({ isOpen, onClose, currentStep })
 
   const checkStage4Completion = async (userId, authToken) => {
     try {
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/financial-info/${userId}`,
+      const response = await axiosInstance.get(
+        `/api/user/financial-info/${userId}`,
         {
-          method: 'GET',
           headers: {
             'Authorization': `Bearer ${authToken}`
           }
         }
       );
-      const result = await response.json();
-      return result.status === 'success' && result.data?.financialInfo;
+      return response.status === 200 && response.data?.data?.financialInfo;
     } catch (error) {
       return false;
     }
@@ -180,17 +174,15 @@ export default function CreateNewFacilityModal({ isOpen, onClose, currentStep })
 
   const checkStage5Completion = async (userId, authToken) => {
     try {
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/user-meters/${userId}`,
+      const response = await axiosInstance.get(
+        `/api/auth/user-meters/${userId}`,
         {
-          method: 'GET',
           headers: {
             'Authorization': `Bearer ${authToken}`
           }
         }
       );
-      const result = await response.json();
-      return result.status === 'success' && result.data?.length > 0 && result.data.some(item => item.meters?.meters?.length > 0);
+      return response.status === 200 && response.data?.data?.length > 0 && response.data.data.some(item => item.meters?.meters?.length > 0);
     } catch (error) {
       return false;
     }
@@ -257,17 +249,16 @@ export default function CreateNewFacilityModal({ isOpen, onClose, currentStep })
 
       if (!userId || !authToken) return;
 
-      const commercialUserResponse = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-commercial-user/${userId}`,
+      const commercialUserResponse = await axiosInstance.get(
+        `/api/user/get-commercial-user/${userId}`,
         {
-          method: 'GET',
           headers: {
             'Authorization': `Bearer ${authToken}`
           }
         }
       );
 
-      const commercialUserData = await commercialUserResponse.json();
+      const commercialUserData = commercialUserResponse.data;
       const entityType = commercialUserData.data?.commercialUser?.entityType || 'individual';
 
       const payload = {
@@ -275,19 +266,18 @@ export default function CreateNewFacilityModal({ isOpen, onClose, currentStep })
         commercialRole: selectedRole === 'Owner' ? 'owner' : 'both'
       };
 
-      const updateResponse = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/commercial-registration/${userId}`,
+      const updateResponse = await axiosInstance.put(
+        `/api/user/commercial-registration/${userId}`,
+        payload,
         {
-          method: 'PUT',
           headers: {
             'Authorization': `Bearer ${authToken}`,
             'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(payload)
+          }
         }
       );
 
-      const result = await updateResponse.json();
+      const result = updateResponse.data;
       if (result.status === 'success') {
         if (selectedRole === 'Owner') {
           setCurrentModal('ownerDetails');
@@ -322,39 +312,37 @@ export default function CreateNewFacilityModal({ isOpen, onClose, currentStep })
         authorizationEmail: greenButtonEmail.trim()
       };
 
-      const greenButtonResponse = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/utility-auth/green-button`,
+      const greenButtonResponse = await axiosInstance.post(
+        `/api/utility-auth/green-button`,
+        greenButtonPayload,
         {
-          method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${authToken}`
-          },
-          body: JSON.stringify(greenButtonPayload)
+          }
         }
       );
 
-      const greenButtonResult = await greenButtonResponse.json();
+      const greenButtonResult = greenButtonResponse.data;
       
       if (greenButtonResult.message === "Authorization process enqueued successfully") {
         toast.success("Green Button authorization submitted successfully!");
         
-        const submitEmailResponse = await fetch(
-          `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/submit-green-button-email/${userId}`,
+        const submitEmailResponse = await axiosInstance.post(
+          `/api/user/submit-green-button-email/${userId}`,
+          { 
+            email: greenButtonEmail.trim(),
+            utilityProvider: selectedUtilityProvider
+          },
           {
-            method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${authToken}`
-            },
-            body: JSON.stringify({ 
-              email: greenButtonEmail.trim(),
-              utilityProvider: selectedUtilityProvider
-            })
+            }
           }
         );
         
-        const submitEmailResult = await submitEmailResponse.json();
+        const submitEmailResult = submitEmailResponse.data;
         
         if (submitEmailResult.status === 'success') {
           setGreenButtonEmail('');
@@ -400,19 +388,18 @@ export default function CreateNewFacilityModal({ isOpen, onClose, currentStep })
         facilityId: selectedFacility
       };
 
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/green-button/start`,
+      const response = await axiosInstance.post(
+        `/api/green-button/start`,
+        payload,
         {
-          method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${authToken}`
-          },
-          body: JSON.stringify(payload)
+          }
         }
       );
 
-      const result = await response.json();
+      const result = response.data;
       
       if (result.success) {
         window.open(result.redirectUrl, '_blank');

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { axiosInstance } from "../../../../../lib/config";
 
 export default function RecentTransactions() {
   const [transactions, setTransactions] = useState([
@@ -22,16 +23,15 @@ export default function RecentTransactions() {
 
       if (!userId || !authToken) return;
 
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/user-meters/${userId}`,
+      const response = await axiosInstance.get(
+        `/api/auth/user-meters/${userId}`,
         {
-          method: 'GET',
           headers: {
             'Authorization': `Bearer ${authToken}`
           }
         }
       );
-      const result = await response.json();
+      const result = response.data;
       setHasMeters(result.status === 'success' && result.data?.length > 0 && result.data.some(item => item.meters?.meters?.length > 0));
     } catch (error) {
       console.error('Error fetching meters:', error);

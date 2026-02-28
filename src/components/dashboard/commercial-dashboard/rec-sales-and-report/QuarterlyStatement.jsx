@@ -33,8 +33,8 @@ const QuarterlyStatement = () => {
         return;
       }
 
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/revenue/${userId}`,
+      const response = await axiosInstance.
+        `/api/revenue/${userId}`,
         {
           method: 'GET',
           headers: {
@@ -69,8 +69,8 @@ const QuarterlyStatement = () => {
         return;
       }
 
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/quarterly-statements?quarter=${selectedQuarter}&year=${selectedYear}&userId=${userId}&userType=${userType || 'COMMERCIAL'}`,
+      const response = await axiosInstance.
+        `/api/quarterly-statements?quarter=${selectedQuarter}&year=${selectedYear}&userId=${userId}&userType=${userType || 'COMMERCIAL'}`,
         {
           method: 'GET',
           headers: {

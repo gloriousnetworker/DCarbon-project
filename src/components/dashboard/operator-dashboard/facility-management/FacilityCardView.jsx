@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import axios, { axiosInstance } from "../../../../../../lib/config";
 import { FiChevronRight } from "react-icons/fi";
 import toast from "react-hot-toast";
 import FilterModal from "./FilterModal";
@@ -50,7 +50,7 @@ export default function FacilityCardView() {
       if (!userId || !authToken) return false;
 
       const response = await axiosInstance.get(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/agreement/${userId}`,
+        `/api/user/agreement/${userId}`,
         { headers: { 'Authorization': `Bearer ${authToken}` } }
       );
       
@@ -81,7 +81,7 @@ export default function FacilityCardView() {
       }
 
       const response = await axiosInstance.post(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/accept-invitation`,
+        `/api/user/accept-invitation`,
         {
           referralCode: facility.referralCode,
           inviteeEmail: userEmail,
@@ -150,7 +150,7 @@ export default function FacilityCardView() {
     
     try {
       const response = await axiosInstance.get(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-one-user/${inviterId}`,
+        `/api/user/get-one-user/${inviterId}`,
         { headers: { Authorization: `Bearer ${authToken}` } }
       );
       
@@ -171,7 +171,7 @@ export default function FacilityCardView() {
     
     try {
       const response = await axiosInstance.get(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/user-meters/${ownerId}`,
+        `/api/auth/user-meters/${ownerId}`,
         { headers: { Authorization: `Bearer ${authToken}` } }
       );
       
@@ -213,11 +213,10 @@ export default function FacilityCardView() {
 
   const checkStage2Completion = async (userId, authToken) => {
     try {
-      const response = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-commercial-user/${userId}`, {
-        method: 'GET',
+      const response = await axiosInstance.get(`/api/user/get-commercial-user/${userId}`, {
         headers: { 'Authorization': `Bearer ${authToken}` }
       });
-      const result = await response.json();
+      const result = response.data;
       return result.status === 'success' && result.data?.commercialUser?.ownerAddress;
     } catch (error) {
       return false;
@@ -226,11 +225,10 @@ export default function FacilityCardView() {
 
   const checkStage3Completion = async (userId, authToken) => {
     try {
-      const response = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/agreement/${userId}`, {
-        method: 'GET',
-        headers: { 'Authorization': `Bearer ${authToken}` } }
-      );
-      const result = await response.json();
+      const response = await axiosInstance.get(`/api/user/agreement/${userId}`, {
+        headers: { 'Authorization': `Bearer ${authToken}` }
+      });
+      const result = response.data;
       return result.status === 'success' && result.data?.termsAccepted;
     } catch (error) {
       return false;
@@ -239,11 +237,10 @@ export default function FacilityCardView() {
 
   const checkStage4Completion = async (userId, authToken) => {
     try {
-      const response = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/financial-info/${userId}`, {
-        method: 'GET',
-        headers: { 'Authorization': `Bearer ${authToken}` } }
-      );
-      const result = await response.json();
+      const response = await axiosInstance.get(`/api/user/financial-info/${userId}`, {
+        headers: { 'Authorization': `Bearer ${authToken}` }
+      });
+      const result = response.data;
       return result.status === 'success' && result.data?.financialInfo;
     } catch (error) {
       return false;
@@ -252,11 +249,10 @@ export default function FacilityCardView() {
 
   const checkStage5Completion = async (userId, authToken) => {
     try {
-      const response = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/user-meters/${userId}`, {
-        method: 'GET',
-        headers: { 'Authorization': `Bearer ${authToken}` } }
-      );
-      const result = await response.json();
+      const response = await axiosInstance.get(`/api/auth/user-meters/${userId}`, {
+        headers: { 'Authorization': `Bearer ${authToken}` }
+      });
+      const result = response.data;
       return result.status === 'success' && result.data?.length > 0 && result.data.some(item => item.meters?.meters?.length > 0);
     } catch (error) {
       return false;
@@ -366,7 +362,7 @@ export default function FacilityCardView() {
     
     try {
       const { data } = await axiosInstance.get(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/referral/by-invitee-email/${userEmail}?status=${statusFilter}`,
+        `/api/user/referral/by-invitee-email/${userEmail}?status=${statusFilter}`,
         { headers: { Authorization: `Bearer ${authToken}` } }
       );
       

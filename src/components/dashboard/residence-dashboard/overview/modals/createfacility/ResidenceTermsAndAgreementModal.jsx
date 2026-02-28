@@ -73,8 +73,8 @@ export default function ResidenceTermsAndAgreementModal({ isOpen, onClose, selec
         return false;
       }
 
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/accept-user-agreement-terms/${userId}`,
+      const response = await axiosInstance.
+        `/api/user/accept-user-agreement-terms/${userId}`,
         {
           method: 'PUT',
           headers: {
@@ -84,7 +84,7 @@ export default function ResidenceTermsAndAgreementModal({ isOpen, onClose, selec
         }
       );
 
-      const data = await response.json();
+      const data = response.data;
 
       if (response.ok && data.status === 'success') {
         toast.success('Terms and conditions accepted successfully!');

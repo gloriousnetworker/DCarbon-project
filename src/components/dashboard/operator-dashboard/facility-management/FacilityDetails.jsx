@@ -262,8 +262,8 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
 
       const checkStage2 = async () => {
         try {
-          const response = await fetch(
-            `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-commercial-user/${userId}`,
+          const response = await axiosInstance.
+            `/api/user/get-commercial-user/${userId}`,
             { headers: { 'Authorization': `Bearer ${authToken}` } }
           );
           const result = await response.json();
@@ -275,8 +275,8 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
 
       const checkStage3 = async () => {
         try {
-          const response = await fetch(
-            `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/agreement/${userId}`,
+          const response = await axiosInstance.
+            `/api/user/agreement/${userId}`,
             { headers: { 'Authorization': `Bearer ${authToken}` } }
           );
           const result = await response.json();
@@ -288,8 +288,8 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
 
       const checkStage4 = async () => {
         try {
-          const response = await fetch(
-            `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/financial-info/${userId}`,
+          const response = await axiosInstance.
+            `/api/user/financial-info/${userId}`,
             { headers: { 'Authorization': `Bearer ${authToken}` } }
           );
           const result = await response.json();
@@ -301,8 +301,8 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
 
       const checkStage5 = async () => {
         try {
-          const response = await fetch(
-            `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/user-meters/${userId}`,
+          const response = await axiosInstance.
+            `/api/auth/user-meters/${userId}`,
             { headers: { 'Authorization': `Bearer ${authToken}` } }
           );
           const result = await response.json();
@@ -387,7 +387,7 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
     }
 
     const facilityId = facilityData.id;
-    const baseUrl = 'https://naijatrips-app-dcarbon-server.cafyit.easypanel.host';
+    const baseUrl = '';
     
     const endpoints = {
       wregisAssignment: `/api/facility/update-wregis-assignment/${facilityId}`,
@@ -421,7 +421,7 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
     try {
       toast.loading('Uploading document...', { id: 'upload-toast' });
       
-      const response = await fetch(endpoints[docType], {
+      const response = await axiosInstance.endpoints[docType], {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${authToken}`

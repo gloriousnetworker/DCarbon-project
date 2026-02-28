@@ -56,8 +56,8 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, selectedU
         throw new Error('Authentication data not found');
       }
 
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/facility/get-user-facilities-by-userId/${userId}`,
+      const response = await axiosInstance.
+        `/api/facility/get-user-facilities-by-userId/${userId}`,
         {
           method: 'GET',
           headers: {
@@ -167,7 +167,7 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, selectedU
       };
 
       const response = await axiosInstance.post(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/invite-operator/${userId}`,
+        `/api/user/invite-operator/${userId}`,
         payload,
         {
           headers: {

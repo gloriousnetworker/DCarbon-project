@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { axiosInstance } from '../../../../../lib/config';
 import { ArrowLeft, Upload } from 'lucide-react';
 
 const mainContainer = 'min-h-screen w-full flex flex-col items-center justify-center py-8 px-4 bg-white';
@@ -130,17 +131,15 @@ const SubmitInvoice = ({ onBack, onInvoiceSubmitted }) => {
       const formDataUpload = new FormData();
       formDataUpload.append('file', selectedFile);
 
-      const response = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/file-storage/upload/${formData.invoiceNumber}`, {
-        method: 'POST',
+      const response = await axiosInstance.post(`/api/file-storage/upload/${formData.invoiceNumber}`, formDataUpload, {
         headers: {
           'Authorization': `Bearer ${authToken}`,
         },
-        body: formDataUpload,
       });
 
-      const result = await response.json();
+      const result = response.data;
 
-      if (response.ok && result.success) {
+      if (response.status === 200 || response.status === 201 && result.success) {
         setUploadedFileUrl(result.data.url);
         showToast('File uploaded successfully', 'success');
       } else {
@@ -184,18 +183,16 @@ const SubmitInvoice = ({ onBack, onInvoiceSubmitted }) => {
         invoiceId: uploadedFileUrl
       };
 
-      const response = await fetch('https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/payout-request/request', {
-        method: 'POST',
+      const response = await axiosInstance.post(`/api/payout-request/request`, requestBody, {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${authToken}`,
         },
-        body: JSON.stringify(requestBody),
       });
 
-      const result = await response.json();
+      const result = response.data;
 
-      if (response.ok && result.status === 'success') {
+      if (response.status === 200 || response.status === 201 && result.status === 'success') {
         showToast('Invoice submitted successfully', 'success');
         
         if (onInvoiceSubmitted) {

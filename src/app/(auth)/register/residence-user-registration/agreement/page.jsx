@@ -77,8 +77,8 @@ export default function AgreementFormPage() {
     }
 
     try {
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/accept-user-agreement-terms/${userId}`,
+      const response = await axiosInstance.
+        `/api/user/accept-user-agreement-terms/${userId}`,
         {
           method: "PUT",
           headers: {

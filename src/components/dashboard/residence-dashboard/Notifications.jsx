@@ -27,14 +27,14 @@ const DashboardNotifications = () => {
         
         if (!userId || !authToken) throw new Error('User not authenticated');
 
-        const response = await fetch(
-          `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/notifications/${userId}`,
+        const response = await axiosInstance.
+          `/api/user/notifications/${userId}`,
           { headers: { 'Authorization': `Bearer ${authToken}` } }
         );
 
         if (!response.ok) throw new Error('Failed to fetch notifications');
 
-        const data = await response.json();
+        const data = response.data;
         setNotifications(data.data);
         localStorage.setItem('notifications', JSON.stringify(data.data));
         setLoading(false);
@@ -51,8 +51,8 @@ const DashboardNotifications = () => {
     try {
       const authToken = localStorage.getItem('authToken');
       
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/notifications/${notificationId}/mark-read`,
+      const response = await axiosInstance.
+        `/api/user/notifications/${notificationId}/mark-read`,
         { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}` } }
       );
 

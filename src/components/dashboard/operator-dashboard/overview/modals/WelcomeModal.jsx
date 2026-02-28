@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { axiosInstance } from "../../../../../lib/config";
 import * as styles from './styles';
 import { toast } from 'react-hot-toast';
 import OwnerTermsAndAgreementModal from "../modals/createfacility/ownerRegistration/OwnerTermsAndAgreementModal";
@@ -40,14 +41,13 @@ export default function WelcomeModal({ isOpen, onClose, userData }) {
         throw new Error('Authentication data not found');
       }
 
-      const response = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-commercial-user/${userId}`, {
-        method: 'GET',
+      const response = await axiosInstance.get(`/api/user/get-commercial-user/${userId}`, {
         headers: {
           'Authorization': `Bearer ${authToken}`
         }
       });
 
-      const result = await response.json();
+      const result = response.data;
 
       if (result.statusCode === 200 && result.status === 'success') {
         onClose();
@@ -145,16 +145,13 @@ export default function WelcomeModal({ isOpen, onClose, userData }) {
         body.companyAddress = `${formData.companyAddress.address1}, ${formData.companyAddress.address2}, ${formData.companyAddress.city}, ${formData.companyAddress.state} ${formData.companyAddress.zipCode}`;
       }
 
-      const response = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/commercial-registration/${userId}`, {
-        method: 'PUT',
+      const response = await axiosInstance.put(`/api/user/commercial-registration/${userId}`, body, {
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${authToken}`
-        },
-        body: JSON.stringify(body)
+        }
       });
 
-      const result = await response.json();
+      const result = response.data;
 
       if (result.status === 'success') {
         toast.success(result.message);
@@ -189,26 +186,24 @@ export default function WelcomeModal({ isOpen, onClose, userData }) {
         throw new Error('Authentication token not found');
       }
 
-      const referralResponse = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/referral/by-inviter-code/${referralCode}`, {
-        method: 'GET',
+      const referralResponse = await axiosInstance.get(`/api/user/referral/by-inviter-code/${referralCode}`, {
         headers: {
           'Authorization': `Bearer ${authToken}`
         }
       });
 
-      const referralResult = await referralResponse.json();
+      const referralResult = referralResponse.data;
 
       if (referralResult.status === 'success' && referralResult.statusCode === 200) {
         const inviterId = referralResult.data.inviterId;
         
-        const ownerResponse = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-one-user/${inviterId}`, {
-          method: 'GET',
+        const ownerResponse = await axiosInstance.get(`/api/user/get-one-user/${inviterId}`, {
           headers: {
             'Authorization': `Bearer ${authToken}`
           }
         });
 
-        const ownerResult = await ownerResponse.json();
+        const ownerResult = ownerResponse.data;
 
         if (ownerResult.status === 'success' && ownerResult.data) {
           localStorage.setItem('referralResponse', JSON.stringify(referralResult));

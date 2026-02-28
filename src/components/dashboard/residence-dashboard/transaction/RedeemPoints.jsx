@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { FiX, FiCheck } from "react-icons/fi";
 import * as styles from "./styles";
+import { axiosInstance } from "../../../../../lib/config";
 
 export default function RedeemPoints({ onClose, onComplete, redemptionData, processingStatus, userId, authToken }) {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -15,14 +16,13 @@ export default function RedeemPoints({ onClose, onComplete, redemptionData, proc
 
   const checkProcessingStatus = async () => {
     try {
-      const response = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/payout/processing-status/${userId}`, {
-        method: 'GET',
+      const response = await axiosInstance.get(`/api/payout/processing-status/${userId}`, {
         headers: {
           'Authorization': `Bearer ${authToken}`
         }
       });
 
-      const result = await response.json();
+      const result = response.data;
       if (result.status === "success") {
         setCurrentStatus(result.data);
       }

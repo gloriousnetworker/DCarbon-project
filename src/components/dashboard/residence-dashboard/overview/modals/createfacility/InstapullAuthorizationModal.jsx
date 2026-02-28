@@ -85,7 +85,7 @@ export default function InstapullAuthorizationModal({ isOpen, onClose, utilityPr
       const token = loginResponse?.data?.token;
       
       const response = await axiosInstance.get(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/utility-auth/${userId}`,
+        `/api/auth/utility-auth/${userId}`,
         { 
           headers: { 
             'Authorization': `Bearer ${token}`
@@ -151,7 +151,7 @@ export default function InstapullAuthorizationModal({ isOpen, onClose, utilityPr
       };
 
       const response = await axiosInstance.post(
-        'https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/utility-auth/green-button',
+        '/api/utility-auth/green-button',
         payload,
         { 
           headers: { 

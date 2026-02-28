@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
+import { axiosInstance } from '../../../../../lib/config'
 import { ChevronDown, X } from 'lucide-react'
 
 const mainContainer = 'min-h-screen w-full flex flex-col py-8 px-4 bg-white'
@@ -25,24 +26,24 @@ export default function DashboardHelpCentre() {
         const token = localStorage.getItem('authToken')
         const userId = localStorage.getItem('userId')
         
-        const userResponse = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/get-one-user/${userId}`, {
+        const userResponse = await axiosInstance.get(`/api/user/get-one-user/${userId}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
         })
         
-        const userData = await userResponse.json()
+        const userData = userResponse.data
         if (userData.status === 'success') {
           setUserType(userData.data.userType)
         }
 
-        const faqResponse = await fetch('https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/faq/faqs', {
+        const faqResponse = await axiosInstance.get('/api/faq/faqs', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
         })
         
-        const faqData = await faqResponse.json()
+        const faqData = faqResponse.data
         if (faqData.status === 'success') {
           let filteredFaqs = []
           

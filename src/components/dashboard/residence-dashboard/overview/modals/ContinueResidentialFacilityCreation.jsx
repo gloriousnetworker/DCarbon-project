@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
+import { axiosInstance } from "../../../../../lib/config";
 import InstapullAuthorizationModal from "../InstapullAuthorizationModal";
 
 export default function ResidentialFacilityModal({ isOpen, onClose, currentStep }) {
@@ -50,18 +51,16 @@ export default function ResidentialFacilityModal({ isOpen, onClose, currentStep 
   const fetchUserFacilities = async (userId, authToken) => {
     try {
       setLoading(true);
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/residential-facility/get-user-facilities/${userId}`,
+      const response = await axiosInstance.get(
+        `/api/residential-facility/get-user-facilities/${userId}`,
         {
-          method: 'GET',
           headers: {
-            'Authorization': `Bearer ${authToken}`,
-            'Content-Type': 'application/json'
+            'Authorization': `Bearer ${authToken}`
           }
         }
       );
       
-      const data = await response.json();
+      const data = response.data;
       if (data.status === 'success' && data.data?.facilities) {
         const facilities = data.data.facilities;
         const pendingFacilities = facilities.filter(facility => 

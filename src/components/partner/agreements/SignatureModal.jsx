@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import toast from "react-hot-toast";
+import { axiosInstance } from "../../../lib/config";
 
 export default function SignatureModal({ isOpen, onClose, onComplete }) {
   const [activeTab, setActiveTab] = useState("draw");
@@ -125,14 +126,13 @@ export default function SignatureModal({ isOpen, onClose, onComplete }) {
         });
       }, 200);
 
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/update-user-agreement/${userId}`,
+      const response = await axiosInstance.put(
+        `/api/user/update-user-agreement/${userId}`,
+        formData,
         {
-          method: 'PUT',
           headers: {
             'Authorization': `Bearer ${authToken}`,
           },
-          body: formData,
         }
       );
 

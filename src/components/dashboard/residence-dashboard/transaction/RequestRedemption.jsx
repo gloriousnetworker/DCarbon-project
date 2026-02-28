@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { axiosInstance } from "../../../../../lib/config";
 import { FiX } from "react-icons/fi";
 import * as styles from "./styles";
 
@@ -38,20 +39,17 @@ export default function RequestRedemption({ onClose, onSubmit, availablePoints, 
     try {
       const amount = parseFloat(calculateActualAmount(pointsValue));
       
-      const response = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/payout-request/request`, {
-        method: 'POST',
+      const response = await axiosInstance.post(`/api/payout-request/request`, {
+        userId: userId,
+        amount: amount,
+        userType: "RESIDENTIAL"
+      }, {
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${authToken}`
-        },
-        body: JSON.stringify({
-          userId: userId,
-          amount: amount,
-          userType: "RESIDENTIAL"
-        })
+        }
       });
 
-      const result = await response.json();
+      const result = response.data;
       
       if (result.status === "success") {
         setShowSuccessModal(true);

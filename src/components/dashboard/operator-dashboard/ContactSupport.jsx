@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import { axiosInstance } from '../../../../../lib/config';
 import toast from 'react-hot-toast';
 import { FiArrowLeft, FiUpload } from 'react-icons/fi';
 import { useRouter } from 'next/navigation';
@@ -27,22 +28,19 @@ const DashboardContactSupport = () => {
     const loadingToast = toast.loading('Submitting your request...');
 
     try {
-      const response = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/contact/${userId}`, {
-        method: 'POST',
+      const response = await axiosInstance.post(`/api/contact/${userId}`, {
+        subject,
+        contactReason: reason,
+        message,
+      }, {
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-        },
-        body: JSON.stringify({
-          subject,
-          contactReason: reason,
-          message,
-        }),
+        }
       });
 
-      const data = await response.json();
+      const data = response.data;
 
-      if (response.ok) {
+      if (response.status === 200 || response.status === 201) {
         toast.success(data.message || 'Contact request submitted successfully!', { id: loadingToast });
         setSubject('');
         setReason('');

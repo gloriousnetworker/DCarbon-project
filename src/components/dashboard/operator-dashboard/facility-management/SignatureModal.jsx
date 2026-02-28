@@ -125,8 +125,8 @@ export default function SignatureModal({ isOpen, onClose, onComplete }) {
         });
       }, 200);
 
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/update-user-agreement/${userId}`,
+      const response = await axiosInstance.
+        `/api/user/update-user-agreement/${userId}`,
         {
           method: 'PUT',
           headers: {

@@ -69,8 +69,8 @@ export default function UploadFacilityDocumentsModal({ isOpen, onClose }) {
       const formData = new FormData();
       formData.append(documentKeys[index], files[index]);
 
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/facility/${endpoints[index]}/${userId}`,
+      const response = await axiosInstance.
+        `/api/facility/${endpoints[index]}/${userId}`,
         {
           method: 'PUT',
           headers: {
@@ -80,7 +80,7 @@ export default function UploadFacilityDocumentsModal({ isOpen, onClose }) {
         }
       );
 
-      const data = await response.json();
+      const data = response.data;
 
       if (!response.ok) {
         throw new Error(data.message || `Failed to upload ${documentTypes[index]}`);

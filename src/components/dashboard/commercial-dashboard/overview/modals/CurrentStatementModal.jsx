@@ -32,8 +32,8 @@ export default function CurrentStatementModal({ isOpen, onClose }) {
         throw new Error("Missing authentication data");
       }
 
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/rec/sale-statement?month=${selectedMonth}&year=${selectedYear}&userId=${userId}`,
+      const response = await axiosInstance.
+        `/api/rec/sale-statement?month=${selectedMonth}&year=${selectedYear}&userId=${userId}`,
         {
           method: 'GET',
           headers: { 
@@ -43,7 +43,7 @@ export default function CurrentStatementModal({ isOpen, onClose }) {
         }
       );
 
-      const data = await response.json();
+      const data = response.data;
       
       if (!response.ok) {
         throw new Error(data.message || "Failed to fetch statement");

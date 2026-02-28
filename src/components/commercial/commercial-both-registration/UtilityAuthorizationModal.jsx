@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from 'react';
+import { axiosInstance } from '../../../lib/config';
 import toast from 'react-hot-toast';
 
 // Modal styles
@@ -23,15 +24,14 @@ export default function UtilityAuthorizationModal({ onAuthorized, onClose }) {
 
     try {
       // Hitting the endpoint from the provided URL
-      const response = await fetch('https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/fetch-utility-data', {
-        method: 'GET',
+      const response = await axiosInstance.get('/api/auth/fetch-utility-data', {
         headers: {
           'Content-Type': 'application/json',
         },
       });
 
       // Parse and log the response data
-      const data = await response.json();
+      const data = response.data;
       console.log('Utility API response:', data);
 
       // Check if authorizationUid exists and is not null

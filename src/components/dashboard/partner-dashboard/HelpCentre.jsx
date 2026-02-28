@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
+import { axiosInstance } from '../../../../../lib/config'
 import { ChevronDown, ChevronUp, X } from 'lucide-react'
 
 const mainContainer = 'min-h-screen w-full flex flex-col items-center justify-center py-8 px-4 bg-white'
@@ -26,24 +27,24 @@ export default function DashboardHelpCentre() {
         const token = localStorage.getItem('authToken')
         const userId = localStorage.getItem('userId')
         
-        const partnerResponse = await fetch(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/partner/user/${userId}`, {
+        const partnerResponse = await axiosInstance.get(`/api/user/partner/user/${userId}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
         })
         
-        const partnerData = await partnerResponse.json()
+        const partnerData = partnerResponse.data
         if (partnerData.status === 'success' && partnerData.data.user.userType === 'PARTNER') {
           setIsPartner(true)
         }
 
-        const faqResponse = await fetch('https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/faq/faqs', {
+        const faqResponse = await axiosInstance.get('/api/faq/faqs', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
         })
         
-        const faqData = await faqResponse.json()
+        const faqData = faqResponse.data
         if (faqData.status === 'success') {
           if (isPartner) {
             const filteredFaqs = faqData.data.faqs.filter(faq => 

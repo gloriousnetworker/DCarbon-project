@@ -70,7 +70,7 @@ export default function ReferredAndCommissionDashboard() {
         }
         
         const res = await axiosInstance.get(
-          `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/referral-statistics/${userId}`,
+          `/api/user/referral-statistics/${userId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         

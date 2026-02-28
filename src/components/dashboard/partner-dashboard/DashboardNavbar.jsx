@@ -31,8 +31,8 @@ const DashboardNavbar = ({
           return;
         }
         
-        const response = await fetch(
-          `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/partner/user/${userId}`,
+        const response = await axiosInstance.
+          `/api/user/partner/user/${userId}`,
           { headers: { 'Authorization': `Bearer ${authToken}` } }
         );
         

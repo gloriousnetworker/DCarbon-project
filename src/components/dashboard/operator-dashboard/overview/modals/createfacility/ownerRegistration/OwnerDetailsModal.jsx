@@ -70,8 +70,8 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
         throw new Error('Referral code or authentication token missing');
       }
 
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/by-referral-code/${referralCode}`,
+      const response = await axiosInstance.
+        `/api/user/by-referral-code/${referralCode}`,
         {
           method: 'GET',
           headers: {
@@ -81,7 +81,7 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
         }
       );
 
-      const data = await response.json();
+      const data = response.data;
 
       if (!response.ok) {
         throw new Error(data.message || 'Failed to fetch owner data');
@@ -210,8 +210,8 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
         }));
       }
 
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/commercial-registration/${userId}`,
+      const response = await axiosInstance.
+        `/api/user/commercial-registration/${userId}`,
         {
           method: 'PUT',
           headers: {
@@ -222,7 +222,7 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
         }
       );
 
-      const data = await response.json();
+      const data = response.data;
 
       if (!response.ok) {
         throw new Error(data.message || 'Failed to save owner details');

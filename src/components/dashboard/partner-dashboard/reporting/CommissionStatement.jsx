@@ -76,7 +76,7 @@ export default function CommissionStatement({ onNavigate }) {
       if (!quarterObj) return;
 
       const response = await axiosInstance.get(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/commission/invoice/${userId}`,
+        `/api/commission/invoice/${userId}`,
         {
           params: { quarter: quarterObj.value, year: quarterObj.year },
           headers: { Authorization: `Bearer ${authToken}` },
@@ -98,8 +98,8 @@ export default function CommissionStatement({ onNavigate }) {
 
   const fetchWalletBalance = async () => {
     try {
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/revenue/${userId}`,
+      const response = await axiosInstance.
+        `/api/revenue/${userId}`,
         { headers: { Authorization: `Bearer ${authToken}` } }
       );
       const result = await response.json();
@@ -113,8 +113,8 @@ export default function CommissionStatement({ onNavigate }) {
 
   const fetchPayoutHistory = async () => {
     try {
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/payout-request?userId=${userId}&userType=PARTNER`,
+      const response = await axiosInstance.
+        `/api/payout-request?userId=${userId}&userType=PARTNER`,
         { headers: { Authorization: `Bearer ${authToken}` } }
       );
       const result = await response.json();
@@ -151,7 +151,7 @@ export default function CommissionStatement({ onNavigate }) {
 
       if (exportParams.format !== "csv") {
         const response = await axiosInstance.post(
-          "https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/reports/export-commission-statement",
+          "/api/reports/export-commission-statement",
           requestBody,
           {
             headers: { Authorization: `Bearer ${authToken}` },
@@ -192,8 +192,8 @@ export default function CommissionStatement({ onNavigate }) {
         userType: "PARTNER",
       };
 
-      const response = await fetch(
-        "https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/payout-request/request",
+      const response = await axiosInstance.
+        "/api/payout-request/request",
         {
           method: "POST",
           headers: {

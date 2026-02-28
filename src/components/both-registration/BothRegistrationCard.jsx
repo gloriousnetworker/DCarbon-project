@@ -62,8 +62,8 @@ export default function StepOneCard() {
     setLoading(true);
 
     try {
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/commercial-registration/${userId}`,
+      const response = await axiosInstance.
+        `/api/user/commercial-registration/${userId}`,
         {
           method: 'PUT',
           headers: {
@@ -82,7 +82,7 @@ export default function StepOneCard() {
         throw new Error(errorData.message || 'Registration update failed');
       }
 
-      const data = await response.json();
+      const data = response.data;
       toast.success('Registration updated successfully!', {
         style: {
           fontFamily: 'SF Pro',

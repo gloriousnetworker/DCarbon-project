@@ -47,7 +47,7 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
     setLoadingFinanceTypes(true);
     try {
       const token = localStorage.getItem("authToken");
-      const response = await axiosInstance.get("https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/financial-types", { headers: { Authorization: `Bearer ${token}` } });
+      const response = await axiosInstance.get("/api/user/financial-types", { headers: { Authorization: `Bearer ${token}` } });
       if (response.data.status === "success") {
         const approvedTypes = response.data.data.types.filter(type => type.status === "APPROVED" || type.name.toLowerCase() === "cash");
         setFinanceTypes(approvedTypes);
@@ -63,7 +63,7 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
     setLoadingFinanceCompanies(true);
     try {
       const token = localStorage.getItem("authToken");
-      const response = await axiosInstance.get("https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/partner/finance-companies", { headers: { Authorization: `Bearer ${token}` } });
+      const response = await axiosInstance.get("/api/user/partner/finance-companies", { headers: { Authorization: `Bearer ${token}` } });
       if (response.data.status === "success") {
         setFinanceCompanies(response.data.data.financeCompanies || []);
       }
@@ -78,7 +78,7 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
     setLoadingInstallers(true);
     try {
       const token = localStorage.getItem("authToken");
-      const response = await axiosInstance.get("https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/partner/get-all-installer", { headers: { Authorization: `Bearer ${token}` } });
+      const response = await axiosInstance.get("/api/user/partner/get-all-installer", { headers: { Authorization: `Bearer ${token}` } });
       if (response.data.status === "success") setInstallers(response.data.data.installers || []);
     } catch (error) {
       toast.error("Failed to load installers");
@@ -117,7 +117,7 @@ export default function EditResidentialFacilityModal({ facility, onClose = () =>
         hasNetMetering: formData.hasNetMetering
       };
       
-      const { data } = await axiosInstance.put(`https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/residential-facility/update-facility/${facility.id}`, updateData, { headers: { Authorization: `Bearer ${authToken}` } });
+      const { data } = await axiosInstance.put(`/api/residential-facility/update-facility/${facility.id}`, updateData, { headers: { Authorization: `Bearer ${authToken}` } });
       if (data.status === "success") {
         toast.success("Facility updated successfully");
         onSave(data.data);

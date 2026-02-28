@@ -150,7 +150,7 @@ export default function AddCommercialFacilityModal({ isOpen, onClose, onCreateNe
     setUtilityProvidersLoading(true);
     try {
       const response = await axiosInstance.get(
-        "https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/utility-providers",
+        "/api/auth/utility-providers",
         {
           headers: {
             "Content-Type": "application/json",
@@ -179,7 +179,7 @@ export default function AddCommercialFacilityModal({ isOpen, onClose, onCreateNe
     setUserMetersLoading(true);
     try {
       const response = await axiosInstance.get(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/user-meters/${userId}`,
+        `/api/auth/user-meters/${userId}`,
         {
           headers: {
             "Content-Type": "application/json",
@@ -210,7 +210,7 @@ export default function AddCommercialFacilityModal({ isOpen, onClose, onCreateNe
     setInstallersLoading(true);
     try {
       const response = await axiosInstance.get(
-        "https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/admin/partners",
+        "/api/admin/partners",
         {
           headers: {
             "Content-Type": "application/json",
@@ -237,7 +237,7 @@ export default function AddCommercialFacilityModal({ isOpen, onClose, onCreateNe
     setFinanceTypesLoading(true);
     try {
       const response = await axiosInstance.get(
-        "https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/financial-types",
+        "/api/user/financial-types",
         {
           headers: {
             "Content-Type": "application/json",
@@ -378,7 +378,7 @@ export default function AddCommercialFacilityModal({ isOpen, onClose, onCreateNe
     setAcceptingAgreement(true);
     try {
       const response = await axiosInstance.put(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/accept-user-agreement-terms/${userId}`,
+        `/api/user/accept-user-agreement-terms/${userId}`,
         {},
         {
           headers: {
@@ -463,7 +463,7 @@ export default function AddCommercialFacilityModal({ isOpen, onClose, onCreateNe
     formData.append('financeAgreementUrl', file);
 
     await axiosInstance.put(
-      `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/facility/update-facility-financial-agreement/${facilityId}`,
+      `/api/facility/update-facility-financial-agreement/${facilityId}`,
       formData,
       { headers: { 'Content-Type': 'multipart/form-data', 'Authorization': `Bearer ${authToken}` } }
     );
@@ -507,7 +507,7 @@ export default function AddCommercialFacilityModal({ isOpen, onClose, onCreateNe
       };
 
       const response = await axiosInstance.post(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/facility/create-new-facility/${userId}`,
+        `/api/facility/create-new-facility/${userId}`,
         payload,
         {
           headers: {
@@ -584,7 +584,7 @@ export default function AddCommercialFacilityModal({ isOpen, onClose, onCreateNe
 
     try {
       const response = await axiosInstance.post(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/request-financial-type/${userId}`,
+        `/api/user/request-financial-type/${userId}`,
         { name: newFinanceTypeName },
         {
           headers: {

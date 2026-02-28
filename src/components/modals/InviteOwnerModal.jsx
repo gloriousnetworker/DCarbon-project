@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toastr from 'toastr';
+import { axiosInstance } from '../../lib/config';
 
 export default function EmailVerificationModal({ closeModal }) {
   const [ownerName, setOwnerName] = useState('');
@@ -34,24 +35,17 @@ export default function EmailVerificationModal({ closeModal }) {
     }
 
     try {
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/invite-user/${userId}`,
+      const response = await axiosInstance.post(
+        `/api/user/invite-user/${userId}`,
         {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`,
-          },
-          body: JSON.stringify({
-            inviteeEmail: email,
-            role: 'owner'
-          }),
+          inviteeEmail: email,
+          role: 'owner'
         }
       );
 
-      const data = await response.json();
+      const data = response.data;
 
-      if (!response.ok) {
+      if (response.status < 200 || response.status >= 300) {
         throw new Error(data.message || 'Failed to send invitation');
       }
 

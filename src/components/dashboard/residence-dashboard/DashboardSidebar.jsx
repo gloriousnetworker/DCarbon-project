@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from "react";
+import { axiosInstance } from "../../../../lib/config";
 import {
   FiHome,
   FiTrendingUp,
@@ -34,10 +35,9 @@ const DashboardSidebar = ({
 
       if (!userId || !authToken) return;
 
-      const response = await fetch(
-        `https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/user/notifications/${userId}`,
+      const response = await axiosInstance.get(
+        `/api/user/notifications/${userId}`,
         {
-          method: 'GET',
           headers: {
             'Authorization': `Bearer ${authToken}`,
             'Content-Type': 'application/json'

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { axiosInstance } from '../../../../../lib/config';
 import toast from 'react-hot-toast';
 
 const styles = {
@@ -52,30 +53,14 @@ export default function VerificationContent({ token: propToken }) {
     }, 250);
   
     try {
-      const response = await fetch('https://naijatrips-app-dcarbon-server.cafyit.easypanel.host/api/auth/check-utility-auth', {
-        method: 'POST',
+      const response = await axiosInstance.post('/api/auth/check-utility-auth', { token } , {
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ token })
+        }
       });
   
-      // First check if the response is JSON
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        const text = await response.text();
-        throw new Error(text || 'Invalid response from server');
-      }
-  
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.message || 'Utility authorization verification failed');
-      }
-  
-      setVerificationStatus('success');
-      setMessage(data.message || 'Utility authorization verified successfully');
+      const data = response.data;
       
       toast.success(data.message || 'Utility authorization verified', {
         style: { fontFamily: 'SF Pro', background: '#E8F5E9', color: '#1B5E20' }
