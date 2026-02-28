@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
-import { axiosInstance } from '@/lib/config';
+import { axiosInstance } from '../../../../lib/config';
 
 export default function EmailVerificationModal({ closeModal, onSkip }) {
   const [formData, setFormData] = useState({

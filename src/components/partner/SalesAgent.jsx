@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { axiosInstance } from '@/lib/config';
+import { axiosInstance } from '../../../lib/config';
 import toast from 'react-hot-toast';
 
 export default function StepOneCard() {

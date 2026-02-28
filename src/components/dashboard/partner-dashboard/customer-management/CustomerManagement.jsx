@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { axiosInstance } from '@/lib/config';
+import { axiosInstance } from '../../../../../lib/config';
 import { HiOutlineChevronLeft, HiOutlineChevronRight, HiOutlineChevronDown } from 'react-icons/hi';
 import FilterModal from './FilterModal';
 import SendReminderModal from './SendReminderModal';

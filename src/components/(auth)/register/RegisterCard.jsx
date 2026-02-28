@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { axiosInstance } from '@/lib/config';
+import { axiosInstance } from '../../../../lib/config';
 import Loader from '../../../components/loader/Loader';
 import EmailModal from '../../../components/modals/EmailModal';
 import { toast } from 'react-hot-toast';

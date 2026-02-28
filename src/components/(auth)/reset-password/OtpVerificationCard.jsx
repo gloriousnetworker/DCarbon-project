@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { axiosInstance } from '@/lib/config';
+import { axiosInstance } from '../../../../lib/config';
 import Loader from '../../../components/loader/Loader';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { axiosInstance } from '@/lib/config';
+import { axiosInstance } from '../../../../../lib/config';
 import { HiOutlineArrowLeft } from 'react-icons/hi';
 import { FiChevronRight } from 'react-icons/fi';
 import CommercialFacilityDetails from './commercial-details/CommercialFacilityDetails';

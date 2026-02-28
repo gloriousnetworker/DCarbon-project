@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { axiosInstance } from '@/lib/config';
+import { axiosInstance } from '../../../../../../lib/config';
 import { FiX } from 'react-icons/fi';
 import { FaSearch, FaCheck, FaTimes } from 'react-icons/fa';
 import { toast } from 'react-hot-toast';
