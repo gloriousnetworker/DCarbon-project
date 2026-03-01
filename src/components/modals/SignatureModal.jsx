@@ -137,8 +137,7 @@ const SignatureModal = ({ isOpen, onClose, onSaveSignature }) => {
           return;
         }
         // Convert data URL to blob
-        const response = await axiosInstance.signatureData;
-        const blob = await response.blob();
+        const blob = await (await fetch(signatureData)).blob();
         formData.append("signature", blob, "signature.png");
         signatureMethod = "drawn";
       } 

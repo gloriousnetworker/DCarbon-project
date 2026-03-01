@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { axiosInstance } from '../../../lib/config';
 import toast from 'react-hot-toast';
 
 const styles = {
@@ -62,27 +63,25 @@ export default function StepOneCard() {
     setLoading(true);
 
     try {
-      const response = await axiosInstance.
+      const response = await axiosInstance.put(
         `/api/user/commercial-registration/${userId}`,
         {
-          method: 'PUT',
+          entityType,
+          commercialRole: 'both',
+        },
+        {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${authToken}`,
-          },
-          body: JSON.stringify({
-            entityType,
-            commercialRole: 'both' 
-          }),
+          }
         }
       );
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Registration update failed');
+      // axios returns data on the response object
+      if (response.data?.status !== 'success') {
+        throw new Error(response.data?.message || 'Registration update failed');
       }
 
-      const data = response.data;
       toast.success('Registration updated successfully!', {
         style: {
           fontFamily: 'SF Pro',

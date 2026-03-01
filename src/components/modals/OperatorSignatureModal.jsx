@@ -133,8 +133,7 @@ const SignatureModal = ({ isOpen, onClose, onSaveSignature }) => {
           toast.error("Draw your signature first");
           return;
         }
-        const resp = await axiosInstance.signatureData;
-        const blob = await resp.blob();
+        const blob = await (await fetch(signatureData)).blob();
         formData.append("signature", blob, "signature.png");
         method = "drawn";
       } else if (activeTab === "type") {
@@ -175,9 +174,9 @@ const SignatureModal = ({ isOpen, onClose, onSaveSignature }) => {
         }
       );
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to save signature');
+      // axios returns status in response.status and data in response.data
+      if (response.status !== 200 && response.status !== 201) {
+        throw new Error(response.data?.message || 'Failed to save signature');
       }
 
       const result = await response.json();

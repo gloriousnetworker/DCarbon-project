@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import { axiosInstance } from '../../../../lib/config';
 import UtilityAuthorizationModal from './UtilityAuthorizationModal';
 
 const styles = {
@@ -64,24 +65,22 @@ export default function OperatorRegistrationCard() {
     setLoading(true);
 
     try {
-      const response = await axiosInstance.
+      const response = await axiosInstance.put(
         `/api/user/commercial-registration/${userId}`,
         {
-          method: 'PUT',
+          entityType,
+          commercialRole,
+        },
+        {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${authToken}`,
-          },
-          body: JSON.stringify({
-            entityType,
-            commercialRole,
-          }),
+          }
         }
       );
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Registration update failed');
+      if (response.data?.status !== 'success') {
+        throw new Error(response.data?.message || 'Registration update failed');
       }
 
       toast.success('Registration updated successfully!', {

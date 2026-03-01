@@ -265,9 +265,8 @@ export default function StepOneCard() {
           const base64data = localStorage.getItem('tempFinancialAgreement');
           if (!base64data) throw new Error('File data not found');
           
-          // Convert base64 to blob for upload
-          const response = await axiosInstance.base64data);
-          const blob = await response.blob();
+          // Convert base64 data URI to blob for upload
+          const blob = await (await fetch(base64data)).blob();
           const fileToUpload = new File([blob], file.name, { type: blob.type });
 
           const formData = new FormData();
