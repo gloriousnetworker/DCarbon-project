@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { axiosInstance } from '../../lib/config';
+import { axiosInstance } from '../../../lib/config';
 import UtilityAuthorizationModal from './UtilityAuthorizationModal';
 
 const styles = {
