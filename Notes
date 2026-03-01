@@ -1,0 +1,7 @@
+Using Git alias to push to the different repos at once : 
+# Set up the alias
+git config --global alias.push-both '!git push origin develop && git push personal develop'
+
+# Now just use:
+git push-both ---
+
