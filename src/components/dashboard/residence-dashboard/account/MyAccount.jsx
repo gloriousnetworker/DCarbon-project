@@ -7,7 +7,7 @@ import ProfileImage from "./ProfileImage";
 import ContactInformation from "./ContactInformation";
 import { toast } from "react-hot-toast";
 import Loader from "@/components/loader/Loader";
-import { axiosInstance } from "../../../../../../../../lib/config";
+import { axiosInstance } from "../../../../../lib/config";
 
 const MyAccount = () => {
   const [showPreferences, setShowPreferences] = useState(true);
