@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios, { axiosInstance } from "../../../../../../lib/config";
+import axios, { axiosInstance } from "../../../../../lib/config";
 import { FiChevronRight } from "react-icons/fi";
 import toast from "react-hot-toast";
 import FilterModal from "./FilterModal";

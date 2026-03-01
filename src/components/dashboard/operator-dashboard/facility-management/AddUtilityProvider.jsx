@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { toast } from "react-hot-toast";
 import * as styles from "./styles";
+import { axiosInstance } from "../../../../../lib/config";
 
 export default function AddUtilityProvider({ isOpen, onClose }) {
   const [email, setEmail] = useState("");
@@ -16,7 +17,6 @@ export default function AddUtilityProvider({ isOpen, onClose }) {
       return;
     }
 
-    // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       toast.error("Please enter a valid email address");
@@ -26,7 +26,6 @@ export default function AddUtilityProvider({ isOpen, onClose }) {
     setIsLoading(true);
 
     try {
-      // Get userId and authToken from localStorage
       const loginResponse = JSON.parse(localStorage.getItem("loginResponse") || "{}");
       const userId = loginResponse?.data?.user?.id;
       const authToken = loginResponse?.data?.authToken || localStorage.getItem("authToken") || localStorage.getItem("token");
@@ -43,26 +42,23 @@ export default function AddUtilityProvider({ isOpen, onClose }) {
         return;
       }
 
-      const response = await axiosInstance.
-        `/api/user/update-utility-auth-email/${userId}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${authToken}`,
-          },
-          body: JSON.stringify({
-            utilityAuthEmail: email.trim()
-          }),
-        }
-      );
+      const response = await axiosInstance({
+        method: "PUT",
+        url: `/api/user/update-utility-auth-email/${userId}`,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${authToken}`,
+        },
+        data: JSON.stringify({
+          utilityAuthEmail: email.trim()
+        }),
+      });
 
       const data = response.data;
 
-      if (response.ok && data.status === "success") {
+      if (response.status === 200 && data.status === "success") {
         toast.success("Utility authorization email added successfully!");
         
-        // Update localStorage with new user data
         const updatedLoginResponse = {
           ...loginResponse,
           data: {
@@ -75,16 +71,13 @@ export default function AddUtilityProvider({ isOpen, onClose }) {
         };
         localStorage.setItem("loginResponse", JSON.stringify(updatedLoginResponse));
 
-        // Close modal
         onClose();
         
-        // Open utility authorization window
         setTimeout(() => {
           window.open("https://utilityapi.com/authorize/DCarbon_Solutions", "_blank");
         }, 1000);
         
       } else {
-        // Handle different error scenarios
         if (response.status === 401) {
           toast.error("Authentication failed. Please log in again.");
         } else if (response.status === 403) {
@@ -95,7 +88,15 @@ export default function AddUtilityProvider({ isOpen, onClose }) {
       }
     } catch (error) {
       console.error("Error adding utility auth email:", error);
-      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      if (error.response) {
+        if (error.response.status === 401) {
+          toast.error("Authentication failed. Please log in again.");
+        } else if (error.response.status === 403) {
+          toast.error("You don't have permission to perform this action.");
+        } else {
+          toast.error(error.response.data?.message || "Failed to add utility authorization email");
+        }
+      } else if (error.request) {
         toast.error("Network error. Please check your connection and try again.");
       } else {
         toast.error("An error occurred. Please try again.");
@@ -113,20 +114,17 @@ export default function AddUtilityProvider({ isOpen, onClose }) {
 
   return (
     <>
-      {/* Loading Spinner Overlay */}
       {isLoading && (
         <div className={styles.spinnerOverlay}>
           <div className={styles.spinner}></div>
         </div>
       )}
 
-      {/* Modal Overlay */}
       <div 
         className="fixed inset-0 z-40 flex items-center justify-center bg-black bg-opacity-50"
         onClick={handleOverlayClick}
       >
         <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 p-6 relative">
-          {/* Close Button */}
           <button
             onClick={onClose}
             className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
@@ -137,7 +135,6 @@ export default function AddUtilityProvider({ isOpen, onClose }) {
             </svg>
           </button>
 
-          {/* Modal Header */}
           <div className="mb-6">
             <h2 className={styles.pageTitle}>
               Add Utility Provider
@@ -147,7 +144,6 @@ export default function AddUtilityProvider({ isOpen, onClose }) {
             </p>
           </div>
 
-          {/* Form */}
           <form onSubmit={handleSubmit} className={styles.formWrapper}>
             <div>
               <label htmlFor="utilityEmail" className={styles.labelClass}>
@@ -177,7 +173,6 @@ export default function AddUtilityProvider({ isOpen, onClose }) {
             </button>
           </form>
 
-          {/* Information Section */}
           <div className="mt-6 p-4 bg-blue-50 rounded-md">
             <div className="flex">
               <div className="flex-shrink-0">

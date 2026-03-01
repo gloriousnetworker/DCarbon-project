@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { axiosInstance } from '../../../../../lib/config'
+import { axiosInstance } from '../../../../lib/config'
 import { ChevronDown, X } from 'lucide-react'
 
 const mainContainer = 'min-h-screen w-full flex flex-col py-8 px-4 bg-white'

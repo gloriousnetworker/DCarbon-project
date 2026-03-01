@@ -11,6 +11,7 @@ import Loader from "../../../../../components/loader/Loader";
 import Agreement from "../../../../../components/commercial/commercial-owner-registration/AgreementForm";
 import SignatureModal from "../../../../../components/modals/OperatorSignatureModal";
 import toast from "react-hot-toast";
+import { axiosInstance } from "../../../../../../lib/config";
 
 export default function AgreementFormPage() {
   const [loading, setLoading] = useState(false);
@@ -28,26 +29,21 @@ export default function AgreementFormPage() {
 
   const router = useRouter();
 
-  // Get auth data from localStorage
   const getAuthData = () => {
     const authToken = localStorage.getItem("authToken");
     const userId = localStorage.getItem("userId");
     return { authToken, userId };
   };
 
-  // Store agreement data temporarily in localStorage
   const storeAgreementTemporarily = (agreementData) => {
     try {
-      // Get existing loginResponse
       const loginResponse = JSON.parse(localStorage.getItem("loginResponse") || "null");
       
       if (loginResponse && loginResponse.data && loginResponse.data.user) {
-        // Update the loginResponse with agreement data
         loginResponse.data.user.agreements = agreementData;
         localStorage.setItem("loginResponse", JSON.stringify(loginResponse));
       }
 
-      // Also store as separate item for fallback
       localStorage.setItem("userAgreements", JSON.stringify(agreementData));
       
       console.log("Agreement data stored temporarily:", agreementData);
@@ -56,7 +52,6 @@ export default function AgreementFormPage() {
     }
   };
 
-  // Effect for main loader delay
   useEffect(() => {
     let timer;
     if (loading) {
@@ -67,7 +62,6 @@ export default function AgreementFormPage() {
     return () => clearTimeout(timer);
   }, [loading]);
 
-  // Effect for redirect loader delay
   useEffect(() => {
     let timer;
     if (isRedirecting) {
@@ -78,7 +72,6 @@ export default function AgreementFormPage() {
     return () => clearTimeout(timer);
   }, [isRedirecting]);
 
-  // Check authentication on initial load
   useEffect(() => {
     const { authToken, userId } = getAuthData();
     if (!authToken || !userId) {
@@ -95,7 +88,6 @@ export default function AgreementFormPage() {
     }
   };
 
-  // Function to call the accept user agreement endpoint
   const acceptUserAgreement = async () => {
     const { authToken, userId } = getAuthData();
     
@@ -107,30 +99,27 @@ export default function AgreementFormPage() {
     }
 
     try {
-      const response = await axiosInstance.
-        `/api/user/accept-user-agreement-terms/${userId}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${authToken}`,
-          },
-          body: JSON.stringify({
-            signature: signatureData,
-            termsAccepted: true,
-            agreementCompleted: true
-          }),
-        }
-      );
+      const response = await axiosInstance({
+        method: "PUT",
+        url: `/api/user/accept-user-agreement-terms/${userId}`,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
+        },
+        data: JSON.stringify({
+          signature: signatureData,
+          termsAccepted: true,
+          agreementCompleted: true
+        }),
+      });
 
-      if (!response.ok) {
-        const error = await response.json();
+      if (response.status !== 200) {
+        const error = response.data;
         throw new Error(error.message || "Failed to accept user agreement");
       }
 
-      const result = await response.json();
+      const result = response.data;
       
-      // Store agreement data temporarily for immediate use
       const agreementData = {
         id: result.data?.id || `temp-${Date.now()}`,
         userId: userId,
@@ -292,18 +281,10 @@ export default function AgreementFormPage() {
         onClose={() => setShowSignatureModal(false)}
         onSaveSignature={handleSaveSignature}
       />
-
-      {/* Login Modal - You'll need to create or import this */}
-      {/* <LoginModal 
-        isOpen={showLoginModal}
-        onClose={() => setShowLoginModal(false)}
-        onLoginSuccess={handleLoginSuccess}
-      /> */}
     </>
   );
 }
 
-// Style constants
 const mainContainer = 'min-h-screen w-full flex flex-col items-center justify-center py-8 px-4 bg-white';
 const headingContainer = 'relative w-full flex flex-col items-center mb-2';
 const backArrow = 'absolute left-4 top-0 text-[#039994] cursor-pointer z-10';

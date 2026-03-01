@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import SignatureModal from "./SignatureModal";
 import { jsPDF } from "jspdf";
+import { axiosInstance } from "../../../../../lib/config";
 
 export default function OwnerAndOperatorTermsAndAgreementModal({ isOpen, onClose }) {
   const [isChecked1, setIsChecked1] = useState(false);
@@ -41,19 +42,17 @@ export default function OwnerAndOperatorTermsAndAgreementModal({ isOpen, onClose
         return null;
       }
 
-      const response = await axiosInstance.
-        `/api/user/agreement/${userId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`,
-          },
-        }
-      );
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/user/agreement/${userId}`,
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+        },
+      });
 
       const data = response.data;
 
-      if (response.ok && data.status === 'success') {
+      if (response.status === 200 && data.status === 'success') {
         return data.data;
       } else {
         return null;
@@ -76,20 +75,18 @@ export default function OwnerAndOperatorTermsAndAgreementModal({ isOpen, onClose
         return false;
       }
 
-      const response = await axiosInstance.
-        `/api/user/accept-user-agreement-terms/${userId}`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`,
-          },
-        }
-      );
+      const response = await axiosInstance({
+        method: 'PUT',
+        url: `/api/user/accept-user-agreement-terms/${userId}`,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        },
+      });
 
       const data = response.data;
 
-      if (response.ok && data.status === 'success') {
+      if (response.status === 200 && data.status === 'success') {
         toast.success('Terms and conditions accepted successfully!');
         return true;
       } else {
