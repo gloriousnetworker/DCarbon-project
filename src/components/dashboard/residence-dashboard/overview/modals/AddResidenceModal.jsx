@@ -41,11 +41,11 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
   const [file, setFile] = useState(null);
   const [utilityProviders, setUtilityProviders] = useState([]);
   const [utilityProvidersLoading, setUtilityProvidersLoading] = useState(false);
-  const [userMeterData, setUserMeterData] = useState([]);
-  const [userMetersLoading, setUserMetersLoading] = useState(false);
+  const [utilityAuthData, setUtilityAuthData] = useState([]);
+  const [utilityAuthLoading, setUtilityAuthLoading] = useState(false);
   const [selectedMeter, setSelectedMeter] = useState(null);
   const [isSameLocation, setIsSameLocation] = useState(null);
-  const [selectedUtilityAuthEmail, setSelectedUtilityAuthEmail] = useState("");
+  const [selectedUtilityAuthId, setSelectedUtilityAuthId] = useState("");
   const [installers, setInstallers] = useState([]);
   const [installersLoading, setInstallersLoading] = useState(false);
   const [financeTypes, setFinanceTypes] = useState([]);
@@ -66,7 +66,7 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
   useEffect(() => {
     if (isOpen) {
       fetchUtilityProviders();
-      fetchUserMeters();
+      fetchUtilityAuth();
       fetchInstallers();
       fetchFinanceTypes();
       fetchFinanceCompanies();
@@ -76,7 +76,7 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
   useEffect(() => {
     if (selectedMeter && isSameLocation !== null) {
       if (isSameLocation === true) {
-        const serviceAddress = selectedMeter.base.service_address;
+        const serviceAddress = selectedMeter.utilityServiceAddress;
         const zipCode = extractZipCode(serviceAddress);
         
         setFormData(prev => ({
@@ -129,16 +129,16 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
     }
   };
 
-  const fetchUserMeters = async () => {
+  const fetchUtilityAuth = async () => {
     const userId = localStorage.getItem("userId");
     const authToken = localStorage.getItem("authToken");
 
     if (!userId || !authToken) return;
 
-    setUserMetersLoading(true);
+    setUtilityAuthLoading(true);
     try {
       const response = await axiosInstance.get(
-        `/api/auth/user-meters/${userId}`,
+        `/api/auth/utility-auth/${userId}`,
         {
           headers: {
             "Content-Type": "application/json",
@@ -148,17 +148,21 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
       );
 
       if (response.data.status === "success") {
-        setUserMeterData(response.data.data);
-        const firstWithMeters = response.data.data.find(item => item.meters?.meters?.length > 0);
-        if (firstWithMeters) {
-          setSelectedUtilityAuthEmail(firstWithMeters.utilityAuthEmail);
+        const authData = response.data.data || [];
+        setUtilityAuthData(authData);
+        
+        if (authData.length > 0) {
+          const firstWithMeters = authData.find(item => item.meters?.length > 0);
+          if (firstWithMeters) {
+            setSelectedUtilityAuthId(firstWithMeters.id);
+          }
         }
       }
     } catch (error) {
-      console.error("Error fetching user meters:", error);
-      toast.error("Failed to load meter information");
+      console.error("Error fetching utility auth:", error);
+      toast.error("Failed to load utility accounts");
     } finally {
-      setUserMetersLoading(false);
+      setUtilityAuthLoading(false);
     }
   };
 
@@ -255,26 +259,24 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
   };
 
   const getCurrentMeters = () => {
-    if (!selectedUtilityAuthEmail) return [];
+    if (!selectedUtilityAuthId) return [];
     
-    const selectedData = userMeterData.find(
-      item => item.utilityAuthEmail === selectedUtilityAuthEmail
+    const selectedData = utilityAuthData.find(
+      item => item.id === selectedUtilityAuthId
     );
     
-    if (!selectedData || !selectedData.meters?.meters) return [];
+    if (!selectedData || !selectedData.meters) return [];
     
-    return selectedData.meters.meters.filter(
-      meter => meter.base.service_class === "electric"
-    );
+    return selectedData.meters;
   };
 
-  const getUtilityShortCode = (utilityAuthEmail) => {
-    const selectedData = userMeterData.find(
-      item => item.utilityAuthEmail === utilityAuthEmail
+  const getUtilityType = (utilityAuthId) => {
+    const selectedData = utilityAuthData.find(
+      item => item.id === utilityAuthId
     );
 
-    if (selectedData && selectedData.meters?.meters?.length > 0) {
-      return selectedData.meters.meters[0].utility || "";
+    if (selectedData) {
+      return selectedData.utilityType || "";
     }
     return "";
   };
@@ -328,7 +330,7 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
 
     if (name === "meterId") {
       const currentMeters = getCurrentMeters();
-      const meter = currentMeters.find(m => m.uid === value);
+      const meter = currentMeters.find(m => m.meterUid === value);
       setSelectedMeter(meter || null);
       setIsSameLocation(null);
       setMeterAgreementAccepted(false);
@@ -368,12 +370,13 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
     }
   };
 
-  const handleUtilityAuthEmailChange = (e) => {
-    const email = e.target.value;
-    setSelectedUtilityAuthEmail(email);
+  const handleUtilityAuthIdChange = (e) => {
+    const id = e.target.value;
+    setSelectedUtilityAuthId(id);
     setFormData(prev => ({
       ...prev,
-      meterId: ""
+      meterId: "",
+      utilityProvider: getUtilityType(id)
     }));
     setSelectedMeter(null);
     setIsSameLocation(null);
@@ -437,7 +440,7 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
     setUploadSuccess(false);
     setSelectedMeter(null);
     setIsSameLocation(null);
-    setSelectedUtilityAuthEmail("");
+    setSelectedUtilityAuthId("");
     setMeterAgreementAccepted(false);
   };
 
@@ -528,12 +531,12 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
 
   const handleCloseAddUtilityModal = () => {
     setShowAddUtilityModal(false);
-    fetchUserMeters();
+    fetchUtilityAuth();
   };
 
   const handleCloseUtilityAuthModal = () => {
     setShowUtilityAuthModal(false);
-    fetchUserMeters();
+    fetchUtilityAuth();
   };
 
   const handleOpenAddFinanceTypeModal = () => {
@@ -599,8 +602,8 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
     (selectedMeter ? isSameLocation !== null : true) &&
     (selectedMeter ? meterAgreementAccepted : true);
 
-  const utilityAuthEmailsWithMeters = userMeterData.filter(
-    item => item.meters?.meters?.length > 0
+  const utilityAuthWithMeters = utilityAuthData.filter(
+    item => item.meters?.length > 0
   );
 
   const currentMeters = getCurrentMeters();
@@ -657,21 +660,21 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
                   Utility Account <span className="text-red-500">*</span>
                 </label>
                 <select
-                  value={selectedUtilityAuthEmail}
-                  onChange={handleUtilityAuthEmailChange}
+                  value={selectedUtilityAuthId}
+                  onChange={handleUtilityAuthIdChange}
                   className={selectClass}
                   required
-                  disabled={loading || userMetersLoading}
+                  disabled={loading || utilityAuthLoading}
                 >
                   <option value="">Select utility account</option>
-                  {userMetersLoading ? (
+                  {utilityAuthLoading ? (
                     <option value="" disabled>Loading accounts...</option>
-                  ) : utilityAuthEmailsWithMeters.length === 0 ? (
+                  ) : utilityAuthWithMeters.length === 0 ? (
                     <option value="" disabled>No utility accounts found</option>
                   ) : (
-                    utilityAuthEmailsWithMeters.map(item => (
-                      <option key={item.id} value={item.utilityAuthEmail}>
-                        {item.utilityAuthEmail} - {getUtilityShortCode(item.utilityAuthEmail)}
+                    utilityAuthWithMeters.map(item => (
+                      <option key={item.id} value={item.id}>
+                        {item.utilityAuthEmail} - {item.utilityType}
                       </option>
                     ))
                   )}
@@ -688,7 +691,7 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
                 </button>
               </div>
 
-              {selectedUtilityAuthEmail && (
+              {selectedUtilityAuthId && (
                 <div>
                   <label className={labelClass}>
                     Electric Meter <span className="text-red-500">*</span>
@@ -706,21 +709,18 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
                       <option value="" disabled>No electric meters found for this account</option>
                     ) : (
                       currentMeters.map(meter => (
-                        <option key={meter.uid} value={meter.uid}>
-                          {meter.base.meter_numbers[0]} - {meter.base.billing_address}
+                        <option key={meter.meterUid} value={meter.meterUid}>
+                          {meter.utilityMeterNumber} - {meter.utilityServiceAddress}
                         </option>
                       ))
                     )}
                   </select>
-                  <p className="mt-1 text-xs text-gray-500">
-                    Only electric meters are shown
-                  </p>
                 </div>
               )}
 
               {selectedMeter && (
                 <div className="mb-3 p-2 bg-gray-50 rounded-md border border-gray-200 text-sm">
-                  <p className="font-medium mb-2">Service Address: {selectedMeter.base.service_address}</p>
+                  <p className="font-medium mb-2">Service Address: {selectedMeter.utilityServiceAddress}</p>
                   <p className="font-medium mb-2">
                     Is this the same location for the residence? <span className="text-red-500">*</span>
                   </p>

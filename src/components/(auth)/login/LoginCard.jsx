@@ -48,12 +48,13 @@ export default function LoginCard() {
       localStorage.setItem('userId', user.id);
       localStorage.setItem('userType', user.userType);
       localStorage.setItem('isPartnerOperator', user.isPartnerOperator);
+      
       if (user.partnerType) {
         localStorage.setItem('partnerType', user.partnerType);
       }
 
       if (user.isPartnerOperator === true && user.userType === 'COMMERCIAL') {
-        localStorage.setItem('operatorDetails', JSON.stringify(response.data));
+        localStorage.setItem('operatorDetails', JSON.stringify(response.data.data));
       }
 
       toast.success('Login successful');
@@ -66,10 +67,10 @@ export default function LoginCard() {
       switch (user.userType) {
         case 'COMMERCIAL':
           window.location.href = '/commercial-dashboard';
-          return;
+          break;
         case 'RESIDENTIAL':
           window.location.href = '/residence-dashboard';
-          return;
+          break;
         case 'PARTNER':
           const isNewPartner = !user.financialInfo && !user.agreements;
           if (isNewPartner) {
@@ -77,7 +78,7 @@ export default function LoginCard() {
           } else {
             window.location.href = '/partner-dashboard';
           }
-          return;
+          break;
         default:
           window.location.href = '/';
       }
@@ -138,7 +139,7 @@ export default function LoginCard() {
             <input
               type="email"
               id="email"
-              placeholder="@ e.g name@domain.com"
+              placeholder="e.g name@domain.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E] bg-white bg-opacity-70"

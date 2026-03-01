@@ -11,13 +11,13 @@ export default function ResidentialFacilityTabs({
 }) {
   const [showAddFacilityModal, setShowAddFacilityModal] = useState(false);
   const [isButtonDisabled, setIsButtonDisabled] = useState(true);
-  const [disabledReason, setDisabledReason] = useState("Checking meters...");
+  const [disabledReason, setDisabledReason] = useState("Checking utility accounts...");
 
   useEffect(() => {
-    checkMeters();
+    checkUtilityAuth();
   }, []);
 
-  const checkMeters = async () => {
+  const checkUtilityAuth = async () => {
     try {
       const authToken = localStorage.getItem("authToken");
       const userId = localStorage.getItem("userId");
@@ -28,36 +28,36 @@ export default function ResidentialFacilityTabs({
         return;
       }
 
-      const response = await axiosInstance.get(`/api/auth/user-meters/${userId}`, {
+      const response = await axiosInstance.get(`/api/auth/utility-auth/${userId}`, {
         headers: {
           'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json'
         }
       });
 
-      const meterData = response.data;
+      const utilityData = response.data;
 
-      if (meterData.status !== "success") {
+      if (utilityData.status !== "success") {
         setIsButtonDisabled(true);
-        setDisabledReason("No meters found");
+        setDisabledReason("No utility accounts found");
         return;
       }
 
-      const hasValidMeters = meterData.data?.some(item => 
-        item.meters?.meters?.length > 0
+      const hasValidUtilityAccount = utilityData.data?.some(item => 
+        item.hasMeter === true && item.utilityAuthEmail
       );
 
-      if (hasValidMeters) {
+      if (hasValidUtilityAccount) {
         setIsButtonDisabled(false);
         setDisabledReason("");
       } else {
         setIsButtonDisabled(true);
-        setDisabledReason("No valid meters found");
+        setDisabledReason("No valid utility accounts found");
       }
 
     } catch (error) {
       setIsButtonDisabled(true);
-      setDisabledReason("Error checking meters");
+      setDisabledReason("Error checking utility accounts");
     }
   };
 
@@ -72,6 +72,7 @@ export default function ResidentialFacilityTabs({
     if (onAddFacility) {
       onAddFacility();
     }
+    checkUtilityAuth();
   };
 
   return (

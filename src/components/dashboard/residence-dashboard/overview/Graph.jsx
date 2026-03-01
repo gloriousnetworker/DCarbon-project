@@ -160,7 +160,7 @@ export default function Graph() {
   const fetchFacilities = async (userId, authToken) => {
     try {
       const response = await axiosInstance.get(
-        `/api/facility/get-user-facilities-by-userId/${userId}`,
+        `/api/residential-facility/get-user-facilities/${userId}`,
         {
           headers: { 
             Authorization: `Bearer ${authToken}`, 
@@ -169,12 +169,19 @@ export default function Graph() {
         }
       );
       const data = response.data;
-      const facilitiesData = data.data?.facilities || [];
-      setFacilities(facilitiesData);
-      const totalRecs = facilitiesData.reduce((sum, facility) => sum + (facility.totalRecs || 0), 0);
-      setRecData(prev => ({ ...prev, totalRecs, loading: false }));
+      if (data.status === "success") {
+        const facilitiesData = data.data?.facilities || [];
+        setFacilities(facilitiesData);
+        const totalRecs = facilitiesData.reduce((sum, facility) => sum + (facility.totalRecs || 0), 0);
+        setRecData(prev => ({ ...prev, totalRecs, loading: false }));
+      } else {
+        setFacilities([]);
+        setRecData(prev => ({ ...prev, loading: false, totalRecs: 0 }));
+      }
     } catch (err) {
+      console.error('Error fetching facilities:', err);
       setError(err.message);
+      setFacilities([]);
       setRecData(prev => ({ ...prev, loading: false, totalRecs: 0 }));
     }
   };
@@ -449,7 +456,7 @@ export default function Graph() {
     if (facility.nickname && facility.nickname.trim() !== "") {
       return facility.nickname;
     }
-    if (facility.address && facility.address.trim() !== "") {
+    if (facility.address && facility.address.trim() !== "" && facility.address !== "To be updated") {
       return facility.address;
     }
     return facility.facilityName;
@@ -822,7 +829,7 @@ export default function Graph() {
                 <div className="space-y-1.5 text-sm font-sfpro">
                   <div className="flex justify-between">
                     <span className="text-gray-600">System Size:</span>
-                    <span className="font-medium">12 kW/AC</span>
+                    <span className="font-medium">{currentFacilityStats.facilityDetails.systemCapacity || 0} kW/AC</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Utility:</span>

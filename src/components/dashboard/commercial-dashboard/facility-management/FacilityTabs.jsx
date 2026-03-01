@@ -10,88 +10,54 @@ export default function CommercialFacilityTabs({
 }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isButtonDisabled, setIsButtonDisabled] = useState(true);
-  const [disableReason, setDisableReason] = useState("");
+  const [disableReason, setDisableReason] = useState("Checking utility accounts...");
 
   useEffect(() => {
-    checkButtonStatus();
+    checkUtilityAuth();
   }, []);
 
-  const checkButtonStatus = async () => {
+  const checkUtilityAuth = async () => {
     try {
-      const loginResponse = localStorage.getItem("loginResponse");
-      
-      if (!loginResponse) {
-        setIsButtonDisabled(true);
-        setDisableReason("Not logged in");
-        return;
-      }
-
-      const parsedResponse = JSON.parse(loginResponse);
-      
-      if (parsedResponse.status !== "success") {
-        setIsButtonDisabled(true);
-        setDisableReason("Login not successful");
-        return;
-      }
-
-      const userData = parsedResponse.data?.user;
-      
-      if (!userData) {
-        setIsButtonDisabled(true);
-        setDisableReason("User data not found");
-        return;
-      }
-
-      const userId = userData.id;
       const authToken = localStorage.getItem("authToken");
+      const userId = localStorage.getItem("userId");
 
       if (!userId || !authToken) {
         setIsButtonDisabled(true);
-        setDisableReason("User ID or auth token not found");
+        setDisableReason("Authentication required");
         return;
       }
 
-      const response = await axiosInstance.get(`/api/auth/user-meters/${userId}`, {
+      const response = await axiosInstance.get(`/api/auth/utility-auth/${userId}`, {
         headers: {
           'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json'
         }
       });
 
-      if (!response.data) {
+      const utilityData = response.data;
+
+      if (utilityData.status !== "success") {
         setIsButtonDisabled(true);
-        setDisableReason("Failed to fetch user meters");
+        setDisableReason("No utility accounts found");
         return;
       }
 
-      const meterData = response.data;
-
-      if (meterData.status !== "success") {
-        setIsButtonDisabled(true);
-        setDisableReason("Failed to fetch meters");
-        return;
-      }
-
-      const hasValidMeters = meterData.data && meterData.data.some(item => 
-        item.meters && 
-        item.meters.meters && 
-        Array.isArray(item.meters.meters) && 
-        item.meters.meters.length > 0
+      const hasValidUtilityAccount = utilityData.data?.some(item => 
+        item.hasMeter === true && item.utilityAuthEmail && item.meters?.length > 0
       );
 
-      if (!hasValidMeters) {
+      if (hasValidUtilityAccount) {
+        setIsButtonDisabled(false);
+        setDisableReason("");
+      } else {
         setIsButtonDisabled(true);
-        setDisableReason("No valid meters found");
-        return;
+        setDisableReason("No valid utility accounts found");
       }
 
-      setIsButtonDisabled(false);
-      setDisableReason("");
-
     } catch (error) {
-      console.error("Error checking button status:", error);
+      console.error("Error checking utility accounts:", error);
       setIsButtonDisabled(true);
-      setDisableReason("Error validating user data");
+      setDisableReason("Error checking utility accounts");
     }
   };
 
@@ -103,6 +69,7 @@ export default function CommercialFacilityTabs({
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
+    checkUtilityAuth();
   };
 
   return (

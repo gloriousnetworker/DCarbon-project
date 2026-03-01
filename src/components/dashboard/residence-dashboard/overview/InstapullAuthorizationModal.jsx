@@ -51,6 +51,7 @@ export default function InstapullAuthorizationModal({ isOpen, onClose, utilityPr
         utilityType: utilityProvider
       }));
       setSameEmail(true);
+      setSubmitting(false);
     }
   }, [isOpen, utilityProvider]);
 
@@ -77,8 +78,13 @@ export default function InstapullAuthorizationModal({ isOpen, onClose, utilityPr
   };
 
   const handleSuccessAndClose = () => {
-    onClose();
-    window.location.reload();
+    setSubmitting(false);
+    setTimeout(() => {
+      onClose();
+      setTimeout(() => {
+        window.location.reload();
+      }, 300);
+    }, 100);
   };
 
   const handleSubmit = async (e) => {
@@ -128,7 +134,7 @@ export default function InstapullAuthorizationModal({ isOpen, onClose, utilityPr
         icon: '✓'
       });
       
-      setTimeout(handleSuccessAndClose, 1500);
+      handleSuccessAndClose();
       
     } catch (err) {
       toast.error(err.response?.data?.message || err.message || 'Failed to submit authorization');
