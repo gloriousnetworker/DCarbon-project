@@ -5,7 +5,7 @@ import React, { useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 import Image from "next/image";
 import { useProfile } from "../../contexts/ProfileContext";
-import { axiosInstance } from "../../../../../../../../lib/config";
+import { axiosInstance } from "../../../../../lib/config";
 
 const ProfileImage = () => {
   const defaultProfilePic = "/dashboard_images/profileImage.png";

@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { FaArrowLeft } from "react-icons/fa";
 import { toast } from "react-hot-toast";
-import { axiosInstance } from "../../../../../../../../lib/config";
+import { axiosInstance } from "../../../../../lib/config";
 
 const TwoFactorAuth = ({ onBack }) => {
   const [qrCode, setQrCode] = useState(null);

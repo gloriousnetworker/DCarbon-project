@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import { axiosInstance } from "../../../../../../../../lib/config";
+import { axiosInstance } from "../../../../../lib/config";
 import toast, { Toaster } from "react-hot-toast";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 
