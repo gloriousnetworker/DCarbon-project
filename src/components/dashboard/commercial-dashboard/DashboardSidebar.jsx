@@ -25,16 +25,13 @@ const DashboardSidebar = ({
 
       if (!userId || !authToken) return;
 
-      const response = await axiosInstance.
-        `/api/user/notifications/${userId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
+      const response = await fetch(`/api/user/notifications/${userId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
       if (response.ok) {
         const result = await response.json();

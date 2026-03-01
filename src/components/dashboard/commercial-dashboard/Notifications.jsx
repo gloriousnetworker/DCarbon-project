@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { mainContainer, labelClass, buttonPrimary } from './styles';
+import { axiosInstance } from "../../../../lib/config";
 
 const DashboardNotifications = () => {
   const toggleButtonBase = 'relative inline-flex h-6 w-11 items-center rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2';
@@ -29,7 +30,7 @@ const DashboardNotifications = () => {
           throw new Error('User not authenticated');
         }
 
-        const response = await axiosInstance.
+        const response = await axiosInstance.get(
           `/api/user/notifications/${userId}`,
           {
             headers: {
@@ -38,7 +39,7 @@ const DashboardNotifications = () => {
           }
         );
 
-        if (!response.ok) {
+        if (response.status !== 200) {
           throw new Error('Failed to fetch notifications');
         }
 
@@ -59,17 +60,17 @@ const DashboardNotifications = () => {
     try {
       const authToken = localStorage.getItem('authToken');
       
-      const response = await axiosInstance.
+      const response = await axiosInstance.put(
         `/api/user/notifications/${notificationId}/mark-read`,
+        {},
         {
-          method: 'PUT',
           headers: {
             'Authorization': `Bearer ${authToken}`
           }
         }
       );
 
-      if (!response.ok) {
+      if (response.status !== 200) {
         throw new Error('Failed to mark notification as read');
       }
 

@@ -10,7 +10,7 @@ import {
   FiChevronDown
 } from "react-icons/fi";
 import { toast } from 'react-hot-toast';
-import { axiosInstance } from "../../../../../lib/config";
+import { axiosInstance } from "../../../../../../lib/config";
 import InviteCollaboratorModal from "./OperatorReminder";
 import EditFacilityDetailsModal from "./EditFacilityDetailsModal";
 import CommercialDetailsGraph from "./CommercialDetailsGraph";

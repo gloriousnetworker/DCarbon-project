@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
+import { axiosInstance } from "../../../../../lib/config";
 
 const CreateNewFacilityModal = dynamic(
   () => import("./modals/createfacility/CreateNewFacilityModal"),
@@ -40,16 +41,14 @@ export default function QuickActions() {
       }
 
       try {
-        const response = await axiosInstance.
-          `/api/auth/user-meters/${userId}`,
-          {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${authToken}`
-            }
+        const response = await axiosInstance({
+          method: 'GET',
+          url: `/api/auth/user-meters/${userId}`,
+          headers: {
+            'Authorization': `Bearer ${authToken}`
           }
-        );
-        const result = await response.json();
+        });
+        const result = response.data;
         
         setUserMeters(result.data || []);
         

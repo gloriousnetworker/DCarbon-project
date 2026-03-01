@@ -370,7 +370,7 @@
 import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import CommercialRegistrationModal from "./modals/createfacility/CommercialRegistrationModal";
-import axios from "axios";
+import { axiosInstance } from "../../../../../lib/config";
 
 const QuickActions = dynamic(() => import("./QuickActions"), { ssr: false });
 const Graph = dynamic(() => import("./Graph"), { ssr: false });

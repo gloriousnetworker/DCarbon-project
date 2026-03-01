@@ -355,6 +355,7 @@
 import React, { useEffect, useState } from "react";
 import { FaBars, FaBell, FaHeadset, FaComments } from "react-icons/fa";
 import FeedbackModal from "./FeedbackModal";
+import { axiosInstance } from "../../../../lib/config";
 
 const DashboardNavbar = ({
   toggleSidebar,
@@ -375,10 +376,9 @@ const DashboardNavbar = ({
 
       if (!userId || !authToken) return;
 
-      const response = await axiosInstance.
+      const response = await axiosInstance.get(
         `/api/user/notifications/${userId}`,
         {
-          method: 'GET',
           headers: {
             'Authorization': `Bearer ${authToken}`,
             'Content-Type': 'application/json'

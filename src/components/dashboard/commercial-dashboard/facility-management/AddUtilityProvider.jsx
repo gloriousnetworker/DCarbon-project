@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { toast } from "react-hot-toast";
+import { axiosInstance } from "../../../../../lib/config"; // Adjust the path as needed
 import * as styles from "./styles";
 
 export default function AddUtilityProvider({ isOpen, onClose }) {
@@ -43,23 +44,21 @@ export default function AddUtilityProvider({ isOpen, onClose }) {
         return;
       }
 
-      const response = await axiosInstance.
-        `/api/user/update-utility-auth-email/${userId}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${authToken}`,
-          },
-          body: JSON.stringify({
-            utilityAuthEmail: email.trim()
-          }),
-        }
-      );
+      const response = await axiosInstance({
+        method: "PUT",
+        url: `/api/user/update-utility-auth-email/${userId}`,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${authToken}`,
+        },
+        data: JSON.stringify({
+          utilityAuthEmail: email.trim()
+        }),
+      });
 
       const data = response.data;
 
-      if (response.ok && data.status === "success") {
+      if (response.status === 200 && data.status === "success") {
         toast.success("Utility authorization email added successfully!");
         
         // Update localStorage with new user data
@@ -95,9 +94,23 @@ export default function AddUtilityProvider({ isOpen, onClose }) {
       }
     } catch (error) {
       console.error("Error adding utility auth email:", error);
-      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      
+      // Handle axios errors
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        if (error.response.status === 401) {
+          toast.error("Authentication failed. Please log in again.");
+        } else if (error.response.status === 403) {
+          toast.error("You don't have permission to perform this action.");
+        } else {
+          toast.error(error.response.data?.message || "Failed to add utility authorization email");
+        }
+      } else if (error.request) {
+        // The request was made but no response was received
         toast.error("Network error. Please check your connection and try again.");
       } else {
+        // Something happened in setting up the request that triggered an Error
         toast.error("An error occurred. Please try again.");
       }
     } finally {

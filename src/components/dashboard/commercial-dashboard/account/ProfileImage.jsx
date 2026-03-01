@@ -4,6 +4,7 @@
 import React, { useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 import Image from "next/image";
+import { axiosInstance } from "../../../../../lib/config";
 import { useProfile } from "../../contexts/ProfileContext";
 
 const ProfileImage = () => {
@@ -20,7 +21,6 @@ const ProfileImage = () => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Validate file
     if (!file.type.match("image.*")) {
       toast.error("Please select an image file");
       return;
@@ -44,28 +44,32 @@ const ProfileImage = () => {
 
     try {
       setIsLoading(true);
-      const response = await axiosInstance.
-        `/api/user/upload-profile-picture/${userId}`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-          },
-          body: formData,
-        }
-      );
+      const response = await axiosInstance({
+        method: "POST",
+        url: `/api/user/upload-profile-picture/${userId}`,
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+        },
+        data: formData,
+      });
 
       const data = response.data;
 
-      if (!response.ok) {
+      if (response.status === 200) {
+        toast.success("Profile picture updated successfully");
+        await updateProfile();
+      } else {
         throw new Error(data.message || "Upload failed");
       }
-
-      toast.success("Profile picture updated successfully");
-      await updateProfile(); // Refresh profile data
     } catch (error) {
       console.error("Upload error:", error);
-      toast.error(error.message || "Error uploading image");
+      if (error.response) {
+        toast.error(error.response.data?.message || "Error uploading image");
+      } else if (error.request) {
+        toast.error("Network error. Please check your connection.");
+      } else {
+        toast.error(error.message || "Error uploading image");
+      }
     } finally {
       setIsLoading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
