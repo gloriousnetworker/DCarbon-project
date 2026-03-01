@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { FiFileText, FiEye, FiUpload, FiX, FiDownload, FiAlertTriangle } from "react-icons/fi";
-import axios from "axios";
+import { axiosInstance } from "../../../../../../lib/config";
 import toast from "react-hot-toast";
 
 const DOCUMENT_TYPES = {

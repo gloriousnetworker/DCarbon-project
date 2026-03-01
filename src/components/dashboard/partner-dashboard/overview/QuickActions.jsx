@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import InviteCollaboratorModal from "./modals/InviteCollaboratorModal";
 import InviteInstallerModal from "./modals/InviteInstallerModal";
+import { axiosInstance } from "../../../../../lib/config";
 
 export default function QuickActions() {
   const [modal, setModal] = useState("");
@@ -18,14 +19,13 @@ export default function QuickActions() {
       }
 
       try {
-        const response = await axiosInstance.
-          `/api/user/partner/user/${userId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${authToken}`
-            }
+        const response = await axiosInstance({
+          method: 'GET',
+          url: `/api/user/partner/user/${userId}`,
+          headers: {
+            Authorization: `Bearer ${authToken}`
           }
-        );
+        });
         const data = response.data;
         if (data.data?.partnerType) {
           setPartnerType(data.data.partnerType);

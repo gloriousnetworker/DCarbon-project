@@ -15,6 +15,7 @@ import { toast } from 'react-hot-toast';
 import CommercialDetailsGraph from "./CommercialDetailsGraph";
 import { pageTitle, labelClass } from "./styles";
 import EditFacilityDetailsModal from "./EditFacilityDetailsModal";
+import { axiosInstance } from "../../../../../lib/config";
 
 const ProgressTracker = ({ currentStage, nextStage, onStageClick }) => {
   const stages = [
@@ -262,11 +263,12 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
 
       const checkStage2 = async () => {
         try {
-          const response = await axiosInstance.
-            `/api/user/get-commercial-user/${userId}`,
-            { headers: { 'Authorization': `Bearer ${authToken}` } }
-          );
-          const result = await response.json();
+          const response = await axiosInstance({
+            method: 'GET',
+            url: `/api/user/get-commercial-user/${userId}`,
+            headers: { 'Authorization': `Bearer ${authToken}` }
+          });
+          const result = response.data;
           return result.status === 'success' && result.data?.commercialUser?.ownerAddress;
         } catch (error) {
           return false;
@@ -275,11 +277,12 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
 
       const checkStage3 = async () => {
         try {
-          const response = await axiosInstance.
-            `/api/user/agreement/${userId}`,
-            { headers: { 'Authorization': `Bearer ${authToken}` } }
-          );
-          const result = await response.json();
+          const response = await axiosInstance({
+            method: 'GET',
+            url: `/api/user/agreement/${userId}`,
+            headers: { 'Authorization': `Bearer ${authToken}` }
+          });
+          const result = response.data;
           return result.status === 'success' && result.data?.termsAccepted;
         } catch (error) {
           return false;
@@ -288,11 +291,12 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
 
       const checkStage4 = async () => {
         try {
-          const response = await axiosInstance.
-            `/api/user/financial-info/${userId}`,
-            { headers: { 'Authorization': `Bearer ${authToken}` } }
-          );
-          const result = await response.json();
+          const response = await axiosInstance({
+            method: 'GET',
+            url: `/api/user/financial-info/${userId}`,
+            headers: { 'Authorization': `Bearer ${authToken}` }
+          });
+          const result = response.data;
           return result.status === 'success' && result.data?.financialInfo;
         } catch (error) {
           return false;
@@ -301,11 +305,12 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
 
       const checkStage5 = async () => {
         try {
-          const response = await axiosInstance.
-            `/api/auth/user-meters/${userId}`,
-            { headers: { 'Authorization': `Bearer ${authToken}` } }
-          );
-          const result = await response.json();
+          const response = await axiosInstance({
+            method: 'GET',
+            url: `/api/auth/user-meters/${userId}`,
+            headers: { 'Authorization': `Bearer ${authToken}` }
+          });
+          const result = response.data;
           return result.status === 'success' && result.data?.length > 0 && result.data.some(item => item.meters?.meters?.length > 0);
         } catch (error) {
           return false;
@@ -387,7 +392,6 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
     }
 
     const facilityId = facilityData.id;
-    const baseUrl = '';
     
     const endpoints = {
       wregisAssignment: `/api/facility/update-wregis-assignment/${facilityId}`,
@@ -421,15 +425,16 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
     try {
       toast.loading('Uploading document...', { id: 'upload-toast' });
       
-      const response = await axiosInstance.endpoints[docType], {
+      const response = await axiosInstance({
         method: 'PUT',
+        url: endpoints[docType],
         headers: {
           'Authorization': `Bearer ${authToken}`
         },
-        body: formData
+        data: formData
       });
 
-      const result = await response.json();
+      const result = response.data;
 
       if (result.status === 'success') {
         const updatedData = {

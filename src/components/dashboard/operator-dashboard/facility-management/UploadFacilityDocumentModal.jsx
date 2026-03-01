@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { FiX, FiPaperclip } from "react-icons/fi";
-import axios from "axios";
+import { axiosInstance } from "../../../../../lib/config";
 import toast from "react-hot-toast";
 import {
   labelClass,

@@ -7,7 +7,7 @@ import {
   FiChevronLeft,
   FiUserPlus
 } from "react-icons/fi";
-import axios from "axios";
+import { axiosInstance } from "../../../../../../lib/config";
 import toast from "react-hot-toast";
 import EditResidentialFacilityModal from "./EditFacilityModal";
 import EditFacilityDetailsModal from "./EditFacilityDetailsModal";
@@ -111,20 +111,19 @@ const InviteFacilityModal = ({ isOpen, onClose, facilityData, customerEmail, onI
         return;
       }
 
-      const response = await axiosInstance.post(
-        `/api/user/invite-facility/${userId}`,
-        {
+      const response = await axiosInstance({
+        method: 'POST',
+        url: `/api/user/invite-facility/${userId}`,
+        headers: {
+          Authorization: `Bearer ${authToken}`
+        },
+        data: {
           inviteeEmail: customerEmail,
           zipCode: facilityData.zipCode,
           streetNo: facilityData.address,
           message: message || undefined
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${authToken}`
-          }
         }
-      );
+      });
 
       if (response.data.status === "success") {
         toast.success(response.data.message);
@@ -246,14 +245,13 @@ export default function FacilityDetails({ facility, customerEmail, onBack, onFac
 
       if (!userId || !authToken) return;
 
-      const response = await axiosInstance.get(
-        `/api/user/partner/user/${userId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-          },
-        }
-      );
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/user/partner/user/${userId}`,
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+        },
+      });
 
       if (response?.data?.status === 'success') {
         setPartnerType(response.data.data.user.partnerType);
@@ -265,16 +263,14 @@ export default function FacilityDetails({ facility, customerEmail, onBack, onFac
 
   const checkStage2Completion = async (userId, authToken) => {
     try {
-      const response = await axiosInstance.
-        `/api/user/financial-info/${userId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`
-          }
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/user/financial-info/${userId}`,
+        headers: {
+          'Authorization': `Bearer ${authToken}`
         }
-      );
-      const result = await response.json();
+      });
+      const result = response.data;
       return result.status === 'success' && result.data?.financialInfo;
     } catch (error) {
       return false;
@@ -283,16 +279,14 @@ export default function FacilityDetails({ facility, customerEmail, onBack, onFac
 
   const checkStage3Completion = async (userId, authToken) => {
     try {
-      const response = await axiosInstance.
-        `/api/user/agreement/${userId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`
-          }
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/user/agreement/${userId}`,
+        headers: {
+          'Authorization': `Bearer ${authToken}`
         }
-      );
-      const result = await response.json();
+      });
+      const result = response.data;
       return result.status === 'success' && result.data?.termsAccepted;
     } catch (error) {
       return false;
@@ -301,16 +295,14 @@ export default function FacilityDetails({ facility, customerEmail, onBack, onFac
 
   const checkStage4Completion = async (userId, authToken) => {
     try {
-      const response = await axiosInstance.
-        `/api/auth/user-meters/${userId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`
-          }
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/auth/user-meters/${userId}`,
+        headers: {
+          'Authorization': `Bearer ${authToken}`
         }
-      );
-      const result = await response.json();
+      });
+      const result = response.data;
       return result.status === 'success' && result.data?.length > 0;
     } catch (error) {
       return false;
@@ -319,14 +311,13 @@ export default function FacilityDetails({ facility, customerEmail, onBack, onFac
 
   const checkStage5Completion = async (facilityId, authToken) => {
     try {
-      const response = await axiosInstance.get(
-        `/api/residential-facility/residential-docs/${facilityId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${authToken}`
-          }
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/residential-facility/residential-docs/${facilityId}`,
+        headers: {
+          Authorization: `Bearer ${authToken}`
         }
-      );
+      });
 
       if (response.data.status !== "success") return false;
 
@@ -408,14 +399,13 @@ export default function FacilityDetails({ facility, customerEmail, onBack, onFac
 
     try {
       setLoading(true);
-      const response = await axiosInstance.get(
-        `/api/residential-facility/get-one-residential-facility/${facilityData.id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${authToken}`
-          }
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/residential-facility/get-one-residential-facility/${facilityData.id}`,
+        headers: {
+          Authorization: `Bearer ${authToken}`
         }
-      );
+      });
 
       if (response.data.status === "success") {
         setFacilityData(response.data.data);
@@ -436,14 +426,13 @@ export default function FacilityDetails({ facility, customerEmail, onBack, onFac
     if (!userId || !authToken) return;
 
     try {
-      const response = await axiosInstance.get(
-        `/api/user/financial-info/${userId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${authToken}`
-          }
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/user/financial-info/${userId}`,
+        headers: {
+          Authorization: `Bearer ${authToken}`
         }
-      );
+      });
 
       if (response.data.status === "success" && response.data.data.financialInfo) {
         setFinanceType(response.data.data.financialInfo.financialType);

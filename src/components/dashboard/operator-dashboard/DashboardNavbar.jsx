@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { FaBars, FaBell, FaHeadset, FaUserPlus, FaComments } from "react-icons/fa";
 import CommercialRegistrationModal from "./overview/modals/createfacility/CommercialRegistrationModal";
 import FeedbackModal from "./FeedbackModal";
+import { axiosInstance } from "../../../../lib/config";
 
 const DashboardNavbar = ({
   toggleSidebar,
@@ -26,19 +27,17 @@ const DashboardNavbar = ({
 
       if (!userId || !authToken) return;
 
-      const response = await axiosInstance.
-        `/api/user/notifications/${userId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`,
-            'Content-Type': 'application/json'
-          }
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/user/notifications/${userId}`,
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
         }
-      );
+      });
 
-      if (response.ok) {
-        const result = await response.json();
+      if (response.status === 200) {
+        const result = response.data;
         if (result.status === 'success' && result.data) {
           const unreadNotifications = result.data.filter(notification => !notification.isRead);
           const unreadCount = unreadNotifications.length;

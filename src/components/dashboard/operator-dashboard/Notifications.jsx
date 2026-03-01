@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { mainContainer, labelClass, buttonPrimary } from './styles';
+import { axiosInstance } from "../../../../lib/config";
 
 const DashboardNotifications = () => {
   const toggleButtonBase = 'relative inline-flex h-6 w-11 items-center rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2';
@@ -29,16 +30,15 @@ const DashboardNotifications = () => {
           throw new Error('User not authenticated');
         }
 
-        const response = await axiosInstance.
-          `/api/user/notifications/${userId}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${authToken}`
-            }
+        const response = await axiosInstance({
+          method: 'GET',
+          url: `/api/user/notifications/${userId}`,
+          headers: {
+            'Authorization': `Bearer ${authToken}`
           }
-        );
+        });
 
-        if (!response.ok) {
+        if (response.status !== 200) {
           throw new Error('Failed to fetch notifications');
         }
 
@@ -59,17 +59,15 @@ const DashboardNotifications = () => {
     try {
       const authToken = localStorage.getItem('authToken');
       
-      const response = await axiosInstance.
-        `/api/user/notifications/${notificationId}/mark-read`,
-        {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${authToken}`
-          }
+      const response = await axiosInstance({
+        method: 'PUT',
+        url: `/api/user/notifications/${notificationId}/mark-read`,
+        headers: {
+          'Authorization': `Bearer ${authToken}`
         }
-      );
+      });
 
-      if (!response.ok) {
+      if (response.status !== 200) {
         throw new Error('Failed to mark notification as read');
       }
 

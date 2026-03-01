@@ -1,6 +1,6 @@
 // FacilityTableView.jsx
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import { axiosInstance } from "../../../../../lib/config";
 import { FiChevronLeft, FiChevronRight, FiFilter } from "react-icons/fi";
 import Filters from "./Filters";
 

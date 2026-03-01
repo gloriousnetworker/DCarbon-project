@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { FaBars, FaBell, FaHeadset, FaComments } from "react-icons/fa";
 import FeedbackModal from "./FeedbackModal";
+import { axiosInstance } from "../../../../lib/config";
 
 const DashboardNavbar = ({
   toggleSidebar,
@@ -31,14 +32,13 @@ const DashboardNavbar = ({
           return;
         }
         
-        const response = await axiosInstance.
-          `/api/user/partner/user/${userId}`,
-          { headers: { 'Authorization': `Bearer ${authToken}` } }
-        );
+        const response = await axiosInstance({
+          method: 'GET',
+          url: `/api/user/partner/user/${userId}`,
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
         
-        if (!response.ok) throw new Error('Failed to fetch user data');
-        
-        const responseData = await response.json();
+        const responseData = response.data;
         
         if (responseData.status === 'success' && responseData.data) {
           setPartnerType(responseData.data.partnerType);

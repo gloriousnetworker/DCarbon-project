@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import FinanceAndInstallerModal from "./FinanceAndInstallerModal";
+import { axiosInstance } from "../../../../../../../lib/config";
 
 export default function ResidentialFacilityModal({ isOpen, onClose, currentStep }) {
   const [userFacilities, setUserFacilities] = useState([]);
@@ -58,16 +59,14 @@ export default function ResidentialFacilityModal({ isOpen, onClose, currentStep 
   const fetchUserFacilities = async (userId, authToken) => {
     try {
       setLoading(true);
-      const response = await axiosInstance.
-        `/api/residential-facility/get-user-facilities/${userId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`,
-            'Content-Type': 'application/json'
-          }
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/residential-facility/get-user-facilities/${userId}`,
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
         }
-      );
+      });
       
       const data = response.data;
       if (data.status === 'success' && data.data?.facilities) {
@@ -129,37 +128,33 @@ export default function ResidentialFacilityModal({ isOpen, onClose, currentStep 
         authorizationEmail: greenButtonEmail.trim()
       };
 
-      const greenButtonResponse = await axiosInstance.
-        `/api/utility-auth/green-button`,
-        {
+      const greenButtonResponse = await axiosInstance({
+        method: 'POST',
+        url: `/api/utility-auth/green-button`,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        },
+        data: JSON.stringify(greenButtonPayload)
+      });
+
+      const greenButtonResult = greenButtonResponse.data;
+      
+      if (greenButtonResult.message === "Authorization process enqueued successfully") {
+        const submitEmailResponse = await axiosInstance({
           method: 'POST',
+          url: `/api/user/submit-green-button-email/${userId}`,
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${authToken}`
           },
-          body: JSON.stringify(greenButtonPayload)
-        }
-      );
-
-      const greenButtonResult = await greenButtonResponse.json();
-      
-      if (greenButtonResult.message === "Authorization process enqueued successfully") {
-        const submitEmailResponse = await axiosInstance.
-          `/api/user/submit-green-button-email/${userId}`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${authToken}`
-            },
-            body: JSON.stringify({ 
-              email: greenButtonEmail.trim(),
-              utilityProvider: selectedUtilityProvider
-            })
-          }
-        );
+          data: JSON.stringify({ 
+            email: greenButtonEmail.trim(),
+            utilityProvider: selectedUtilityProvider
+          })
+        });
         
-        const submitEmailResult = await submitEmailResponse.json();
+        const submitEmailResult = submitEmailResponse.data;
         
         if (submitEmailResult.status === 'success') {
           setGreenButtonEmail('');

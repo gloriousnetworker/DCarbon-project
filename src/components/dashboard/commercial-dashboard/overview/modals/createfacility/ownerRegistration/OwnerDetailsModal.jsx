@@ -4,6 +4,7 @@ import OwnerTermsAndAgreementModal from './OwnerTermsAndAgreementModal';
 import FinanceAndInstallerModal from './FinanceAndInstallerModal';
 import OperatorFinanceAndInstallerModal from '../ownerAndOperatorRegistration/FinanceAndInstallerModal';
 import * as styles from '../../styles';
+import { axiosInstance } from "../../../../../../../../lib/config";
 
 export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
   const [isMultipleOwners, setIsMultipleOwners] = useState(false);
@@ -59,20 +60,18 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
         throw new Error('Authentication required. Please log in again.');
       }
 
-      const response = await axiosInstance.
-        `/api/user/get-commercial-user/${userId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`,
-            'Content-Type': 'application/json'
-          }
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/user/get-commercial-user/${userId}`,
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
         }
-      );
+      });
 
       const data = response.data;
 
-      if (!response.ok) {
+      if (response.status !== 200) {
         throw new Error(data.message || 'Failed to fetch user data');
       }
 
@@ -133,20 +132,18 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
         return;
       }
 
-      const response = await axiosInstance.
-        `/api/facility/get-user-facilities-by-userId/${userId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`,
-            'Content-Type': 'application/json'
-          }
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/facility/get-user-facilities-by-userId/${userId}`,
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
         }
-      );
+      });
 
       const data = response.data;
 
-      if (response.ok && data.data && data.data.facilities && data.data.facilities.length > 0) {
+      if (response.status === 200 && data.data && data.data.facilities && data.data.facilities.length > 0) {
         setHasFacilities(true);
       }
     } catch (error) {
@@ -384,21 +381,19 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
         }
       }
 
-      const response = await axiosInstance.
-        `/api/user/commercial-registration/${userId}`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`,
-          },
-          body: JSON.stringify(payload)
-        }
-      );
+      const response = await axiosInstance({
+        method: 'PUT',
+        url: `/api/user/commercial-registration/${userId}`,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        },
+        data: JSON.stringify(payload)
+      });
 
       const data = response.data;
 
-      if (!response.ok) {
+      if (response.status !== 200) {
         throw new Error(data.message || 'Failed to save owner details');
       }
 

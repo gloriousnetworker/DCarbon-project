@@ -9,6 +9,7 @@ import Loader from "../../../../../components/loader/Loader";
 import SignatureModal from "./SignatureModal";
 import toast from "react-hot-toast";
 import { jsPDF } from "jspdf";
+import { axiosInstance } from "../../../../../../lib/config";
 
 export default function FinanceCompanyAgreement() {
   const [isChecked, setIsChecked] = useState(false);
@@ -53,19 +54,17 @@ export default function FinanceCompanyAgreement() {
         return null;
       }
 
-      const response = await axiosInstance.
-        `/api/user/agreement/${userId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`,
-          },
-        }
-      );
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/user/agreement/${userId}`,
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+        },
+      });
 
       const data = response.data;
 
-      if (response.ok && data.status === 'success') {
+      if (response.status === 200 && data.status === 'success') {
         return data.data;
       } else {
         return null;
@@ -85,19 +84,17 @@ export default function FinanceCompanyAgreement() {
         throw new Error('Authentication required');
       }
 
-      const response = await axiosInstance.
-        `/api/user/partner/user/${userId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`,
-          },
-        }
-      );
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/user/partner/user/${userId}`,
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+        },
+      });
 
       const data = response.data;
 
-      if (response.ok && data.status === 'success') {
+      if (response.status === 200 && data.status === 'success') {
         return data.data;
       } else {
         throw new Error(data.message || 'Failed to fetch partner details');
@@ -116,19 +113,17 @@ export default function FinanceCompanyAgreement() {
         throw new Error('Authentication required');
       }
 
-      const response = await axiosInstance.
-        `/api/user/partner/${partnerId}`,
-        {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${authToken}`,
-          },
-        }
-      );
+      const response = await axiosInstance({
+        method: 'DELETE',
+        url: `/api/user/partner/${partnerId}`,
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+        },
+      });
 
       const data = response.data;
 
-      if (response.ok && data.status === 'success') {
+      if (response.status === 200 && data.status === 'success') {
         return true;
       } else {
         throw new Error(data.message || 'Failed to delete partner');
@@ -150,20 +145,18 @@ export default function FinanceCompanyAgreement() {
         return false;
       }
 
-      const response = await axiosInstance.
-        `/api/user/accept-user-agreement-terms/${userId}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${authToken}`,
-          },
-        }
-      );
+      const response = await axiosInstance({
+        method: "PUT",
+        url: `/api/user/accept-user-agreement-terms/${userId}`,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
+        },
+      });
 
       const data = response.data;
 
-      if (response.ok && data.status === 'success') {
+      if (response.status === 200 && data.status === 'success') {
         toast.success('Terms and conditions accepted successfully!');
         return true;
       } else {

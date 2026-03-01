@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft } from 'lucide-react';
+import { axiosInstance } from "../../../../../lib/config";
 
 const mainContainer = 'min-h-screen w-full py-8 px-4 bg-white';
 const headingContainer = 'relative w-full flex flex-col items-center mb-6';
@@ -52,20 +53,18 @@ const AdminInvoices = ({ onBack }) => {
         return;
       }
 
-      const response = await axiosInstance.
-        `/api/payout-request?userId=${userId}&userType=COMMERCIAL`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/payout-request?userId=${userId}&userType=COMMERCIAL`,
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
-      const result = await response.json();
+      const result = response.data;
 
-      if (response.ok && result.status === 'success') {
+      if (response.status === 200 && result.status === 'success') {
         setInvoices(result.data || []);
       } else {
         showToast(result.message || 'Failed to fetch payout history', 'error');

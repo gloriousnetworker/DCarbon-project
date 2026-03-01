@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { FiX } from "react-icons/fi";
-import axios from "axios";
+import { axiosInstance } from "../../../../../lib/config";
 import toast from "react-hot-toast";
 import AddUtilityProvider from "./AddUtilityProvider";
 import UtilityAuthorizationModal from "../overview/modals/createfacility/UtilityAuthorizationModal";

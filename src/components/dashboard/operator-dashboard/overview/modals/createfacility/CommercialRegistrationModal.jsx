@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { toast } from 'react-hot-toast';
-import axios from "axios";
+import { axiosInstance } from "../../../../../../../lib/config";
 import dynamic from "next/dynamic";
 
 const InstapullAuthorizationModal = dynamic(

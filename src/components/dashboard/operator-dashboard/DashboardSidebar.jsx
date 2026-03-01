@@ -16,6 +16,7 @@ import Image from "next/image";
 import { useProfile } from "../contexts/ProfileContext";
 import { toast } from 'react-hot-toast';
 import * as styles from './styles';
+import { axiosInstance } from "../../../../lib/config";
 
 const DashboardSidebar = ({
   onSectionChange,
@@ -45,19 +46,17 @@ const DashboardSidebar = ({
 
       if (!userId || !authToken) return;
 
-      const response = await axiosInstance.
-        `/api/user/notifications/${userId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`,
-            'Content-Type': 'application/json'
-          }
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/user/notifications/${userId}`,
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
         }
-      );
+      });
 
-      if (response.ok) {
-        const result = await response.json();
+      if (response.status === 200) {
+        const result = response.data;
         if (result.status === 'success' && result.data) {
           const unreadNotifications = result.data.filter(notification => !notification.isRead);
           const unreadCount = unreadNotifications.length;
@@ -73,7 +72,6 @@ const DashboardSidebar = ({
   };
 
   const getUserDataFromLocalStorage = () => {
-    // FIXED: Don't update form data if user is currently editing
     if (editMode) return;
     
     try {
@@ -131,18 +129,16 @@ const DashboardSidebar = ({
       const formData = new FormData();
       formData.append('profilePicture', file);
 
-      const response = await axiosInstance.
-        `/api/user/upload-profile-picture/${userId}`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${authToken}`,
-          },
-          body: formData,
-        }
-      );
+      const response = await axiosInstance({
+        method: 'POST',
+        url: `/api/user/upload-profile-picture/${userId}`,
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+        },
+        data: formData,
+      });
 
-      const result = await response.json();
+      const result = response.data;
 
       if (result.status === 'success') {
         const updatedLoginResponse = {
@@ -194,22 +190,20 @@ const DashboardSidebar = ({
         throw new Error('Authentication data not found');
       }
 
-      const response = await axiosInstance.
-        `/api/user/${userId}`,
-        {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${authToken}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            firstName: formData.firstName,
-            lastName: formData.lastName
-          })
-        }
-      );
+      const response = await axiosInstance({
+        method: 'PUT',
+        url: `/api/user/${userId}`,
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        },
+        data: JSON.stringify({
+          firstName: formData.firstName,
+          lastName: formData.lastName
+        })
+      });
 
-      const result = await response.json();
+      const result = response.data;
 
       if (result.status === 'success') {
         const updatedLoginResponse = {
@@ -322,7 +316,6 @@ const DashboardSidebar = ({
 
     window.addEventListener("storage", handleStorageChange);
     
-    // FIXED: Only check for updates when modal is not open or user is not editing
     const checkLoginResponseInterval = setInterval(() => {
       if (!showProfileModal || !editMode) {
         getUserDataFromLocalStorage();
@@ -537,7 +530,6 @@ const DashboardSidebar = ({
         </div>
       </aside>
 
-      {/* FIXED: Increased z-index to 9999 to appear above all components */}
       {showProfileModal && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50">
           <div 

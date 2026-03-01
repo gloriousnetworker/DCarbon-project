@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import AddCommercialFacilityModal from './AddCommercialFacilityModal';
 import InviteOperatorModal from '../ownerRegistration/InviteOperatorModal';
+import { axiosInstance } from "../../../../../../../../lib/config";
 
 export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
   const [loading, setLoading] = useState(false);
@@ -55,7 +56,9 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
 
   const fetchCommercialRole = async () => {
     try {
-      const response = await axiosInstance.`/api/user/get-commercial-user/${getUserId()}`, {
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/user/get-commercial-user/${getUserId()}`,
         headers: {
           'Authorization': `Bearer ${getAuthToken()}`,
           'Content-Type': 'application/json'
@@ -72,7 +75,9 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
 
   const checkUserMeters = async () => {
     try {
-      const response = await axiosInstance.`/api/auth/user-meters/${getUserId()}`, {
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/auth/user-meters/${getUserId()}`,
         headers: {
           'Authorization': `Bearer ${getAuthToken()}`,
           'Content-Type': 'application/json'
@@ -105,7 +110,9 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
 
   const fetchAuthorizedUtilities = async () => {
     try {
-      const response = await axiosInstance.`/api/auth/utility-auth/${getUserId()}`, {
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/auth/utility-auth/${getUserId()}`,
         headers: {
           'Authorization': `Bearer ${getAuthToken()}`,
           'Content-Type': 'application/json'
@@ -122,7 +129,9 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
 
   const fetchUserMeters = async (utilityId) => {
     try {
-      const response = await axiosInstance.`/api/auth/user-meters/${getUserId()}`, {
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/auth/user-meters/${getUserId()}`,
         headers: {
           'Authorization': `Bearer ${getAuthToken()}`,
           'Content-Type': 'application/json'
@@ -191,13 +200,14 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
     const toastId = toast.loading('Initiating utility authorization...');
 
     try {
-      const response = await axiosInstance.`/api/auth/initiate-utility-auth/${getUserId()}`, {
+      const response = await axiosInstance({
         method: 'POST',
+        url: `/api/auth/initiate-utility-auth/${getUserId()}`,
         headers: {
           'Authorization': `Bearer ${getAuthToken()}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
+        data: JSON.stringify({
           utilityAuthEmail: utilityAuthEmail
         })
       });
@@ -225,13 +235,14 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
     const toastId = toast.loading('Verifying utility authorization...');
 
     try {
-      const response = await axiosInstance.`/api/auth/check-utility-auth`, {
+      const response = await axiosInstance({
         method: 'POST',
+        url: `/api/auth/check-utility-auth`,
         headers: {
           'Authorization': `Bearer ${getAuthToken()}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
+        data: JSON.stringify({
           token: verificationToken
         })
       });

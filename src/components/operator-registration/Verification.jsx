@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { axiosInstance } from '../../lib/config';
+import { axiosInstance } from '../../../lib/config';
 
 const styles = {
   container: 'w-full flex flex-col items-center justify-center py-8 px-4',
@@ -25,7 +25,6 @@ export default function VerificationContent({ token: propToken }) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Determine token from props or query
   const token = propToken || searchParams.get('token');
 
   const handleVerify = async () => {
@@ -41,7 +40,6 @@ export default function VerificationContent({ token: propToken }) {
     setVerificationStatus(null);
     setMessage('');
 
-    // progress simulation
     const interval = setInterval(() => {
       setProgress(prev => {
         const next = prev + 5;
@@ -54,37 +52,24 @@ export default function VerificationContent({ token: propToken }) {
     }, 250);
 
     try {
-      const response = await axiosInstance.
-        '/api/auth/check-utility-auth',
-        {
-          method: 'POST',
-          headers: {
-            Accept: 'application/json',
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ token }),
-        }
-      );
-
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        const text = await response.text();
-        throw new Error(text || 'Invalid response from server');
-      }
+      const response = await axiosInstance({
+        method: 'POST',
+        url: '/api/auth/check-utility-auth',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        data: JSON.stringify({ token }),
+      });
 
       const data = response.data;
-      if (!response.ok) {
-        throw new Error(data.message || 'Verification failed');
-      }
 
-      // Success
       setVerificationStatus('success');
       setMessage(data.message || 'Verification successful');
       toast.success(data.message || 'Verification successful', {
         style: { fontFamily: 'SF Pro', background: '#E8F5E9', color: '#1B5E20' }
       });
 
-      // Store everything in localStorage
       storeVerificationData({ token, ...data, utilityVerified: true });
       navigateToAgreement();
 
@@ -102,7 +87,6 @@ export default function VerificationContent({ token: propToken }) {
   };
 
   const handleSkip = () => {
-    // Store basic token without verification details
     storeVerificationData({ token, utilityVerified: false });
     toast('You can complete verification later. Proceeding to agreement...', {
       style: { fontFamily: 'SF Pro', background: '#E8F5E9', color: '#1B5E20' }

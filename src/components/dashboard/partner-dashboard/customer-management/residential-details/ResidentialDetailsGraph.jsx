@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { axiosInstance } from "../../../../../../lib/config";
 
 export default function ResidentialDetailsGraph({ facilityId, meterId }) {
   const [selectedYear, setSelectedYear] = useState("2025");
@@ -91,17 +92,16 @@ export default function ResidentialDetailsGraph({ facilityId, meterId }) {
   const fetchTotalLifetimeRecs = async (authToken) => {
     try {
       const { userId } = getAuthData();
-      const response = await axiosInstance.
-        `/api/rec/statistics?userId=${userId}&facilityId=${facilityId}`,
-        {
-          headers: { 
-            Authorization: `Bearer ${authToken}`, 
-            "Content-Type": "application/json" 
-          }
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/rec/statistics?userId=${userId}&facilityId=${facilityId}`,
+        headers: { 
+          Authorization: `Bearer ${authToken}`, 
+          "Content-Type": "application/json" 
         }
-      );
+      });
       
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      if (response.status !== 200) throw new Error(`HTTP error! status: ${response.status}`);
       const data = response.data;
       
       if (data.status === "success" && Array.isArray(data.data)) {
@@ -115,16 +115,15 @@ export default function ResidentialDetailsGraph({ facilityId, meterId }) {
 
   const fetchFacilityDetails = async (authToken) => {
     try {
-      const response = await axiosInstance.
-        `/api/residential-facility/get-one-residential-facility/${facilityId}`,
-        {
-          headers: { 
-            Authorization: `Bearer ${authToken}`, 
-            "Content-Type": "application/json" 
-          }
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/residential-facility/get-one-residential-facility/${facilityId}`,
+        headers: { 
+          Authorization: `Bearer ${authToken}`, 
+          "Content-Type": "application/json" 
         }
-      );
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      });
+      if (response.status !== 200) throw new Error(`HTTP error! status: ${response.status}`);
       const data = response.data;
       if (data.status === "success" && data.data) {
         setFacilityDetails(data.data);
@@ -136,25 +135,20 @@ export default function ResidentialDetailsGraph({ facilityId, meterId }) {
 
   const fetchRecStatistics = async (authToken) => {
     try {
-      const url = new URL(`/api/rec/statistics`);
-      
-      const params = {
-        year: selectedYear,
-        facilityId: facilityId
-      };
-      
-      Object.keys(params).forEach(key => {
-        url.searchParams.append(key, params[key]);
-      });
-      
-      const response = await axiosInstance.url, {
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/rec/statistics`,
+        params: {
+          year: selectedYear,
+          facilityId: facilityId
+        },
         headers: { 
           Authorization: `Bearer ${authToken}`, 
           "Content-Type": "application/json" 
         }
       });
       
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      if (response.status !== 200) throw new Error(`HTTP error! status: ${response.status}`);
       const data = response.data;
       
       if (data.status === "success") {
@@ -169,8 +163,6 @@ export default function ResidentialDetailsGraph({ facilityId, meterId }) {
 
   const fetchDetailStatistics = async (authToken) => {
     try {
-      const url = new URL(`/api/rec/statistics`);
-      
       const params = {
         facilityId: facilityId
       };
@@ -188,18 +180,17 @@ export default function ResidentialDetailsGraph({ facilityId, meterId }) {
         params.year = selectedYear;
       }
       
-      Object.keys(params).forEach(key => {
-        url.searchParams.append(key, params[key]);
-      });
-      
-      const response = await axiosInstance.url, {
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/rec/statistics`,
+        params: params,
         headers: { 
           Authorization: `Bearer ${authToken}`, 
           "Content-Type": "application/json" 
         }
       });
       
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      if (response.status !== 200) throw new Error(`HTTP error! status: ${response.status}`);
       const data = response.data;
       
       if (data.status === "success") {
@@ -213,8 +204,6 @@ export default function ResidentialDetailsGraph({ facilityId, meterId }) {
 
   const fetchRecOverview = async (authToken) => {
     try {
-      const url = new URL(`/api/rec/overview/stats`);
-      
       const params = {
         facilityId: facilityId
       };
@@ -232,18 +221,17 @@ export default function ResidentialDetailsGraph({ facilityId, meterId }) {
         params.year = selectedYear;
       }
       
-      Object.keys(params).forEach(key => {
-        url.searchParams.append(key, params[key]);
-      });
-      
-      const response = await axiosInstance.url, {
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/rec/overview/stats`,
+        params: params,
         headers: { 
           Authorization: `Bearer ${authToken}`, 
           "Content-Type": "application/json" 
         }
       });
       
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      if (response.status !== 200) throw new Error(`HTTP error! status: ${response.status}`);
       const data = response.data;
       
       if (data.status === "success") {

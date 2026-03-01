@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { axiosInstance } from "../../../../../lib/config";
 
 export default function UserSalesStatement() {
   const [statementData, setStatementData] = useState(null);
@@ -25,14 +26,12 @@ export default function UserSalesStatement() {
         return;
       }
       try {
-        const response = await axiosInstance.
-          `/api/auth/user-meters/${userId}`,
-          {
-            method: 'GET',
-            headers: { 'Authorization': `Bearer ${authToken}` }
-          }
-        );
-        const result = await response.json();
+        const response = await axiosInstance({
+          method: 'GET',
+          url: `/api/auth/user-meters/${userId}`,
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const result = response.data;
         const metersExist = result.status === 'success' && 
                            Array.isArray(result.data) &&
                            result.data.some(item => 
@@ -64,7 +63,6 @@ export default function UserSalesStatement() {
         throw new Error("Missing user authentication data");
       }
       
-      const baseUrl = "/api/rec/sale-statement";
       const queryParams = new URLSearchParams({
         quarter: selectedQuarter,
         month: selectedMonth,
@@ -72,8 +70,9 @@ export default function UserSalesStatement() {
         userId: userId
       });
       
-      const response = await axiosInstance.`?${queryParams}`, {
-        method: 'GET', 
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/rec/sale-statement?${queryParams}`,
         headers: { 
           Authorization: `Bearer ${authToken}`, 
           "Content-Type": "application/json" 
@@ -82,7 +81,7 @@ export default function UserSalesStatement() {
       
       const data = response.data;
       
-      if (!response.ok) {
+      if (response.status !== 200) {
         if (data.status === "fail") {
           throw new Error(data.message || "Failed to fetch statement");
         }

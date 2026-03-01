@@ -1,6 +1,6 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import axios from "axios";
+import { axiosInstance } from "../../../../lib/config";
 import Loader from "../../loader/Loader";
 import toast from "react-hot-toast";
 

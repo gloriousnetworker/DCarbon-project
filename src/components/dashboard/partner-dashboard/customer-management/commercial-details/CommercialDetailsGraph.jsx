@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { FiDownload, FiCalendar, FiFilter } from "react-icons/fi";
+import { axiosInstance } from "../../../../../../lib/config";
 
 export default function CommercialDetailsGraph({ facilityId, meterId }) {
   const [chartData, setChartData] = useState([]);
@@ -108,22 +109,20 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
     try {
       if (!meterId) return;
 
-      const response = await axiosInstance.
-        `/api/facility/get-meter-rec-data/${meterId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`,
-            'Content-Type': 'application/json'
-          }
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/facility/get-meter-rec-data/${meterId}`,
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
         }
-      );
+      });
 
-      if (!response.ok) {
+      if (response.status !== 200) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const result = await response.json();
+      const result = response.data;
       
       if (result.status === 'success' && result.data && result.data.data.intervals.length > 0) {
         const readings = result.data.data.intervals[0].readings;
@@ -150,22 +149,20 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
 
   const fetchRecStatistics = async (authToken) => {
     try {
-      const url = new URL(`/api/rec/statistics`);
-      const params = {
-        year: selectedYear,
-        facilityId: facilityId
-      };
-      
-      Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
-      
-      const response = await axiosInstance.url, {
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/rec/statistics`,
+        params: {
+          year: selectedYear,
+          facilityId: facilityId
+        },
         headers: { 
           Authorization: `Bearer ${authToken}`, 
           "Content-Type": "application/json" 
         }
       });
       
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      if (response.status !== 200) throw new Error(`HTTP error! status: ${response.status}`);
       const data = response.data;
       
       if (data.status === "success") {
@@ -180,8 +177,6 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
 
   const fetchRecOverview = async (authToken) => {
     try {
-      const url = new URL(`/api/rec/overview/stats`);
-      
       const params = {
         facilityId: facilityId
       };
@@ -199,18 +194,17 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
         params.year = selectedYear;
       }
       
-      Object.keys(params).forEach(key => {
-        url.searchParams.append(key, params[key]);
-      });
-      
-      const response = await axiosInstance.url, {
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/rec/overview/stats`,
+        params: params,
         headers: { 
           Authorization: `Bearer ${authToken}`, 
           "Content-Type": "application/json" 
         }
       });
       
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      if (response.status !== 200) throw new Error(`HTTP error! status: ${response.status}`);
       const data = response.data;
       
       if (data.status === "success") {
@@ -234,8 +228,6 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
 
   const fetchDetailStatistics = async (authToken) => {
     try {
-      const url = new URL(`/api/rec/statistics`);
-      
       const params = {
         facilityId: facilityId
       };
@@ -253,18 +245,17 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
         params.year = selectedYear;
       }
       
-      Object.keys(params).forEach(key => {
-        url.searchParams.append(key, params[key]);
-      });
-      
-      const response = await axiosInstance.url, {
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/rec/statistics`,
+        params: params,
         headers: { 
           Authorization: `Bearer ${authToken}`, 
           "Content-Type": "application/json" 
         }
       });
       
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      if (response.status !== 200) throw new Error(`HTTP error! status: ${response.status}`);
       const data = response.data;
       
       if (data.status === "success") {
@@ -278,23 +269,21 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
 
   const fetchMonthlyChartData = async (authToken) => {
     try {
-      const url = new URL(`/api/rec/chart/monthly`);
-      const params = {
-        type: 'commercial',
-        year: selectedYear,
-        facilityId: facilityId
-      };
-      
-      Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
-      
-      const response = await axiosInstance.url, {
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/rec/chart/monthly`,
+        params: {
+          type: 'commercial',
+          year: selectedYear,
+          facilityId: facilityId
+        },
         headers: { 
           Authorization: `Bearer ${authToken}`, 
           "Content-Type": "application/json" 
         }
       });
       
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      if (response.status !== 200) throw new Error(`HTTP error! status: ${response.status}`);
       const data = response.data;
       
       if (data.status === "success") {

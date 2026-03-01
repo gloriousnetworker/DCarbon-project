@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import { axiosInstance } from "../../../../../lib/config";
 import { useRouter } from "next/navigation";
 import SendReminderModal from "../overview/modals/SendReminderModal";
 

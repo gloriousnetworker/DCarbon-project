@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import toast from "react-hot-toast";
+import { axiosInstance } from "../../../../../../lib/config";
 
 export default function SignatureModal({ isOpen, onClose, onComplete }) {
   const [activeTab, setActiveTab] = useState("draw");
@@ -125,26 +126,24 @@ export default function SignatureModal({ isOpen, onClose, onComplete }) {
         });
       }, 200);
 
-      const response = await axiosInstance.
-        `/api/user/update-user-agreement/${userId}`,
-        {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${authToken}`,
-          },
-          body: formData,
-        }
-      );
+      const response = await axiosInstance({
+        method: 'PUT',
+        url: `/api/user/update-user-agreement/${userId}`,
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+        },
+        data: formData,
+      });
 
       clearInterval(progressInterval);
       setUploadProgress(100);
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Failed to upload signature');
+      const result = response.data;
+
+      if (response.status !== 200) {
+        throw new Error(result.message || 'Failed to upload signature');
       }
 
-      const result = await response.json();
       setIsUploaded(true);
       toast.success('Signature uploaded successfully!');
       

@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
-import axios from "axios";
+import { axiosInstance } from "../../../../../lib/config";
 import toast from "react-hot-toast";
 
 const CompanyInformation = () => {

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import OwnerTermsAndAgreementModal from './OwnerTermsAndAgreementModal';
 import * as styles from "../../styles";
+import { axiosInstance } from "../../../../../../../../lib/config";
 
 export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
   const [isMultipleOwners, setIsMultipleOwners] = useState(false);
@@ -70,20 +71,18 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
         throw new Error('Referral code or authentication token missing');
       }
 
-      const response = await axiosInstance.
-        `/api/user/by-referral-code/${referralCode}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`,
-            'Content-Type': 'application/json'
-          }
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/user/by-referral-code/${referralCode}`,
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
         }
-      );
+      });
 
       const data = response.data;
 
-      if (!response.ok) {
+      if (response.status !== 200) {
         throw new Error(data.message || 'Failed to fetch owner data');
       }
 
@@ -210,21 +209,19 @@ export default function OwnerDetailsModal({ isOpen, onClose, onBack }) {
         }));
       }
 
-      const response = await axiosInstance.
-        `/api/user/commercial-registration/${userId}`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`,
-          },
-          body: JSON.stringify(payload)
-        }
-      );
+      const response = await axiosInstance({
+        method: 'PUT',
+        url: `/api/user/commercial-registration/${userId}`,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        },
+        data: JSON.stringify(payload)
+      });
 
       const data = response.data;
 
-      if (!response.ok) {
+      if (response.status !== 200) {
         throw new Error(data.message || 'Failed to save owner details');
       }
 

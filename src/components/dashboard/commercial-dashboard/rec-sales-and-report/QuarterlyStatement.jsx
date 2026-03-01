@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { HiOutlineDownload, HiOutlineX } from 'react-icons/hi';
 import SubmitInvoice from './SubmitInvoice';
 import AdminInvoices from './paidReceipts';
+import { axiosInstance } from "../../../../../lib/config";
 
 const QuarterlyStatement = () => {
   const [showExportModal, setShowExportModal] = useState(false);
@@ -33,20 +34,18 @@ const QuarterlyStatement = () => {
         return;
       }
 
-      const response = await axiosInstance.
-        `/api/revenue/${userId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`,
-            'Content-Type': 'application/json'
-          }
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/revenue/${userId}`,
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
         }
-      );
+      });
 
-      const result = await response.json();
+      const result = response.data;
 
-      if (response.ok && result.status === 'success') {
+      if (response.status === 200 && result.status === 'success') {
         setWalletData(result.data);
       }
     } catch (error) {
@@ -69,20 +68,18 @@ const QuarterlyStatement = () => {
         return;
       }
 
-      const response = await axiosInstance.
-        `/api/quarterly-statements?quarter=${selectedQuarter}&year=${selectedYear}&userId=${userId}&userType=${userType || 'COMMERCIAL'}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`,
-            'Content-Type': 'application/json'
-          }
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/quarterly-statements?quarter=${selectedQuarter}&year=${selectedYear}&userId=${userId}&userType=${userType || 'COMMERCIAL'}`,
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
         }
-      );
+      });
 
-      const result = await response.json();
+      const result = response.data;
 
-      if (response.ok && result.status === 'success') {
+      if (response.status === 200 && result.status === 'success') {
         setData(result.data);
       } else {
         alert(result.message || 'Failed to fetch quarterly statement');

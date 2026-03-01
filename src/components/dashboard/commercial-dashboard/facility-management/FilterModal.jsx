@@ -1,6 +1,6 @@
 // FilterModal.jsx
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import { axiosInstance } from "../../../../../lib/config";
 import { FiX } from "react-icons/fi";
 import { labelClass, selectClass, buttonPrimary } from "./styles";
 

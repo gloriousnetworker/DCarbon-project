@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
-import axios from "axios";
+import { axiosInstance } from "../../../../../../../../lib/config";
 
 const styles = {
   modalContainer: 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 p-4 backdrop-blur-sm',
@@ -56,18 +56,16 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, selectedU
         throw new Error('Authentication data not found');
       }
 
-      const response = await axiosInstance.
-        `/api/facility/get-user-facilities-by-userId/${userId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`,
-            'Content-Type': 'application/json'
-          }
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/facility/get-user-facilities-by-userId/${userId}`,
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
         }
-      );
+      });
 
-      const result = await response.json();
+      const result = response.data;
       
       if (result.status === 'success' && result.data?.facilities) {
         const sortedFacilities = result.data.facilities.sort((a, b) => 
@@ -166,16 +164,15 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, selectedU
         ]
       };
 
-      const response = await axiosInstance.post(
-        `/api/user/invite-operator/${userId}`,
-        payload,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`
-          }
-        }
-      );
+      const response = await axiosInstance({
+        method: 'POST',
+        url: `/api/user/invite-operator/${userId}`,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        },
+        data: payload
+      });
 
       if (response.data.status === 'success') {
         toast.success('Invitation sent successfully!', { id: toastId });

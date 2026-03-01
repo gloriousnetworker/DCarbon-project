@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import { axiosInstance } from "../../../../../lib/config";
 
 const getDynamicQuarters = () => {
   const today = new Date();

@@ -3,6 +3,7 @@ import { HiOutlineChevronDown } from 'react-icons/hi';
 import GeneratorReport from './GeneratorReport';
 import QuartelyStatement from './QuarterlyStatement';
 
+
 const GeneratorMonthlyReport = () => {
   const [currentView, setCurrentView] = useState('generator');
   const [showDropdown, setShowDropdown] = useState(false);

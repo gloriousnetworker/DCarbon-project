@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import { axiosInstance } from "../../../../../lib/config";
 
 const getDynamicQuarters = () => {
   const today = new Date();
@@ -75,13 +75,12 @@ export default function CommissionStatement({ onNavigate }) {
       const quarterObj = QUARTERS.find((q) => q.label === selectedQuarter);
       if (!quarterObj) return;
 
-      const response = await axiosInstance.get(
-        `/api/commission/invoice/${userId}`,
-        {
-          params: { quarter: quarterObj.value, year: quarterObj.year },
-          headers: { Authorization: `Bearer ${authToken}` },
-        }
-      );
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/commission/invoice/${userId}`,
+        params: { quarter: quarterObj.value, year: quarterObj.year },
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
 
       if (response.data.status === "success") {
         setInvoiceData(response.data.data);
@@ -98,11 +97,12 @@ export default function CommissionStatement({ onNavigate }) {
 
   const fetchWalletBalance = async () => {
     try {
-      const response = await axiosInstance.
-        `/api/revenue/${userId}`,
-        { headers: { Authorization: `Bearer ${authToken}` } }
-      );
-      const result = await response.json();
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/revenue/${userId}`,
+        headers: { Authorization: `Bearer ${authToken}` }
+      });
+      const result = response.data;
       if (result.status === "success" && result.data) {
         setWalletBalance(result.data.availableBalance || 0);
       }
@@ -113,11 +113,12 @@ export default function CommissionStatement({ onNavigate }) {
 
   const fetchPayoutHistory = async () => {
     try {
-      const response = await axiosInstance.
-        `/api/payout-request?userId=${userId}&userType=PARTNER`,
-        { headers: { Authorization: `Bearer ${authToken}` } }
-      );
-      const result = await response.json();
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/payout-request?userId=${userId}&userType=PARTNER`,
+        headers: { Authorization: `Bearer ${authToken}` }
+      });
+      const result = response.data;
       if (result.status === "success" && result.data) {
         setPayoutHistory(result.data);
       }
@@ -150,14 +151,13 @@ export default function CommissionStatement({ onNavigate }) {
       };
 
       if (exportParams.format !== "csv") {
-        const response = await axiosInstance.post(
-          "/api/reports/export-commission-statement",
-          requestBody,
-          {
-            headers: { Authorization: `Bearer ${authToken}` },
-            responseType: "blob",
-          }
-        );
+        const response = await axiosInstance({
+          method: 'POST',
+          url: "/api/reports/export-commission-statement",
+          data: requestBody,
+          headers: { Authorization: `Bearer ${authToken}` },
+          responseType: "blob",
+        });
 
         const url = window.URL.createObjectURL(new Blob([response.data]));
         const link = document.createElement("a");
@@ -192,19 +192,17 @@ export default function CommissionStatement({ onNavigate }) {
         userType: "PARTNER",
       };
 
-      const response = await axiosInstance.
-        "/api/payout-request/request",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${authToken}`,
-          },
-          body: JSON.stringify(requestBody),
-        }
-      );
+      const response = await axiosInstance({
+        method: 'POST',
+        url: "/api/payout-request/request",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
+        },
+        data: JSON.stringify(requestBody),
+      });
 
-      const result = await response.json();
+      const result = response.data;
 
       if (result.status === "success") {
         setPayoutMessage("Payout request submitted successfully!");

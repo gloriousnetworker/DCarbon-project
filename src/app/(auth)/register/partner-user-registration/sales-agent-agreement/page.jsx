@@ -1,499 +1,422 @@
-"use client";
-
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { FaDownload, FaArrowLeft } from "react-icons/fa";
-import CustomerIDLoader from "../../../../../components/loader/CustomerIDLoader";
-import RegistrationSuccessfulModal from "../../../../../components/modals/partner-modals/RegistrationSuccessfulModal";
-import Loader from "../../../../../components/loader/Loader";
-import SignatureModal from "./SignatureModal";
+import React, { useState, useRef, useEffect } from "react";
 import toast from "react-hot-toast";
-import { jsPDF } from "jspdf";
+import { axiosInstance } from "../../../../../../lib/config";
 
-export default function SalesAgentAgreement() {
-  const [isChecked, setIsChecked] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [showLoader, setShowLoader] = useState(false);
-  const [registrationModalOpen, setRegistrationModalOpen] = useState(false);
-  const [isRedirecting, setIsRedirecting] = useState(false);
-  const [showRedirectLoader, setShowRedirectLoader] = useState(false);
-  const [showSignatureModal, setShowSignatureModal] = useState(false);
-  const [hasSigned, setHasSigned] = useState(false);
-  const [signatureUrl, setSignatureUrl] = useState(null);
-  const [showDeclineModal, setShowDeclineModal] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const router = useRouter();
+export default function SignatureModal({ isOpen, onClose, onComplete }) {
+  const [activeTab, setActiveTab] = useState("draw");
+  const [signature, setSignature] = useState("");
+  const [uploadedFile, setUploadedFile] = useState(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploaded, setIsUploaded] = useState(false);
+  const canvasRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
-    let timer;
-    if (loading) {
-      setShowLoader(true);
-    } else {
-      timer = setTimeout(() => setShowLoader(false), 500);
+    if (isOpen && activeTab === "draw") {
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const ctx = canvas.getContext("2d");
+        ctx.strokeStyle = "#000000";
+        ctx.lineWidth = 2;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+      }
     }
-    return () => clearTimeout(timer);
-  }, [loading]);
+  }, [isOpen, activeTab]);
 
-  useEffect(() => {
-    let timer;
-    if (isRedirecting) {
-      setShowRedirectLoader(true);
-    } else {
-      timer = setTimeout(() => setShowRedirectLoader(false), 500);
+  const startDrawing = (e) => {
+    setIsDrawing(true);
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+  };
+
+  const draw = (e) => {
+    if (!isDrawing) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    ctx.lineTo(x, y);
+    ctx.stroke();
+  };
+
+  const stopDrawing = () => {
+    setIsDrawing(false);
+  };
+
+  const clearCanvas = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  };
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select a valid image file');
+      return;
     }
-    return () => clearTimeout(timer);
-  }, [isRedirecting]);
 
-  const fetchUserAgreement = async () => {
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('File size must be less than 10MB');
+      return;
+    }
+
+    setUploadedFile(file);
+    await uploadSignature(file);
+  };
+
+  const canvasToBlob = () => {
+    return new Promise((resolve) => {
+      const canvas = canvasRef.current;
+      canvas.toBlob(resolve, 'image/png');
+    });
+  };
+
+  const createSignatureImage = () => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 400;
+      canvas.height = 200;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = 'black';
+      ctx.font = '32px cursive';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(signature, canvas.width / 2, canvas.height / 2);
+      canvas.toBlob(resolve, 'image/png');
+    });
+  };
+
+  const uploadSignature = async (file) => {
     try {
+      setIsUploading(true);
+      setUploadProgress(0);
+      setIsUploaded(false);
+      
       const userId = localStorage.getItem('userId');
       const authToken = localStorage.getItem('authToken');
-      
-      if (!userId || !authToken) {
-        return null;
-      }
-
-      const response = await axiosInstance.
-        `/api/user/agreement/${userId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`,
-          },
-        }
-      );
-
-      const data = response.data;
-
-      if (response.ok && data.status === 'success') {
-        return data.data;
-      } else {
-        return null;
-      }
-    } catch (error) {
-      console.error('Error fetching agreement:', error);
-      return null;
-    }
-  };
-
-  const getPartnerDetails = async () => {
-    try {
-      const userId = localStorage.getItem('userId');
-      const authToken = localStorage.getItem('authToken');
-      
-      if (!userId || !authToken) {
-        throw new Error('Authentication required');
-      }
-
-      const response = await axiosInstance.
-        `/api/user/partner/user/${userId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`,
-          },
-        }
-      );
-
-      const data = response.data;
-
-      if (response.ok && data.status === 'success') {
-        return data.data;
-      } else {
-        throw new Error(data.message || 'Failed to fetch partner details');
-      }
-    } catch (error) {
-      console.error('Error fetching partner details:', error);
-      throw error;
-    }
-  };
-
-  const deletePartner = async (partnerId) => {
-    try {
-      const authToken = localStorage.getItem('authToken');
-      
-      if (!authToken) {
-        throw new Error('Authentication required');
-      }
-
-      const response = await axiosInstance.
-        `/api/user/partner/${partnerId}`,
-        {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${authToken}`,
-          },
-        }
-      );
-
-      const data = response.data;
-
-      if (response.ok && data.status === 'success') {
-        return true;
-      } else {
-        throw new Error(data.message || 'Failed to delete partner');
-      }
-    } catch (error) {
-      console.error('Error deleting partner:', error);
-      throw error;
-    }
-  };
-
-  const acceptUserAgreement = async () => {
-    try {
-      setLoading(true);
-      const userId = localStorage.getItem("userId");
-      const authToken = localStorage.getItem("authToken");
 
       if (!userId || !authToken) {
-        toast.error('Authentication required. Please log in again.');
-        return false;
+        throw new Error('User authentication required');
       }
 
-      const response = await axiosInstance.
-        `/api/user/accept-user-agreement-terms/${userId}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${authToken}`,
-          },
-        }
-      );
+      const formData = new FormData();
+      formData.append('signature', file);
 
-      const data = response.data;
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(progressInterval);
+            return prev;
+          }
+          return prev + 10;
+        });
+      }, 200);
 
-      if (response.ok && data.status === 'success') {
-        toast.success('Terms and conditions accepted successfully!');
-        return true;
-      } else {
-        toast.error(data.message || 'Failed to accept terms and conditions');
-        return false;
+      const response = await axiosInstance({
+        method: 'PUT',
+        url: `/api/user/update-user-agreement/${userId}`,
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+        },
+        data: formData,
+      });
+
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+
+      const result = response.data;
+
+      if (response.status !== 200) {
+        throw new Error(result.message || 'Failed to upload signature');
       }
+
+      setIsUploaded(true);
+      toast.success('Signature uploaded successfully!');
+      
+      if (result.data?.signature) {
+        localStorage.setItem('signatureUrl', result.data.signature);
+      }
+
+      return true;
     } catch (error) {
-      console.error('Error accepting terms:', error);
-      toast.error('An error occurred while accepting terms. Please try again.');
+      console.error('Upload error:', error);
+      toast.error(error.message || 'Failed to upload signature');
       return false;
     } finally {
-      setLoading(false);
+      setIsUploading(false);
     }
   };
 
-  const handleSignatureClick = () => {
-    setShowSignatureModal(true);
-  };
-
-  const handleSignatureComplete = async () => {
-    setShowSignatureModal(false);
-    setHasSigned(true);
-    const agreementData = await fetchUserAgreement();
-    if (agreementData && agreementData.signature) {
-      setSignatureUrl(agreementData.signature);
-    }
-  };
-
-  const handleSignatureCancel = () => {
-    setShowSignatureModal(false);
-  };
-
-  const handleSubmit = async () => {
-    if (!isChecked) {
-      toast.error("Please accept the agreement first");
-      return;
-    }
-
-    if (!hasSigned) {
-      toast.error("Please add your signature first");
-      return;
-    }
-
-    const success = await acceptUserAgreement();
-    if (success) {
-      setRegistrationModalOpen(true);
-    }
-  };
-
-  const handleCloseRegistrationModal = () => {
-    setIsRedirecting(true);
-    setTimeout(() => {
-      router.push("/partner-dashboard");
-    }, 2000);
-  };
-
-  const handleDeclineClick = () => {
-    setShowDeclineModal(true);
-  };
-
-  const handleConfirmDecline = async () => {
+  const handleSignAgreement = async () => {
     try {
-      setIsDeleting(true);
-      const partnerDetails = await getPartnerDetails();
-      if (partnerDetails && partnerDetails.id) {
-        await deletePartner(partnerDetails.id);
-        toast.success('Partner registration cancelled successfully');
+      let signatureFile = null;
+
+      if (activeTab === "draw") {
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext("2d");
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imageData.data;
+        
+        let isEmpty = true;
+        for (let i = 0; i < data.length; i += 4) {
+          if (data[i + 3] !== 0) {
+            isEmpty = false;
+            break;
+          }
+        }
+        
+        if (isEmpty) {
+          toast.error('Please draw your signature');
+          return;
+        }
+        
+        signatureFile = await canvasToBlob();
+      } else if (activeTab === "type") {
+        if (!signature.trim()) {
+          toast.error('Please type your signature');
+          return;
+        }
+        signatureFile = await createSignatureImage();
+      } else if (activeTab === "upload") {
+        if (!uploadedFile) {
+          toast.error('Please upload a signature image');
+          return;
+        }
+        const success = await uploadSignature(uploadedFile);
+        if (success) {
+          onComplete();
+        }
+        return;
       }
-      setShowDeclineModal(false);
-      router.back();
+
+      if (signatureFile) {
+        const success = await uploadSignature(new File([signatureFile], 'signature.png'));
+        if (success) {
+          onComplete();
+        }
+      }
     } catch (error) {
-      console.error('Error during decline process:', error);
-      toast.error('Failed to cancel registration. Please try again.');
-    } finally {
-      setIsDeleting(false);
+      console.error('Signature error:', error);
+      toast.error(error.message || 'Failed to save signature');
     }
   };
 
-  const handleCancelDecline = () => {
-    setShowDeclineModal(false);
-  };
-
-  const loadImage = (url) => {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.crossOrigin = 'Anonymous';
-      img.onload = () => resolve(img);
-      img.onerror = reject;
-      img.src = url;
-    });
-  };
-
-  const handleDownload = async () => {
-    const doc = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4'
-    });
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(14);
-    doc.setTextColor(3, 153, 148);
-    doc.setFont('helvetica', 'bold');
-    doc.text('DCARBON SOLUTIONS BUSINESS DEVELOPMENT AGENT AGREEMENT', 105, 20, { align: 'center' });
-    doc.setFontSize(10);
-    doc.setTextColor(0, 0, 0);
-    
-    const agreementText = [
-      "This DCarbon Solutions Business Development Agent Agreement ('Agreement') is made between DCarbon Solutions ('Company')",
-      "and the undersigned Business Development Agent ('Agent').",
-      "",
-      "1. Agent Responsibilities: Agent agrees to promote and sell renewable energy systems",
-      "in accordance with Company standards, specifications, and sales guidelines.",
-      "",
-      "2. Commission Structure: Company shall pay Agent according to the agreed-upon",
-      "commission schedule for completed sales that meet quality standards.",
-      "",
-      "3. Sales Standards: Agent agrees to maintain all sales activities to Company's quality",
-      "standards and ethical guidelines.",
-      "",
-      "4. Training: Agent agrees to participate in Company-provided training programs and",
-      "product education as required.",
-      "",
-      "5. Compliance: Agent agrees to comply with all applicable laws, regulations, and",
-      "industry standards in sales activities.",
-      "",
-      "6. Confidentiality: Agent agrees to maintain confidentiality of Company proprietary",
-      "information and customer data.",
-      "",
-      "7. Term: This Agreement shall commence on the date of execution and continue for",
-      "12 months, automatically renewing for successive 12-month terms unless terminated.",
-      "",
-      "8. Termination: Either party may terminate this Agreement with 30 days written notice.",
-      "",
-      "9. Governing Law: This Agreement shall be governed by the laws of the state of Texas."
-    ];
-    
-    let yPosition = 30;
-    agreementText.forEach(line => {
-      if (yPosition > 270) {
-        doc.addPage();
-        yPosition = 20;
-      }
-      doc.text(line, 20, yPosition, { maxWidth: 170 });
-      yPosition += 7;
-    });
-
-    doc.addPage();
-    yPosition = 30;
-    doc.setFontSize(12);
-    doc.setTextColor(3, 153, 148);
-    doc.text('ACKNOWLEDGEMENT AND SIGNATURE', 105, yPosition, { align: 'center' });
-    yPosition += 15;
-    doc.setFontSize(10);
-    doc.setTextColor(0, 0, 0);
-    doc.text('By signing below, I acknowledge that I have read and agree to the DCarbon Solutions Business Development Agent', 105, yPosition, { align: 'center' });
-    yPosition += 7;
-    doc.text('Agreement presented in this document.', 105, yPosition, { align: 'center' });
-    yPosition += 20;
-    
-    if (signatureUrl) {
-      try {
-        const img = await loadImage(signatureUrl);
-        const imgWidth = 40;
-        const imgHeight = 20;
-        doc.addImage(img, 'PNG', 40, yPosition, imgWidth, imgHeight);
-        yPosition += imgHeight + 5;
-      } catch (error) {
-        console.error('Error loading signature image:', error);
-        doc.line(40, yPosition, 80, yPosition);
-        doc.text('Agent Signature', 60, yPosition + 5, { align: 'center' });
-        yPosition += 10;
-      }
-    } else {
-      doc.line(40, yPosition, 80, yPosition);
-      doc.text('Agent Signature', 60, yPosition + 5, { align: 'center' });
-      yPosition += 10;
-    }
-    
-    doc.line(130, yPosition - 10, 170, yPosition - 10);
-    doc.text('Date', 150, yPosition - 5, { align: 'center' });
-    doc.text('Printed Name: ___________________________', 40, yPosition + 10);
-    doc.text('Company Name: _________________________', 40, yPosition + 20);
-    doc.text('Agent ID: _______', 40, yPosition + 30);
-    
-    doc.save("DCarbon_Solutions_Business_Development_Agent_Agreement.pdf");
-  };
+  if (!isOpen) return null;
 
   return (
-    <>
-      {showLoader && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-          <CustomerIDLoader />
-        </div>
-      )}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+      <div className="relative w-full max-w-lg bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
+        <button onClick={onClose} className="absolute top-4 right-4 z-10 w-6 h-6 flex items-center justify-center text-red-500 hover:text-red-700">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
 
-      <div className="min-h-screen w-full flex flex-col items-center py-8 px-4 bg-white">
-        <div className="w-full max-w-3xl">
-          <button 
-            onClick={() => router.back()}
-            className="flex items-center text-[#039994] mb-6"
-          >
-            <FaArrowLeft className="mr-2" />
-            Back
-          </button>
+        <div className="p-6">
+          <h2 className="font-[600] text-[20px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro mb-6">
+            Signature
+          </h2>
 
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="font-[600] text-[36px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro">
-              DCarbon Solutions Business Development Agent Agreement
-            </h1>
-            <button onClick={handleDownload} className="text-[#15104D] hover:opacity-80">
-              <FaDownload size={20} />
+          <div className="flex border-b border-gray-200 mb-6">
+            <button
+              onClick={() => setActiveTab("draw")}
+              className={`px-4 py-2 font-medium text-sm transition-colors font-sfpro ${
+                activeTab === "draw"
+                  ? "text-[#039994] border-b-2 border-[#039994]"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              Draw
+            </button>
+            <button
+              onClick={() => setActiveTab("type")}
+              className={`px-4 py-2 font-medium text-sm transition-colors font-sfpro ${
+                activeTab === "type"
+                  ? "text-[#039994] border-b-2 border-[#039994]"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              Type
+            </button>
+            <button
+              onClick={() => setActiveTab("upload")}
+              className={`px-4 py-2 font-medium text-sm transition-colors font-sfpro ${
+                activeTab === "upload"
+                  ? "text-[#039994] border-b-2 border-[#039994]"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              Upload
             </button>
           </div>
 
-          <div className="flex items-start mb-6">
-            <input
-              type="checkbox"
-              checked={isChecked}
-              onChange={(e) => setIsChecked(e.target.checked)}
-              className="mt-1 w-4 h-4 text-[#039994] border-gray-300 rounded focus:ring-[#039994] accent-[#039994]"
-            />
-            <label className="ml-3 font-sfpro font-[400] text-[14px] leading-[150%] text-[#039994] cursor-pointer">
-              I have read the DCarbon Solutions Business Development Agent Agreement and Understand the terms <span className="text-red-500">*</span>
-            </label>
+          <div className="mb-6">
+            {activeTab === "draw" && (
+              <div className="relative">
+                <canvas
+                  ref={canvasRef}
+                  width={400}
+                  height={200}
+                  className="w-full h-48 border-2 border-gray-200 rounded-lg bg-gray-50 cursor-crosshair"
+                  onMouseDown={startDrawing}
+                  onMouseMove={draw}
+                  onMouseUp={stopDrawing}
+                  onMouseLeave={stopDrawing}
+                />
+                <button
+                  onClick={clearCanvas}
+                  className="absolute bottom-2 right-2 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-50"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3 6H5H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+              </div>
+            )}
+
+            {activeTab === "type" && (
+              <div>
+                <input
+                  type="text"
+                  placeholder="Type your signature here"
+                  value={signature}
+                  onChange={(e) => setSignature(e.target.value)}
+                  className="w-full p-4 border-2 border-gray-200 rounded-lg bg-gray-50 text-2xl font-cursive placeholder-gray-400 focus:outline-none focus:border-[#039994] font-sfpro"
+                  style={{ fontFamily: "cursive" }}
+                />
+              </div>
+            )}
+
+            {activeTab === "upload" && (
+              <div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+                
+                {!uploadedFile ? (
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full h-48 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 flex flex-col items-center justify-center cursor-pointer hover:border-[#039994] hover:bg-gray-100 transition-colors"
+                  >
+                    <div className="text-center">
+                      <div className="text-gray-400 mb-2">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="mx-auto">
+                          <path d="M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          <path d="M17 8L12 3L7 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          <path d="M12 3V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-1 font-sfpro">Drag & drop a signature image or scan</p>
+                      <p className="text-xs text-gray-400 font-sfpro">or</p>
+                      <div className="mt-2">
+                        <span className="inline-block px-4 py-2 bg-[#039994] text-white rounded-md text-sm font-sfpro">
+                          Select Image
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {isUploading && (
+                      <div className="w-full h-48 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 flex flex-col items-center justify-center">
+                        <div className="text-center">
+                          <div className="w-12 h-12 border-4 border-t-4 border-gray-300 border-t-[#039994] rounded-full animate-spin mx-auto mb-4"></div>
+                          <p className="text-sm text-gray-600 font-sfpro">Uploading signature...</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {isUploaded && !isUploading && (
+                      <div className="w-full h-48 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 flex flex-col items-center justify-center">
+                        <div className="text-center">
+                          <div className="text-[#039994] mb-2">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="mx-auto">
+                              <path d="M8 12L10.5 14.5L16 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          </div>
+                          <p className="text-sm text-gray-800 font-sfpro font-medium">Signature uploaded successfully</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {(isUploading || uploadProgress > 0) && (
+                      <div className="bg-[#039994] text-white p-3 rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center space-x-2">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="currentColor"/>
+                            </svg>
+                            <span className="text-sm font-sfpro">{uploadedFile.name}</span>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-sm font-sfpro">{uploadProgress}%</span>
+                            {isUploaded && (
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            )}
+                          </div>
+                        </div>
+                        <div className="w-full bg-white/20 rounded-full h-2">
+                          <div className="bg-white h-2 rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }}></div>
+                        </div>
+                        {isUploaded && <div className="mt-2 text-xs font-sfpro">Upload complete</div>}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
-          <div className="h-[400px] overflow-y-auto mb-6 font-sfpro text-[12px] leading-[150%] font-[400] text-[#1E1E1E] p-6 bg-gray-50 rounded-lg">
-            <h3 className="font-bold text-[#039994] mb-4">DCARBON SOLUTIONS BUSINESS DEVELOPMENT AGENT AGREEMENT</h3>
-            <p className="mb-4">
-              This DCarbon Solutions Business Development Agent Agreement ("Agreement") is made between DCarbon Solutions ("Company") and the undersigned Business Development Agent ("Agent").
-            </p>
-            <p className="mb-3"><strong>1. Agent Responsibilities:</strong> Agent agrees to promote and sell renewable energy systems in accordance with Company standards, specifications, and sales guidelines.</p>
-            <p className="mb-3"><strong>2. Commission Structure:</strong> Company shall pay Agent according to the agreed-upon commission schedule for completed sales that meet quality standards.</p>
-            <p className="mb-3"><strong>3. Sales Standards:</strong> Agent agrees to maintain all sales activities to Company's quality standards and ethical guidelines.</p>
-            <p className="mb-3"><strong>4. Training:</strong> Agent agrees to participate in Company-provided training programs and product education as required.</p>
-            <p className="mb-3"><strong>5. Compliance:</strong> Agent agrees to comply with all applicable laws, regulations, and industry standards in sales activities.</p>
-            <p className="mb-3"><strong>6. Confidentiality:</strong> Agent agrees to maintain confidentiality of Company proprietary information and customer data.</p>
-            <p className="mb-3"><strong>7. Term:</strong> This Agreement shall commence on the date of execution and continue for 12 months, automatically renewing for successive 12-month terms unless terminated.</p>
-            <p className="mb-3"><strong>8. Termination:</strong> Either party may terminate this Agreement with 30 days written notice.</p>
-            <p className="mb-4"><strong>9. Governing Law:</strong> This Agreement shall be governed by the laws of the state of Texas.</p>
-          </div>
-
-          <div className="mb-8">
-            <h3 className="block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]">
-              Signature <span className="text-red-500">*</span>
-            </h3>
-            <div 
-              onClick={handleSignatureClick}
-              className={`border ${signatureUrl ? 'border-gray-300' : 'border-dashed border-gray-300'} rounded p-4 mb-4 ${signatureUrl ? 'text-gray-700 cursor-default' : 'text-gray-500 italic cursor-pointer hover:border-[#039994] hover:bg-gray-50'} font-sfpro transition-colors`}
-            >
-              {signatureUrl ? (
-                <img src={signatureUrl} alt="Agent signature" className="max-w-full h-auto" />
-              ) : (
-                "Click to add your signature"
-              )}
-            </div>
-          </div>
+          <p className="text-xs text-gray-500 mb-6 leading-relaxed font-sfpro">
+            By signing this document with an electronic signature, I agree that such signature will be as valid as handwritten signatures to the extent allowed by local law.
+          </p>
 
           <div className="flex justify-between gap-4">
             <button
-              onClick={handleSubmit}
-              disabled={!isChecked || !hasSigned || loading}
-              className={`flex-1 rounded-md text-white font-semibold py-3 focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] transition-colors ${
-                isChecked && hasSigned && !loading
-                  ? "bg-[#039994] hover:bg-[#02857f]"
-                  : "bg-gray-400 cursor-not-allowed"
-              }`}
+              onClick={onClose}
+              disabled={isUploading}
+              className="flex-1 rounded-md bg-white border border-[#039994] text-[#039994] font-semibold py-3 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] transition-colors disabled:opacity-50"
             >
-              {loading ? "Processing..." : "Accept Agreement"}
+              Cancel
             </button>
             <button
-              onClick={handleDeclineClick}
-              disabled={loading}
-              className="flex-1 rounded-md bg-white border border-[#039994] text-[#039994] font-semibold py-3 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={handleSignAgreement}
+              disabled={isUploading}
+              className="flex-1 rounded-md bg-[#039994] text-white font-semibold py-3 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] transition-colors disabled:opacity-50 flex items-center justify-center"
             >
-              Decline
+              {isUploading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  Saving...
+                </>
+              ) : (
+                'Add Signature'
+              )}
             </button>
           </div>
         </div>
       </div>
-
-      {registrationModalOpen && (
-        <RegistrationSuccessfulModal
-          closeModal={handleCloseRegistrationModal}
-          setIsRedirecting={setIsRedirecting}
-        />
-      )}
-
-      {showRedirectLoader && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-          <Loader />
-        </div>
-      )}
-
-      <SignatureModal
-        isOpen={showSignatureModal}
-        onClose={handleSignatureCancel}
-        onComplete={handleSignatureComplete}
-      />
-
-      {showDeclineModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-            <h3 className="text-lg font-semibold text-[#039994] mb-4">
-              Confirm Decline
-            </h3>
-            <p className="text-gray-700 mb-6">
-              In order for you to proceed to the next step, you must Accept Agreement. 
-              Are you sure you want to Decline? This will cancel your partner registration.
-            </p>
-            <div className="flex justify-end gap-4">
-              <button
-                onClick={handleCancelDecline}
-                disabled={isDeleting}
-                className="px-4 py-2 border border-[#039994] text-[#039994] rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#039994] disabled:opacity-50"
-              >
-                No
-              </button>
-              <button
-                onClick={handleConfirmDecline}
-                disabled={isDeleting}
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50"
-              >
-                {isDeleting ? "Deleting..." : "Yes"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
+    </div>
   );
 }

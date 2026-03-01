@@ -7,6 +7,7 @@ import ProfileImage from "./ProfileImage";
 import ContactInformation from "./ContactInformation";
 import { toast } from "react-hot-toast";
 import Loader from "@/components/loader/Loader";
+import { axiosInstance } from "../../../../../lib/config";
 
 const MyAccount = () => {
   const [showPreferences, setShowPreferences] = useState(true);
@@ -25,16 +26,14 @@ const MyAccount = () => {
           throw new Error("User not authenticated");
         }
 
-        const response = await axiosInstance.
-          `/api/user/get-one-user/${userId}`,
-          {
-            method: "GET",
-            headers: { Authorization: `Bearer ${authToken}` },
-          }
-        );
+        const response = await axiosInstance({
+          method: "GET",
+          url: `/api/user/get-one-user/${userId}`,
+          headers: { Authorization: `Bearer ${authToken}` },
+        });
 
         const data = response.data;
-        if (!response.ok) {
+        if (response.status !== 200) {
           throw new Error(data.message || "Failed to fetch user data");
         }
 

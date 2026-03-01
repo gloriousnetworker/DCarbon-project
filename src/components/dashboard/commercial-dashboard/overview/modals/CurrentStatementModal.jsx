@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { backArrow, pageTitle } from "../styles";
+import { axiosInstance } from "../../../../../../lib/config";
 
 export default function CurrentStatementModal({ isOpen, onClose }) {
   const [statementData, setStatementData] = useState(null);
@@ -32,20 +33,18 @@ export default function CurrentStatementModal({ isOpen, onClose }) {
         throw new Error("Missing authentication data");
       }
 
-      const response = await axiosInstance.
-        `/api/rec/sale-statement?month=${selectedMonth}&year=${selectedYear}&userId=${userId}`,
-        {
-          method: 'GET',
-          headers: { 
-            Authorization: `Bearer ${authToken}`,
-            "Content-Type": "application/json"
-          }
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/rec/sale-statement?month=${selectedMonth}&year=${selectedYear}&userId=${userId}`,
+        headers: { 
+          Authorization: `Bearer ${authToken}`,
+          "Content-Type": "application/json"
         }
-      );
+      });
 
       const data = response.data;
       
-      if (!response.ok) {
+      if (response.status !== 200) {
         throw new Error(data.message || "Failed to fetch statement");
       }
 

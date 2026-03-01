@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
-import axios from "axios";
+import { axiosInstance } from "../../../../../lib/config";
 import toast, { Toaster } from "react-hot-toast";
 
 // Inline ToggleSwitch (can be extracted if needed)

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import { toast } from "react-hot-toast";
 import { jsPDF } from "jspdf";
+import { axiosInstance } from "../../../../../lib/config";
 
 const CommercialRegistrationModal = dynamic(
   () => import("./modals/createfacility/CommercialRegistrationModal"),
@@ -94,19 +95,17 @@ export default function QuickActions() {
         return;
       }
 
-      const response = await axiosInstance.
-        `/api/user/agreement/${userId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`,
-          },
-        }
-      );
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/user/agreement/${userId}`,
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+        },
+      });
 
       const data = response.data;
 
-      if (response.ok && data.status === 'success' && data.data?.termsAccepted === true) {
+      if (response.status === 200 && data.status === 'success' && data.data?.termsAccepted === true) {
         setHasAcceptedAgreement(true);
         setSignatureUrl(data.data?.signature);
       } else {
@@ -130,19 +129,17 @@ export default function QuickActions() {
         return null;
       }
 
-      const response = await axiosInstance.
-        `/api/user/agreement/${userId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`,
-          },
-        }
-      );
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/user/agreement/${userId}`,
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+        },
+      });
 
       const data = response.data;
 
-      if (response.ok && data.status === 'success') {
+      if (response.status === 200 && data.status === 'success') {
         return data.data;
       } else {
         return null;
@@ -165,20 +162,18 @@ export default function QuickActions() {
         return false;
       }
 
-      const response = await axiosInstance.
-        `/api/user/accept-user-agreement-terms/${userId}`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`,
-          },
-        }
-      );
+      const response = await axiosInstance({
+        method: 'PUT',
+        url: `/api/user/accept-user-agreement-terms/${userId}`,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        },
+      });
 
       const data = response.data;
 
-      if (response.ok && data.status === 'success') {
+      if (response.status === 200 && data.status === 'success') {
         toast.success('Terms and conditions accepted successfully!');
         return true;
       } else {

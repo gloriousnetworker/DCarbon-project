@@ -7,7 +7,7 @@ import {
   FiChevronLeft,
   FiAlertCircle
 } from "react-icons/fi";
-import axios from "axios";
+import { axiosInstance } from "../../../../../../lib/config";
 import toast from "react-hot-toast";
 import EditResidentialFacilityModal from "./EditFacilityDetailsModal";
 import ResidentialDetailsGraph from "./ResidentialDetailsGraph";
@@ -110,16 +110,14 @@ export default function ResidentialFacilityDetails({ facility, onBack, onFacilit
 
   const checkStage2Completion = async (userId, authToken) => {
     try {
-      const response = await axiosInstance.
-        `/api/user/financial-info/${userId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`
-          }
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/user/financial-info/${userId}`,
+        headers: {
+          'Authorization': `Bearer ${authToken}`
         }
-      );
-      const result = await response.json();
+      });
+      const result = response.data;
       return result.status === 'success' && result.data?.financialInfo;
     } catch (error) {
       return false;
@@ -128,16 +126,14 @@ export default function ResidentialFacilityDetails({ facility, onBack, onFacilit
 
   const checkStage3Completion = async (userId, authToken) => {
     try {
-      const response = await axiosInstance.
-        `/api/user/agreement/${userId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`
-          }
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/user/agreement/${userId}`,
+        headers: {
+          'Authorization': `Bearer ${authToken}`
         }
-      );
-      const result = await response.json();
+      });
+      const result = response.data;
       return result.status === 'success' && result.data?.termsAccepted;
     } catch (error) {
       return false;
@@ -146,16 +142,14 @@ export default function ResidentialFacilityDetails({ facility, onBack, onFacilit
 
   const checkStage4Completion = async (userId, authToken) => {
     try {
-      const response = await axiosInstance.
-        `/api/auth/user-meters/${userId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`
-          }
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/auth/user-meters/${userId}`,
+        headers: {
+          'Authorization': `Bearer ${authToken}`
         }
-      );
-      const result = await response.json();
+      });
+      const result = response.data;
       return result.status === 'success' && result.data?.length > 0;
     } catch (error) {
       return false;
@@ -264,14 +258,13 @@ export default function ResidentialFacilityDetails({ facility, onBack, onFacilit
 
     try {
       setLoading(true);
-      const response = await axiosInstance.get(
-        `/api/residential-facility/get-one-residential-facility/${facilityData.id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${authToken}`
-          }
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/residential-facility/get-one-residential-facility/${facilityData.id}`,
+        headers: {
+          Authorization: `Bearer ${authToken}`
         }
-      );
+      });
 
       if (response.data.status === "success") {
         setFacilityData(response.data.data);
@@ -298,14 +291,13 @@ export default function ResidentialFacilityDetails({ facility, onBack, onFacilit
 
     try {
       setLoading(true);
-      const response = await axiosInstance.get(
-        `/api/residential-facility/residential-docs/${facilityData.id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${authToken}`
-          }
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/residential-facility/residential-docs/${facilityData.id}`,
+        headers: {
+          Authorization: `Bearer ${authToken}`
         }
-      );
+      });
 
       if (response.data.status === "success") {
         setDocuments(response.data.data);
@@ -328,14 +320,13 @@ export default function ResidentialFacilityDetails({ facility, onBack, onFacilit
     if (!userId || !authToken) return;
 
     try {
-      const response = await axiosInstance.get(
-        `/api/user/financial-info/${userId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${authToken}`
-          }
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/user/financial-info/${userId}`,
+        headers: {
+          Authorization: `Bearer ${authToken}`
         }
-      );
+      });
 
       if (response.data.status === "success" && response.data.data.financialInfo) {
         setFinanceType(response.data.data.financialInfo.financialType);

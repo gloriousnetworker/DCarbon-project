@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { FiX, FiSearch } from "react-icons/fi";
-import axios from "axios";
+import { axiosInstance } from "../../../../../../lib/config";
 import toast from "react-hot-toast";
 import { labelClass, inputClass, selectClass } from "../styles";
 import Loader from "@/components/loader/Loader.jsx";

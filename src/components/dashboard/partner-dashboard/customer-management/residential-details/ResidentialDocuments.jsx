@@ -8,7 +8,7 @@ import {
   FiFileText,
   FiAlertCircle
 } from "react-icons/fi";
-import axios from "axios";
+import { axiosInstance } from "../../../../../../lib/config";
 import toast from "react-hot-toast";
 
 export const DOCUMENT_TYPES = {

@@ -2,6 +2,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect } from 'react';
+import { axiosInstance } from "../../../../lib/config";
 
 const ProfileContext = createContext();
 
@@ -18,18 +19,16 @@ export const ProfileProvider = ({ children }) => {
       
       if (!userId || !authToken) return;
 
-      const response = await axiosInstance.
-        `/api/user/get-one-user/${userId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/user/get-one-user/${userId}`,
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
-      if (!response.ok) throw new Error('Failed to fetch user data');
+      if (response.status !== 200) throw new Error('Failed to fetch user data');
 
       const data = response.data;
       
@@ -44,7 +43,6 @@ export const ProfileProvider = ({ children }) => {
       }
     } catch (err) {
       console.error('Error fetching profile:', err);
-      // Fallback to localStorage
       const storedPic = localStorage.getItem('userProfilePicture');
       const storedName = localStorage.getItem('userFirstName');
       if (storedPic || storedName) {
@@ -56,7 +54,6 @@ export const ProfileProvider = ({ children }) => {
     }
   };
 
-  // Initialize from localStorage on mount
   useEffect(() => {
     updateProfile();
   }, []);
