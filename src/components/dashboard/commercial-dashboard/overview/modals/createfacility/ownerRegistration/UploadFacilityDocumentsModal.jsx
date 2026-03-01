@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { toast } from "react-hot-toast";
+import { axiosInstance } from "../../../../../../../../lib/config";
 import InviteOperatorModal from './InviteOperatorModal.jsx';
 import {
   buttonPrimary,
@@ -69,24 +70,21 @@ export default function UploadFacilityDocumentsModal({ isOpen, onClose }) {
       const formData = new FormData();
       formData.append(documentKeys[index], files[index]);
 
-      const response = await axiosInstance.
-        `/api/facility/${endpoints[index]}/${userId}`,
-        {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${authToken}`,
-          },
-          body: formData,
-        }
-      );
+      const response = await axiosInstance({
+        method: 'PUT',
+        url: `/api/facility/${endpoints[index]}/${userId}`,
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+        },
+        data: formData,
+      });
 
       const data = response.data;
 
-      if (!response.ok) {
+      if (response.status !== 200) {
         throw new Error(data.message || `Failed to upload ${documentTypes[index]}`);
       }
 
-      // Update status to PENDING after successful upload
       setDocumentStatuses(prev => {
         const newStatuses = [...prev];
         newStatuses[index] = 'PENDING';
@@ -108,7 +106,6 @@ export default function UploadFacilityDocumentsModal({ isOpen, onClose }) {
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      // Simulate processing time
       await new Promise(resolve => setTimeout(resolve, 1000));
       setShowInviteModal(true);
     } catch (err) {
@@ -120,7 +117,7 @@ export default function UploadFacilityDocumentsModal({ isOpen, onClose }) {
 
   const handleInviteModalClose = () => {
     setShowInviteModal(false);
-    onClose(); // Close the main modal after invite modal closes
+    onClose();
   };
 
   if (!isOpen) return null;
@@ -145,7 +142,6 @@ export default function UploadFacilityDocumentsModal({ isOpen, onClose }) {
               </svg>
             </button>
 
-            {/* Back Arrow */}
             <button
               onClick={onClose}
               className="absolute top-6 left-6 text-gray-600 hover:text-gray-800"
@@ -247,7 +243,6 @@ export default function UploadFacilityDocumentsModal({ isOpen, onClose }) {
         </div>
       </div>
 
-      {/* Invite Operator Modal */}
       {showInviteModal && (
         <InviteOperatorModal closeModal={handleInviteModalClose} />
       )}
