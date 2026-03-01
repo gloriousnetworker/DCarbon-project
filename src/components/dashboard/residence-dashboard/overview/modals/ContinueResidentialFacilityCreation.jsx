@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
-import { axiosInstance } from "../../../../../lib/config";
+import { axiosInstance } from "../../../../../../lib/config";
 import InstapullAuthorizationModal from "../InstapullAuthorizationModal";
 
 export default function ResidentialFacilityModal({ isOpen, onClose, currentStep }) {
