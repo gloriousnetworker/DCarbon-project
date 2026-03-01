@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { HiOutlineFilter, HiOutlineDownload, HiOutlineChevronLeft, HiOutlineChevronRight } from 'react-icons/hi';
 import GeneratorReportFilter from './GeneratorReportFilter';
 import GeneratorReportExportReport from './GeneratorReportExportReport';
+import { axiosInstance } from '../../../../../lib/config';
 
 const GeneratorReport = () => {
   const [generatorData, setGeneratorData] = useState(null);
@@ -15,7 +16,6 @@ const GeneratorReport = () => {
     status: 'all'
   });
 
-  // Get user data from localStorage
   const getUserData = () => {
     try {
       const userId = localStorage.getItem('userId') || '5d37cbae-d7c0-4731-95e6-94000ddf9b4e';
@@ -26,26 +26,26 @@ const GeneratorReport = () => {
     }
   };
 
-  // Fetch Generator Report Data with filters
   const fetchGeneratorReport = async () => {
     setLoading(true);
     try {
       const { userId, authToken } = getUserData();
       let url = `/api/facility/generator-report/${userId}?page=${currentPage}`;
       
-      // Add filters to URL if they exist
       if (filters.dateFrom) url += `&dateFrom=${filters.dateFrom}`;
       if (filters.dateTo) url += `&dateTo=${filters.dateTo}`;
       if (filters.status !== 'all') url += `&status=${filters.status}`;
 
-      const response = await axiosInstance.url, {
+      const response = await axiosInstance({
+        method: 'GET',
+        url: url,
         headers: {
           'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json'
         }
       });
       
-      if (!response.ok) {
+      if (response.status !== 200) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
@@ -57,7 +57,6 @@ const GeneratorReport = () => {
       }
     } catch (error) {
       console.error('Error fetching generator report:', error);
-      // You might want to show an error message to the user here
     } finally {
       setLoading(false);
     }
@@ -78,7 +77,7 @@ const GeneratorReport = () => {
 
   const applyFilters = (newFilters) => {
     setFilters(newFilters);
-    setCurrentPage(1); // Reset to first page when filters change
+    setCurrentPage(1);
     setShowFilterModal(false);
   };
 
@@ -101,7 +100,6 @@ const GeneratorReport = () => {
 
   return (
     <div className="bg-white p-6 rounded-lg shadow w-full max-w-6xl mx-auto">
-      {/* Header Section */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
         <h1 className="text-[#039994] font-[600] text-[24px] leading-[100%] tracking-[-0.05em] font-sfpro">
           Generator Report
@@ -126,7 +124,6 @@ const GeneratorReport = () => {
         </div>
       </div>
 
-      {/* Active Filters Display */}
       {(filters.dateFrom || filters.dateTo || filters.status !== 'all') && (
         <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
           <div className="flex items-center justify-between">
@@ -146,7 +143,6 @@ const GeneratorReport = () => {
         </div>
       )}
 
-      {/* Generator Report Table */}
       <div className="overflow-x-auto">
         <table className="min-w-full text-sm text-left text-gray-700">
           <thead className="border-b border-gray-200 text-xs font-medium uppercase text-gray-700">
@@ -182,7 +178,6 @@ const GeneratorReport = () => {
         </table>
       </div>
 
-      {/* Pagination Section */}
       <div className="flex flex-col sm:flex-row items-center justify-between mt-6">
         <p className="text-sm text-gray-600 font-sfpro">
           Showing {generatorData?.reports?.length || 0} of {generatorData?.metadata?.total || 0} entries
@@ -212,7 +207,6 @@ const GeneratorReport = () => {
         </div>
       </div>
 
-      {/* Filter Modal */}
       {showFilterModal && (
         <GeneratorReportFilter 
           currentFilters={filters}
@@ -221,7 +215,6 @@ const GeneratorReport = () => {
         />
       )}
 
-      {/* Export Modal */}
       {showExportModal && (
         <GeneratorReportExportReport 
           onClose={() => setShowExportModal(false)}

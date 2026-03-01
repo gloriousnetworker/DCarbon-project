@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { axiosInstance } from "../../../../../lib/config";
 
 export default function Graph() {
   const [selectedFacility, setSelectedFacility] = useState("All facilities");
@@ -70,14 +71,12 @@ export default function Graph() {
         return;
       }
       try {
-        const response = await axiosInstance.
-          `/api/auth/user-meters/${userId}`,
-          {
-            method: 'GET',
-            headers: { 'Authorization': `Bearer ${authToken}` }
-          }
-        );
-        const result = await response.json();
+        const response = await axiosInstance({
+          method: 'GET',
+          url: `/api/auth/user-meters/${userId}`,
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const result = response.data;
         
         const metersExist = result.status === 'success' && 
                            Array.isArray(result.data) &&
@@ -136,17 +135,17 @@ export default function Graph() {
 
   const fetchTotalLifetimeRecs = async (userId, authToken) => {
     try {
-      const response = await axiosInstance.
-        `/api/rec/statistics?userId=${userId}`,
-        {
-          headers: { 
-            Authorization: `Bearer ${authToken}`, 
-            "Content-Type": "application/json" 
-          }
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/rec/statistics`,
+        params: { userId },
+        headers: { 
+          Authorization: `Bearer ${authToken}`, 
+          "Content-Type": "application/json" 
         }
-      );
+      });
       
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      if (response.status !== 200) throw new Error(`HTTP error! status: ${response.status}`);
       const data = response.data;
       
       if (data.status === "success" && Array.isArray(data.data)) {
@@ -160,16 +159,15 @@ export default function Graph() {
 
   const fetchFacilities = async (userId, authToken) => {
     try {
-      const response = await axiosInstance.
-        `/api/facility/get-user-facilities-by-userId/${userId}`,
-        {
-          headers: { 
-            Authorization: `Bearer ${authToken}`, 
-            "Content-Type": "application/json" 
-          }
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/facility/get-user-facilities-by-userId/${userId}`,
+        headers: { 
+          Authorization: `Bearer ${authToken}`, 
+          "Content-Type": "application/json" 
         }
-      );
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      });
+      if (response.status !== 200) throw new Error(`HTTP error! status: ${response.status}`);
       const data = response.data;
       const facilitiesData = data.data?.facilities || [];
       setFacilities(facilitiesData);
@@ -183,8 +181,6 @@ export default function Graph() {
 
   const fetchRecStatistics = async (userId, authToken) => {
     try {
-      const url = new URL(`/api/rec/statistics`);
-      
       const params = {
         year: selectedYear
       };
@@ -195,18 +191,17 @@ export default function Graph() {
         params.facilityId = selectedFacility;
       }
       
-      Object.keys(params).forEach(key => {
-        url.searchParams.append(key, params[key]);
-      });
-      
-      const response = await axiosInstance.url, {
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/rec/statistics`,
+        params: params,
         headers: { 
           Authorization: `Bearer ${authToken}`, 
           "Content-Type": "application/json" 
         }
       });
       
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      if (response.status !== 200) throw new Error(`HTTP error! status: ${response.status}`);
       const data = response.data;
       
       if (data.status === "success") {
@@ -221,8 +216,6 @@ export default function Graph() {
 
   const fetchDetailStatistics = async (userId, authToken) => {
     try {
-      const url = new URL(`/api/rec/statistics`);
-      
       const params = {};
       
       if (viewMode === "monthly" && selectedMonth) {
@@ -244,18 +237,17 @@ export default function Graph() {
         params.facilityId = selectedFacility;
       }
       
-      Object.keys(params).forEach(key => {
-        url.searchParams.append(key, params[key]);
-      });
-      
-      const response = await axiosInstance.url, {
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/rec/statistics`,
+        params: params,
         headers: { 
           Authorization: `Bearer ${authToken}`, 
           "Content-Type": "application/json" 
         }
       });
       
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      if (response.status !== 200) throw new Error(`HTTP error! status: ${response.status}`);
       const data = response.data;
       
       if (data.status === "success") {
@@ -269,8 +261,6 @@ export default function Graph() {
 
   const fetchRecOverview = async (userId, authToken) => {
     try {
-      const url = new URL(`/api/rec/overview/stats`);
-      
       const params = {};
       
       if (viewMode === "monthly" && selectedMonth) {
@@ -292,18 +282,17 @@ export default function Graph() {
         params.facilityId = selectedFacility;
       }
       
-      Object.keys(params).forEach(key => {
-        url.searchParams.append(key, params[key]);
-      });
-      
-      const response = await axiosInstance.url, {
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/rec/overview/stats`,
+        params: params,
         headers: { 
           Authorization: `Bearer ${authToken}`, 
           "Content-Type": "application/json" 
         }
       });
       
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      if (response.status !== 200) throw new Error(`HTTP error! status: ${response.status}`);
       const data = response.data;
       
       if (data.status === "success") {
