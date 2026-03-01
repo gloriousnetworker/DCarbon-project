@@ -9,22 +9,20 @@ import {
   pageTitle,
 } from "./styles";
 import Loader from "@/components/loader/Loader.jsx";
+import { axiosInstance } from "../../../../../lib/config";
 
 export default function AddFacilityModal({ onClose, onFacilityAdded }) {
-  // Form states - keeping only the requested fields
   const [formData, setFormData] = useState({
     facilityName: "",
     address: "",
     utilityProvider: "",
     meterId: "",
     commercialRole: "",
-    entityType: "company", // Default to company
+    entityType: "company",
   });
 
-  // Loading state
   const [loading, setLoading] = useState(false);
 
-  // Handle form input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({
@@ -46,7 +44,6 @@ export default function AddFacilityModal({ onClose, onFacilityAdded }) {
         return;
       }
 
-      // Prepare the request body - only including the specified fields
       const requestBody = {
         facilityName: formData.facilityName,
         address: formData.address,
@@ -56,26 +53,24 @@ export default function AddFacilityModal({ onClose, onFacilityAdded }) {
         entityType: formData.entityType,
       };
 
-      const response = await axiosInstance.
-        `/api/facility/create-new-facility/${userId}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${authToken}`,
-          },
-          body: JSON.stringify(requestBody),
-        }
-      );
+      const response = await axiosInstance({
+        method: "POST",
+        url: `/api/facility/create-new-facility/${userId}`,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
+        },
+        data: JSON.stringify(requestBody),
+      });
 
-      if (!response.ok) {
-        const errorData = await response.json();
+      if (response.status !== 200) {
+        const errorData = response.data;
         throw new Error(errorData.message || "Failed to create facility");
       }
 
       const data = response.data;
       toast.success("Facility added successfully");
-      onFacilityAdded(data.data); // Pass the created facility data to parent
+      onFacilityAdded(data.data);
       onClose();
     } catch (err) {
       toast.error(err.message || "Failed to create facility");
@@ -88,14 +83,12 @@ export default function AddFacilityModal({ onClose, onFacilityAdded }) {
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
       <div className="bg-white w-full max-w-lg rounded-md shadow-lg p-6 relative">
-        {/* Centered Loader Overlay */}
         {loading && (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-white bg-opacity-70 rounded-md">
             <Loader />
           </div>
         )}
         
-        {/* Close Icon */}
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
@@ -103,13 +96,11 @@ export default function AddFacilityModal({ onClose, onFacilityAdded }) {
           <FiX size={24} />
         </button>
 
-        {/* Heading */}
         <h2 className={`${pageTitle} text-left mb-6`}>
           Add Commercial Facility
         </h2>
 
         <form onSubmit={handleSubmit}>
-          {/* Facility Name */}
           <div className="mb-4">
             <label className={labelClass}>
               Facility Name <span className="text-red-500">*</span>
@@ -125,7 +116,6 @@ export default function AddFacilityModal({ onClose, onFacilityAdded }) {
             />
           </div>
 
-          {/* Address */}
           <div className="mb-4">
             <label className={labelClass}>
               Address <span className="text-red-500">*</span>
@@ -141,7 +131,6 @@ export default function AddFacilityModal({ onClose, onFacilityAdded }) {
             />
           </div>
 
-          {/* Utility Provider */}
           <div className="mb-4">
             <label className={labelClass}>
               Utility Provider <span className="text-red-500">*</span>
@@ -157,7 +146,6 @@ export default function AddFacilityModal({ onClose, onFacilityAdded }) {
             />
           </div>
 
-          {/* Meter ID */}
           <div className="mb-4">
             <label className={labelClass}>
               Meter ID <span className="text-red-500">*</span>
@@ -173,7 +161,6 @@ export default function AddFacilityModal({ onClose, onFacilityAdded }) {
             />
           </div>
 
-          {/* Commercial Role */}
           <div className="mb-4">
             <label className={labelClass}>
               Commercial Role <span className="text-red-500">*</span>
@@ -192,7 +179,6 @@ export default function AddFacilityModal({ onClose, onFacilityAdded }) {
             </select>
           </div>
 
-          {/* Entity Type */}
           <div className="mb-4">
             <label className={labelClass}>
               Entity Type <span className="text-red-500">*</span>
@@ -209,7 +195,6 @@ export default function AddFacilityModal({ onClose, onFacilityAdded }) {
             </select>
           </div>
 
-          {/* Submit Button */}
           <button
             type="submit"
             className={`${buttonPrimary} mt-6 w-full`}

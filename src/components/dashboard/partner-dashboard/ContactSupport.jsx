@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { axiosInstance } from '../../../../../lib/config';
+import { axiosInstance } from '../../../../lib/config';
 import toast from 'react-hot-toast';
 import { FiArrowLeft, FiUpload } from 'react-icons/fi';
 import { useRouter } from 'next/navigation';

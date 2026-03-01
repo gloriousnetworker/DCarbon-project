@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import InstapullAuthorizationModal from "./InstapullAuthorizationModal";
+import { axiosInstance } from "../../../../../lib/config";
 
 const styles = {
   modalContainer: 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4',
@@ -77,16 +78,14 @@ export default function ResidentialFacilityModal({ isOpen, onClose, currentStep 
   const fetchUserFacilities = async (userId, authToken) => {
     try {
       setLoading(true);
-      const response = await axiosInstance.
-        `/api/residential-facility/get-user-facilities/${userId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`,
-            'Content-Type': 'application/json'
-          }
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/residential-facility/get-user-facilities/${userId}`,
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
         }
-      );
+      });
       
       const data = response.data;
       if (data.status === 'success' && data.data?.facilities) {
@@ -135,16 +134,14 @@ export default function ResidentialFacilityModal({ isOpen, onClose, currentStep 
 
   const checkStage2Completion = async (userId, authToken) => {
     try {
-      const response = await axiosInstance.
-        `/api/user/get-commercial-user/${userId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`
-          }
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/user/get-commercial-user/${userId}`,
+        headers: {
+          'Authorization': `Bearer ${authToken}`
         }
-      );
-      const result = await response.json();
+      });
+      const result = response.data;
       return result.status === 'success' && result.data?.commercialUser?.ownerAddress;
     } catch (error) {
       return false;
@@ -153,16 +150,14 @@ export default function ResidentialFacilityModal({ isOpen, onClose, currentStep 
 
   const checkStage3Completion = async (userId, authToken) => {
     try {
-      const response = await axiosInstance.
-        `/api/user/agreement/${userId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`
-          }
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/user/agreement/${userId}`,
+        headers: {
+          'Authorization': `Bearer ${authToken}`
         }
-      );
-      const result = await response.json();
+      });
+      const result = response.data;
       return result.status === 'success' && result.data?.termsAccepted;
     } catch (error) {
       return false;
@@ -171,16 +166,14 @@ export default function ResidentialFacilityModal({ isOpen, onClose, currentStep 
 
   const checkStage4Completion = async (userId, authToken) => {
     try {
-      const response = await axiosInstance.
-        `/api/user/financial-info/${userId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`
-          }
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/user/financial-info/${userId}`,
+        headers: {
+          'Authorization': `Bearer ${authToken}`
         }
-      );
-      const result = await response.json();
+      });
+      const result = response.data;
       return result.status === 'success' && result.data?.financialInfo;
     } catch (error) {
       return false;
@@ -189,16 +182,14 @@ export default function ResidentialFacilityModal({ isOpen, onClose, currentStep 
 
   const checkStage5Completion = async (userId, authToken) => {
     try {
-      const response = await axiosInstance.
-        `/api/auth/user-meters/${userId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`
-          }
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/auth/user-meters/${userId}`,
+        headers: {
+          'Authorization': `Bearer ${authToken}`
         }
-      );
-      const result = await response.json();
+      });
+      const result = response.data;
       return result.status === 'success' && result.data?.length > 0 && result.data.some(item => item.meters?.meters?.length > 0);
     } catch (error) {
       return false;

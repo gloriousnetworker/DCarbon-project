@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { axiosInstance } from "../../../../../lib/config";
+import { axiosInstance } from '../../../../lib/config';
 import * as styles from './styles';
 import { toast } from 'react-hot-toast';
 
