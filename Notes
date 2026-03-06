@@ -1,4 +1,40 @@
-Using Git alias to push to the different repos at once : 
+1. Make changes on master
+bash
+
+# Make your code changes on master
+git add .
+git commit -m "your commit message"
+
+2. Push to master for testing
+bash
+
+# Option A: Push to personal repo's master first (for testing)
+git push personal master
+
+# Option B: Push to work repo's master first (for testing)
+git push origin master
+
+3. After testing, sync with develop
+Option A: Merge master into develop locally
+bash
+
+# Switch back to develop
+git checkout develop
+
+# Pull latest develop from remote
+git pull origin develop
+
+# Merge your master changes into develop
+git merge master
+
+# Resolve any conflicts if they occur
+
+# Push develop to both repos
+git push origin develop
+git push personal develop
+
+# Or use your alias
+git push-bothUsing Git alias to push to the different repos at once : 
 # Set up the alias
 git config --global alias.push-both '!git push origin develop && git push personal develop'
 

@@ -33,6 +33,7 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, selectedU
   const [currentModal, setCurrentModal] = useState('invite');
   const [facilities, setFacilities] = useState([]);
   const [selectedFacilityId, setSelectedFacilityId] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -62,7 +63,8 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, selectedU
         headers: {
           'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json'
-        }
+        },
+        timeout: 30000 // 30 second timeout
       });
 
       const result = response.data;
@@ -79,7 +81,18 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, selectedU
         toast.error('Failed to load facilities');
       }
     } catch (error) {
-      toast.error('Error loading facilities');
+      console.error('Error loading facilities:', error);
+      
+      // Handle timeout specifically
+      if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+        toast.error('Request timeout. Please check your connection and try again.');
+      } else if (error.response) {
+        toast.error(error.response.data?.message || 'Failed to load facilities');
+      } else if (error.request) {
+        toast.error('No response from server. Please check your connection.');
+      } else {
+        toast.error('Error loading facilities');
+      }
     } finally {
       setLoadingFacilities(false);
     }
@@ -92,6 +105,10 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, selectedU
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handlePhoneChange = (e) => {
+    setPhoneNumber(e.target.value);
   };
 
   const handleFacilityChange = (e) => {
@@ -112,6 +129,18 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, selectedU
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
       toast.error('Please enter a valid email address');
+      return false;
+    }
+
+    if (!phoneNumber.trim()) {
+      toast.error('Please enter phone number');
+      return false;
+    }
+
+    // Basic phone number validation (adjust regex as needed)
+    const phoneRegex = /^[0-9+\-\s()]{10,15}$/;
+    if (!phoneRegex.test(phoneNumber)) {
+      toast.error('Please enter a valid phone number');
       return false;
     }
 
@@ -149,20 +178,23 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, selectedU
 
       const selectedFacility = getSelectedFacility();
       
+      // Construct payload exactly as per the example
       const payload = {
         invitees: [
           {
             email: formData.email.trim(),
             role: "OPERATOR",
             name: formData.name.trim(),
-            customerType: "COMMERCIAL",
-            message: formData.message.trim(),
-            inviterUserType: "COMMERCIAL_USER",
             facilityId: selectedFacilityId,
-            facilityName: selectedFacility?.nickname || selectedFacility?.facilityName || "Facility"
+            inviterUserType: "COMMERCIAL_USER",
+            phoneNumber: phoneNumber.trim(),
+            message: formData.message.trim()
+            // Note: customerType is commented out in the example, so we're not including it
           }
         ]
       };
+
+      console.log('Sending payload:', payload); // For debugging
 
       const response = await axiosInstance({
         method: 'POST',
@@ -171,17 +203,43 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, selectedU
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${authToken}`
         },
-        data: payload
+        data: payload,
+        timeout: 30000 // 30 second timeout
       });
 
-      if (response.data.status === 'success') {
+      console.log('Response:', response.data); // For debugging
+
+      if (response.data && response.data.status === 'success') {
         toast.success('Invitation sent successfully!', { id: toastId });
         setCurrentModal('emailSent');
       } else {
-        throw new Error(response.data.message || 'Failed to send invitation');
+        throw new Error(response.data?.message || 'Failed to send invitation');
       }
     } catch (err) {
-      const errorMessage = err.response?.data?.message || err.message || 'Failed to send invitation';
+      console.error('Invitation error:', err);
+      
+      // Handle different types of errors
+      let errorMessage = 'Failed to send invitation';
+      
+      if (err.code === 'ECONNABORTED' || err.message.includes('timeout')) {
+        errorMessage = 'Request timeout. Please check your connection and try again.';
+      } else if (err.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        errorMessage = err.response.data?.message || 
+                      err.response.data?.error || 
+                      `Server error: ${err.response.status}`;
+        
+        // Log full error response for debugging
+        console.error('Error response:', err.response.data);
+      } else if (err.request) {
+        // The request was made but no response was received
+        errorMessage = 'No response from server. Please check your connection.';
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        errorMessage = err.message || errorMessage;
+      }
+      
       toast.error(errorMessage, { id: toastId });
     } finally {
       setLoading(false);
@@ -191,6 +249,7 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, selectedU
   const handleClose = () => {
     if (!loading) {
       setFormData({ name: "", email: "", message: "Please join the DCarbon Platform as my Operator!" });
+      setPhoneNumber("");
       setCurrentModal('invite');
       setSelectedFacilityId("");
       onClose();
@@ -200,6 +259,7 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, selectedU
   const handleBackClick = () => {
     if (!loading && onBack) {
       setFormData({ name: "", email: "", message: "Please join the DCarbon Platform as my Operator!" });
+      setPhoneNumber("");
       setCurrentModal('invite');
       setSelectedFacilityId("");
       onBack();
@@ -212,10 +272,12 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, selectedU
 
   const handleGoToDashboard = () => {
     setFormData({ name: "", email: "", message: "Please join the DCarbon Platform as my Operator!" });
+    setPhoneNumber("");
     setCurrentModal('invite');
     setSelectedFacilityId("");
     onClose();
-    window.location.reload();
+    // Optional: Navigate to dashboard instead of reload
+    // window.location.href = '/dashboard';
   };
 
   if (!isOpen) return null;
@@ -347,6 +409,22 @@ export default function InviteOperatorModal({ isOpen, onClose, onBack, selectedU
                           value={formData.email}
                           onChange={handleInputChange}
                           placeholder="operator@company.com"
+                          className={styles.inputClass}
+                          disabled={loading}
+                          required
+                        />
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <label className={styles.labelClass}>
+                          Phone Number <span className="text-[#039994]">*</span>
+                        </label>
+                        <input
+                          type="tel"
+                          name="phoneNumber"
+                          value={phoneNumber}
+                          onChange={handlePhoneChange}
+                          placeholder="Enter phone number (e.g., 1234567890)"
                           className={styles.inputClass}
                           disabled={loading}
                           required

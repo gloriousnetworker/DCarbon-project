@@ -34,15 +34,14 @@ export default function FacilityCardView() {
 
   const checkStage2Completion = async (userId, authToken) => {
     try {
-      const response = await axiosInstance.get(
-        `/api/user/financial-info/${userId}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${authToken}`
-          }
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/user/financial-info/${userId}`,
+        headers: {
+          'Authorization': `Bearer ${authToken}`
         }
-      );
-      const result = await response.json();
+      });
+      const result = response.data;
       return result.status === 'success' && result.data?.financialInfo;
     } catch (error) {
       return false;
@@ -51,15 +50,14 @@ export default function FacilityCardView() {
 
   const checkStage3Completion = async (userId, authToken) => {
     try {
-      const response = await axiosInstance.get(
-        `/api/user/agreement/${userId}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${authToken}`
-          }
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/user/agreement/${userId}`,
+        headers: {
+          'Authorization': `Bearer ${authToken}`
         }
-      );
-      const result = await response.json();
+      });
+      const result = response.data;
       return result.status === 'success' && result.data?.termsAccepted;
     } catch (error) {
       return false;
@@ -68,15 +66,14 @@ export default function FacilityCardView() {
 
   const checkStage4Completion = async (userId, authToken) => {
     try {
-      const response = await axiosInstance.get(
-        `/api/auth/user-meters/${userId}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${authToken}`
-          }
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/auth/user-meters/${userId}`,
+        headers: {
+          'Authorization': `Bearer ${authToken}`
         }
-      );
-      const result = await response.json();
+      });
+      const result = response.data;
       return result.status === 'success' && result.data?.length > 0;
     } catch (error) {
       return false;
@@ -84,29 +81,29 @@ export default function FacilityCardView() {
   };
 
   const checkStage5Completion = (facility) => {
-    return facility.status && facility.status.toLowerCase() === 'verified';
+    return facility.status === 'verified' || facility.status === 'VERIFIED';
   };
 
   const checkStage6Completion = (facility) => {
     const requiredFields = [
-      facility.commercialOperationDate,
-      facility.eiaPlantId,
-      facility.energyStorageCapacity,
-      facility.hasOnSiteLoad,
-      facility.hasNetMetering,
-      facility.interconnectedUtilityId,
-      facility.rpsId,
-      facility.wregisEligibilityDate,
-      facility.wregisId
+      { field: facility.commercialOperationDate, name: 'Commercial Operation Date' },
+      { field: facility.interconnectedUtilityId, name: 'Interconnected Utility ID' },
+      { field: facility.eiaPlantId, name: 'EIA Plant ID' },
+      { field: facility.energyStorageCapacity, name: 'Energy Storage Capacity' },
+      { field: facility.hasOnSiteLoad, name: 'On-site Load' },
+      { field: facility.hasNetMetering, name: 'Net-Metering' },
+      { field: facility.wregisEligibilityDate, name: 'WREGIS Eligibility Date' },
+      { field: facility.rpsId, name: 'RPS ID' }
     ];
 
-    return requiredFields.every(field => {
-      if (field === null || field === undefined || field === '' || field === 'N/A') {
+    return requiredFields.every(item => {
+      const value = item.field;
+      if (value === null || value === undefined || value === '' || value === 'N/A') {
         return false;
       }
-      if (typeof field === 'boolean') return true;
-      if (typeof field === 'string') return field.trim() !== '';
-      if (typeof field === 'number') return true;
+      if (typeof value === 'boolean') return true;
+      if (typeof value === 'string') return value.trim() !== '';
+      if (typeof value === 'number') return true;
       return true;
     });
   };
@@ -116,14 +113,13 @@ export default function FacilityCardView() {
     if (!authToken) return null;
 
     try {
-      const response = await axiosInstance.get(
-        `/api/residential-facility/get-one-residential-facility/${facilityId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${authToken}`
-          }
+      const response = await axiosInstance({
+        method: 'GET',
+        url: `/api/residential-facility/get-one-residential-facility/${facilityId}`,
+        headers: {
+          Authorization: `Bearer ${authToken}`
         }
-      );
+      });
 
       if (response.data.status === "success") {
         return response.data.data;
@@ -144,26 +140,9 @@ export default function FacilityCardView() {
 
       if (!userId || !authToken) return;
 
-      const newCompletedStages = [1];
-      let highestCompletedStage = 1;
-
       const stage2Completed = await checkStage2Completion(userId, authToken);
-      if (stage2Completed) {
-        newCompletedStages.push(2);
-        highestCompletedStage = 2;
-      }
-
       const stage3Completed = await checkStage3Completion(userId, authToken);
-      if (stage3Completed) {
-        newCompletedStages.push(3);
-        highestCompletedStage = 3;
-      }
-
       const stage4Completed = await checkStage4Completion(userId, authToken);
-      if (stage4Completed) {
-        newCompletedStages.push(4);
-        highestCompletedStage = 4;
-      }
 
       const progressData = {};
       const detailsData = {};
@@ -174,28 +153,41 @@ export default function FacilityCardView() {
           detailsData[facility.id] = facilityDetail;
         }
 
-        const facilityCompletedStages = [...newCompletedStages];
-        let facilityCurrentStage = highestCompletedStage;
+        const facilityToCheck = facilityDetail || facility;
+        
+        const newCompletedStages = [1];
+        let highestCompletedStage = 1;
 
-        const stage5Completed = checkStage5Completion(facilityDetail || facility);
-        if (stage5Completed) {
-          facilityCompletedStages.push(5);
-          facilityCurrentStage = 5;
-        } else if (facilityCurrentStage === 4) {
-          facilityCurrentStage = 5;
+        if (stage2Completed) {
+          newCompletedStages.push(2);
+          highestCompletedStage = 2;
         }
 
-        const stage6Completed = checkStage6Completion(facilityDetail || facility);
+        if (stage3Completed) {
+          newCompletedStages.push(3);
+          highestCompletedStage = 3;
+        }
+
+        if (stage4Completed) {
+          newCompletedStages.push(4);
+          highestCompletedStage = 4;
+        }
+
+        const stage5Completed = checkStage5Completion(facilityToCheck);
+        if (stage5Completed) {
+          newCompletedStages.push(5);
+          highestCompletedStage = 5;
+        }
+
+        const stage6Completed = checkStage6Completion(facilityToCheck);
         if (stage6Completed) {
-          facilityCompletedStages.push(6);
-          facilityCurrentStage = 6;
-        } else if (facilityCurrentStage === 5) {
-          facilityCurrentStage = 6;
+          newCompletedStages.push(6);
+          highestCompletedStage = 6;
         }
 
         progressData[facility.id] = {
-          completedStages: facilityCompletedStages,
-          currentStage: facilityCurrentStage < 6 ? facilityCurrentStage + 1 : 6
+          completedStages: newCompletedStages,
+          currentStage: highestCompletedStage < 6 ? highestCompletedStage + 1 : 6
         };
       }
 
@@ -217,14 +209,15 @@ export default function FacilityCardView() {
       return;
     }
     try {
-      const { data } = await axiosInstance.get(
-        `/api/residential-facility/get-user-facilities/${userId}`,
-        { headers: { Authorization: `Bearer ${authToken}` } }
-      );
+      const { data } = await axiosInstance({
+        method: 'GET',
+        url: `/api/residential-facility/get-user-facilities/${userId}`,
+        headers: { Authorization: `Bearer ${authToken}` }
+      });
       if (data.status === "success") {
         const formattedFacilities = data.data.facilities.map(facility => ({
           ...facility,
-          meterId: facility.meterId.split('_')[0] || facility.meterId
+          meterId: facility.meterId ? facility.meterId.split('_')[0] || facility.meterId : facility.meterId
         }));
         setFacilities(formattedFacilities);
       } else {
@@ -267,10 +260,11 @@ export default function FacilityCardView() {
     setIsDeleting(true);
     try {
       const authToken = localStorage.getItem("authToken");
-      const { data } = await axiosInstance.delete(
-        `/api/residential-facility/${facilityToDelete.id}`,
-        { headers: { Authorization: `Bearer ${authToken}` } }
-      );
+      const { data } = await axiosInstance({
+        method: 'DELETE',
+        url: `/api/residential-facility/${facilityToDelete.id}`,
+        headers: { Authorization: `Bearer ${authToken}` }
+      });
 
       if (data.status === "success") {
         toast.success("Facility deleted successfully");
@@ -291,19 +285,19 @@ export default function FacilityCardView() {
 
 const filteredFacilities = facilities
   .filter(f => {
-    if (filters.name && !f.facilityName.toLowerCase().includes(filters.name.toLowerCase()) && 
-        !f.address.toLowerCase().includes(filters.name.toLowerCase())) return false;
+    if (filters.name && !f.facilityName?.toLowerCase().includes(filters.name.toLowerCase()) && 
+        !f.address?.toLowerCase().includes(filters.name.toLowerCase())) return false;
     if (filters.utility !== "All" && f.utilityProvider !== filters.utility) return false;
-    if (filters.meterId && !f.meterId.toLowerCase().includes(filters.meterId.toLowerCase())) return false;
-    if (filters.status !== "All" && f.status.toLowerCase() !== filters.status.toLowerCase()) return false;
+    if (filters.meterId && !f.meterId?.toLowerCase().includes(filters.meterId.toLowerCase())) return false;
+    if (filters.status !== "All" && f.status?.toLowerCase() !== filters.status.toLowerCase()) return false;
     if (filters.createdDate) {
       const [start, end] = filters.createdDate.split(',');
       const facilityDate = new Date(f.createdAt).toISOString().slice(0, 10);
       if (start && new Date(facilityDate) < new Date(start)) return false;
       if (end && new Date(facilityDate) > new Date(end)) return false;
     }
-    if (filters.financeType !== "All" && f.financeType.toLowerCase() !== filters.financeType.toLowerCase()) return false;
-    if (filters.installer !== "All" && f.installer.toLowerCase() !== filters.installer.toLowerCase()) return false;
+    if (filters.financeType !== "All" && f.financeType?.toLowerCase() !== filters.financeType.toLowerCase()) return false;
+    if (filters.installer !== "All" && f.installer?.toLowerCase() !== filters.installer.toLowerCase()) return false;
     return true;
   })
   .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -324,10 +318,11 @@ const filteredFacilities = facilities
           onDelete={async () => {
             try {
               const authToken = localStorage.getItem("authToken");
-              await axiosInstance.delete(
-                `/api/residential-facility/${selectedFacility.id}`,
-                { headers: { Authorization: `Bearer ${authToken}` } }
-              );
+              await axiosInstance({
+                method: 'DELETE',
+                url: `/api/residential-facility/${selectedFacility.id}`,
+                headers: { Authorization: `Bearer ${authToken}` }
+              });
               toast.success("Facility deleted successfully");
               setSelectedFacility(null);
               fetchFacilities();
