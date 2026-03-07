@@ -75,7 +75,7 @@ export default function SalesAgentAgreement() {
     }
   };
 
-  const getSalesAgentDetails = async () => {
+  const getPartnerDetails = async () => {
     try {
       const userId = localStorage.getItem('userId');
       const authToken = localStorage.getItem('authToken');
@@ -86,7 +86,7 @@ export default function SalesAgentAgreement() {
 
       const response = await axiosInstance({
         method: 'GET',
-        url: `/api/user/sales-agent/user/${userId}`,
+        url: `/api/user/partner/user/${userId}`,
         headers: {
           'Authorization': `Bearer ${authToken}`,
         },
@@ -97,15 +97,15 @@ export default function SalesAgentAgreement() {
       if (response.status === 200 && data.status === 'success') {
         return data.data;
       } else {
-        throw new Error(data.message || 'Failed to fetch sales agent details');
+        throw new Error(data.message || 'Failed to fetch partner details');
       }
     } catch (error) {
-      console.error('Error fetching sales agent details:', error);
+      console.error('Error fetching partner details:', error);
       throw error;
     }
   };
 
-  const deleteSalesAgent = async (agentId) => {
+  const deletePartner = async (partnerId) => {
     try {
       const authToken = localStorage.getItem('authToken');
       
@@ -115,7 +115,7 @@ export default function SalesAgentAgreement() {
 
       const response = await axiosInstance({
         method: 'DELETE',
-        url: `/api/user/sales-agent/${agentId}`,
+        url: `/api/user/partner/${partnerId}`,
         headers: {
           'Authorization': `Bearer ${authToken}`,
         },
@@ -126,10 +126,10 @@ export default function SalesAgentAgreement() {
       if (response.status === 200 && data.status === 'success') {
         return true;
       } else {
-        throw new Error(data.message || 'Failed to delete sales agent');
+        throw new Error(data.message || 'Failed to delete partner');
       }
     } catch (error) {
-      console.error('Error deleting sales agent:', error);
+      console.error('Error deleting partner:', error);
       throw error;
     }
   };
@@ -157,15 +157,15 @@ export default function SalesAgentAgreement() {
       const data = response.data;
 
       if (response.status === 200 && data.status === 'success') {
-        toast.success('Agreement accepted successfully!');
+        toast.success('Terms and conditions accepted successfully!');
         return true;
       } else {
-        toast.error(data.message || 'Failed to accept agreement');
+        toast.error(data.message || 'Failed to accept terms and conditions');
         return false;
       }
     } catch (error) {
-      console.error('Error accepting agreement:', error);
-      toast.error('An error occurred while accepting agreement. Please try again.');
+      console.error('Error accepting terms:', error);
+      toast.error('An error occurred while accepting terms. Please try again.');
       return false;
     } finally {
       setLoading(false);
@@ -209,7 +209,7 @@ export default function SalesAgentAgreement() {
   const handleCloseRegistrationModal = () => {
     setIsRedirecting(true);
     setTimeout(() => {
-      router.push("/sales-agent-dashboard");
+      router.push("/partner-dashboard");
     }, 2000);
   };
 
@@ -220,10 +220,10 @@ export default function SalesAgentAgreement() {
   const handleConfirmDecline = async () => {
     try {
       setIsDeleting(true);
-      const agentDetails = await getSalesAgentDetails();
-      if (agentDetails && agentDetails.id) {
-        await deleteSalesAgent(agentDetails.id);
-        toast.success('Sales agent registration cancelled successfully');
+      const partnerDetails = await getPartnerDetails();
+      if (partnerDetails && partnerDetails.id) {
+        await deletePartner(partnerDetails.id);
+        toast.success('Partner registration cancelled successfully');
       }
       setShowDeclineModal(false);
       router.back();
@@ -400,10 +400,10 @@ export default function SalesAgentAgreement() {
             </h3>
             <div 
               onClick={handleSignatureClick}
-              className={`border ${signatureUrl ? 'border-gray-300' : 'border-dashed border-gray-300'} rounded p-4 mb-4 ${signatureUrl ? 'text-gray-700 cursor-default' : 'text-gray-500 italic cursor-pointer hover:border-[#039994] hover:bg-gray-50'} font-sfpro transition-colors min-h-[100px] flex items-center justify-center`}
+              className={`border ${signatureUrl ? 'border-gray-300' : 'border-dashed border-gray-300'} rounded p-4 mb-4 ${signatureUrl ? 'text-gray-700 cursor-default' : 'text-gray-500 italic cursor-pointer hover:border-[#039994] hover:bg-gray-50'} font-sfpro transition-colors`}
             >
               {signatureUrl ? (
-                <img src={signatureUrl} alt="Agent signature" className="max-w-full h-auto max-h-[100px]" />
+                <img src={signatureUrl} alt="Agent signature" className="max-w-full h-auto" />
               ) : (
                 "Click to add your signature"
               )}
@@ -460,7 +460,7 @@ export default function SalesAgentAgreement() {
             </h3>
             <p className="text-gray-700 mb-6">
               In order for you to proceed to the next step, you must Accept Agreement. 
-              Are you sure you want to Decline? This will cancel your sales agent registration.
+              Are you sure you want to Decline? This will cancel your partner registration.
             </p>
             <div className="flex justify-end gap-4">
               <button
@@ -475,7 +475,7 @@ export default function SalesAgentAgreement() {
                 disabled={isDeleting}
                 className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50"
               >
-                {isDeleting ? "Deleting..." : "Yes, Decline"}
+                {isDeleting ? "Deleting..." : "Yes"}
               </button>
             </div>
           </div>
