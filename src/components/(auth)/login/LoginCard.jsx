@@ -4,18 +4,33 @@ import { useState } from 'react';
 import { axiosInstance } from '../../../../lib/config';
 import Loader from '../../../components/loader/Loader';
 import toast from 'react-hot-toast';
+import ReCAPTCHA from 'react-google-recaptcha';
 
 export default function LoginCard() {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordVisible, setPasswordVisible] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState('');
+  const [captchaError, setCaptchaError] = useState('');
+
+  const recaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI';
 
   const togglePasswordVisibility = () => {
     setPasswordVisible(!passwordVisible);
   };
 
+  const onCaptchaChange = (token) => {
+    setCaptchaToken(token);
+    setCaptchaError('');
+  };
+
   const handleLogin = async () => {
+    if (!captchaToken) {
+      setCaptchaError('Please complete the captcha verification');
+      return;
+    }
+
     setLoading(true);
     try {
       const normalizedEmail = email.toLowerCase();
@@ -24,7 +39,7 @@ export default function LoginCard() {
 
       const response = await axiosInstance.post(
         url,
-        { email: normalizedEmail, password },
+        { email: normalizedEmail, password, captchaToken },
         { headers: { 'Content-Type': 'application/json' } }
       );
 
@@ -92,6 +107,10 @@ export default function LoginCard() {
         return;
       }
       toast.error(err.response?.data?.message || 'Login failed');
+      
+      // Reset captcha on error
+      setCaptchaToken('');
+      window.grecaptcha?.reset();
     } finally {
       setLoading(false);
     }
@@ -210,15 +229,34 @@ export default function LoginCard() {
               </a>
             </div>
           </div>
+
+          <div className="flex justify-center">
+            <ReCAPTCHA
+              sitekey={recaptchaSiteKey}
+              onChange={onCaptchaChange}
+            />
+          </div>
+          {captchaError && (
+            <p className="text-red-500 text-[14px] font-sfpro text-center">{captchaError}</p>
+          )}
         </div>
 
         <button
           type="button"
           onClick={handleLogin}
-          className="w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro transition-colors duration-200"
+          disabled={!captchaToken}
+          className={`w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro transition-colors duration-200 ${
+            !captchaToken ? 'opacity-50 cursor-not-allowed' : ''
+          }`}
         >
           Sign in
         </button>
+
+        {!captchaToken && (
+          <p className="text-amber-300 text-[12px] font-sfpro text-center">
+            Please complete the captcha to sign in
+          </p>
+        )}
 
         <p className="mt-6 text-center font-sfpro font-[400] text-[14px] leading-[100%] tracking-[-0.05em] text-[#FFFFFF]">
           Don't have an account?{' '}

@@ -42,6 +42,8 @@ function RegisterCardContent() {
   const [acceptSms, setAcceptSms] = useState(false);
   const [captchaToken, setCaptchaToken] = useState('');
   const [captchaError, setCaptchaError] = useState('');
+  const [hasInvitation, setHasInvitation] = useState(false);
+  const [showPartnerRoles, setShowPartnerRoles] = useState(false);
 
   const searchParams = useSearchParams();
   const recaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI';
@@ -49,6 +51,10 @@ function RegisterCardContent() {
   useEffect(() => {
     const code = searchParams.get('referral') || searchParams.get('referralCode');
     const type = searchParams.get('type');
+    
+    if (code || type) {
+      setHasInvitation(true);
+    }
     
     if (code) {
       setUrlReferralCode(code);
@@ -64,12 +70,15 @@ function RegisterCardContent() {
       } else if (lowerType.includes('installer')) {
         setPartnerType('installer');
         setUserCategory('Partner');
+        setShowPartnerRoles(true);
       } else if (lowerType.includes('sales-agent')) {
         setPartnerType('sales-agent');
         setUserCategory('Partner');
+        setShowPartnerRoles(true);
       } else if (lowerType.includes('finance-company')) {
         setPartnerType('finance-company');
         setUserCategory('Partner');
+        setShowPartnerRoles(true);
       } else if (lowerType === 'residential') {
         setIsResidentialType(true);
         setUserCategory('Residential');
@@ -133,11 +142,61 @@ function RegisterCardContent() {
 
   const getAvailableUserCategories = () => {
     if (isOperatorType) return ['Operator'];
-    if (partnerType) return ['Partner'];
     if (isResidentialType) return ['Residential'];
     if (isCommercialType) return ['Commercial'];
     if (urlReferralCode && !partnerType) return ['Residential', 'Commercial'];
     return ['Residential', 'Commercial', 'Partner'];
+  };
+
+  const getInvitationMessage = () => {
+    if (!hasInvitation) return null;
+    
+    if (isOperatorType) {
+      return <>You have been invited to register as an <strong>Operator</strong></>;
+    }
+    if (partnerType === 'installer') {
+      return <>You have been invited to register as an <strong>Installer</strong></>;
+    }
+    if (partnerType === 'sales-agent') {
+      return <>You have been invited to register as a <strong>Sales Agent</strong></>;
+    }
+    if (partnerType === 'finance-company') {
+      return <>You have been invited to register as a <strong>Finance Company</strong></>;
+    }
+    if (isResidentialType) {
+      return <>You have been invited to register as a <strong>Residential</strong> solar owner</>;
+    }
+    if (isCommercialType) {
+      return <>You have been invited to register as a <strong>Commercial</strong> solar owner</>;
+    }
+    if (urlReferralCode) {
+      return <>You're registering with referral code: <strong>{urlReferralCode}</strong></>;
+    }
+    return null;
+  };
+
+  const getSelectionMessage = () => {
+    if (hasInvitation) return null;
+    
+    if (userCategory === 'Operator') {
+      return <>You are now registering as an <strong>Operator</strong></>;
+    }
+    if (userCategory === 'Partner' && partnerType === 'installer') {
+      return <>You are now registering as an <strong>Installer</strong></>;
+    }
+    if (userCategory === 'Partner' && partnerType === 'sales-agent') {
+      return <>You are now registering as a <strong>Sales Agent</strong></>;
+    }
+    if (userCategory === 'Partner' && partnerType === 'finance-company') {
+      return <>You are now registering as a <strong>Finance Company</strong></>;
+    }
+    if (userCategory === 'Residential') {
+      return <>You are now registering as a <strong>Residential</strong> solar owner</>;
+    }
+    if (userCategory === 'Commercial') {
+      return <>You are now registering as a <strong>Commercial</strong> solar owner</>;
+    }
+    return null;
   };
 
   const validateForm = () => {
@@ -185,6 +244,12 @@ function RegisterCardContent() {
 
   const handleRegister = async () => {
     if (!validateForm()) return;
+    
+    if (!captchaToken) {
+      setCaptchaError('Please complete the captcha verification');
+      return;
+    }
+    
     setLoading(true);
 
     const payload = {
@@ -251,12 +316,25 @@ function RegisterCardContent() {
   
   const handleUserCategory = (category) => {
     if ((isOperatorType && category !== 'Operator') || 
-        (partnerType && category !== 'Partner') ||
         (isResidentialType && category !== 'Residential') ||
         (isCommercialType && category !== 'Commercial')) {
       return;
     }
+    
     setUserCategory(category);
+    
+    if (category === 'Partner') {
+      setShowPartnerRoles(true);
+    } else {
+      setShowPartnerRoles(false);
+      setPartnerType('');
+    }
+  };
+
+  const handleBackToCategories = () => {
+    setShowPartnerRoles(false);
+    setPartnerType('');
+    setUserCategory('');
   };
 
   const handlePartnerRoleSelect = (role) => {
@@ -264,7 +342,7 @@ function RegisterCardContent() {
   };
 
   const getButtonTooltip = (category) => {
-    if (partnerType && category === 'Partner') {
+    if (hasInvitation && partnerType && category === 'Partner') {
       const typeMap = {
         'installer': 'Installer',
         'sales-agent': 'Sales Agent',
@@ -289,12 +367,13 @@ function RegisterCardContent() {
 
   const isCategoryDisabled = (category) => {
     return (isOperatorType && category !== 'Operator') || 
-           (partnerType && category !== 'Partner') ||
            (isResidentialType && category !== 'Residential') ||
            (isCommercialType && category !== 'Commercial');
   };
 
   const availableUserCategories = getAvailableUserCategories();
+  const invitationMessage = getInvitationMessage();
+  const selectionMessage = getSelectionMessage();
 
   const onCaptchaChange = (token) => {
     setCaptchaToken(token);
@@ -325,74 +404,71 @@ function RegisterCardContent() {
         <hr className="w-full border border-gray-200 mt-4 mb-8" />
 
         <div className="w-full max-w-md">
-          {urlReferralCode && (
+          {invitationMessage && (
             <div className="mb-4 p-3 bg-green-100 text-green-800 rounded-md text-sm">
-              You're registering with referral code: <strong>{urlReferralCode}</strong>
+              {invitationMessage}
             </div>
           )}
 
-          {(isOperatorType || partnerType || isResidentialType || isCommercialType) && (
+          {selectionMessage && !invitationMessage && (
             <div className="mb-4 p-3 bg-blue-100 text-blue-800 rounded-md text-sm">
-              {isOperatorType && (
-                <>You have been invited to register as an <strong>Operator</strong></>
-              )}
-              {partnerType === 'installer' && (
-                <>You have been invited to register as an <strong>Installer</strong></>
-              )}
-              {partnerType === 'sales-agent' && (
-                <>You have been invited to register as a <strong>Sales Agent</strong></>
-              )}
-              {partnerType === 'finance-company' && (
-                <>You have been invited to register as a <strong>Finance Company</strong></>
-              )}
-              {isResidentialType && (
-                <>You have been invited to register as a <strong>Residential</strong> solar owner</>
-              )}
-              {isCommercialType && (
-                <>You have been invited to register as a <strong>Commercial</strong> solar owner</>
-              )}
+              {selectionMessage}
             </div>
           )}
 
           <form className={formWrapper} onSubmit={(e) => { e.preventDefault(); handleRegister(); }}>
-            <div className="mb-4">
-              <label className={labelClass}>
-                Choose Solar Owner type or Partner Enrollment <span className="text-red-500">*</span>
-              </label>
-              <div className="flex gap-4">
-                {availableUserCategories.map((category) => (
-                  <div key={category} className="relative flex-1 group">
-                    <button
-                      type="button"
-                      onClick={() => handleUserCategory(category)}
-                      onMouseEnter={() => setHoveredButton(category)}
-                      onMouseLeave={() => setHoveredButton(null)}
-                      disabled={isCategoryDisabled(category)}
-                      className={`w-full text-center px-4 py-2 rounded-md text-sm font-sfpro transition duration-300 ease-in-out ${
-                        isCategoryDisabled(category)
-                          ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                          : userCategory === category
-                          ? 'bg-[#039994] text-white'
-                          : 'bg-transparent text-[#039994] border border-[#039994] hover:bg-[#02857f] hover:text-white'
-                      }`}
-                    >
-                      {category}
-                    </button>
-                    {hoveredButton === category && !isCategoryDisabled(category) && (
-                      <div className="absolute z-10 w-full mt-1 p-2 text-xs bg-white border border-gray-200 rounded shadow-lg text-center break-words">
-                        {getButtonTooltip(category)}
+            {!showPartnerRoles ? (
+              <>
+                <div className="mb-4">
+                  <label className={labelClass}>
+                    Choose Solar Owner type or Partner Enrollment <span className="text-red-500">*</span>
+                  </label>
+                  <div className="flex gap-4">
+                    {availableUserCategories.map((category) => (
+                      <div key={category} className="relative flex-1 group">
+                        <button
+                          type="button"
+                          onClick={() => handleUserCategory(category)}
+                          onMouseEnter={() => setHoveredButton(category)}
+                          onMouseLeave={() => setHoveredButton(null)}
+                          disabled={isCategoryDisabled(category)}
+                          className={`w-full text-center px-4 py-2 rounded-md text-sm font-sfpro transition duration-300 ease-in-out ${
+                            isCategoryDisabled(category)
+                              ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                              : userCategory === category
+                              ? 'bg-[#039994] text-white'
+                              : 'bg-transparent text-[#039994] border border-[#039994] hover:bg-[#02857f] hover:text-white'
+                          }`}
+                        >
+                          {category}
+                        </button>
+                        {hoveredButton === category && !isCategoryDisabled(category) && (
+                          <div className="absolute z-10 w-full mt-1 p-2 text-xs bg-white border border-gray-200 rounded shadow-lg text-center break-words">
+                            {getButtonTooltip(category)}
+                          </div>
+                        )}
                       </div>
-                    )}
+                    ))}
                   </div>
-                ))}
-              </div>
-            </div>
-
-            {userCategory === 'Partner' && (
+                </div>
+              </>
+            ) : (
               <div className="mb-4">
-                <label className={labelClass}>
-                  Partner Role <span className="text-red-500">*</span>
-                </label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className={labelClass}>
+                    Partner Role <span className="text-red-500">*</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleBackToCategories}
+                    className="text-sm text-[#039994] hover:underline flex items-center gap-1"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+                    </svg>
+                    Back to categories
+                  </button>
+                </div>
                 <div className="grid grid-cols-3 gap-4">
                   <button
                     type="button"
@@ -621,9 +697,18 @@ function RegisterCardContent() {
 
             {error && <p className="text-red-500 text-[14px] font-sfpro mb-2">{error}</p>}
 
-            <button type="submit" className={buttonPrimary}>
+            <button 
+              type="submit" 
+              className={buttonPrimary}
+              disabled={!captchaToken}
+            >
               Create Account
             </button>
+            {!captchaToken && (
+              <p className="text-amber-600 text-[12px] font-sfpro mt-1 text-center">
+                Please complete the captcha to register
+              </p>
+            )}
           </form>
 
           <p className="mt-6 text-center font-sfpro font-[400] text-[14px] leading-[100%] tracking-[-0.05em] text-[#626060]">
