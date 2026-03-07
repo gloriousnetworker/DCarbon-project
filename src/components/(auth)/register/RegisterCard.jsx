@@ -42,6 +42,7 @@ function RegisterCardContent() {
   const [acceptSms, setAcceptSms] = useState(false);
   const [captchaToken, setCaptchaToken] = useState('');
   const [captchaError, setCaptchaError] = useState('');
+  const [hasInvitation, setHasInvitation] = useState(false);
 
   const searchParams = useSearchParams();
   const recaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI';
@@ -53,10 +54,12 @@ function RegisterCardContent() {
     if (code) {
       setUrlReferralCode(code);
       setManualReferralCode(code);
+      setHasInvitation(true);
       toast.success(`You've been invited with referral code: ${code}`);
     }
     
     if (type) {
+      setHasInvitation(true);
       const lowerType = type.toLowerCase();
       if (lowerType === 'operator') {
         setIsOperatorType(true);
@@ -138,6 +141,57 @@ function RegisterCardContent() {
     if (isCommercialType) return ['Commercial'];
     if (urlReferralCode && !partnerType) return ['Residential', 'Commercial'];
     return ['Residential', 'Commercial', 'Partner'];
+  };
+
+  const getInvitationMessage = () => {
+    if (!hasInvitation) return null;
+    
+    if (isOperatorType) {
+      return <>You have been invited to register as an <strong>Operator</strong></>;
+    }
+    if (partnerType === 'installer') {
+      return <>You have been invited to register as an <strong>Installer</strong></>;
+    }
+    if (partnerType === 'sales-agent') {
+      return <>You have been invited to register as a <strong>Sales Agent</strong></>;
+    }
+    if (partnerType === 'finance-company') {
+      return <>You have been invited to register as a <strong>Finance Company</strong></>;
+    }
+    if (isResidentialType) {
+      return <>You have been invited to register as a <strong>Residential</strong> solar owner</>;
+    }
+    if (isCommercialType) {
+      return <>You have been invited to register as a <strong>Commercial</strong> solar owner</>;
+    }
+    if (urlReferralCode) {
+      return <>You're registering with referral code: <strong>{urlReferralCode}</strong></>;
+    }
+    return null;
+  };
+
+  const getSelectionMessage = () => {
+    if (hasInvitation) return null;
+    
+    if (userCategory === 'Operator') {
+      return <>You are now registering as an <strong>Operator</strong></>;
+    }
+    if (userCategory === 'Partner' && partnerType === 'installer') {
+      return <>You are now registering as an <strong>Installer</strong></>;
+    }
+    if (userCategory === 'Partner' && partnerType === 'sales-agent') {
+      return <>You are now registering as a <strong>Sales Agent</strong></>;
+    }
+    if (userCategory === 'Partner' && partnerType === 'finance-company') {
+      return <>You are now registering as a <strong>Finance Company</strong></>;
+    }
+    if (userCategory === 'Residential') {
+      return <>You are now registering as a <strong>Residential</strong> solar owner</>;
+    }
+    if (userCategory === 'Commercial') {
+      return <>You are now registering as a <strong>Commercial</strong> solar owner</>;
+    }
+    return null;
   };
 
   const validateForm = () => {
@@ -295,6 +349,8 @@ function RegisterCardContent() {
   };
 
   const availableUserCategories = getAvailableUserCategories();
+  const invitationMessage = getInvitationMessage();
+  const selectionMessage = getSelectionMessage();
 
   const onCaptchaChange = (token) => {
     setCaptchaToken(token);
@@ -325,32 +381,15 @@ function RegisterCardContent() {
         <hr className="w-full border border-gray-200 mt-4 mb-8" />
 
         <div className="w-full max-w-md">
-          {urlReferralCode && (
+          {invitationMessage && (
             <div className="mb-4 p-3 bg-green-100 text-green-800 rounded-md text-sm">
-              You're registering with referral code: <strong>{urlReferralCode}</strong>
+              {invitationMessage}
             </div>
           )}
 
-          {(isOperatorType || partnerType || isResidentialType || isCommercialType) && (
+          {selectionMessage && !invitationMessage && (
             <div className="mb-4 p-3 bg-blue-100 text-blue-800 rounded-md text-sm">
-              {isOperatorType && (
-                <>You have been invited to register as an <strong>Operator</strong></>
-              )}
-              {partnerType === 'installer' && (
-                <>You have been invited to register as an <strong>Installer</strong></>
-              )}
-              {partnerType === 'sales-agent' && (
-                <>You have been invited to register as a <strong>Sales Agent</strong></>
-              )}
-              {partnerType === 'finance-company' && (
-                <>You have been invited to register as a <strong>Finance Company</strong></>
-              )}
-              {isResidentialType && (
-                <>You have been invited to register as a <strong>Residential</strong> solar owner</>
-              )}
-              {isCommercialType && (
-                <>You have been invited to register as a <strong>Commercial</strong> solar owner</>
-              )}
+              {selectionMessage}
             </div>
           )}
 
