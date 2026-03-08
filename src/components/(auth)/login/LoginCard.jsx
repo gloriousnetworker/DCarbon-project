@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { axiosInstance } from '../../../../lib/config';
 import Loader from '../../../components/loader/Loader';
 import toast from 'react-hot-toast';
@@ -14,6 +14,7 @@ export default function LoginCard() {
   const [captchaToken, setCaptchaToken] = useState('');
   const [captchaError, setCaptchaError] = useState('');
 
+  const recaptchaRef = useRef(null);
   const recaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI';
 
   const togglePasswordVisibility = () => {
@@ -21,24 +22,43 @@ export default function LoginCard() {
   };
 
   const onCaptchaChange = (token) => {
-    setCaptchaToken(token);
-    setCaptchaError('');
+    if (token) {
+      setCaptchaToken(token);
+      setCaptchaError('');
+    } else {
+      setCaptchaToken('');
+    }
+  };
+
+  const onCaptchaExpired = () => {
+    setCaptchaToken('');
+    setCaptchaError('Captcha has expired. Please complete it again.');
+  };
+
+  const onCaptchaError = () => {
+    setCaptchaToken('');
+    setCaptchaError('Captcha encountered an error. Please try again.');
+  };
+
+  const resetCaptcha = () => {
+    if (recaptchaRef.current) {
+      recaptchaRef.current.reset();
+    }
+    setCaptchaToken('');
   };
 
   const handleLogin = async () => {
     if (!captchaToken) {
-      setCaptchaError('Please complete the captcha verification');
+      setCaptchaError('Please complete the captcha verification before signing in.');
       return;
     }
 
     setLoading(true);
     try {
       const normalizedEmail = email.toLowerCase();
-      
-      const url = `/api/auth/login`;
 
       const response = await axiosInstance.post(
-        url,
+        `/api/auth/login`,
         { email: normalizedEmail, password, captchaToken },
         { headers: { 'Content-Type': 'application/json' } }
       );
@@ -63,7 +83,7 @@ export default function LoginCard() {
       localStorage.setItem('userId', user.id);
       localStorage.setItem('userType', user.userType);
       localStorage.setItem('isPartnerOperator', user.isPartnerOperator);
-      
+
       if (user.partnerType) {
         localStorage.setItem('partnerType', user.partnerType);
       }
@@ -97,7 +117,6 @@ export default function LoginCard() {
         default:
           window.location.href = '/';
       }
-
     } catch (err) {
       if (err.response?.status === 423) {
         toast.error(err.response?.data?.message || 'Account not active');
@@ -107,10 +126,7 @@ export default function LoginCard() {
         return;
       }
       toast.error(err.response?.data?.message || 'Login failed');
-      
-      // Reset captcha on error
-      setCaptchaToken('');
-      window.grecaptcha?.reset();
+      resetCaptcha();
     } finally {
       setLoading(false);
     }
@@ -130,7 +146,7 @@ export default function LoginCard() {
           background:
             'linear-gradient(140.06deg, rgba(89, 89, 89, 0.4) -3.08%, rgba(255, 255, 255, 0.4) 106.56%)',
           backdropFilter: 'blur(40px)',
-          border: '1px solid rgba(255, 255, 255, 0.2)'
+          border: '1px solid rgba(255, 255, 255, 0.2)',
         }}
       >
         <div className="relative w-full flex flex-col items-center mb-2">
@@ -173,7 +189,7 @@ export default function LoginCard() {
               Password
             </label>
             <input
-              type={passwordVisible ? "text" : "password"}
+              type={passwordVisible ? 'text' : 'password'}
               id="password"
               placeholder="Password"
               value={password}
@@ -186,12 +202,7 @@ export default function LoginCard() {
               className="absolute right-2 top-[calc(40%+2px)] -translate-y-1/2 text-black"
             >
               {passwordVisible ? (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                   <path
                     fillRule="evenodd"
                     d="M4.03 3.97a.75.75 0 011.06 0l10 10a.75.75 0 11-1.06 1.06l-1.042-1.042A8.74 8.74 0 0110 15c-3.272 0-6.06-1.906-7.76-4.701a.945.945 0 010-1.006 10.45 10.45 0 013.12-3.263L4.03 5.03a.75.75 0 010-1.06zm12.24 7.79c.291-.424.546-.874.76-1.339a.945.945 0 000-1.006C16.06 6.905 13.272 5 10 5c-.638 0-1.26.07-1.856.202l7.127 7.127z"
@@ -207,11 +218,7 @@ export default function LoginCard() {
                   stroke="currentColor"
                   strokeWidth={2}
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                  />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -232,8 +239,11 @@ export default function LoginCard() {
 
           <div className="flex justify-center">
             <ReCAPTCHA
+              ref={recaptchaRef}
               sitekey={recaptchaSiteKey}
               onChange={onCaptchaChange}
+              onExpired={onCaptchaExpired}
+              onError={onCaptchaError}
             />
           </div>
           {captchaError && (
@@ -244,9 +254,9 @@ export default function LoginCard() {
         <button
           type="button"
           onClick={handleLogin}
-          disabled={!captchaToken}
+          disabled={!captchaToken || loading}
           className={`w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro transition-colors duration-200 ${
-            !captchaToken ? 'opacity-50 cursor-not-allowed' : ''
+            !captchaToken || loading ? 'opacity-50 cursor-not-allowed' : ''
           }`}
         >
           Sign in
@@ -272,17 +282,11 @@ export default function LoginCard() {
 
         <p className="font-sfpro font-[400] text-[10px] leading-[100%] tracking-[-0.05em] text-center text-[#FFFFFF] mb-0">
           By clicking on <strong>Sign in</strong>, you agree to our{' '}
-          <a
-            href="/terms"
-            className="text-[#039994] underline font-[600] hover:text-[#02857f]"
-          >
+          <a href="/terms" className="text-[#039994] underline font-[600] hover:text-[#02857f]">
             Terms and Conditions
           </a>{' '}
           &amp;{' '}
-          <a
-            href="/privacy"
-            className="text-[#039994] underline font-[600] hover:text-[#02857f]"
-          >
+          <a href="/privacy" className="text-[#039994] underline font-[600] hover:text-[#02857f]">
             Privacy Policy
           </a>
         </p>
