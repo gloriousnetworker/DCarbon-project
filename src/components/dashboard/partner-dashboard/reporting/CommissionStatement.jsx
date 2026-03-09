@@ -39,8 +39,8 @@ export default function CommissionStatement({ onNavigate }) {
   const [payoutMessage, setPayoutMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const userId = localStorage.getItem("userId");
-  const authToken = localStorage.getItem("authToken");
+  const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
+  const authToken = typeof window !== "undefined" ? localStorage.getItem("authToken") : null;
 
   useEffect(() => {
     if (userId && authToken) {
@@ -516,25 +516,34 @@ function ExportReportModal({ onClose, invoiceData, quarterFilter, walletBalance 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const buildStatementRows = () => {
-    const date = invoiceData?.date ? new Date(invoiceData.date).toLocaleDateString() : new Date().toLocaleDateString();
-    return {
-      invoiceNumber: invoiceData?.invoiceNumber || "N/A",
-      date,
-      name: `${invoiceData?.billTo?.firstName || "-"} ${invoiceData?.billTo?.lastName || "-"}`,
-      email: invoiceData?.billTo?.email || "-",
-      phone: invoiceData?.billTo?.phoneNumber || "-",
-      quarter: quarterFilter,
-      items: invoiceData?.items || [],
-      subtotal: invoiceData?.subtotal || 0,
-      vat: invoiceData?.vat || 0,
-      total: invoiceData?.total || 0,
-      walletBalance: walletBalance || 0,
-    };
+  const buildStatementData = () => ({
+    invoiceNumber: invoiceData?.invoiceNumber || "N/A",
+    date: invoiceData?.date ? new Date(invoiceData.date).toLocaleDateString() : new Date().toLocaleDateString(),
+    name: `${invoiceData?.billTo?.firstName || "-"} ${invoiceData?.billTo?.lastName || "-"}`,
+    email: invoiceData?.billTo?.email || "-",
+    phone: invoiceData?.billTo?.phoneNumber || "-",
+    quarter: quarterFilter,
+    items: invoiceData?.items || [],
+    subtotal: invoiceData?.subtotal || 0,
+    vat: invoiceData?.vat || 0,
+    total: invoiceData?.total || 0,
+    walletBalance: walletBalance || 0,
+  });
+
+  const triggerDownload = (blob, filename) => {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", filename);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   const exportCSV = () => {
-    const d = buildStatementRows();
+    const d = buildStatementData();
     const lines = [
       ["DCarbon Earnings Statement"],
       ["Quarter", d.quarter],
@@ -561,15 +570,15 @@ function ExportReportModal({ onClose, invoiceData, quarterFilter, walletBalance 
       ["Total (USD)", `$${d.total.toFixed(2)}`],
       ["Available Balance", `$${d.walletBalance.toFixed(2)}`],
     ];
-
     const csv = lines.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     triggerDownload(blob, `earnings-statement-${quarterFilter}.csv`);
   };
 
   const exportPDF = async () => {
-    const { default: jsPDF } = await import("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js").then(() => ({ default: window.jspdf.jsPDF }));
-    const d = buildStatementRows();
+    const jsPDFModule = await import("jspdf");
+    const jsPDF = jsPDFModule.default || jsPDFModule.jsPDF;
+    const d = buildStatementData();
     const doc = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
     const pageWidth = doc.internal.pageSize.getWidth();
     const margin = 40;
@@ -590,12 +599,9 @@ function ExportReportModal({ onClose, invoiceData, quarterFilter, walletBalance 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
     doc.setTextColor(...gray);
-    y += 16;
-    doc.text(`Invoice #: ${d.invoiceNumber}`, margin, y);
-    y += 12;
-    doc.text(`Date: ${d.date}`, margin, y);
-    y += 12;
-    doc.text(`Quarter: ${d.quarter}`, margin, y);
+    y += 16; doc.text(`Invoice #: ${d.invoiceNumber}`, margin, y);
+    y += 12; doc.text(`Date: ${d.date}`, margin, y);
+    y += 12; doc.text(`Quarter: ${d.quarter}`, margin, y);
 
     y += 24;
     doc.setDrawColor(220, 220, 220);
@@ -661,8 +667,12 @@ function ExportReportModal({ onClose, invoiceData, quarterFilter, walletBalance 
     const summaryX = pageWidth - margin - 160;
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9);
-    doc.setTextColor(...black);
-    const summaryRows = [["Subtotal", `$${d.subtotal.toFixed(2)}`], ["V.A.T.", `$${d.vat.toFixed(2)}`], ["Paid", "$0.00"], ["TOTAL (USD)", `$${d.total.toFixed(2)}`]];
+    const summaryRows = [
+      ["Subtotal", `$${d.subtotal.toFixed(2)}`],
+      ["V.A.T.", `$${d.vat.toFixed(2)}`],
+      ["Paid", "$0.00"],
+      ["TOTAL (USD)", `$${d.total.toFixed(2)}`],
+    ];
     summaryRows.forEach(([label, val], idx) => {
       if (idx === summaryRows.length - 1) {
         doc.setFillColor(...teal);
@@ -677,8 +687,8 @@ function ExportReportModal({ onClose, invoiceData, quarterFilter, walletBalance 
     });
 
     y += 8;
-    doc.setFillColor(3, 153, 148, 20);
     doc.setDrawColor(...teal);
+    doc.setFillColor(232, 248, 247);
     doc.roundedRect(margin, y, 140, 36, 4, 4, "FD");
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
@@ -702,10 +712,9 @@ function ExportReportModal({ onClose, invoiceData, quarterFilter, walletBalance 
   };
 
   const exportDOCX = async () => {
-    const d = buildStatementRows();
-
-    const { Document, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle, HeadingLevel, Packer } = await import("https://unpkg.com/docx@8.5.0/build/index.js");
-
+    const docx = await import("docx");
+    const { Document, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle, Packer } = docx;
+    const d = buildStatementData();
     const tealColor = "039994";
     const grayColor = "666666";
 
@@ -713,7 +722,6 @@ function ExportReportModal({ onClose, invoiceData, quarterFilter, walletBalance 
       children: [new TextRun({ text, bold: true, size: 28, color: tealColor })],
       spacing: { after: 120 },
     });
-
     const labelValue = (label, value) => new Paragraph({
       children: [
         new TextRun({ text: `${label}: `, bold: true, size: 18 }),
@@ -721,12 +729,10 @@ function ExportReportModal({ onClose, invoiceData, quarterFilter, walletBalance 
       ],
       spacing: { after: 60 },
     });
-
     const sectionTitle = (text) => new Paragraph({
       children: [new TextRun({ text, bold: true, size: 20, color: tealColor })],
       spacing: { before: 200, after: 100 },
     });
-
     const divider = () => new Paragraph({
       border: { bottom: { style: BorderStyle.SINGLE, size: 1, color: "DDDDDD" } },
       spacing: { after: 120 },
@@ -745,13 +751,7 @@ function ExportReportModal({ onClose, invoiceData, quarterFilter, walletBalance 
         }),
         ...d.items.map((item) =>
           new TableRow({
-            children: [
-              String(item.qty),
-              item.itemCode,
-              item.description,
-              `$${item.unitPrice.toFixed(2)}`,
-              `$${item.total.toFixed(2)}`,
-            ].map((val) =>
+            children: [String(item.qty), item.itemCode, item.description, `$${item.unitPrice.toFixed(2)}`, `$${item.total.toFixed(2)}`].map((val) =>
               new TableCell({
                 children: [new Paragraph({ children: [new TextRun({ text: val, size: 16, color: grayColor })] })],
               })
@@ -817,29 +817,13 @@ function ExportReportModal({ onClose, invoiceData, quarterFilter, walletBalance 
     triggerDownload(blob, `earnings-statement-${quarterFilter}.docx`);
   };
 
-  const triggerDownload = (blob, filename) => {
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", filename);
-    link.style.visibility = "hidden";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-
   const handleExport = async () => {
     setError("");
     setLoading(true);
     try {
-      if (format === "csv") {
-        exportCSV();
-      } else if (format === "pdf") {
-        await exportPDF();
-      } else if (format === "docx") {
-        await exportDOCX();
-      }
+      if (format === "csv") exportCSV();
+      else if (format === "pdf") await exportPDF();
+      else if (format === "docx") await exportDOCX();
       onClose();
     } catch (err) {
       console.error("Export error:", err);

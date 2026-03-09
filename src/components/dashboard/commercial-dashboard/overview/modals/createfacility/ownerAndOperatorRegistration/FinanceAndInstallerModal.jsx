@@ -5,14 +5,9 @@ import InstapullAuthorizationModal from "./InstapullAuthorizationModal";
 
 const styles = {
   mainContainer: 'min-h-screen w-full flex flex-col items-center justify-center py-8 px-4 bg-white',
-  headingContainer: 'relative w-full flex flex-col items-center mb-2',
-  backArrow: 'absolute left-6 top-0 text-[#039994] cursor-pointer z-10',
-  pageTitle: 'mb-4 font-[600] text-[24px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro text-left',
-  pageSubtitle: 'mb-4 font-sfpro text-[14px] leading-[120%] text-[#1E1E1E]',
-  progressContainer: 'w-full max-w-md flex items-center justify-between mb-6',
-  progressBarWrapper: 'flex-1 h-1 bg-gray-200 rounded-full mr-4',
-  progressBarActive: 'h-1 bg-[#039994] w-2/3 rounded-full',
-  progressStepText: 'text-sm font-medium text-gray-500 font-sfpro',
+  headingContainer: 'w-full flex flex-col mb-2',
+  pageTitle: 'mb-2 font-[600] text-[24px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sfpro',
+  pageSubtitle: 'mb-0 font-sfpro text-[14px] leading-[120%] text-[#1E1E1E]',
   formWrapper: 'w-full max-w-md space-y-6',
   labelClass: 'block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]',
   labelWithTooltip: 'flex items-center gap-2 mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]',
@@ -38,14 +33,13 @@ const styles = {
   tooltipIcon: 'h-4 w-4 text-gray-400',
   tooltipContent: 'absolute hidden group-hover:block bg-white p-2 rounded shadow-lg border border-gray-200 text-xs w-64 z-10 left-8 -top-20',
   dateInput: 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E] bg-[#E8E8E8]',
-  closeButton: 'absolute top-6 right-6 text-red-500 hover:text-red-700 cursor-pointer z-50',
   optionGroup: 'px-3 py-2 text-sm text-gray-500 font-sfpro',
   optionGroupGreenButton: 'px-3 py-2 text-sm text-green-600 font-semibold font-sfpro',
   greenButtonBadge: 'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 ml-2',
   modalContainer: 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4',
-  modalContent: 'relative w-full max-w-lg bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col',
-  modalHeader: 'relative p-6 pb-4',
-  modalBody: 'flex-1 overflow-y-auto px-6 pb-6'
+  modalContent: 'w-full max-w-lg bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col',
+  modalHeader: 'px-6 pt-5 pb-4 border-b border-gray-100',
+  modalBody: 'flex-1 overflow-y-auto px-6 pb-6 pt-4'
 };
 
 export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
@@ -149,20 +143,15 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
 
   const categorizeUtilities = (utilities) => {
     const greenButtonUtilitiesList = ['San Diego Gas & Electric', 'Southern California Gas Company', 'Pacific Gas & Electric'];
-    
     const greenButtonUtils = [];
     const regularUtils = [];
-    
     utilities.forEach(utility => {
-      const isGreenButton = greenButtonUtilitiesList.includes(utility.name);
-      
-      if (isGreenButton) {
+      if (greenButtonUtilitiesList.includes(utility.name)) {
         greenButtonUtils.push(utility);
       } else {
         regularUtils.push(utility);
       }
     });
-    
     setGreenButtonUtilities(greenButtonUtils);
     setRegularUtilities(regularUtils);
   };
@@ -274,12 +263,10 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
 
   const uploadFinanceAgreementToFacility = async (facilityId) => {
     if (!file) return;
-
     const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
     const token = loginResponse?.data?.token;
     const formDataObj = new FormData();
     formDataObj.append('financeAgreementUrl', file);
-
     await axiosInstance.put(
       `/api/facility/update-facility-financial-agreement/${facilityId}`,
       formDataObj,
@@ -292,26 +279,19 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     const userId = loginResponse?.data?.user?.id;
     const token = loginResponse?.data?.token;
     const selectedInstaller = installers.find(installer => installer.name === (showCustomInstaller ? formData.customInstaller : formData.installer));
-
     const finalInstaller = noInstallerSelected ? 'N/A' : (showCustomInstaller ? formData.customInstaller : formData.installer);
-    const finalInstallerId = noInstallerSelected ? null : (selectedInstaller?.id || null);
 
-    const payload = {
-      financialType: formData.financeType
-    };
+    const payload = { financialType: formData.financeType };
 
     if (showFinanceCompany && formData.financeCompany) {
       payload.financeCompany = formData.financeCompany;
     }
-
     if (finalInstaller && finalInstaller !== 'N/A') {
       payload.installer = finalInstaller;
     }
-
     if (formData.systemSize) {
       payload.systemSize = formData.systemSize;
     }
-
     if (formData.cod) {
       payload.cod = formData.cod;
     }
@@ -361,7 +341,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
       const token = loginResponse?.data?.token;
       const response = await axiosInstance.post(
         `/api/user/request-utility-provider/${userId}`,
-        { 
+        {
           name: requestedUtilityName.trim(),
           website: requestedUtilityWebsite.trim() || "https://example.com"
         },
@@ -411,63 +391,36 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    
     if (name === "financeType") {
       const selectedFinanceType = financeTypes.find(type => type.name === value);
-      setFormData(prev => ({
-        ...prev,
-        financeType: value,
-        financeNamingCode: selectedFinanceType?.namingCode || ""
-      }));
-    }
-    else if (name === "installer") {
+      setFormData(prev => ({ ...prev, financeType: value, financeNamingCode: selectedFinanceType?.namingCode || "" }));
+    } else if (name === "installer") {
       const selectedInstaller = installers.find(installer => installer.name === value);
-      setFormData(prev => ({
-        ...prev,
-        installer: value,
-        installerId: selectedInstaller?.userId || "",
-        installerNamingCode: selectedInstaller?.namingCode || ""
-      }));
-    }
-    else if (name === "financeCompany") {
+      setFormData(prev => ({ ...prev, installer: value, installerId: selectedInstaller?.userId || "", installerNamingCode: selectedInstaller?.namingCode || "" }));
+    } else if (name === "financeCompany") {
       const selectedFinanceCompany = financeCompanies.find(company => company.name === value);
-      setFormData(prev => ({
-        ...prev,
-        financeCompany: value,
-        financeCompanyId: selectedFinanceCompany?.userId || ""
-      }));
-    }
-    else if (name === "utilityProvider") {
+      setFormData(prev => ({ ...prev, financeCompany: value, financeCompanyId: selectedFinanceCompany?.userId || "" }));
+    } else if (name === "utilityProvider") {
       const selectedUtilityProvider = utilityProviders.find(provider => provider.name === value);
-      setFormData(prev => ({
-        ...prev,
-        utilityProvider: value,
-        utilityProviderNamingCode: selectedUtilityProvider?.namingCode || ""
-      }));
-    }
-    else {
+      setFormData(prev => ({ ...prev, utilityProvider: value, utilityProviderNamingCode: selectedUtilityProvider?.namingCode || "" }));
+    } else {
       setFormData(prev => ({ ...prev, [name]: value }));
     }
   };
 
   const handleSystemSizeChange = (e) => {
     const input = e.target.value;
-    
     if (input === '') {
       setFormData(prev => ({ ...prev, systemSize: '' }));
       return;
     }
-    
-    const regex = /^\d*\.?\d*$/;
-    
-    if (regex.test(input)) {
+    if (/^\d*\.?\d*$/.test(input)) {
       setFormData(prev => ({ ...prev, systemSize: input }));
     }
   };
 
   const handleDateChange = (e) => {
     let value = e.target.value.replace(/[^0-9/]/g, '');
-    
     if (value.length === 2 && !value.includes('/')) {
       const month = parseInt(value);
       if (month > 12) value = '12';
@@ -478,13 +431,10 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
       if (parts.length === 2) {
         let day = parseInt(parts[1]);
         const month = parseInt(parts[0]);
-        
         const daysInMonth = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
         const maxDay = month >= 1 && month <= 12 ? daysInMonth[month - 1] : 31;
-        
         if (day > maxDay) day = maxDay;
         if (day === 0) day = 1;
-        
         value = parts[0] + '/' + (day < 10 && day > 0 ? '0' + day : day) + '/';
       }
     } else if (value.length === 10) {
@@ -493,17 +443,13 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
         let day = parseInt(parts[1]);
         const month = parseInt(parts[0]);
         const year = parts[2];
-        
         const daysInMonth = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
         const maxDay = month >= 1 && month <= 12 ? daysInMonth[month - 1] : 31;
-        
         if (day > maxDay) day = maxDay;
         if (day === 0) day = 1;
-        
         value = parts[0] + '/' + (day < 10 && day > 0 ? '0' + day : day) + '/' + year;
       }
     }
-    
     if (value.length <= 10) {
       setFormData(prev => ({ ...prev, cod: value }));
     }
@@ -529,19 +475,15 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
 
     setLoading(true);
     const toastId = toast.loading('Saving your information...');
-
     try {
       await updateFinanceInfo();
       const response = await createFacility();
       setCreatedFacilityId(response.data.id);
-
       if (file && uploadSuccess) {
         await uploadFinanceAgreementToFacility(response.data.id);
       }
-
       toast.dismiss(toastId);
       toast.success('Facility created successfully!');
-      
       openInstapullTab();
       setShowInstapullAuthModal(true);
     } catch (err) {
@@ -553,19 +495,11 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
 
   const handleCloseModal = () => {
     setFormData({
-      financeType: "",
-      financeCompany: "",
-      financeCompanyId: "",
-      installer: "",
-      installerId: "",
-      customInstaller: "",
-      utilityProvider: "",
-      systemSize: "",
-      cod: "",
-      facilityTypeNamingCode: 1,
-      utilityProviderNamingCode: "",
-      installerNamingCode: "",
-      financeNamingCode: ""
+      financeType: "", financeCompany: "", financeCompanyId: "",
+      installer: "", installerId: "", customInstaller: "",
+      utilityProvider: "", systemSize: "", cod: "",
+      facilityTypeNamingCode: 1, utilityProviderNamingCode: "",
+      installerNamingCode: "", financeNamingCode: ""
     });
     setFacilityNickname('');
     setFile(null);
@@ -591,9 +525,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
           <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
             <h3 className="text-lg font-semibold mb-4">Request Finance Type</h3>
             <div className="mb-4">
-              <label className={styles.labelClass}>
-                Finance Type Name
-              </label>
+              <label className={styles.labelClass}>Finance Type Name</label>
               <input
                 type="text"
                 value={requestedFinanceTypeName}
@@ -604,10 +536,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
             </div>
             <div className="flex gap-3">
               <button
-                onClick={() => {
-                  setShowRequestModal(false);
-                  setRequestedFinanceTypeName('');
-                }}
+                onClick={() => { setShowRequestModal(false); setRequestedFinanceTypeName(''); }}
                 className="flex-1 px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
                 disabled={requestingFinanceType}
               >
@@ -630,9 +559,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
           <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
             <h3 className="text-lg font-semibold mb-4">Request Utility Provider</h3>
             <div className="mb-4">
-              <label className={styles.labelClass}>
-                Utility Provider Name <span className="text-red-500">*</span>
-              </label>
+              <label className={styles.labelClass}>Utility Provider Name <span className="text-red-500">*</span></label>
               <input
                 type="text"
                 value={requestedUtilityName}
@@ -643,9 +570,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
               />
             </div>
             <div className="mb-4">
-              <label className={styles.labelClass}>
-                Utility Website
-              </label>
+              <label className={styles.labelClass}>Utility Website</label>
               <input
                 type="url"
                 value={requestedUtilityWebsite}
@@ -656,11 +581,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
             </div>
             <div className="flex gap-3">
               <button
-                onClick={() => {
-                  setShowUtilityRequestModal(false);
-                  setRequestedUtilityName('');
-                  setRequestedUtilityWebsite('');
-                }}
+                onClick={() => { setShowUtilityRequestModal(false); setRequestedUtilityName(''); setRequestedUtilityWebsite(''); }}
                 className="flex-1 px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
                 disabled={requestingUtility}
               >
@@ -681,10 +602,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
       {showInstapullAuthModal && (
         <InstapullAuthorizationModal
           isOpen={showInstapullAuthModal}
-          onClose={() => {
-            setShowInstapullAuthModal(false);
-            onClose();
-          }}
+          onClose={() => { setShowInstapullAuthModal(false); onClose(); }}
           utilityProvider={formData.utilityProvider}
           instapullOpened={instapullOpened}
           openInstapullTab={openInstapullTab}
@@ -695,41 +613,52 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
       {isOpen && !showInstapullAuthModal && (
         <div className={styles.modalContainer}>
           <div className={styles.modalContent}>
-            <div className={styles.modalHeader}>
-              {onBack && (
-                <button
-                  onClick={onBack}
-                  className={styles.backArrow}
-                >
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </button>
-              )}
 
-              <button
-                onClick={handleCloseModal}
-                className={styles.closeButton}
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
+            <div className={styles.modalHeader}>
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-8 flex items-center justify-start">
+                  {onBack ? (
+                    <button
+                      onClick={onBack}
+                      className="text-[#039994] hover:text-[#02857f] transition-colors"
+                    >
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </button>
+                  ) : (
+                    <div />
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 flex-1 mx-4">
+                  <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="h-full bg-[#039994] rounded-full" style={{ width: '80%' }}></div>
+                  </div>
+                  <span className="text-xs font-medium text-gray-500 font-sfpro whitespace-nowrap">04 / 05</span>
+                </div>
+
+                <div className="w-8 flex items-center justify-end">
+                  <button
+                    onClick={handleCloseModal}
+                    className="text-red-500 hover:text-red-700 transition-colors"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
 
               <div className={styles.headingContainer}>
                 <h2 className={styles.pageTitle}>
-                  {commercialRole === 'both' ? "Finance & Installer information for Owner and Operator" : "Finance & Installer information for Owner"}
+                  {commercialRole === 'both'
+                    ? "Finance & Installer information for Owner and Operator"
+                    : "Finance & Installer information for Owner"}
                 </h2>
                 <p className={styles.pageSubtitle}>
                   Please review all tooltips to ensure correct selections for your financing and installation needs.
                 </p>
-              </div>
-
-              <div className={styles.progressContainer}>
-                <div className={styles.progressBarWrapper}>
-                  <div className={styles.progressBarActive}></div>
-                </div>
-                <span className={styles.progressStepText}>04/05</span>
               </div>
             </div>
 
@@ -764,23 +693,17 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                       disabled={loadingUtilityProviders}
                     >
                       <option value="">{loadingUtilityProviders ? 'Loading...' : 'Choose provider'}</option>
-                      
                       {greenButtonUtilities.length > 0 && (
                         <optgroup label="Green Button Utilities" className={styles.optionGroupGreenButton}>
                           {greenButtonUtilities.map((provider) => (
-                            <option key={provider.id} value={provider.name}>
-                              {provider.name} <span className={styles.greenButtonBadge}>Green Button</span>
-                            </option>
+                            <option key={provider.id} value={provider.name}>{provider.name}</option>
                           ))}
                         </optgroup>
                       )}
-                      
                       {regularUtilities.length > 0 && (
                         <optgroup label="Other Utilities" className={styles.optionGroup}>
                           {regularUtilities.map((provider) => (
-                            <option key={provider.id} value={provider.name}>
-                              {provider.name}
-                            </option>
+                            <option key={provider.id} value={provider.name}>{provider.name}</option>
                           ))}
                         </optgroup>
                       )}
@@ -791,11 +714,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                       </svg>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setShowUtilityRequestModal(true)}
-                    className="text-[#039994] text-xs hover:underline mt-1"
-                  >
+                  <button type="button" onClick={() => setShowUtilityRequestModal(true)} className="text-[#039994] text-xs hover:underline mt-1">
                     Not on the list?
                   </button>
                 </div>
@@ -824,11 +743,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                       </svg>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setShowRequestModal(true)}
-                    className="text-[#039994] text-xs hover:underline mt-1"
-                  >
+                  <button type="button" onClick={() => setShowRequestModal(true)} className="text-[#039994] text-xs hover:underline mt-1">
                     Finance Type not listed?
                   </button>
                 </div>
@@ -836,9 +751,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                 {showFinanceCompany && (
                   <div>
                     <div className={styles.labelWithTooltip}>
-                      <label className={styles.labelClass}>
-                        Finance company
-                      </label>
+                      <label className={styles.labelClass}>Finance company</label>
                       <div className={styles.tooltipContainer}>
                         <svg xmlns="http://www.w3.org/2000/svg" className={styles.tooltipIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -873,9 +786,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
 
                 {showUploadField && (
                   <div>
-                    <label className={styles.uploadHeading}>
-                      Upload Finance Agreement
-                    </label>
+                    <label className={styles.uploadHeading}>Upload Finance Agreement</label>
                     <div className={styles.uploadFieldWrapper}>
                       <div className={styles.uploadInputWrapper}>
                         <input
@@ -885,10 +796,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                           className={styles.uploadInput}
                           accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                         />
-                        <label
-                          htmlFor="financeAgreementUpload"
-                          className={styles.uploadInputLabel}
-                        >
+                        <label htmlFor="financeAgreementUpload" className={styles.uploadInputLabel}>
                           {fileName || "Choose file"}
                         </label>
                       </div>
@@ -901,17 +809,13 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                         {uploading ? 'Uploading...' : uploadSuccess ? '✓' : 'Upload'}
                       </button>
                     </div>
-                    <p className={styles.uploadNoteStyle}>
-                      Optional for all finance types except Cash (PDF, JPEG, PNG, Word)
-                    </p>
+                    <p className={styles.uploadNoteStyle}>Optional for all finance types except Cash (PDF, JPEG, PNG, Word)</p>
                   </div>
                 )}
 
                 <div>
                   <div className={styles.labelWithTooltip}>
-                    <label className={styles.labelClass}>
-                      Select installer
-                    </label>
+                    <label className={styles.labelClass}>Select installer</label>
                     <div className={styles.tooltipContainer}>
                       <svg xmlns="http://www.w3.org/2000/svg" className={styles.tooltipIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -946,9 +850,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
 
                 {showCustomInstaller && (
                   <div>
-                    <label className={styles.labelClass}>
-                      Installer Name
-                    </label>
+                    <label className={styles.labelClass}>Installer Name</label>
                     <input
                       type="text"
                       name="customInstaller"
@@ -975,7 +877,6 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                     />
                     <p className={styles.noteText}>The system size should match your utility PTO authorization letter</p>
                   </div>
-
                   <div className={styles.halfWidth}>
                     <label className={styles.labelClass}>
                       Commercial Operation Date (COD) <span className="text-gray-500 text-xs">(optional)</span>
