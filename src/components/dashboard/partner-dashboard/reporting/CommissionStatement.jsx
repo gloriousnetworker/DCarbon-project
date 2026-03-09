@@ -6,31 +6,14 @@ const getDynamicQuarters = () => {
   const currentYear = today.getFullYear();
   const currentMonth = today.getMonth() + 1;
   const currentQuarter = Math.ceil(currentMonth / 3);
-
   const quarters = [];
-
   for (let i = 0; i < 8; i++) {
     let q = currentQuarter - i;
     let y = currentYear;
-
-    while (q < 1) {
-      q += 4;
-      y -= 1;
-    }
-
-    const months =
-      q === 1 ? "Jan-Mar" :
-      q === 2 ? "Apr-Jun" :
-      q === 3 ? "Jul-Sep" : "Oct-Dec";
-
-    quarters.push({
-      label: `Q${q} ${y}`,
-      value: q.toString(),
-      year: y.toString(),
-      months,
-    });
+    while (q < 1) { q += 4; y -= 1; }
+    const months = q === 1 ? "Jan-Mar" : q === 2 ? "Apr-Jun" : q === 3 ? "Jul-Sep" : "Oct-Dec";
+    quarters.push({ label: `Q${q} ${y}`, value: q.toString(), year: y.toString(), months });
   }
-
   return quarters;
 };
 
@@ -55,7 +38,6 @@ export default function CommissionStatement({ onNavigate }) {
   const [loadingPayout, setLoadingPayout] = useState(false);
   const [payoutMessage, setPayoutMessage] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
   const userId = localStorage.getItem("userId");
   const authToken = localStorage.getItem("authToken");
@@ -70,18 +52,15 @@ export default function CommissionStatement({ onNavigate }) {
 
   const fetchInvoiceData = async () => {
     setLoading(true);
-    setError("");
     try {
       const quarterObj = QUARTERS.find((q) => q.label === selectedQuarter);
       if (!quarterObj) return;
-
       const response = await axiosInstance({
-        method: 'GET',
+        method: "GET",
         url: `/api/commission/invoice/${userId}`,
         params: { quarter: quarterObj.value, year: quarterObj.year },
         headers: { Authorization: `Bearer ${authToken}` },
       });
-
       if (response.data.status === "success") {
         setInvoiceData(response.data.data);
       } else {
@@ -98,13 +77,12 @@ export default function CommissionStatement({ onNavigate }) {
   const fetchWalletBalance = async () => {
     try {
       const response = await axiosInstance({
-        method: 'GET',
+        method: "GET",
         url: `/api/revenue/${userId}`,
-        headers: { Authorization: `Bearer ${authToken}` }
+        headers: { Authorization: `Bearer ${authToken}` },
       });
-      const result = response.data;
-      if (result.status === "success" && result.data) {
-        setWalletBalance(result.data.availableBalance || 0);
+      if (response.data.status === "success" && response.data.data) {
+        setWalletBalance(response.data.data.availableBalance || 0);
       }
     } catch (error) {
       console.error("Error fetching wallet balance:", error);
@@ -114,13 +92,12 @@ export default function CommissionStatement({ onNavigate }) {
   const fetchPayoutHistory = async () => {
     try {
       const response = await axiosInstance({
-        method: 'GET',
+        method: "GET",
         url: `/api/payout-request?userId=${userId}&userType=PARTNER`,
-        headers: { Authorization: `Bearer ${authToken}` }
+        headers: { Authorization: `Bearer ${authToken}` },
       });
-      const result = response.data;
-      if (result.status === "success" && result.data) {
-        setPayoutHistory(result.data);
+      if (response.data.status === "success" && response.data.data) {
+        setPayoutHistory(response.data.data);
       }
     } catch (error) {
       console.error("Error fetching payout history:", error);
@@ -137,81 +114,28 @@ export default function CommissionStatement({ onNavigate }) {
     setShowQuarterDropdown(false);
   };
 
-  const handleExportReport = async (exportParams) => {
-    try {
-      const quarterObj = QUARTERS.find((q) => q.label === selectedQuarter);
-
-      const requestBody = {
-        format: exportParams.format,
-        email: exportParams.email,
-        reportType: "commission",
-        quarter: quarterObj.value,
-        year: quarterObj.year,
-        invoiceNumber: invoiceData?.invoiceNumber || "N/A",
-      };
-
-      if (exportParams.format !== "csv") {
-        const response = await axiosInstance({
-          method: 'POST',
-          url: "/api/reports/export-commission-statement",
-          data: requestBody,
-          headers: { Authorization: `Bearer ${authToken}` },
-          responseType: "blob",
-        });
-
-        const url = window.URL.createObjectURL(new Blob([response.data]));
-        const link = document.createElement("a");
-        link.href = url;
-        link.setAttribute("download", `commission-statement.${exportParams.format}`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      } else if (exportParams.email) {
-        alert(`CSV commission statement will be sent to ${exportParams.email} when ready`);
-      }
-      return true;
-    } catch (error) {
-      console.error("Export error:", error);
-      throw error;
-    }
-  };
-
   const handleSubmitPayout = async () => {
     try {
       setLoadingPayout(true);
       setPayoutMessage("");
-
       if (!payoutAmount || parseFloat(payoutAmount) <= 0) {
         setPayoutMessage("Please enter a valid amount");
         return;
       }
-
-      const requestBody = {
-        userId,
-        amount: parseFloat(payoutAmount),
-        userType: "PARTNER",
-      };
-
       const response = await axiosInstance({
-        method: 'POST',
+        method: "POST",
         url: "/api/payout-request/request",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`,
-        },
-        data: JSON.stringify(requestBody),
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` },
+        data: JSON.stringify({ userId, amount: parseFloat(payoutAmount), userType: "PARTNER" }),
       });
-
-      const result = response.data;
-
-      if (result.status === "success") {
+      if (response.data.status === "success") {
         setPayoutMessage("Payout request submitted successfully!");
         setPayoutAmount("");
         setShowPayoutModal(false);
         fetchWalletBalance();
         fetchPayoutHistory();
       } else {
-        setPayoutMessage(result.message || "Failed to submit payout request");
+        setPayoutMessage(response.data.message || "Failed to submit payout request");
       }
     } catch (error) {
       console.error("Error submitting payout:", error);
@@ -258,12 +182,7 @@ export default function CommissionStatement({ onNavigate }) {
               className="flex items-center text-2xl font-semibold text-[#039994]"
             >
               Earnings Statement
-              <svg
-                className={`ml-2 w-5 h-5 transition-transform ${showReportDropdown ? "rotate-180" : ""}`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
+              <svg className={`ml-2 w-5 h-5 transition-transform ${showReportDropdown ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </button>
@@ -273,9 +192,7 @@ export default function CommissionStatement({ onNavigate }) {
                   <button
                     key={option.value}
                     onClick={() => handleReportNavigation(option.value)}
-                    className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
-                      option.value === "commission" ? "bg-gray-50 font-medium" : ""
-                    }`}
+                    className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${option.value === "commission" ? "bg-gray-50 font-medium" : ""}`}
                   >
                     {option.label}
                   </button>
@@ -291,12 +208,7 @@ export default function CommissionStatement({ onNavigate }) {
                 className="flex items-center border border-gray-300 px-4 py-1 rounded text-xs hover:bg-gray-50"
               >
                 {selectedQuarter}
-                <svg
-                  className={`ml-2 w-4 h-4 transition-transform ${showQuarterDropdown ? "rotate-180" : ""}`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
+                <svg className={`ml-2 w-4 h-4 transition-transform ${showQuarterDropdown ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
@@ -306,9 +218,7 @@ export default function CommissionStatement({ onNavigate }) {
                     <button
                       key={quarter.label}
                       onClick={() => handleQuarterSelect(quarter.label)}
-                      className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
-                        selectedQuarter === quarter.label ? "bg-gray-50 font-medium" : ""
-                      }`}
+                      className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${selectedQuarter === quarter.label ? "bg-gray-50 font-medium" : ""}`}
                     >
                       {quarter.label}
                     </button>
@@ -357,9 +267,7 @@ export default function CommissionStatement({ onNavigate }) {
                 <div className="space-y-2">
                   <div className="flex">
                     <span className="font-semibold text-gray-700 w-32">Name</span>
-                    <span className="text-gray-900">
-                      {displayData.billTo.firstName} {displayData.billTo.lastName}
-                    </span>
+                    <span className="text-gray-900">{displayData.billTo.firstName} {displayData.billTo.lastName}</span>
                   </div>
                   <div className="flex">
                     <span className="font-semibold text-gray-700 w-32">Address</span>
@@ -388,36 +296,16 @@ export default function CommissionStatement({ onNavigate }) {
 
               <div className="mb-6">
                 <div className="font-semibold text-gray-700 mb-2">COMMENTS OR SPECIAL INSTRUCTIONS:</div>
-                <div className="text-gray-900">
-                  1. Invoice for {selectedQuarter} DCarbon Agent Commissions
-                </div>
+                <div className="text-gray-900">1. Invoice for {selectedQuarter} DCarbon Agent Commissions</div>
               </div>
 
               <div className="grid grid-cols-6 gap-4 mb-6 text-xs">
-                <div>
-                  <div className="font-semibold text-gray-700">SALESPERSON</div>
-                  <div className="text-gray-900">-</div>
-                </div>
-                <div>
-                  <div className="font-semibold text-gray-700">P.O. NUMBER</div>
-                  <div className="text-gray-900">-</div>
-                </div>
-                <div>
-                  <div className="font-semibold text-gray-700">REQUISITIONER</div>
-                  <div className="text-gray-900">-</div>
-                </div>
-                <div>
-                  <div className="font-semibold text-gray-700">SHIPPED VIA</div>
-                  <div className="text-gray-900">-</div>
-                </div>
-                <div>
-                  <div className="font-semibold text-gray-700">F.O.B. POINT</div>
-                  <div className="text-gray-900">-</div>
-                </div>
-                <div>
-                  <div className="font-semibold text-gray-700">TERMS</div>
-                  <div className="text-gray-900">Due on Receipt</div>
-                </div>
+                {[["SALESPERSON", "-"], ["P.O. NUMBER", "-"], ["REQUISITIONER", "-"], ["SHIPPED VIA", "-"], ["F.O.B. POINT", "-"], ["TERMS", "Due on Receipt"]].map(([label, val]) => (
+                  <div key={label}>
+                    <div className="font-semibold text-gray-700">{label}</div>
+                    <div className="text-gray-900">{val}</div>
+                  </div>
+                ))}
               </div>
 
               <div className="border-t-2 border-b-2 border-gray-300 py-2 mb-4">
@@ -442,9 +330,7 @@ export default function CommissionStatement({ onNavigate }) {
 
               <div className="mt-6">
                 <div className="text-sm text-gray-700 mb-2 font-semibold">Remittance instructions:</div>
-                <div className="text-sm text-gray-900 mb-6">
-                  Please contact support@dcarbon.solutions for specific remittance instructions.
-                </div>
+                <div className="text-sm text-gray-900 mb-6">Please contact support@dcarbon.solutions for specific remittance instructions.</div>
               </div>
 
               <div className="flex justify-end">
@@ -468,12 +354,8 @@ export default function CommissionStatement({ onNavigate }) {
             <div className="bg-white rounded-lg shadow-sm p-8 mb-6">
               <div className="flex justify-between items-start mb-8">
                 <div>
-                  <h2 className="text-2xl font-bold text-[#039994] mb-2">
-                    DCARBON AGENT STATEMENT – {selectedQuarter}
-                  </h2>
-                  <div className="text-sm text-gray-600">
-                    DATE: {formatDate(displayData.date)}
-                  </div>
+                  <h2 className="text-2xl font-bold text-[#039994] mb-2">DCARBON AGENT STATEMENT – {selectedQuarter}</h2>
+                  <div className="text-sm text-gray-600">DATE: {formatDate(displayData.date)}</div>
                 </div>
               </div>
 
@@ -491,38 +373,12 @@ export default function CommissionStatement({ onNavigate }) {
               </div>
 
               <div className="grid grid-cols-4 gap-4 mb-6 bg-gray-50 p-4 rounded">
-                <div>
-                  <div className="font-bold text-gray-700 text-xs">NEW MW DIR</div>
-                  <div className="text-gray-900 text-sm">0</div>
-                </div>
-                <div>
-                  <div className="font-bold text-gray-700 text-xs">ACTIVE MW DIR</div>
-                  <div className="text-gray-900 text-sm">0</div>
-                </div>
-                <div>
-                  <div className="font-bold text-gray-700 text-xs">MWH DIR</div>
-                  <div className="text-gray-900 text-sm">0</div>
-                </div>
-                <div>
-                  <div className="font-bold text-gray-700 text-xs">REC SOLD</div>
-                  <div className="text-gray-900 text-sm">0</div>
-                </div>
-                <div>
-                  <div className="font-bold text-gray-700 text-xs">NEW MW PARTNER</div>
-                  <div className="text-gray-900 text-sm">0</div>
-                </div>
-                <div>
-                  <div className="font-bold text-gray-700 text-xs">ACTIVE MW PARTNER</div>
-                  <div className="text-gray-900 text-sm">0</div>
-                </div>
-                <div>
-                  <div className="font-bold text-gray-700 text-xs">MWH PARTNER</div>
-                  <div className="text-gray-900 text-sm">0</div>
-                </div>
-                <div>
-                  <div className="font-bold text-gray-700 text-xs">REC PRICE</div>
-                  <div className="text-gray-900 text-sm">$0.00</div>
-                </div>
+                {[["NEW MW DIR", "0"], ["ACTIVE MW DIR", "0"], ["MWH DIR", "0"], ["REC SOLD", "0"], ["NEW MW PARTNER", "0"], ["ACTIVE MW PARTNER", "0"], ["MWH PARTNER", "0"], ["REC PRICE", "$0.00"]].map(([label, val]) => (
+                  <div key={label}>
+                    <div className="font-bold text-gray-700 text-xs">{label}</div>
+                    <div className="text-gray-900 text-sm">{val}</div>
+                  </div>
+                ))}
               </div>
 
               <div className="border-t-2 border-b-2 border-gray-300 py-2 mb-4">
@@ -547,9 +403,7 @@ export default function CommissionStatement({ onNavigate }) {
 
               <div className="mt-6">
                 <div className="text-sm text-gray-700 mb-2 font-semibold">Remittance instructions:</div>
-                <div className="text-sm text-gray-900 mb-6">
-                  Please contact support@dcarbon.solutions for specific remittance instructions.
-                </div>
+                <div className="text-sm text-gray-900 mb-6">Please contact support@dcarbon.solutions for specific remittance instructions.</div>
               </div>
 
               <div className="flex justify-between items-start">
@@ -584,13 +438,9 @@ export default function CommissionStatement({ onNavigate }) {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead>
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payout ID</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User Type</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Admin Note</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Approved By</th>
+                      {["Payout ID", "User Type", "Amount", "Status", "Admin Note", "Created At", "Approved By"].map((h) => (
+                        <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{h}</th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
@@ -599,23 +449,15 @@ export default function CommissionStatement({ onNavigate }) {
                         <td className="px-4 py-3 text-sm text-gray-900">{payout.id.slice(0, 8)}...</td>
                         <td className="px-4 py-3 text-sm text-gray-900">{payout.userType}</td>
                         <td className="px-4 py-3 text-sm text-gray-900">${payout.amountRequested}</td>
-                        <td className={`px-4 py-3 text-sm font-medium ${getStatusColor(payout.status)}`}>
-                          {payout.status}
-                        </td>
+                        <td className={`px-4 py-3 text-sm font-medium ${getStatusColor(payout.status)}`}>{payout.status}</td>
                         <td className="px-4 py-3 text-sm text-gray-900 max-w-xs">{payout.adminNote || "-"}</td>
-                        <td className="px-4 py-3 text-sm text-gray-900">
-                          {new Date(payout.createdAt).toLocaleDateString()}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-900">
-                          {payout.approvedBy ? payout.approvedBy.slice(0, 8) + "..." : "-"}
-                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-900">{new Date(payout.createdAt).toLocaleDateString()}</td>
+                        <td className="px-4 py-3 text-sm text-gray-900">{payout.approvedBy ? payout.approvedBy.slice(0, 8) + "..." : "-"}</td>
                       </tr>
                     ))}
                     {payoutHistory.length === 0 && (
                       <tr>
-                        <td colSpan="7" className="px-4 py-8 text-center text-sm text-gray-500">
-                          No payout history available
-                        </td>
+                        <td colSpan="7" className="px-4 py-8 text-center text-sm text-gray-500">No payout history available</td>
                       </tr>
                     )}
                   </tbody>
@@ -629,7 +471,6 @@ export default function CommissionStatement({ onNavigate }) {
       {showExportModal && (
         <ExportReportModal
           onClose={() => setShowExportModal(false)}
-          onExport={handleExportReport}
           invoiceData={displayData}
           quarterFilter={selectedQuarter}
           walletBalance={walletBalance}
@@ -651,32 +492,15 @@ export default function CommissionStatement({ onNavigate }) {
               />
             </div>
             {payoutMessage && (
-              <div
-                className={`mb-4 p-3 rounded-md ${
-                  payoutMessage.includes("success")
-                    ? "bg-green-100 text-green-800"
-                    : "bg-red-100 text-red-800"
-                }`}
-              >
+              <div className={`mb-4 p-3 rounded-md ${payoutMessage.includes("success") ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
                 {payoutMessage}
               </div>
             )}
             <div className="flex justify-end space-x-3">
-              <button
-                onClick={() => {
-                  setShowPayoutModal(false);
-                  setPayoutMessage("");
-                  setPayoutAmount("");
-                }}
-                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
-              >
+              <button onClick={() => { setShowPayoutModal(false); setPayoutMessage(""); setPayoutAmount(""); }} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">
                 Cancel
               </button>
-              <button
-                onClick={handleSubmitPayout}
-                disabled={loadingPayout}
-                className="px-4 py-2 bg-[#039994] text-white rounded-md hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] disabled:opacity-50"
-              >
+              <button onClick={handleSubmitPayout} disabled={loadingPayout} className="px-4 py-2 bg-[#039994] text-white rounded-md hover:bg-[#02857f] disabled:opacity-50">
                 {loadingPayout ? "Submitting..." : "Submit Request"}
               </button>
             </div>
@@ -687,20 +511,339 @@ export default function CommissionStatement({ onNavigate }) {
   );
 }
 
-function ExportReportModal({ onClose, onExport, invoiceData, quarterFilter, walletBalance }) {
-  const [email, setEmail] = useState("");
+function ExportReportModal({ onClose, invoiceData, quarterFilter, walletBalance }) {
   const [format, setFormat] = useState("csv");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const buildStatementRows = () => {
+    const date = invoiceData?.date ? new Date(invoiceData.date).toLocaleDateString() : new Date().toLocaleDateString();
+    return {
+      invoiceNumber: invoiceData?.invoiceNumber || "N/A",
+      date,
+      name: `${invoiceData?.billTo?.firstName || "-"} ${invoiceData?.billTo?.lastName || "-"}`,
+      email: invoiceData?.billTo?.email || "-",
+      phone: invoiceData?.billTo?.phoneNumber || "-",
+      quarter: quarterFilter,
+      items: invoiceData?.items || [],
+      subtotal: invoiceData?.subtotal || 0,
+      vat: invoiceData?.vat || 0,
+      total: invoiceData?.total || 0,
+      walletBalance: walletBalance || 0,
+    };
+  };
+
+  const exportCSV = () => {
+    const d = buildStatementRows();
+    const lines = [
+      ["DCarbon Earnings Statement"],
+      ["Quarter", d.quarter],
+      ["Invoice #", d.invoiceNumber],
+      ["Date", d.date],
+      [],
+      ["BILL FROM"],
+      ["Name", d.name],
+      ["Email", d.email],
+      ["Phone", d.phone],
+      [],
+      ["BILL TO"],
+      ["Company", "DCarbon Solutions, Inc."],
+      ["Address", "8 The Green, STE A, Dover DE, 19901"],
+      ["Email", "support@dcarbon.solutions"],
+      [],
+      ["LINE ITEMS"],
+      ["QTY", "Item Code", "Description", "Unit Price", "Total"],
+      ...d.items.map((item) => [item.qty, item.itemCode, item.description, `$${item.unitPrice.toFixed(2)}`, `$${item.total.toFixed(2)}`]),
+      [],
+      ["SUMMARY"],
+      ["Subtotal", `$${d.subtotal.toFixed(2)}`],
+      ["V.A.T.", `$${d.vat.toFixed(2)}`],
+      ["Total (USD)", `$${d.total.toFixed(2)}`],
+      ["Available Balance", `$${d.walletBalance.toFixed(2)}`],
+    ];
+
+    const csv = lines.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    triggerDownload(blob, `earnings-statement-${quarterFilter}.csv`);
+  };
+
+  const exportPDF = async () => {
+    const { default: jsPDF } = await import("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js").then(() => ({ default: window.jspdf.jsPDF }));
+    const d = buildStatementRows();
+    const doc = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 40;
+    let y = 50;
+
+    const teal = [3, 153, 148];
+    const black = [30, 30, 30];
+    const gray = [100, 100, 100];
+
+    doc.setFillColor(...teal);
+    doc.rect(0, 0, pageWidth, 8, "F");
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(22);
+    doc.setTextColor(...teal);
+    doc.text("INVOICE", margin, y);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(...gray);
+    y += 16;
+    doc.text(`Invoice #: ${d.invoiceNumber}`, margin, y);
+    y += 12;
+    doc.text(`Date: ${d.date}`, margin, y);
+    y += 12;
+    doc.text(`Quarter: ${d.quarter}`, margin, y);
+
+    y += 24;
+    doc.setDrawColor(220, 220, 220);
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 16;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(...black);
+    doc.text("FROM:", margin, y);
+    doc.text("BILL TO:", pageWidth / 2, y);
+
+    doc.setFont("helvetica", "normal");
+    y += 13;
+    doc.setTextColor(...gray);
+    doc.text(d.name, margin, y);
+    doc.text("DCarbon Solutions, Inc.", pageWidth / 2, y);
+    y += 11;
+    doc.text(d.email, margin, y);
+    doc.text("8 The Green, STE A, Dover DE, 19901", pageWidth / 2, y);
+    y += 11;
+    doc.text(d.phone, margin, y);
+    doc.text("support@dcarbon.solutions", pageWidth / 2, y);
+
+    y += 24;
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 16;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(...teal);
+    doc.text("LINE ITEMS", margin, y);
+    y += 12;
+
+    const colWidths = [30, 70, 250, 70, 60];
+    const headers = ["QTY", "ITEM CODE", "DESCRIPTION", "UNIT PRICE", "TOTAL"];
+    const colX = [margin];
+    for (let i = 1; i < colWidths.length; i++) colX.push(colX[i - 1] + colWidths[i - 1]);
+
+    doc.setFillColor(245, 245, 245);
+    doc.rect(margin, y - 10, pageWidth - margin * 2, 16, "F");
+    doc.setTextColor(...black);
+    headers.forEach((h, i) => doc.text(h, colX[i], y));
+
+    y += 16;
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...gray);
+    d.items.forEach((item) => {
+      const vals = [String(item.qty), item.itemCode, item.description, `$${item.unitPrice.toFixed(2)}`, `$${item.total.toFixed(2)}`];
+      vals.forEach((v, i) => {
+        const text = doc.splitTextToSize(v, colWidths[i] - 4);
+        doc.text(text, colX[i], y);
+      });
+      y += 16;
+      doc.setDrawColor(235, 235, 235);
+      doc.line(margin, y - 4, pageWidth - margin, y - 4);
+    });
+
+    y += 12;
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 16;
+
+    const summaryX = pageWidth - margin - 160;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(...black);
+    const summaryRows = [["Subtotal", `$${d.subtotal.toFixed(2)}`], ["V.A.T.", `$${d.vat.toFixed(2)}`], ["Paid", "$0.00"], ["TOTAL (USD)", `$${d.total.toFixed(2)}`]];
+    summaryRows.forEach(([label, val], idx) => {
+      if (idx === summaryRows.length - 1) {
+        doc.setFillColor(...teal);
+        doc.rect(summaryX - 8, y - 11, 170, 16, "F");
+        doc.setTextColor(255, 255, 255);
+      } else {
+        doc.setTextColor(...gray);
+      }
+      doc.text(label, summaryX, y);
+      doc.text(val, pageWidth - margin, y, { align: "right" });
+      y += 16;
+    });
+
+    y += 8;
+    doc.setFillColor(3, 153, 148, 20);
+    doc.setDrawColor(...teal);
+    doc.roundedRect(margin, y, 140, 36, 4, 4, "FD");
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(...teal);
+    doc.text("Available Balance", margin + 10, y + 13);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.text(`$${d.walletBalance.toFixed(2)}`, margin + 10, y + 28);
+
+    y += 52;
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(8);
+    doc.setTextColor(...gray);
+    doc.text("Remittance: Please contact support@dcarbon.solutions for specific remittance instructions.", margin, y);
+
+    doc.setFillColor(...teal);
+    doc.rect(0, doc.internal.pageSize.getHeight() - 8, pageWidth, 8, "F");
+
+    const blob = doc.output("blob");
+    triggerDownload(blob, `earnings-statement-${quarterFilter}.pdf`);
+  };
+
+  const exportDOCX = async () => {
+    const d = buildStatementRows();
+
+    const { Document, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle, HeadingLevel, Packer } = await import("https://unpkg.com/docx@8.5.0/build/index.js");
+
+    const tealColor = "039994";
+    const grayColor = "666666";
+
+    const headerParagraph = (text) => new Paragraph({
+      children: [new TextRun({ text, bold: true, size: 28, color: tealColor })],
+      spacing: { after: 120 },
+    });
+
+    const labelValue = (label, value) => new Paragraph({
+      children: [
+        new TextRun({ text: `${label}: `, bold: true, size: 18 }),
+        new TextRun({ text: value, size: 18, color: grayColor }),
+      ],
+      spacing: { after: 60 },
+    });
+
+    const sectionTitle = (text) => new Paragraph({
+      children: [new TextRun({ text, bold: true, size: 20, color: tealColor })],
+      spacing: { before: 200, after: 100 },
+    });
+
+    const divider = () => new Paragraph({
+      border: { bottom: { style: BorderStyle.SINGLE, size: 1, color: "DDDDDD" } },
+      spacing: { after: 120 },
+    });
+
+    const itemsTable = new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      rows: [
+        new TableRow({
+          children: ["QTY", "ITEM CODE", "DESCRIPTION", "UNIT PRICE", "TOTAL"].map((h) =>
+            new TableCell({
+              children: [new Paragraph({ children: [new TextRun({ text: h, bold: true, size: 16, color: tealColor })] })],
+              shading: { fill: "F5F5F5" },
+            })
+          ),
+        }),
+        ...d.items.map((item) =>
+          new TableRow({
+            children: [
+              String(item.qty),
+              item.itemCode,
+              item.description,
+              `$${item.unitPrice.toFixed(2)}`,
+              `$${item.total.toFixed(2)}`,
+            ].map((val) =>
+              new TableCell({
+                children: [new Paragraph({ children: [new TextRun({ text: val, size: 16, color: grayColor })] })],
+              })
+            ),
+          })
+        ),
+      ],
+    });
+
+    const summaryTable = new Table({
+      width: { size: 40, type: WidthType.PERCENTAGE },
+      rows: [
+        ["Subtotal", `$${d.subtotal.toFixed(2)}`],
+        ["V.A.T.", `$${d.vat.toFixed(2)}`],
+        ["Paid", "$0.00"],
+        ["TOTAL (USD)", `$${d.total.toFixed(2)}`],
+      ].map(([label, val]) =>
+        new TableRow({
+          children: [
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: label, bold: true, size: 18 })] })] }),
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: val, size: 18, color: grayColor })], alignment: AlignmentType.RIGHT })] }),
+          ],
+        })
+      ),
+    });
+
+    const doc = new Document({
+      sections: [{
+        children: [
+          headerParagraph("INVOICE – DCarbon Earnings Statement"),
+          labelValue("Quarter", d.quarter),
+          labelValue("Invoice #", d.invoiceNumber),
+          labelValue("Date", d.date),
+          divider(),
+          sectionTitle("FROM"),
+          labelValue("Name", d.name),
+          labelValue("Email", d.email),
+          labelValue("Phone", d.phone),
+          sectionTitle("BILL TO"),
+          labelValue("Company", "DCarbon Solutions, Inc."),
+          labelValue("Address", "8 The Green, STE A, Dover DE, 19901"),
+          labelValue("Email", "support@dcarbon.solutions"),
+          divider(),
+          sectionTitle("LINE ITEMS"),
+          itemsTable,
+          new Paragraph({ spacing: { after: 200 } }),
+          sectionTitle("SUMMARY"),
+          summaryTable,
+          new Paragraph({ spacing: { after: 160 } }),
+          new Paragraph({
+            children: [new TextRun({ text: `Available Balance: $${d.walletBalance.toFixed(2)}`, bold: true, size: 20, color: tealColor })],
+            spacing: { after: 200 },
+          }),
+          divider(),
+          new Paragraph({
+            children: [new TextRun({ text: "Remittance: Please contact support@dcarbon.solutions for specific remittance instructions.", size: 16, italics: true, color: grayColor })],
+          }),
+        ],
+      }],
+    });
+
+    const blob = await Packer.toBlob(doc);
+    triggerDownload(blob, `earnings-statement-${quarterFilter}.docx`);
+  };
+
+  const triggerDownload = (blob, filename) => {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", filename);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
   const handleExport = async () => {
     setError("");
     setLoading(true);
     try {
-      await onExport({ format, email });
+      if (format === "csv") {
+        exportCSV();
+      } else if (format === "pdf") {
+        await exportPDF();
+      } else if (format === "docx") {
+        await exportDOCX();
+      }
       onClose();
     } catch (err) {
-      setError(err.message || "Export failed. Please try again.");
+      console.error("Export error:", err);
+      setError("Export failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -711,42 +854,32 @@ function ExportReportModal({ onClose, onExport, invoiceData, quarterFilter, wall
       <div className="bg-white rounded-lg p-6 w-full max-w-md">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-[#039994]">Export Earnings Statement</h2>
-          <button onClick={onClose} className="text-[#F04438] hover:text-red-600 text-xl" disabled={loading}>
-            ✕
-          </button>
+          <button onClick={onClose} className="text-[#F04438] hover:text-red-600 text-xl" disabled={loading}>✕</button>
         </div>
 
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Format</label>
-            <select
-              value={format}
-              onChange={(e) => setFormat(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994]"
-            >
-              <option value="csv">CSV</option>
-              <option value="pdf">PDF</option>
-              <option value="excel">Excel</option>
-            </select>
+            <div className="grid grid-cols-3 gap-2">
+              {[{ value: "csv", label: "CSV", icon: "📊" }, { value: "pdf", label: "PDF", icon: "📄" }, { value: "docx", label: "Word (.docx)", icon: "📝" }].map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => setFormat(opt.value)}
+                  className={`flex flex-col items-center justify-center p-3 border-2 rounded-lg text-sm transition-all ${format === opt.value ? "border-[#039994] bg-[#039994]/5 text-[#039994] font-medium" : "border-gray-200 text-gray-600 hover:border-gray-300"}`}
+                >
+                  <span className="text-xl mb-1">{opt.icon}</span>
+                  {opt.label}
+                </button>
+              ))}
+            </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Email (optional)</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter email address"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994]"
-            />
-          </div>
-
-          <div className="bg-blue-50 p-3 rounded-md border border-blue-200">
-            <p className="text-sm text-blue-700 font-medium mb-1">Export Details:</p>
-            <div className="text-xs text-blue-600">
-              <span className="block">• Quarter: {quarterFilter}</span>
-              <span className="block">• Invoice #: {invoiceData?.invoiceNumber}</span>
-              <span className="block">• Date: {new Date(invoiceData?.date).toLocaleDateString()}</span>
+          <div className="bg-gray-50 p-3 rounded-md border border-gray-200">
+            <p className="text-sm text-gray-700 font-medium mb-1">Export Details</p>
+            <div className="text-xs text-gray-500 space-y-0.5">
+              <div>Quarter: {quarterFilter}</div>
+              <div>Invoice #: {invoiceData?.invoiceNumber}</div>
+              <div>Date: {invoiceData?.date ? new Date(invoiceData.date).toLocaleDateString() : new Date().toLocaleDateString()}</div>
             </div>
           </div>
 
@@ -758,32 +891,28 @@ function ExportReportModal({ onClose, onExport, invoiceData, quarterFilter, wall
         </div>
 
         <div className="flex justify-end space-x-3 mt-6">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-100 text-sm"
-            disabled={loading}
-          >
+          <button onClick={onClose} className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-100 text-sm" disabled={loading}>
             Cancel
           </button>
           <button
             onClick={handleExport}
-            className="px-4 py-2 bg-[#039994] text-white rounded-md hover:bg-[#028c87] text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
             disabled={loading}
+            className="px-4 py-2 bg-[#039994] text-white rounded-md hover:bg-[#028c87] text-sm disabled:opacity-50 flex items-center space-x-2"
           >
             {loading ? (
               <>
                 <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                 </svg>
                 <span>Exporting...</span>
               </>
             ) : (
               <>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                 </svg>
-                <span>Export</span>
+                <span>Download {format.toUpperCase()}</span>
               </>
             )}
           </button>
