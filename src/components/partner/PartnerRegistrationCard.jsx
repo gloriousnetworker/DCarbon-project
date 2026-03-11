@@ -21,6 +21,7 @@ export default function StepOneCard() {
   const [customTerritory, setCustomTerritory] = useState('');
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [errors, setErrors] = useState({});
+  const [touchedFields, setTouchedFields] = useState({});
   const [isPartnerTypeLocked, setIsPartnerTypeLocked] = useState(false);
 
   const router = useRouter();
@@ -105,11 +106,13 @@ export default function StepOneCard() {
     
     if (input.length < phoneNumber.length) {
       setPhoneNumber(input);
+      markFieldTouched('phoneNumber');
       return;
     }
 
     const formatted = formatPhoneNumber(input);
     setPhoneNumber(formatted);
+    markFieldTouched('phoneNumber');
   };
 
   const handlePhoneKeyDown = (e) => {
@@ -141,12 +144,12 @@ export default function StepOneCard() {
   const getCompanyNamePlaceholder = () => {
     switch(partnerType) {
       case 'sales_agent':
-        return 'Sales agent company name';
+        return 'e.g., Solar Sales Inc.';
       case 'installer':
-        return 'Contractor/EPC company name';
+        return 'e.g., Green Energy Installers';
       case 'finance_company':
       default:
-        return 'Company name';
+        return 'e.g., Solar Finance Corp';
     }
   };
 
@@ -165,119 +168,140 @@ export default function StepOneCard() {
   const getEmailPlaceholder = () => {
     switch(partnerType) {
       case 'sales_agent':
-        return 'company@domain.com';
+        return 'sales@company.com';
       case 'installer':
-        return 'contractor@domain.com';
+        return 'installer@company.com';
       case 'finance_company':
       default:
-        return 'name@domain.com';
+        return 'info@company.com';
     }
   };
 
-  const validateField = (name, value) => {
-    const newErrors = { ...errors };
+  const getDisplayPartnerType = () => {
+    switch(partnerType) {
+      case 'sales_agent':
+        return 'Sales Agent';
+      case 'finance_company':
+        return 'Finance Company';
+      case 'installer':
+      default:
+        return 'Installer';
+    }
+  };
+
+  const markFieldTouched = (fieldName) => {
+    if (!touchedFields[fieldName]) {
+      setTouchedFields(prev => ({ ...prev, [fieldName]: true }));
+    }
+  };
+
+  const handleBlur = (fieldName) => {
+    markFieldTouched(fieldName);
+    validateField(fieldName);
+  };
+
+  const validateField = (name) => {
+    let errorMessage = '';
 
     switch (name) {
+      case 'partnerType':
+        if (!partnerType) {
+          errorMessage = 'Please select a partner type';
+        }
+        break;
+
       case 'partnerName':
-        if (!value.trim()) {
-          newErrors.partnerName = `${getCompanyNameLabel()} is required`;
-        } else if (value.trim().length < 2) {
-          newErrors.partnerName = `${getCompanyNameLabel()} must be at least 2 characters`;
-        } else if (value.trim().length > 100) {
-          newErrors.partnerName = `${getCompanyNameLabel()} must be less than 100 characters`;
-        } else {
-          delete newErrors.partnerName;
+        if (!partnerName.trim()) {
+          errorMessage = `${getCompanyNameLabel()} is required`;
+        } else if (partnerName.trim().length < 2) {
+          errorMessage = `${getCompanyNameLabel()} must be at least 2 characters`;
+        } else if (partnerName.trim().length > 100) {
+          errorMessage = `${getCompanyNameLabel()} must be less than 100 characters`;
+        } else if (!/^[a-zA-Z0-9\s\-'&.,]+$/.test(partnerName.trim())) {
+          errorMessage = 'Company name contains invalid characters';
         }
         break;
 
       case 'salesAgentName':
-        if (partnerType === 'sales_agent' && value.trim().length > 100) {
-          newErrors.salesAgentName = 'Sales agent name must be less than 100 characters';
-        } else {
-          delete newErrors.salesAgentName;
+        if (partnerType === 'sales_agent' && salesAgentName.trim().length > 100) {
+          errorMessage = 'Sales agent name must be less than 100 characters';
+        } else if (partnerType === 'sales_agent' && salesAgentName.trim() && !/^[a-zA-Z\s\-'.]+$/.test(salesAgentName.trim())) {
+          errorMessage = 'Sales agent name contains invalid characters';
         }
         break;
 
       case 'email':
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!value.trim()) {
-          newErrors.email = `${getEmailLabel()} is required`;
-        } else if (!emailRegex.test(value.trim())) {
-          newErrors.email = 'Please enter a valid email address';
-        } else if (value.trim().length > 254) {
-          newErrors.email = 'Email address is too long';
-        } else {
-          delete newErrors.email;
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        if (!email.trim()) {
+          errorMessage = `${getEmailLabel()} is required`;
+        } else if (!emailRegex.test(email.trim())) {
+          errorMessage = 'Please enter a valid email address (e.g., name@domain.com)';
+        } else if (email.trim().length > 254) {
+          errorMessage = 'Email address is too long';
         }
         break;
 
       case 'phoneNumber':
         const phoneRegex = /^\+1 \d{3}-\d{3}-\d{4}$/;
-        if (!value.trim()) {
-          newErrors.phoneNumber = 'Phone number is required';
-        } else if (!phoneRegex.test(value.trim())) {
-          newErrors.phoneNumber = 'Please enter a valid phone number in format +1 000-000-0000';
-        } else {
-          delete newErrors.phoneNumber;
-        }
-        break;
-
-      case 'address1':
-        if (!value.trim()) {
-          newErrors.address1 = 'Address is required';
-        } else if (value.trim().length < 5) {
-          newErrors.address1 = 'Address must be at least 5 characters';
-        } else if (value.trim().length > 100) {
-          newErrors.address1 = 'Address must be less than 100 characters';
-        } else {
-          delete newErrors.address1;
-        }
-        break;
-
-      case 'city':
-        if (!value.trim()) {
-          newErrors.city = 'City is required';
-        } else if (value.trim().length < 2) {
-          newErrors.city = 'City must be at least 2 characters';
-        } else if (value.trim().length > 50) {
-          newErrors.city = 'City must be less than 50 characters';
-        } else if (!/^[a-zA-Z\s\-'\.]+$/.test(value.trim())) {
-          newErrors.city = 'City contains invalid characters';
-        } else {
-          delete newErrors.city;
-        }
-        break;
-
-      case 'state':
-        if (!value.trim()) {
-          newErrors.state = 'State is required';
-        } else if (value.trim().length < 2) {
-          newErrors.state = 'State must be at least 2 characters';
-        } else if (value.trim().length > 50) {
-          newErrors.state = 'State must be less than 50 characters';
-        } else if (!/^[a-zA-Z\s\-'\.]+$/.test(value.trim())) {
-          newErrors.state = 'State contains invalid characters';
-        } else {
-          delete newErrors.state;
-        }
-        break;
-
-      case 'zipCode':
-        const zipRegex = /^[0-9]{5}(-[0-9]{4})?$/;
-        if (!value.trim()) {
-          newErrors.zipCode = 'Zip code is required';
-        } else if (!zipRegex.test(value.trim())) {
-          newErrors.zipCode = 'Please enter a valid zip code (12345 or 12345-6789)';
-        } else {
-          delete newErrors.zipCode;
+        if (!phoneNumber.trim()) {
+          errorMessage = 'Phone number is required';
+        } else if (!phoneRegex.test(phoneNumber.trim())) {
+          errorMessage = 'Please use format: +1 555-123-4567';
         }
         break;
 
       case 'territory':
-        if (!value || value.length === 0) {
-          newErrors.territory = 'At least one territory is required';
-        } else {
-          delete newErrors.territory;
+        if (!territory || territory.length === 0) {
+          errorMessage = 'Please select at least one county or territory';
+        }
+        break;
+
+      case 'address1':
+        if (!address1.trim()) {
+          errorMessage = 'Street address is required';
+        } else if (address1.trim().length < 5) {
+          errorMessage = 'Please enter a complete street address';
+        } else if (address1.trim().length > 100) {
+          errorMessage = 'Address must be less than 100 characters';
+        }
+        break;
+
+      case 'address2':
+        if (address2.trim().length > 100) {
+          errorMessage = 'Address line 2 must be less than 100 characters';
+        }
+        break;
+
+      case 'city':
+        if (!city.trim()) {
+          errorMessage = 'City is required';
+        } else if (city.trim().length < 2) {
+          errorMessage = 'Please enter a valid city name';
+        } else if (city.trim().length > 50) {
+          errorMessage = 'City must be less than 50 characters';
+        } else if (!/^[a-zA-Z\s\-'.]+$/.test(city.trim())) {
+          errorMessage = 'City name contains invalid characters';
+        }
+        break;
+
+      case 'state':
+        if (!state.trim()) {
+          errorMessage = 'State is required';
+        } else if (state.trim().length < 2) {
+          errorMessage = 'Please enter a valid state';
+        } else if (state.trim().length > 50) {
+          errorMessage = 'State must be less than 50 characters';
+        } else if (!/^[a-zA-Z\s\-'.]+$/.test(state.trim())) {
+          errorMessage = 'State contains invalid characters';
+        }
+        break;
+
+      case 'zipCode':
+        const zipRegex = /^\d{5}(-\d{4})?$/;
+        if (!zipCode.trim()) {
+          errorMessage = 'ZIP code is required';
+        } else if (!zipRegex.test(zipCode.trim())) {
+          errorMessage = 'Enter 5-digit ZIP (e.g., 90210) or ZIP+4 (e.g., 90210-1234)';
         }
         break;
 
@@ -285,44 +309,76 @@ export default function StepOneCard() {
         break;
     }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    setErrors(prev => ({
+      ...prev,
+      [name]: errorMessage
+    }));
+
+    return !errorMessage;
   };
 
   const validateAllFields = () => {
-    const fields = {
-      partnerName: partnerName.trim(),
-      email: email.trim(),
-      phoneNumber: phoneNumber.trim(),
-      address1: address1.trim(),
-      city: city.trim(),
-      state: state.trim(),
-      zipCode: zipCode.trim(),
-      territory: territory
-    };
+    const fieldsToValidate = [
+      'partnerType',
+      'partnerName',
+      'email',
+      'phoneNumber',
+      'territory',
+      'address1',
+      'city',
+      'state',
+      'zipCode'
+    ];
+
+    if (partnerType === 'sales_agent') {
+      fieldsToValidate.push('salesAgentName');
+    }
 
     let isValid = true;
     const newErrors = {};
 
-    Object.keys(fields).forEach(fieldName => {
-      const fieldIsValid = validateField(fieldName, fields[fieldName]);
-      if (!fieldIsValid) {
+    fieldsToValidate.forEach(fieldName => {
+      const fieldValid = validateField(fieldName);
+      if (!fieldValid) {
         isValid = false;
       }
     });
 
     if (address2.trim().length > 100) {
-      newErrors.address2 = 'Address 2 must be less than 100 characters';
+      newErrors.address2 = 'Address line 2 must be less than 100 characters';
       isValid = false;
     }
 
-    if (partnerType === 'sales_agent' && salesAgentName.trim().length > 100) {
-      newErrors.salesAgentName = 'Sales agent name must be less than 100 characters';
-      isValid = false;
+    setErrors(prev => ({ ...prev, ...newErrors }));
+
+    const allTouched = {};
+    fieldsToValidate.forEach(field => {
+      allTouched[field] = true;
+    });
+    setTouchedFields(prev => ({ ...prev, ...allTouched }));
+
+    if (!isValid) {
+      let errorList = [];
+      fieldsToValidate.forEach(field => {
+        if (errors[field]) errorList.push(errors[field]);
+      });
+      if (newErrors.address2) errorList.push(newErrors.address2);
+      
+      toast.error(
+        <div>
+          <p className="font-semibold mb-1">Please fix the following:</p>
+          <ul className="list-disc pl-4 text-sm">
+            {errorList.slice(0, 3).map((err, idx) => (
+              <li key={idx}>{err}</li>
+            ))}
+            {errorList.length > 3 && <li>And {errorList.length - 3} more issues...</li>}
+          </ul>
+        </div>,
+        { duration: 5000 }
+      );
     }
 
-    setErrors(newErrors);
-    return isValid && Object.keys(newErrors).length === 0;
+    return isValid;
   };
 
   const checkAuthenticationBeforeSubmit = () => {
@@ -330,12 +386,12 @@ export default function StepOneCard() {
     const authToken = localStorage.getItem('authToken');
 
     if (!userId || !authToken) {
-      toast.error('Authentication required. Please log in again.');
+      toast.error('Your session has expired. Please log in again.', { duration: 4000 });
       return false;
     }
 
     if (userId.trim() === '' || authToken.trim() === '') {
-      toast.error('Invalid authentication. Please log in again.');
+      toast.error('Invalid authentication. Please log in again.', { duration: 4000 });
       return false;
     }
 
@@ -346,21 +402,35 @@ export default function StepOneCard() {
     const selectedOptions = Array.from(e.target.selectedOptions);
     const selectedValues = selectedOptions.map(option => option.value);
     setTerritory(selectedValues);
-    setTimeout(() => {
-      validateField('territory', selectedValues);
-    }, 300);
+    markFieldTouched('territory');
+    validateField('territory');
   };
 
   const addCustomTerritory = () => {
-    if (customTerritory.trim() && !territory.includes(customTerritory.trim())) {
-      setTerritory([...territory, customTerritory.trim()]);
-      setCustomTerritory('');
-      setShowCustomInput(false);
+    if (!customTerritory.trim()) {
+      toast.error('Please enter a territory name');
+      return;
     }
+
+    if (territory.includes(customTerritory.trim())) {
+      toast.error('This territory is already selected');
+      return;
+    }
+
+    setTerritory([...territory, customTerritory.trim()]);
+    setCustomTerritory('');
+    setShowCustomInput(false);
+    markFieldTouched('territory');
+    validateField('territory');
+    toast.success(`Added "${customTerritory.trim()}" to territories`);
   };
 
   const removeTerritory = (territoryToRemove) => {
     setTerritory(territory.filter(t => t !== territoryToRemove));
+    if (territory.length === 1) {
+      validateField('territory');
+    }
+    toast.success(`Removed "${territoryToRemove}" from territories`);
   };
 
   const handleSubmit = async () => {
@@ -371,7 +441,6 @@ export default function StepOneCard() {
     }
 
     if (!validateAllFields()) {
-      toast.error('Please fix all errors before proceeding');
       return;
     }
 
@@ -415,44 +484,55 @@ export default function StepOneCard() {
       );
 
       if (response.data && response.data.status === 'success') {
-        toast.success('Partner registration successful');
+        toast.success(`${getDisplayPartnerType()} registration successful!`, { duration: 3000 });
         localStorage.setItem('partnerType', partnerType);
         
-        switch(partnerType) {
-          case 'sales_agent':
-            router.push('/register/partner-user-registration/sales-agent-agreement');
-            break;
-          case 'finance_company':
-            router.push('/register/partner-user-registration/finance-company-agreement');
-            break;
-          case 'installer':
-          default:
-            router.push('/register/partner-user-registration/partner-installer-agreement');
-        }
+        setTimeout(() => {
+          switch(partnerType) {
+            case 'sales_agent':
+              router.push('/register/partner-user-registration/sales-agent-agreement');
+              break;
+            case 'finance_company':
+              router.push('/register/partner-user-registration/finance-company-agreement');
+              break;
+            case 'installer':
+            default:
+              router.push('/register/partner-user-registration/partner-installer-agreement');
+          }
+        }, 500);
       } else {
-        const errorMessage = response.data?.message || 'Partner registration failed. Please try again.';
+        const errorMessage = response.data?.message || 'Registration failed. Please try again.';
         throw new Error(errorMessage);
       }
     } catch (error) {
       console.error('Registration error:', error);
       
-      let errorMessage = 'Partner registration failed. Please try again.';
+      let errorMessage = 'Unable to complete registration. ';
       
       if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
+        const serverMsg = error.response.data.message;
+        if (serverMsg.includes('duplicate') || serverMsg.includes('already exists')) {
+          errorMessage = 'A partner with this email or company name already exists. Please use different information.';
+        } else if (serverMsg.includes('validation')) {
+          errorMessage = 'Some information provided is invalid. Please check your entries.';
+        } else {
+          errorMessage = serverMsg;
+        }
       } else if (error.message && error.message !== 'Network Error') {
         errorMessage = error.message;
       } else if (error.code === 'ECONNABORTED') {
-        errorMessage = 'Request timeout. Please check your connection and try again.';
+        errorMessage = 'Connection timeout. Please check your internet and try again.';
       } else if (error.response?.status === 401) {
-        errorMessage = 'Authentication failed. Please log in again.';
+        errorMessage = 'Your session has expired. Please log in again.';
       } else if (error.response?.status === 409) {
-        errorMessage = 'Partner already exists with this information.';
+        errorMessage = 'This partner information is already registered. Please use different details.';
+      } else if (error.response?.status === 400) {
+        errorMessage = 'Please check all fields and try again.';
       } else if (error.response?.status >= 500) {
-        errorMessage = 'Server error. Please try again later.';
+        errorMessage = 'Server error. Please try again later or contact support.';
       }
       
-      toast.error(errorMessage);
+      toast.error(errorMessage, { duration: 5000 });
     } finally {
       setLoading(false);
     }
@@ -461,59 +541,69 @@ export default function StepOneCard() {
   const handleInputChange = (setter, fieldName) => (e) => {
     const value = e.target.value;
     setter(value);
-    
-    setTimeout(() => {
-      validateField(fieldName, value);
-    }, 300);
+    markFieldTouched(fieldName);
   };
 
   const getInputClassName = (fieldName) => {
-    const baseClass = "w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]";
-    const errorClass = "border-red-500 focus:ring-red-500";
-    const normalClass = "border-gray-300 focus:ring-[#039994]";
+    const baseClass = "w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E] transition-colors duration-200";
     
-    return `${baseClass} ${errors[fieldName] ? errorClass : normalClass}`;
+    if (touchedFields[fieldName] && errors[fieldName]) {
+      return `${baseClass} border-red-500 focus:ring-red-500 bg-red-50`;
+    }
+    
+    if (touchedFields[fieldName] && !errors[fieldName] && 
+        ((fieldName === 'partnerName' && partnerName) || 
+         (fieldName === 'email' && email) ||
+         (fieldName === 'phoneNumber' && phoneNumber) ||
+         (fieldName === 'address1' && address1) ||
+         (fieldName === 'city' && city) ||
+         (fieldName === 'state' && state) ||
+         (fieldName === 'zipCode' && zipCode) ||
+         (fieldName === 'territory' && territory.length > 0) ||
+         (fieldName === 'partnerType' && partnerType))) {
+      return `${baseClass} border-green-500 focus:ring-green-500 bg-green-50`;
+    }
+    
+    return `${baseClass} border-gray-300 focus:ring-[#039994]`;
   };
 
   const isFormValid = () => {
-    return partnerName.trim() && 
-           email.trim() && 
-           phoneNumber.trim() && 
-           address1.trim() && 
-           city.trim() && 
-           state.trim() && 
-           zipCode.trim() && 
-           partnerType &&
-           territory.length > 0 &&
-           Object.keys(errors).length === 0;
-  };
+    const requiredFields = ['partnerType', 'partnerName', 'email', 'phoneNumber', 'address1', 'city', 'state', 'zipCode'];
+    const hasRequiredFields = requiredFields.every(field => {
+      switch(field) {
+        case 'partnerType': return partnerType;
+        case 'partnerName': return partnerName.trim();
+        case 'email': return email.trim();
+        case 'phoneNumber': return phoneNumber.trim();
+        case 'address1': return address1.trim();
+        case 'city': return city.trim();
+        case 'state': return state.trim();
+        case 'zipCode': return zipCode.trim();
+        default: return true;
+      }
+    });
 
-  const getDisplayPartnerType = () => {
-    switch(partnerType) {
-      case 'sales_agent':
-        return 'Sales Agent';
-      case 'finance_company':
-        return 'Finance Company';
-      case 'installer':
-      default:
-        return 'Installer';
-    }
+    const hasTerritory = territory.length > 0;
+    const hasNoErrors = Object.values(errors).every(err => !err);
+
+    return hasRequiredFields && hasTerritory && hasNoErrors;
   };
 
   return (
     <>
       {loading && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg flex flex-col items-center">
+          <div className="bg-white p-6 rounded-lg shadow-lg flex flex-col items-center max-w-sm mx-4">
             <div className="h-12 w-12 border-4 border-t-4 border-gray-300 border-t-[#039994] rounded-full animate-spin mb-4"></div>
-            <p className="text-gray-600 font-sfpro">Processing registration...</p>
+            <p className="text-gray-600 font-sfpro text-center">Creating your partner account...</p>
+            <p className="text-xs text-gray-400 mt-2 font-sfpro">This may take a moment</p>
           </div>
         </div>
       )}
 
       <div className="min-h-screen w-full flex flex-col items-center justify-center py-8 px-4 bg-white">
         <div className="relative w-full flex flex-col items-center mb-2">
-          <div className="absolute left-4 top-0 text-[#039994] cursor-pointer z-10" onClick={handleBackClick}>
+          <div className="absolute left-4 top-0 text-[#039994] cursor-pointer z-10 hover:text-[#02857f] transition-colors" onClick={handleBackClick}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className="h-6 w-6"
@@ -535,7 +625,7 @@ export default function StepOneCard() {
           <div className="flex-1 h-1 bg-gray-200 rounded-full mr-4">
             <div className="h-1 bg-[#039994] w-1/2 rounded-full" />
           </div>
-          <span className="text-sm font-medium text-gray-500 font-sfpro">01/02</span>
+          <span className="text-sm font-medium text-gray-500 font-sfpro">Step 1 of 2</span>
         </div>
 
         <div className="w-full max-w-md space-y-6">
@@ -551,20 +641,25 @@ export default function StepOneCard() {
                 className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm bg-gray-100 cursor-not-allowed font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]"
               />
             ) : (
-              <select
-                value={partnerType}
-                onChange={handleInputChange(setPartnerType, 'partnerType')}
-                className={getInputClassName('partnerType') + " bg-white"}
-                required
-              >
-                <option value="">Select partner type</option>
-                <option value="installer">Installer</option>
-                <option value="sales_agent">Sales Agent</option>
-                <option value="finance_company">Finance Company</option>
-              </select>
-            )}
-            {errors.partnerType && (
-              <p className="mt-1 text-sm text-red-500 font-sfpro">{errors.partnerType}</p>
+              <>
+                <select
+                  value={partnerType}
+                  onChange={handleInputChange(setPartnerType, 'partnerType')}
+                  onBlur={() => handleBlur('partnerType')}
+                  className={getInputClassName('partnerType') + " bg-white"}
+                  required
+                >
+                  <option value="">-- Select partner type --</option>
+                  <option value="installer">Installer / EPC</option>
+                  <option value="sales_agent">Sales Agent</option>
+                  <option value="finance_company">Finance Company</option>
+                </select>
+                {touchedFields.partnerType && errors.partnerType && (
+                  <p className="mt-1 text-sm text-red-500 font-sfpro flex items-start">
+                    <span className="mr-1">⚠️</span> {errors.partnerType}
+                  </p>
+                )}
+              </>
             )}
           </div>
 
@@ -576,32 +671,39 @@ export default function StepOneCard() {
               type="text"
               value={partnerName}
               onChange={handleInputChange(setPartnerName, 'partnerName')}
+              onBlur={() => handleBlur('partnerName')}
               placeholder={getCompanyNamePlaceholder()}
               className={getInputClassName('partnerName')}
               required
               maxLength={100}
             />
-            {errors.partnerName && (
-              <p className="mt-1 text-sm text-red-500 font-sfpro">{errors.partnerName}</p>
+            {touchedFields.partnerName && errors.partnerName && (
+              <p className="mt-1 text-sm text-red-500 font-sfpro flex items-start">
+                <span className="mr-1">⚠️</span> {errors.partnerName}
+              </p>
             )}
           </div>
 
           {partnerType === 'sales_agent' && (
             <div>
               <label className="block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]">
-                Sales Agent Name
+                Sales Agent Name <span className="text-gray-500 text-xs">(Optional)</span>
               </label>
               <input
                 type="text"
                 value={salesAgentName}
                 onChange={handleInputChange(setSalesAgentName, 'salesAgentName')}
-                placeholder="Enter sales agent name"
+                onBlur={() => handleBlur('salesAgentName')}
+                placeholder="e.g., John Smith"
                 className={getInputClassName('salesAgentName')}
                 maxLength={100}
               />
-              {errors.salesAgentName && (
-                <p className="mt-1 text-sm text-red-500 font-sfpro">{errors.salesAgentName}</p>
+              {touchedFields.salesAgentName && errors.salesAgentName && (
+                <p className="mt-1 text-sm text-red-500 font-sfpro flex items-start">
+                  <span className="mr-1">⚠️</span> {errors.salesAgentName}
+                </p>
               )}
+              <p className="mt-1 text-xs text-gray-500 font-sfpro">Primary contact person for sales</p>
             </div>
           )}
 
@@ -614,12 +716,15 @@ export default function StepOneCard() {
               value={phoneNumber}
               onChange={handlePhoneNumberChange}
               onKeyDown={handlePhoneKeyDown}
-              placeholder="+1 000-000-0000"
+              onBlur={() => handleBlur('phoneNumber')}
+              placeholder="+1 555-123-4567"
               className={getInputClassName('phoneNumber')}
               required
             />
-            {errors.phoneNumber && (
-              <p className="mt-1 text-sm text-red-500 font-sfpro">{errors.phoneNumber}</p>
+            {touchedFields.phoneNumber && errors.phoneNumber && (
+              <p className="mt-1 text-sm text-red-500 font-sfpro flex items-start">
+                <span className="mr-1">⚠️</span> {errors.phoneNumber}
+              </p>
             )}
           </div>
 
@@ -631,41 +736,48 @@ export default function StepOneCard() {
               type="email"
               value={email}
               onChange={handleInputChange(setEmail, 'email')}
+              onBlur={() => handleBlur('email')}
               placeholder={getEmailPlaceholder()}
               className={getInputClassName('email')}
               required
               maxLength={254}
             />
-            {errors.email && (
-              <p className="mt-1 text-sm text-red-500 font-sfpro">{errors.email}</p>
+            {touchedFields.email && errors.email && (
+              <p className="mt-1 text-sm text-red-500 font-sfpro flex items-start">
+                <span className="mr-1">⚠️</span> {errors.email}
+              </p>
             )}
           </div>
 
           <div>
             <label className="block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]">
-              Territory (California Counties) <span className="text-red-500">*</span>
+              Territory (Service Areas) <span className="text-red-500">*</span>
             </label>
             <select
               multiple
               value={territory}
               onChange={handleTerritoryChange}
+              onBlur={() => handleBlur('territory')}
               className={getInputClassName('territory') + " h-32"}
+              size={6}
               required
             >
               {californiaCounties.map(county => (
-                <option key={county} value={county}>{county}</option>
+                <option key={county} value={county} className="py-1">{county}</option>
               ))}
             </select>
-            <p className="mt-1 text-sm text-gray-500 font-sfpro">Hold Ctrl/Cmd to select multiple counties</p>
+            <p className="mt-1 text-xs text-gray-500 font-sfpro">
+              💡 Hold Ctrl (Windows) or Cmd (Mac) to select multiple counties
+            </p>
             
-            <div className="mt-2">
+            <div className="mt-3">
               {!showCustomInput ? (
                 <button
                   type="button"
                   onClick={() => setShowCustomInput(true)}
-                  className="text-sm text-[#039994] hover:underline font-sfpro"
+                  className="text-sm text-[#039994] hover:underline font-sfpro flex items-center"
                 >
-                  + Add custom territory
+                  <span className="mr-1">+</span> Add custom territory
                 </button>
               ) : (
                 <div className="flex space-x-2">
@@ -673,20 +785,24 @@ export default function StepOneCard() {
                     type="text"
                     value={customTerritory}
                     onChange={(e) => setCustomTerritory(e.target.value)}
-                    placeholder="Enter custom territory"
-                    className="flex-1 rounded-md border border-gray-300 px-3 py-1 text-sm font-sfpro"
+                    placeholder="Enter territory name"
+                    className="flex-1 rounded-md border border-gray-300 px-3 py-1 text-sm font-sfpro focus:outline-none focus:ring-1 focus:ring-[#039994]"
+                    autoFocus
                   />
                   <button
                     type="button"
                     onClick={addCustomTerritory}
-                    className="bg-[#039994] text-white px-3 py-1 rounded-md text-sm font-sfpro"
+                    className="bg-[#039994] text-white px-3 py-1 rounded-md text-sm font-sfpro hover:bg-[#02857f] transition-colors"
                   >
                     Add
                   </button>
                   <button
                     type="button"
-                    onClick={() => setShowCustomInput(false)}
-                    className="bg-gray-300 text-gray-700 px-3 py-1 rounded-md text-sm font-sfpro"
+                    onClick={() => {
+                      setShowCustomInput(false);
+                      setCustomTerritory('');
+                    }}
+                    className="bg-gray-300 text-gray-700 px-3 py-1 rounded-md text-sm font-sfpro hover:bg-gray-400 transition-colors"
                   >
                     Cancel
                   </button>
@@ -695,16 +811,19 @@ export default function StepOneCard() {
             </div>
 
             {territory.length > 0 && (
-              <div className="mt-2">
-                <p className="text-sm font-medium text-gray-700 font-sfpro mb-1">Selected Territories:</p>
-                <div className="flex flex-wrap gap-2">
+              <div className="mt-3">
+                <p className="text-sm font-medium text-gray-700 font-sfpro mb-2">
+                  Selected ({territory.length}):
+                </p>
+                <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto p-2 border border-gray-200 rounded-md">
                   {territory.map((terr, index) => (
-                    <span key={index} className="bg-gray-100 text-gray-700 px-2 py-1 rounded-md text-sm font-sfpro flex items-center">
+                    <span key={index} className="bg-gray-100 text-gray-700 px-2 py-1 rounded-md text-sm font-sfpro flex items-center group">
                       {terr}
                       <button
                         type="button"
                         onClick={() => removeTerritory(terr)}
-                        className="ml-1 text-red-500 hover:text-red-700"
+                        className="ml-1 text-red-500 hover:text-red-700 font-bold opacity-60 group-hover:opacity-100 transition-opacity"
+                        title="Remove"
                       >
                         ×
                       </button>
@@ -714,43 +833,51 @@ export default function StepOneCard() {
               </div>
             )}
 
-            {errors.territory && (
-              <p className="mt-1 text-sm text-red-500 font-sfpro">{errors.territory}</p>
+            {touchedFields.territory && errors.territory && (
+              <p className="mt-2 text-sm text-red-500 font-sfpro flex items-start">
+                <span className="mr-1">⚠️</span> {errors.territory}
+              </p>
             )}
           </div>
 
           <div>
             <label className="block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]">
-              Address 1 <span className="text-red-500">*</span>
+              Street Address <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               value={address1}
               onChange={handleInputChange(setAddress1, 'address1')}
-              placeholder="123 Main St"
+              onBlur={() => handleBlur('address1')}
+              placeholder="123 Main Street"
               className={getInputClassName('address1')}
               required
               maxLength={100}
             />
-            {errors.address1 && (
-              <p className="mt-1 text-sm text-red-500 font-sfpro">{errors.address1}</p>
+            {touchedFields.address1 && errors.address1 && (
+              <p className="mt-1 text-sm text-red-500 font-sfpro flex items-start">
+                <span className="mr-1">⚠️</span> {errors.address1}
+              </p>
             )}
           </div>
 
           <div>
             <label className="block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]">
-              Address 2
+              Address Line 2 <span className="text-gray-500 text-xs">(Optional)</span>
             </label>
             <input
               type="text"
               value={address2}
               onChange={handleInputChange(setAddress2, 'address2')}
-              placeholder="Apt, suite, unit, etc."
+              onBlur={() => handleBlur('address2')}
+              placeholder="Suite 200, Building B"
               className={getInputClassName('address2')}
               maxLength={100}
             />
-            {errors.address2 && (
-              <p className="mt-1 text-sm text-red-500 font-sfpro">{errors.address2}</p>
+            {touchedFields.address2 && errors.address2 && (
+              <p className="mt-1 text-sm text-red-500 font-sfpro flex items-start">
+                <span className="mr-1">⚠️</span> {errors.address2}
+              </p>
             )}
           </div>
 
@@ -763,13 +890,16 @@ export default function StepOneCard() {
                 type="text"
                 value={city}
                 onChange={handleInputChange(setCity, 'city')}
-                placeholder="City"
+                onBlur={() => handleBlur('city')}
+                placeholder="Los Angeles"
                 className={getInputClassName('city')}
                 required
                 maxLength={50}
               />
-              {errors.city && (
-                <p className="mt-1 text-sm text-red-500 font-sfpro">{errors.city}</p>
+              {touchedFields.city && errors.city && (
+                <p className="mt-1 text-sm text-red-500 font-sfpro flex items-start">
+                  <span className="mr-1">⚠️</span> {errors.city}
+                </p>
               )}
             </div>
             <div className="flex-1">
@@ -780,52 +910,64 @@ export default function StepOneCard() {
                 type="text"
                 value={state}
                 onChange={handleInputChange(setState, 'state')}
-                placeholder="State"
+                onBlur={() => handleBlur('state')}
+                placeholder="California"
                 className={getInputClassName('state')}
                 required
                 maxLength={50}
               />
-              {errors.state && (
-                <p className="mt-1 text-sm text-red-500 font-sfpro">{errors.state}</p>
+              {touchedFields.state && errors.state && (
+                <p className="mt-1 text-sm text-red-500 font-sfpro flex items-start">
+                  <span className="mr-1">⚠️</span> {errors.state}
+                </p>
               )}
             </div>
           </div>
 
           <div>
             <label className="block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]">
-              Zip Code <span className="text-red-500">*</span>
+              ZIP Code <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               value={zipCode}
               onChange={handleInputChange(setZipCode, 'zipCode')}
-              placeholder="12345"
+              onBlur={() => handleBlur('zipCode')}
+              placeholder="90210"
               className={getInputClassName('zipCode')}
               required
               maxLength={10}
             />
-            {errors.zipCode && (
-              <p className="mt-1 text-sm text-red-500 font-sfpro">{errors.zipCode}</p>
+            {touchedFields.zipCode && errors.zipCode && (
+              <p className="mt-1 text-sm text-red-500 font-sfpro flex items-start">
+                <span className="mr-1">⚠️</span> {errors.zipCode}
+              </p>
             )}
           </div>
         </div>
 
-        <div className="w-full max-w-md mt-6">
+        <div className="w-full max-w-md mt-8">
           <button
             onClick={handleSubmit}
             disabled={loading || !isFormValid()}
-            className="w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+            className="w-full rounded-md bg-[#039994] text-white font-semibold py-3 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 text-lg"
           >
-            {loading ? 'Processing...' : 'Next'}
+            {loading ? 'Creating Account...' : 'Continue to Agreement →'}
           </button>
+          
+          {!isFormValid() && (
+            <p className="mt-2 text-sm text-amber-600 font-sfpro text-center">
+              ⚠️ Please complete all required fields correctly
+            </p>
+          )}
         </div>
 
-        <div className="mt-6 text-center font-sfpro text-[10px] font-[800] leading-[100%] tracking-[-0.05em] underline text-[#1E1E1E]">
-          By clicking on 'Next', you agree to our{' '}
+        <div className="mt-8 text-center font-sfpro text-xs text-gray-500 max-w-md">
+          By clicking 'Continue to Agreement', you agree to our{' '}
           <a href="/terms" className="text-[#039994] hover:underline font-medium">
             Terms and Conditions
           </a>{' '}
-          &{' '}
+          and{' '}
           <a href="/privacy" className="text-[#039994] hover:underline font-medium">
             Privacy Policy
           </a>
