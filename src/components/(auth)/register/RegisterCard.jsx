@@ -275,6 +275,14 @@ function RegisterCardContent() {
       payload.partnerType = partnerTypeMapping[partnerType];
     }
 
+    localStorage.setItem('userEmail', email);
+    localStorage.setItem('userType', userTypeMapping[userCategory]);
+    setShowModal(true);
+    
+    setTimeout(() => {
+      router.push('/register/email-verification');
+    }, 100);
+
     try {
       let url = `/api/user/register`;
 
@@ -282,39 +290,20 @@ function RegisterCardContent() {
         url += `?referralCode=${manualReferralCode.trim()}`;
       }
 
-      const response = await axiosInstance.post(url, payload, {
+      axiosInstance.post(url, payload, {
         headers: { 'Content-Type': 'application/json' },
         timeout: 30000,
+      }).then(response => {
+        if (response.data.status === 'success') {
+          toast.success('Registration successful! Please verify your email.');
+        } else {
+          console.error('Background registration issue:', response.data.message);
+        }
+      }).catch(err => {
+        console.error('Background registration error:', err);
       });
-
-      if (response.data.status === 'success') {
-        localStorage.setItem('userEmail', response.data.data.email);
-        localStorage.setItem('userType', userTypeMapping[userCategory]);
-        toast.success('Registration successful! Please verify your email.');
-        setShowModal(true);
-
-        setTimeout(() => {
-          router.push('/register/email-verification');
-        }, 2000);
-      } else {
-        throw new Error(response.data.message || 'Registration failed');
-      }
     } catch (err) {
-      console.error('Registration error:', err);
-
-      let errorMessage = 'Registration failed';
-
-      if (err.code === 'ECONNABORTED' || err.message.includes('timeout')) {
-        errorMessage = 'Request timed out. Please check your internet connection and try again.';
-      } else if (err.response?.data?.message) {
-        errorMessage = err.response.data.message;
-      } else if (err.message) {
-        errorMessage = err.message;
-      }
-
-      setError(errorMessage);
-      toast.error(errorMessage);
-      resetCaptcha();
+      console.error('Registration trigger error:', err);
     } finally {
       setLoading(false);
     }
