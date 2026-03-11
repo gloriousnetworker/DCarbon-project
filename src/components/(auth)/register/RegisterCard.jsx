@@ -250,7 +250,9 @@ function RegisterCardContent() {
     return true;
   };
 
-  const handleRegister = async () => {
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    
     if (!captchaToken) {
       setCaptchaError('Please complete the captcha verification before registering.');
       return;
@@ -259,6 +261,12 @@ function RegisterCardContent() {
     if (!validateForm()) return;
 
     setLoading(true);
+
+    localStorage.setItem('userEmail', email);
+    localStorage.setItem('userType', userTypeMapping[userCategory]);
+    setShowModal(true);
+    
+    router.push('/register/email-verification');
 
     const payload = {
       email,
@@ -275,14 +283,6 @@ function RegisterCardContent() {
       payload.partnerType = partnerTypeMapping[partnerType];
     }
 
-    localStorage.setItem('userEmail', email);
-    localStorage.setItem('userType', userTypeMapping[userCategory]);
-    setShowModal(true);
-    
-    setTimeout(() => {
-      router.push('/register/email-verification');
-    }, 100);
-
     try {
       let url = `/api/user/register`;
 
@@ -290,22 +290,15 @@ function RegisterCardContent() {
         url += `?referralCode=${manualReferralCode.trim()}`;
       }
 
-      axiosInstance.post(url, payload, {
+      await axiosInstance.post(url, payload, {
         headers: { 'Content-Type': 'application/json' },
         timeout: 30000,
-      }).then(response => {
-        if (response.data.status === 'success') {
-          toast.success('Registration successful! Please verify your email.');
-        } else {
-          console.error('Background registration issue:', response.data.message);
-        }
-      }).catch(err => {
-        console.error('Background registration error:', err);
       });
+      
+      toast.success('Registration processing in background');
     } catch (err) {
-      console.error('Registration trigger error:', err);
-    } finally {
-      setLoading(false);
+      console.error('Background registration error:', err);
+      toast.error('Registration completed but please check email for verification');
     }
   };
 
@@ -434,10 +427,7 @@ function RegisterCardContent() {
 
           <form
             className={formWrapper}
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleRegister();
-            }}
+            onSubmit={handleRegister}
           >
             {!showPartnerRoles ? (
               <>
