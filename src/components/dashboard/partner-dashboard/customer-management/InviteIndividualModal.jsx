@@ -41,6 +41,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
     const checkUserRole = async () => {
       const userId = localStorage.getItem("userId");
       const authToken = localStorage.getItem("authToken");
+      const storedPartnerType = localStorage.getItem("partnerType");
 
       if (!userId || !authToken) return;
 
@@ -54,7 +55,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
           }
         );
 
-        const partnerType = response.data.data?.partnerType;
+        const partnerType = response.data.data?.partnerType || storedPartnerType;
         setPartnerType(partnerType);
 
         if (partnerType === "sales_agent") {
@@ -67,6 +68,14 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
         }
       } catch (error) {
         console.error("Error checking user role:", error);
+        if (storedPartnerType === "sales_agent") {
+          setIsSalesAgent(true);
+          setFormData(prev => ({ ...prev, customerType: "PARTNER", role: "SALES_AGENT" }));
+        } else if (storedPartnerType === "finance_company") {
+          setIsFinanceCompany(true);
+        } else if (storedPartnerType === "installer") {
+          setIsInstaller(true);
+        }
       } finally {
         setUserLoaded(true);
       }
@@ -194,6 +203,12 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
   };
 
   const sendFacilityInvite = async (userId, authToken) => {
+    // Skip facility invite for sales agents
+    if (isSalesAgent) {
+      console.log("Sales agent detected - skipping facility invitation");
+      return true;
+    }
+
     try {
       const fullAddress = `${formData.address1}${formData.address2 ? ', ' + formData.address2 : ''}, ${formData.city}, ${formData.state} ${formData.zipCode}`;
       
@@ -285,16 +300,18 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
       return;
     }
 
-    if (!address1 || !city || !state || !zipCode) {
-      toast.error("Please complete all address fields");
-      setLoading(false);
-      return;
-    }
+    if (!isSalesAgent) {
+      if (!address1 || !city || !state || !zipCode) {
+        toast.error("Please complete all address fields");
+        setLoading(false);
+        return;
+      }
 
-    if (!/^\d{5}(-\d{4})?$/.test(zipCode)) {
-      toast.error("Please enter a valid zip code");
-      setLoading(false);
-      return;
+      if (!/^\d{5}(-\d{4})?$/.test(zipCode)) {
+        toast.error("Please enter a valid zip code");
+        setLoading(false);
+        return;
+      }
     }
 
     if (epcMode && !installerId) {
@@ -361,40 +378,45 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
         );
 
         if (userResponse.data.status === "success") {
-          const facilitySuccess = await sendFacilityInvite(userId, authToken);
+          const results = userResponse.data.data?.results || [];
+          const failedInvites = results.filter(r => r.status === "failed");
           
-          if (facilitySuccess) {
-            const results = userResponse.data.data?.results || [];
-            const failedInvites = results.filter(r => r.status === "failed");
+          if (failedInvites.length > 0) {
+            failedInvites.forEach(failed => {
+              toast.error(failed.error || `Failed to invite ${failed.email}`);
+            });
+          }
+
+          if (results.some(r => r.status === "success")) {
+            const successfulCount = results.filter(r => r.status === "success").length;
             
-            if (failedInvites.length > 0) {
-              failedInvites.forEach(failed => {
-                toast.error(failed.error || `Failed to invite ${failed.email}`);
-              });
+            // Only attempt facility invite if user is not a sales agent
+            if (!isSalesAgent) {
+              const facilitySuccess = await sendFacilityInvite(userId, authToken);
               
-              if (results.some(r => r.status === "success")) {
-                toast.success("Some invitations were sent successfully");
+              if (facilitySuccess) {
+                if (successfulCount === 1) {
+                  toast.success("Invitation with facility details sent successfully");
+                } else {
+                  toast.success(`${successfulCount} invitations sent successfully with facility details`);
+                }
+              } else {
+                toast("User invitation sent but facility invitation failed", {
+                  icon: "⚠️",
+                  style: {
+                    background: "#FEF3C7",
+                    color: "#92400E",
+                  }
+                });
               }
             } else {
-              toast.success("Invitation with facility details sent successfully");
-            }
-          } else {
-            const results = userResponse.data.data?.results || [];
-            const failedInvites = results.filter(r => r.status === "failed");
-            
-            if (failedInvites.length > 0) {
-              failedInvites.forEach(failed => {
-                toast.error(failed.error || `Failed to invite ${failed.email}`);
-              });
-            }
-            
-            toast("User invitation sent but facility invitation failed", {
-              icon: "⚠️",
-              style: {
-                background: "#FEF3C7",
-                color: "#92400E",
+              // Sales agent - only show user invitation success
+              if (successfulCount === 1) {
+                toast.success("Partner invitation sent successfully");
+              } else {
+                toast.success(`${successfulCount} partner invitations sent successfully`);
               }
-            });
+            }
           }
           
           resetForm();
@@ -481,8 +503,14 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
           </div>
 
           <h2 className={`text-base font-semibold ${pageTitle} text-center ${formData.epcMode ? "text-green-600" : ""}`}>
-            {formData.epcMode ? "EPC MODE ACTIVATED" : "Invite a Customer"}
+            {formData.epcMode ? "EPC MODE ACTIVATED" : isSalesAgent ? "Invite a Partner" : "Invite a Customer"}
           </h2>
+          
+          {isSalesAgent && (
+            <p className="text-xs text-amber-600 bg-amber-50 px-3 py-1 rounded-full mt-1">
+              Sales Agent • Facility invitation will be skipped
+            </p>
+          )}
           
           {formData.epcMode && (
             <p className="text-gray-500 text-xs text-center mt-1">
@@ -520,7 +548,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
               value={formData.name}
               onChange={handleChange}
               className={`${inputClass} text-xs`}
-              placeholder="Enter customer's name"
+              placeholder={`Enter ${isSalesAgent ? "partner's" : "customer's"} name`}
               required
             />
           </div>
@@ -533,7 +561,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
               value={formData.email}
               onChange={handleChange}
               className={`${inputClass} text-xs`}
-              placeholder="Enter customer's email"
+              placeholder={`Enter ${isSalesAgent ? "partner's" : "customer's"} email`}
               required
             />
           </div>
@@ -551,81 +579,85 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className={`${labelClass} text-xs`}>Address 1 <span className="text-red-500">*</span></label>
-              <input
-                type="text"
-                name="address1"
-                value={formData.address1}
-                onChange={handleAddressChange}
-                className={`${inputClass} text-xs`}
-                placeholder="5348 UNIVERSITY AVE"
-                required
-              />
-            </div>
-            <div>
-              <label className={`${labelClass} text-xs`}>Address 2</label>
-              <input
-                type="text"
-                name="address2"
-                value={formData.address2}
-                onChange={handleAddressChange}
-                className={`${inputClass} text-xs`}
-                placeholder="Apt, suite, etc."
-              />
-            </div>
-          </div>
+          {!isSalesAgent && (
+            <>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className={`${labelClass} text-xs`}>Address 1 <span className="text-red-500">*</span></label>
+                  <input
+                    type="text"
+                    name="address1"
+                    value={formData.address1}
+                    onChange={handleAddressChange}
+                    className={`${inputClass} text-xs`}
+                    placeholder="5348 UNIVERSITY AVE"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className={`${labelClass} text-xs`}>Address 2</label>
+                  <input
+                    type="text"
+                    name="address2"
+                    value={formData.address2}
+                    onChange={handleAddressChange}
+                    className={`${inputClass} text-xs`}
+                    placeholder="Apt, suite, etc."
+                  />
+                </div>
+              </div>
 
-          <div className="grid grid-cols-3 gap-2">
-            <div>
-              <label className={`${labelClass} text-xs`}>City <span className="text-red-500">*</span></label>
-              <input
-                type="text"
-                name="city"
-                value={formData.city}
-                onChange={handleAddressChange}
-                className={`${inputClass} text-xs`}
-                placeholder="SAN DIEGO"
-                required
-              />
-            </div>
-            <div>
-              <label className={`${labelClass} text-xs`}>State <span className="text-red-500">*</span></label>
-              <select
-                name="state"
-                value={formData.state}
-                onChange={handleChange}
-                className={`${selectClass} text-xs`}
-                required
-              >
-                <option value="">Select State</option>
-                {states.map(state => (
-                  <option key={state} value={state}>{state}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className={`${labelClass} text-xs`}>Zip Code <span className="text-red-500">*</span></label>
-              <input
-                type="text"
-                name="zipCode"
-                value={formData.zipCode}
-                onChange={handleChange}
-                className={`${inputClass} text-xs ${zipCodeError ? "border-red-500" : ""}`}
-                placeholder="92105"
-                pattern="^\d{5}(-\d{4})?$"
-                required
-              />
-              {zipCodeError && (
-                <p className="text-red-500 text-xs mt-1">{zipCodeError}</p>
-              )}
-            </div>
-          </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <label className={`${labelClass} text-xs`}>City <span className="text-red-500">*</span></label>
+                  <input
+                    type="text"
+                    name="city"
+                    value={formData.city}
+                    onChange={handleAddressChange}
+                    className={`${inputClass} text-xs`}
+                    placeholder="SAN DIEGO"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className={`${labelClass} text-xs`}>State <span className="text-red-500">*</span></label>
+                  <select
+                    name="state"
+                    value={formData.state}
+                    onChange={handleChange}
+                    className={`${selectClass} text-xs`}
+                    required
+                  >
+                    <option value="">Select State</option>
+                    {states.map(state => (
+                      <option key={state} value={state}>{state}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className={`${labelClass} text-xs`}>Zip Code <span className="text-red-500">*</span></label>
+                  <input
+                    type="text"
+                    name="zipCode"
+                    value={formData.zipCode}
+                    onChange={handleChange}
+                    className={`${inputClass} text-xs ${zipCodeError ? "border-red-500" : ""}`}
+                    placeholder="92105"
+                    pattern="^\d{5}(-\d{4})?$"
+                    required
+                  />
+                  {zipCodeError && (
+                    <p className="text-red-500 text-xs mt-1">{zipCodeError}</p>
+                  )}
+                </div>
+              </div>
 
-          <p className="text-xs text-gray-500 italic">
-            Address must match the service address of your facility meter exactly
-          </p>
+              <p className="text-xs text-gray-500 italic">
+                Address must match the service address of your facility meter exactly
+              </p>
+            </>
+          )}
 
           <div>
             <label className={`${labelClass} text-xs`}>Customer Type <span className="text-red-500">*</span></label>
@@ -734,9 +766,9 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
             <button
               type="submit"
               className={`flex-1 ${buttonPrimary} ${formData.epcMode ? "bg-green-600 hover:bg-green-700" : ""} flex items-center justify-center py-1 text-xs`}
-              disabled={loading || zipCodeError || (formData.epcMode && installers.length === 0)}
+              disabled={loading || (formData.epcMode && installers.length === 0) || (!isSalesAgent && zipCodeError)}
             >
-              {formData.epcMode ? "Invite by EPC Mode" : "Invite"}
+              {formData.epcMode ? "Invite by EPC Mode" : isSalesAgent ? "Invite Partner" : "Invite"}
             </button>
           </div>
         </form>

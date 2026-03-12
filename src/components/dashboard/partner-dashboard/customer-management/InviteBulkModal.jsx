@@ -48,6 +48,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
     const checkUserRole = async () => {
       const userId = localStorage.getItem("userId");
       const authToken = localStorage.getItem("authToken");
+      const storedPartnerType = localStorage.getItem("partnerType");
 
       if (!userId || !authToken) return;
 
@@ -61,7 +62,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
           }
         );
 
-        const partnerType = response.data.data?.partnerType;
+        const partnerType = response.data.data?.partnerType || storedPartnerType;
         setPartnerType(partnerType);
 
         if (partnerType === "sales_agent") {
@@ -73,6 +74,13 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
         }
       } catch (error) {
         console.error("Error checking user role:", error);
+        if (storedPartnerType === "sales_agent") {
+          setIsSalesAgent(true);
+        } else if (storedPartnerType === "finance_company") {
+          setIsFinanceCompany(true);
+        } else if (storedPartnerType === "installer") {
+          setIsInstaller(true);
+        }
       } finally {
         setUserLoaded(true);
       }
@@ -429,6 +437,12 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
   };
 
   const sendFacilityInvite = async (invitee, userId, authToken) => {
+    // Skip facility invite for sales agents
+    if (isSalesAgent) {
+      console.log("Sales agent detected - skipping facility invitation");
+      return true;
+    }
+
     try {
       const fullAddress = `${invitee.address1}${invitee.address2 ? ', ' + invitee.address2 : ''}, ${invitee.city}, ${invitee.state} ${invitee.zipCode}`;
       
@@ -591,29 +605,39 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
           const epcModeInvitees = invitees.filter(invitee => invitee.epcMode);
           const regularInvitees = invitees.filter(invitee => !invitee.epcMode);
 
-          const facilityInviteResults = await Promise.all(
-            regularInvitees.map(invitee => sendFacilityInvite(invitee, userId, authToken))
-          );
+          // Only attempt facility invites if user is not a sales agent
+          let facilityInviteResults = [];
+          let epcAssignResults = [];
           
-          const epcAssignResults = await Promise.all(
-            epcModeInvitees.map(async (invitee) => {
-              const facilitySuccess = await sendFacilityInvite(invitee, userId, authToken);
-              if (facilitySuccess && invitee.installerId) {
-                const selectedInstaller = installers.find(inst => inst.id === invitee.installerId);
-                if (selectedInstaller) {
-                  const installerAssignmentSuccess = await assignInstallerToCustomer(
-                    userId, 
-                    authToken, 
-                    selectedInstaller.inviteeEmail, 
-                    selectedInstaller.name || selectedInstaller.inviteeEmail,
-                    invitee.email
-                  );
-                  return installerAssignmentSuccess;
+          if (!isSalesAgent) {
+            facilityInviteResults = await Promise.all(
+              regularInvitees.map(invitee => sendFacilityInvite(invitee, userId, authToken))
+            );
+            
+            epcAssignResults = await Promise.all(
+              epcModeInvitees.map(async (invitee) => {
+                const facilitySuccess = await sendFacilityInvite(invitee, userId, authToken);
+                if (facilitySuccess && invitee.installerId) {
+                  const selectedInstaller = installers.find(inst => inst.id === invitee.installerId);
+                  if (selectedInstaller) {
+                    const installerAssignmentSuccess = await assignInstallerToCustomer(
+                      userId, 
+                      authToken, 
+                      selectedInstaller.inviteeEmail, 
+                      selectedInstaller.name || selectedInstaller.inviteeEmail,
+                      invitee.email
+                    );
+                    return installerAssignmentSuccess;
+                  }
                 }
-              }
-              return facilitySuccess;
-            })
-          );
+                return facilitySuccess;
+              })
+            );
+          } else {
+            // For sales agents, treat all invites as successful for facility part
+            facilityInviteResults = regularInvitees.map(() => true);
+            epcAssignResults = epcModeInvitees.map(() => true);
+          }
           
           const successfulRegularInvites = facilityInviteResults.filter(result => result).length;
           const successfulEpcInvites = epcAssignResults.filter(result => result).length;
@@ -621,7 +645,9 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
           const successfulTotal = results.filter(r => r.status === "success").length;
           
           if (successfulTotal === invitees.length && successfulRegularInvites === regularInvitees.length && successfulEpcInvites === epcModeInvitees.length) {
-            if (epcModeInvitees.length > 0) {
+            if (isSalesAgent) {
+              toast.success(`Successfully sent ${successfulTotal} partner invitation${successfulTotal > 1 ? 's' : ''}`);
+            } else if (epcModeInvitees.length > 0) {
               toast.success(`Successfully sent ${invitees.length} invitation${invitees.length > 1 ? 's' : ''} (${epcModeInvitees.length} with EPC mode)`);
             } else {
               toast.success(`Successfully sent ${invitees.length} invitation${invitees.length > 1 ? 's' : ''} with facility details`);
@@ -635,13 +661,24 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
             }
             
             if (failedInvites.length > 0 || failedRegular > 0 || failedEpc > 0) {
-              toast(`User invitations sent but ${failedInvites.length + failedRegular + failedEpc} facility/installer assignments failed`, {
-                icon: "⚠️",
-                style: {
-                  background: "#FEF3C7",
-                  color: "#92400E",
-                }
-              });
+              const totalFailures = failedInvites.length + failedRegular + failedEpc;
+              if (isSalesAgent) {
+                toast(`Partner invitations sent with ${totalFailures} failures`, {
+                  icon: "⚠️",
+                  style: {
+                    background: "#FEF3C7",
+                    color: "#92400E",
+                  }
+                });
+              } else {
+                toast(`User invitations sent but ${totalFailures} facility/installer assignments failed`, {
+                  icon: "⚠️",
+                  style: {
+                    background: "#FEF3C7",
+                    color: "#92400E",
+                  }
+                });
+              }
             }
           }
         }
@@ -729,8 +766,20 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
             />
           </div>
 
-          <h2 className={`text-base font-semibold ${pageTitle} text-center`}>Invite Customers</h2>
-          <p className="text-gray-500 text-xs mb-4">Send invitations to one or multiple customers at once</p>
+          <h2 className={`text-base font-semibold ${pageTitle} text-center`}>
+            {isSalesAgent ? "Invite Partners" : "Invite Customers"}
+          </h2>
+          <p className="text-gray-500 text-xs mb-4">
+            {isSalesAgent 
+              ? "Send partner invitations to one or multiple partners at once"
+              : "Send invitations to one or multiple customers at once"
+            }
+          </p>
+          {isSalesAgent && (
+            <p className="text-xs text-amber-600 bg-amber-50 px-3 py-1 rounded-full mb-2">
+              Sales Agent • Facility invitations will be skipped
+            </p>
+          )}
         </div>
 
         <div className="mb-6 mt-2 bg-gray-50 p-4 rounded-lg border border-dashed border-gray-300">
@@ -788,7 +837,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
             <div key={index} className="border rounded-lg p-3 relative">
               <div className="flex justify-between items-center mb-2 pb-2 border-b">
                 <h3 className={`font-medium text-sm ${invitee.epcMode ? "text-green-600" : ""}`}>
-                  Invitee #{index + 1} {invitee.epcMode && "(EPC Mode)"}
+                  {isSalesAgent ? "Partner" : "Invitee"} #{index + 1} {invitee.epcMode && "(EPC Mode)"}
                 </h3>
                 {invitees.length > 1 && (
                   <button
@@ -815,7 +864,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
                 )}
               </div>
 
-              {isFinanceCompany && (
+              {isFinanceCompany && !isSalesAgent && (
                 <div className="flex items-center justify-center my-3">
                   <label className="flex items-center cursor-pointer">
                     <div className="mr-3 text-xs font-medium text-gray-700">
@@ -844,7 +893,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
                     value={invitee.name}
                     onChange={(e) => handleChange(index, e)}
                     className={`${inputClass} text-xs`}
-                    placeholder="Enter customer's name"
+                    placeholder={`Enter ${isSalesAgent ? "partner's" : "customer's"} name`}
                     required
                   />
                 </div>
@@ -857,7 +906,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
                     value={invitee.email}
                     onChange={(e) => handleChange(index, e)}
                     className={`${inputClass} text-xs`}
-                    placeholder="Enter customer's email"
+                    placeholder={`Enter ${isSalesAgent ? "partner's" : "customer's"} email`}
                     required
                   />
                 </div>
@@ -879,77 +928,81 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
                   )}
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 md:col-span-2">
-                  <div>
-                    <label className={`${labelClass} text-xs`}>Address 1 <span className="text-red-500">*</span></label>
-                    <input
-                      type="text"
-                      name="address1"
-                      value={invitee.address1}
-                      onChange={(e) => handleAddressChange(index, e)}
-                      className={`${inputClass} text-xs`}
-                      placeholder="5348 UNIVERSITY AVE"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className={`${labelClass} text-xs`}>Address 2</label>
-                    <input
-                      type="text"
-                      name="address2"
-                      value={invitee.address2}
-                      onChange={(e) => handleAddressChange(index, e)}
-                      className={`${inputClass} text-xs`}
-                      placeholder="Apt, suite, etc."
-                    />
-                  </div>
-                </div>
+                {!isSalesAgent && (
+                  <>
+                    <div className="grid grid-cols-2 gap-2 md:col-span-2">
+                      <div>
+                        <label className={`${labelClass} text-xs`}>Address 1 <span className="text-red-500">*</span></label>
+                        <input
+                          type="text"
+                          name="address1"
+                          value={invitee.address1}
+                          onChange={(e) => handleAddressChange(index, e)}
+                          className={`${inputClass} text-xs`}
+                          placeholder="5348 UNIVERSITY AVE"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className={`${labelClass} text-xs`}>Address 2</label>
+                        <input
+                          type="text"
+                          name="address2"
+                          value={invitee.address2}
+                          onChange={(e) => handleAddressChange(index, e)}
+                          className={`${inputClass} text-xs`}
+                          placeholder="Apt, suite, etc."
+                        />
+                      </div>
+                    </div>
 
-                <div className="grid grid-cols-3 gap-2 md:col-span-2">
-                  <div>
-                    <label className={`${labelClass} text-xs`}>City <span className="text-red-500">*</span></label>
-                    <input
-                      type="text"
-                      name="city"
-                      value={invitee.city}
-                      onChange={(e) => handleAddressChange(index, e)}
-                      className={`${inputClass} text-xs`}
-                      placeholder="SAN DIEGO"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className={`${labelClass} text-xs`}>State <span className="text-red-500">*</span></label>
-                    <select
-                      name="state"
-                      value={invitee.state}
-                      onChange={(e) => handleChange(index, e)}
-                      className={`${selectClass} text-xs`}
-                      required
-                    >
-                      <option value="">Select State</option>
-                      {states.map(state => (
-                        <option key={state} value={state}>{state}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className={`${labelClass} text-xs`}>Zip Code <span className="text-red-500">*</span></label>
-                    <input
-                      type="text"
-                      name="zipCode"
-                      value={invitee.zipCode}
-                      onChange={(e) => handleChange(index, e)}
-                      className={`${inputClass} text-xs ${zipCodeErrors[index] ? "border-red-500" : ""}`}
-                      placeholder="92105"
-                      pattern="^\d{5}(-\d{4})?$"
-                      required
-                    />
-                    {zipCodeErrors[index] && (
-                      <p className="text-red-500 text-xs mt-1">{zipCodeErrors[index]}</p>
-                    )}
-                  </div>
-                </div>
+                    <div className="grid grid-cols-3 gap-2 md:col-span-2">
+                      <div>
+                        <label className={`${labelClass} text-xs`}>City <span className="text-red-500">*</span></label>
+                        <input
+                          type="text"
+                          name="city"
+                          value={invitee.city}
+                          onChange={(e) => handleAddressChange(index, e)}
+                          className={`${inputClass} text-xs`}
+                          placeholder="SAN DIEGO"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className={`${labelClass} text-xs`}>State <span className="text-red-500">*</span></label>
+                        <select
+                          name="state"
+                          value={invitee.state}
+                          onChange={(e) => handleChange(index, e)}
+                          className={`${selectClass} text-xs`}
+                          required
+                        >
+                          <option value="">Select State</option>
+                          {states.map(state => (
+                            <option key={state} value={state}>{state}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className={`${labelClass} text-xs`}>Zip Code <span className="text-red-500">*</span></label>
+                        <input
+                          type="text"
+                          name="zipCode"
+                          value={invitee.zipCode}
+                          onChange={(e) => handleChange(index, e)}
+                          className={`${inputClass} text-xs ${zipCodeErrors[index] ? "border-red-500" : ""}`}
+                          placeholder="92105"
+                          pattern="^\d{5}(-\d{4})?$"
+                          required
+                        />
+                        {zipCodeErrors[index] && (
+                          <p className="text-red-500 text-xs mt-1">{zipCodeErrors[index]}</p>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
 
                 <div>
                   <label className={`${labelClass} text-xs`}>Customer Type <span className="text-red-500">*</span></label>
@@ -1006,7 +1059,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
                   )}
                 </div>
 
-                {invitee.epcMode && (
+                {invitee.epcMode && !isSalesAgent && (
                   <div className="md:col-span-2">
                     <label className={`${labelClass} text-xs`}>Select Installer <span className="text-red-500">*</span></label>
                     {installersLoading ? (
@@ -1070,7 +1123,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
                   d="M12 6v6m0 0v6m0-6h6m-6 0H6"
                 />
               </svg>
-              Add Another Invitee
+              Add Another {isSalesAgent ? "Partner" : "Invitee"}
             </button>
           </div>
 
@@ -1088,7 +1141,10 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
               className={`flex-1 ${buttonPrimary} flex items-center justify-center py-2 text-xs`}
               disabled={loading || csvLoading || phoneErrors.some(error => error) || zipCodeErrors.some(error => error)}
             >
-              {invitees.length > 1 ? 'Send Invitations' : 'Send Invitation'}
+              {invitees.length > 1 
+                ? (isSalesAgent ? 'Send Partner Invitations' : 'Send Invitations') 
+                : (isSalesAgent ? 'Send Partner Invitation' : 'Send Invitation')
+              }
             </button>
           </div>
         </form>

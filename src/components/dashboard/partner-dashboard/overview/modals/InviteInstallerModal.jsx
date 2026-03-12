@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { axiosInstance } from "../../../../../../lib/config";
 import toast from "react-hot-toast";
 import { pageTitle, labelClass, inputClass, selectClass, buttonPrimary } from "../styles";
@@ -12,6 +12,20 @@ export default function InviteInstallerModal({ isOpen, onClose }) {
     message: ""
   });
   const [loading, setLoading] = useState(false);
+  const [partnerType, setPartnerType] = useState("");
+  const [userLoaded, setUserLoaded] = useState(false);
+
+  useEffect(() => {
+    const getUserPartnerType = () => {
+      const storedPartnerType = localStorage.getItem("partnerType");
+      setPartnerType(storedPartnerType || "");
+      setUserLoaded(true);
+    };
+
+    if (isOpen) {
+      getUserPartnerType();
+    }
+  }, [isOpen]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -150,7 +164,7 @@ export default function InviteInstallerModal({ isOpen, onClose }) {
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || !userLoaded) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20 overflow-y-auto">
@@ -191,6 +205,11 @@ export default function InviteInstallerModal({ isOpen, onClose }) {
           </div>
 
           <h2 className={`text-base font-semibold ${pageTitle} text-center`}>Invite Contractor/EPC</h2>
+          {partnerType === "sales_agent" && (
+            <p className="text-xs text-amber-600 bg-amber-50 px-3 py-1 rounded-full mt-1">
+              Sales Agent • Partner invitation
+            </p>
+          )}
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-2 mt-3">

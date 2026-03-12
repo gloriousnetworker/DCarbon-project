@@ -41,6 +41,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
     const checkUserRole = async () => {
       const userId = localStorage.getItem("userId");
       const authToken = localStorage.getItem("authToken");
+      const storedPartnerType = localStorage.getItem("partnerType");
 
       if (!userId || !authToken) return;
 
@@ -54,7 +55,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
           }
         );
 
-        const partnerType = response.data.data?.partnerType;
+        const partnerType = response.data.data?.partnerType || storedPartnerType;
         setPartnerType(partnerType);
 
         if (partnerType === "sales_agent") {
@@ -67,6 +68,14 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
         }
       } catch (error) {
         console.error("Error checking user role:", error);
+        if (storedPartnerType === "sales_agent") {
+          setIsSalesAgent(true);
+          setFormData(prev => ({ ...prev, customerType: "PARTNER", role: "SALES_AGENT" }));
+        } else if (storedPartnerType === "finance_company") {
+          setIsFinanceCompany(true);
+        } else if (storedPartnerType === "installer") {
+          setIsInstaller(true);
+        }
       } finally {
         setUserLoaded(true);
       }
@@ -194,6 +203,12 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
   };
 
   const sendFacilityInvite = async (userId, authToken) => {
+    // Skip facility invite for sales agents
+    if (isSalesAgent) {
+      console.log("Sales agent detected - skipping facility invitation");
+      return true;
+    }
+
     try {
       const fullAddress = `${formData.address1}${formData.address2 ? ', ' + formData.address2 : ''}, ${formData.city}, ${formData.state} ${formData.zipCode}`;
       
@@ -377,23 +392,34 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
           }
 
           if (results.some(r => r.status === "success")) {
-            const facilitySuccess = await sendFacilityInvite(userId, authToken);
+            const successfulCount = results.filter(r => r.status === "success").length;
             
-            if (facilitySuccess) {
-              const successfulCount = results.filter(r => r.status === "success").length;
-              if (successfulCount === 1) {
-                toast.success("Invitation with facility details sent successfully");
+            // Only attempt facility invite if user is not a sales agent
+            if (!isSalesAgent) {
+              const facilitySuccess = await sendFacilityInvite(userId, authToken);
+              
+              if (facilitySuccess) {
+                if (successfulCount === 1) {
+                  toast.success("Invitation with facility details sent successfully");
+                } else {
+                  toast.success(`${successfulCount} invitations sent successfully with facility details`);
+                }
               } else {
-                toast.success(`${successfulCount} invitations sent successfully with facility details`);
+                toast("User invitation sent but facility invitation failed", {
+                  icon: "⚠️",
+                  style: {
+                    background: "#FEF3C7",
+                    color: "#92400E",
+                  }
+                });
               }
             } else {
-              toast("User invitation sent but facility invitation failed", {
-                icon: "⚠️",
-                style: {
-                  background: "#FEF3C7",
-                  color: "#92400E",
-                }
-              });
+              // Sales agent - only show user invitation success
+              if (successfulCount === 1) {
+                toast.success("Partner invitation sent successfully");
+              } else {
+                toast.success(`${successfulCount} partner invitations sent successfully`);
+              }
             }
           }
           
@@ -481,8 +507,14 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
           </div>
 
           <h2 className={`text-base font-semibold ${pageTitle} text-center ${formData.epcMode ? "text-green-600" : ""}`}>
-            {formData.epcMode ? "EPC MODE ACTIVATED" : "Invite a Customer"}
+            {formData.epcMode ? "EPC MODE ACTIVATED" : isSalesAgent ? "Invite a Partner" : "Invite a Customer"}
           </h2>
+          
+          {isSalesAgent && (
+            <p className="text-xs text-amber-600 bg-amber-50 px-3 py-1 rounded-full mt-1">
+              Sales Agent • Facility invitation will be skipped
+            </p>
+          )}
           
           {formData.epcMode && (
             <p className="text-gray-500 text-xs text-center mt-1">
@@ -520,7 +552,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
               value={formData.name}
               onChange={handleChange}
               className={`${inputClass} text-xs`}
-              placeholder="Enter customer's name"
+              placeholder={`Enter ${isSalesAgent ? "partner's" : "customer's"} name`}
               required
             />
           </div>
@@ -533,7 +565,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
               value={formData.email}
               onChange={handleChange}
               className={`${inputClass} text-xs`}
-              placeholder="Enter customer's email"
+              placeholder={`Enter ${isSalesAgent ? "partner's" : "customer's"} email`}
               required
             />
           </div>
@@ -740,7 +772,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
               className={`flex-1 ${buttonPrimary} ${formData.epcMode ? "bg-green-600 hover:bg-green-700" : ""} flex items-center justify-center py-1 text-xs`}
               disabled={loading || (formData.epcMode && installers.length === 0)}
             >
-              {formData.epcMode ? "Invite by EPC Mode" : "Invite"}
+              {formData.epcMode ? "Invite by EPC Mode" : isSalesAgent ? "Invite Partner" : "Invite"}
             </button>
           </div>
         </form>
