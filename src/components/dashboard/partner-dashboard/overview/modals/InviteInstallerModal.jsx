@@ -100,19 +100,51 @@ export default function InviteInstallerModal({ isOpen, onClose }) {
       );
 
       if (response.data.status === "success") {
-        toast.success("Contractor/EPC invitation sent successfully");
-        resetForm();
-        onClose();
+        const results = response.data.data?.results || [];
+        const failedInvites = results.filter(r => r.status === "failed");
+        
+        if (failedInvites.length > 0) {
+          failedInvites.forEach(failed => {
+            toast.error(failed.error || `Failed to invite ${failed.email}`);
+          });
+        }
+
+        if (results.some(r => r.status === "success")) {
+          const successfulCount = results.filter(r => r.status === "success").length;
+          if (successfulCount === 1) {
+            toast.success("Contractor/EPC invitation sent successfully");
+          } else {
+            toast.success(`${successfulCount} Contractor/EPC invitations sent successfully`);
+          }
+          resetForm();
+          onClose();
+        } else {
+          throw new Error("All invitations failed");
+        }
       } else {
         throw new Error(response.data.message || "Failed to send invitation");
       }
     } catch (error) {
       console.error("Error sending invitation:", error);
-      toast.error(
-        error.response?.data?.message || 
-        error.message || 
-        "Failed to send invitation"
-      );
+      
+      if (error.response?.data?.data?.results) {
+        const results = error.response.data.data.results;
+        const failedInvites = results.filter(r => r.status === "failed");
+        
+        if (failedInvites.length > 0) {
+          failedInvites.forEach(failed => {
+            toast.error(failed.error || `Failed to invite ${failed.email}`);
+          });
+        } else {
+          toast.error(error.response.data.message || "Failed to send invitation");
+        }
+      } else {
+        toast.error(
+          error.response?.data?.message || 
+          error.message || 
+          "Failed to send invitation"
+        );
+      }
     } finally {
       setLoading(false);
     }

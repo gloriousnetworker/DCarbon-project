@@ -317,7 +317,7 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
           if (!rows[i].trim()) continue;
           
           if (newInvitees.length >= MAX_INVITEES) {
-            toast("Only the first ${MAX_INVITEES} invitees will be processed", {
+            toast(`Only the first ${MAX_INVITEES} invitees will be processed`, {
               icon: "⚠️",
               style: {
                 background: "#FEF3C7",
@@ -578,52 +578,72 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
       );
 
       if (userResponse.data.status === "success") {
-        const epcModeInvitees = invitees.filter(invitee => invitee.epcMode);
-        const regularInvitees = invitees.filter(invitee => !invitee.epcMode);
-
-        const facilityInviteResults = await Promise.all(
-          regularInvitees.map(invitee => sendFacilityInvite(invitee, userId, authToken))
-        );
+        const results = userResponse.data.data?.results || [];
+        const failedInvites = results.filter(r => r.status === "failed");
         
-        const epcAssignResults = await Promise.all(
-          epcModeInvitees.map(async (invitee) => {
-            const facilitySuccess = await sendFacilityInvite(invitee, userId, authToken);
-            if (facilitySuccess && invitee.installerId) {
-              const selectedInstaller = installers.find(inst => inst.id === invitee.installerId);
-              if (selectedInstaller) {
-                const installerAssignmentSuccess = await assignInstallerToCustomer(
-                  userId, 
-                  authToken, 
-                  selectedInstaller.inviteeEmail, 
-                  selectedInstaller.name || selectedInstaller.inviteeEmail,
-                  invitee.email
-                );
-                return installerAssignmentSuccess;
-              }
-            }
-            return facilitySuccess;
-          })
-        );
-        
-        const successfulRegularInvites = facilityInviteResults.filter(result => result).length;
-        const successfulEpcInvites = epcAssignResults.filter(result => result).length;
-        
-        if (successfulRegularInvites === regularInvitees.length && successfulEpcInvites === epcModeInvitees.length) {
-          if (epcModeInvitees.length > 0) {
-            toast.success(`Successfully sent ${invitees.length} invitation${invitees.length > 1 ? 's' : ''} (${epcModeInvitees.length} with EPC mode)`);
-          } else {
-            toast.success(`Successfully sent ${invitees.length} invitation${invitees.length > 1 ? 's' : ''} with facility details`);
-          }
-        } else {
-          const failedRegular = regularInvitees.length - successfulRegularInvites;
-          const failedEpc = epcModeInvitees.length - successfulEpcInvites;
-          toast(`Sent user invitations but ${failedRegular + failedEpc} facility/installer assignments failed`, {
-            icon: "⚠️",
-            style: {
-              background: "#FEF3C7",
-              color: "#92400E",
-            }
+        if (failedInvites.length > 0) {
+          failedInvites.forEach(failed => {
+            toast.error(failed.error || `Failed to invite ${failed.email}`);
           });
+        }
+
+        if (results.some(r => r.status === "success")) {
+          const epcModeInvitees = invitees.filter(invitee => invitee.epcMode);
+          const regularInvitees = invitees.filter(invitee => !invitee.epcMode);
+
+          const facilityInviteResults = await Promise.all(
+            regularInvitees.map(invitee => sendFacilityInvite(invitee, userId, authToken))
+          );
+          
+          const epcAssignResults = await Promise.all(
+            epcModeInvitees.map(async (invitee) => {
+              const facilitySuccess = await sendFacilityInvite(invitee, userId, authToken);
+              if (facilitySuccess && invitee.installerId) {
+                const selectedInstaller = installers.find(inst => inst.id === invitee.installerId);
+                if (selectedInstaller) {
+                  const installerAssignmentSuccess = await assignInstallerToCustomer(
+                    userId, 
+                    authToken, 
+                    selectedInstaller.inviteeEmail, 
+                    selectedInstaller.name || selectedInstaller.inviteeEmail,
+                    invitee.email
+                  );
+                  return installerAssignmentSuccess;
+                }
+              }
+              return facilitySuccess;
+            })
+          );
+          
+          const successfulRegularInvites = facilityInviteResults.filter(result => result).length;
+          const successfulEpcInvites = epcAssignResults.filter(result => result).length;
+          
+          const successfulTotal = results.filter(r => r.status === "success").length;
+          
+          if (successfulTotal === invitees.length && successfulRegularInvites === regularInvitees.length && successfulEpcInvites === epcModeInvitees.length) {
+            if (epcModeInvitees.length > 0) {
+              toast.success(`Successfully sent ${invitees.length} invitation${invitees.length > 1 ? 's' : ''} (${epcModeInvitees.length} with EPC mode)`);
+            } else {
+              toast.success(`Successfully sent ${invitees.length} invitation${invitees.length > 1 ? 's' : ''} with facility details`);
+            }
+          } else {
+            const failedRegular = regularInvitees.length - successfulRegularInvites;
+            const failedEpc = epcModeInvitees.length - successfulEpcInvites;
+            
+            if (successfulTotal > 0) {
+              toast.success(`${successfulTotal} invitation${successfulTotal > 1 ? 's' : ''} sent successfully`);
+            }
+            
+            if (failedInvites.length > 0 || failedRegular > 0 || failedEpc > 0) {
+              toast(`User invitations sent but ${failedInvites.length + failedRegular + failedEpc} facility/installer assignments failed`, {
+                icon: "⚠️",
+                style: {
+                  background: "#FEF3C7",
+                  color: "#92400E",
+                }
+              });
+            }
+          }
         }
         
         resetForm();
@@ -634,11 +654,25 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
       }
     } catch (error) {
       console.error("Error sending invitations:", error);
-      toast.error(
-        error.response?.data?.message || 
-        error.message || 
-        "Failed to send invitations"
-      );
+      
+      if (error.response?.data?.data?.results) {
+        const results = error.response.data.data.results;
+        const failedInvites = results.filter(r => r.status === "failed");
+        
+        if (failedInvites.length > 0) {
+          failedInvites.forEach(failed => {
+            toast.error(failed.error || `Failed to invite ${failed.email}`);
+          });
+        } else {
+          toast.error(error.response.data.message || "Failed to send invitations");
+        }
+      } else {
+        toast.error(
+          error.response?.data?.message || 
+          error.message || 
+          "Failed to send invitations"
+        );
+      }
     } finally {
       setLoading(false);
     }

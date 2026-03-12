@@ -364,8 +364,30 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
           const facilitySuccess = await sendFacilityInvite(userId, authToken);
           
           if (facilitySuccess) {
-            toast.success("Invitation with facility details sent successfully");
+            const results = userResponse.data.data?.results || [];
+            const failedInvites = results.filter(r => r.status === "failed");
+            
+            if (failedInvites.length > 0) {
+              failedInvites.forEach(failed => {
+                toast.error(failed.error || `Failed to invite ${failed.email}`);
+              });
+              
+              if (results.some(r => r.status === "success")) {
+                toast.success("Some invitations were sent successfully");
+              }
+            } else {
+              toast.success("Invitation with facility details sent successfully");
+            }
           } else {
+            const results = userResponse.data.data?.results || [];
+            const failedInvites = results.filter(r => r.status === "failed");
+            
+            if (failedInvites.length > 0) {
+              failedInvites.forEach(failed => {
+                toast.error(failed.error || `Failed to invite ${failed.email}`);
+              });
+            }
+            
             toast("User invitation sent but facility invitation failed", {
               icon: "⚠️",
               style: {
@@ -383,11 +405,25 @@ export default function InviteCollaboratorModal({ isOpen, onClose }) {
       }
     } catch (error) {
       console.error("Error sending invitation:", error);
-      toast.error(
-        error.response?.data?.message || 
-        error.message || 
-        "Failed to send invitation"
-      );
+      
+      if (error.response?.data?.data?.results) {
+        const results = error.response.data.data.results;
+        const failedInvites = results.filter(r => r.status === "failed");
+        
+        if (failedInvites.length > 0) {
+          failedInvites.forEach(failed => {
+            toast.error(failed.error || `Failed to invite ${failed.email}`);
+          });
+        } else {
+          toast.error(error.response.data.message || "Failed to send invitation");
+        }
+      } else {
+        toast.error(
+          error.response?.data?.message || 
+          error.message || 
+          "Failed to send invitation"
+        );
+      }
     } finally {
       setLoading(false);
     }
