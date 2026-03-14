@@ -51,8 +51,8 @@ export default function UploadFacilityDocumentModal({
       form.append(fieldName, selectedFile);
 
       const endpoints = {
-        financeAgreement: `https://dcarbon-server.onrender.com/api/facility/update-facility-financial-agreement/${facilityId}`,
-        proofOfAddress: `https://dcarbon-server.onrender.com/api/facility/update-facility-proof-of-address/${facilityId}`
+        financeAgreement: `/api/facility/update-facility-financial-agreement/${facilityId}`,
+        proofOfAddress: `/api/facility/update-facility-proof-of-address/${facilityId}`
       };
 
       const endpoint = endpoints[docType];

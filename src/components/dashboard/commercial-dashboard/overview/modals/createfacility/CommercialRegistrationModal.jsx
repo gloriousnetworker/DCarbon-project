@@ -336,7 +336,7 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
       };
 
       const response = await axiosInstance.post(
-        `/api/green-button/start`,
+        `/api/utility-auth/green-button`,
         payload,
         {
           headers: {

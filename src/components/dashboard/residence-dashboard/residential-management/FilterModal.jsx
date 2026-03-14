@@ -26,7 +26,7 @@ export default function FilterModal({ onClose, onApplyFilter }) {
         setUtilities(utilitiesRes.data.data || []);
 
         const installersRes = await axiosInstance.get(
-          "/api/installers",
+          "/api/user/partner/get-all-installer",
           { headers: { Authorization: `Bearer ${authToken}` } }
         );
         setInstallers(installersRes.data.data || []);

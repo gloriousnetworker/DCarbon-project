@@ -389,7 +389,7 @@ export default function CreateNewFacilityModal({ isOpen, onClose, currentStep })
       };
 
       const response = await axiosInstance.post(
-        `/api/green-button/start`,
+        `/api/utility-auth/green-button`,
         payload,
         {
           headers: {
