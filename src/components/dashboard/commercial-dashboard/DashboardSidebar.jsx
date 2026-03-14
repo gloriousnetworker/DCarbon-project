@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { FiHome, FiTrendingUp, FiUser, FiBell, FiHelpCircle, FiHeadphones, FiLogOut, FiZap } from "react-icons/fi";
 import Image from "next/image";
 import { useProfile } from "../contexts/ProfileContext";
+import { axiosInstance } from "../../../../lib/config";
 
 const DashboardSidebar = ({
   onSectionChange,
@@ -25,24 +26,24 @@ const DashboardSidebar = ({
 
       if (!userId || !authToken) return;
 
-      const response = await fetch(`/api/user/notifications/${userId}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${authToken}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        if (result.status === 'success' && result.data) {
-          const unreadNotifications = result.data.filter(notification => !notification.isRead);
-          const unreadCount = unreadNotifications.length;
-          setUnreadCount(unreadCount);
-          setShowNotificationDot(unreadCount > 0);
-          
-          localStorage.setItem('notifications', JSON.stringify(result.data));
+      const response = await axiosInstance.get(
+        `/api/user/notifications/${userId}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json',
+          },
         }
+      );
+
+      const result = response.data;
+      if (result.status === 'success' && result.data) {
+        const unreadNotifications = result.data.filter(notification => !notification.isRead);
+        const unreadCount = unreadNotifications.length;
+        setUnreadCount(unreadCount);
+        setShowNotificationDot(unreadCount > 0);
+
+        localStorage.setItem('notifications', JSON.stringify(result.data));
       }
     } catch (error) {
       console.error('Error fetching notifications:', error);
