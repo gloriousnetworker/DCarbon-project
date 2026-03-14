@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { HiOutlineDownload, HiOutlineX } from 'react-icons/hi';
+import toast from 'react-hot-toast';
 import SubmitInvoice from './SubmitInvoice';
 import AdminInvoices from './paidReceipts';
 import { axiosInstance } from "../../../../../lib/config";
@@ -14,14 +15,7 @@ const QuarterlyStatement = () => {
   const [loading, setLoading] = useState(false);
   const [walletData, setWalletData] = useState(null);
   const [walletLoading, setWalletLoading] = useState(false);
-
-  const staticData = {
-    customerName: 'John Smith',
-    address: '123 Solar Street, Austin, TX 78701',
-    email: 'john.smith@example.com',
-    phoneNumber: '(512) 555-0123',
-    name: 'Solar Energy Corp'
-  };
+  const [userData, setUserData] = useState(null);
 
   const fetchWalletData = async () => {
     setWalletLoading(true);
@@ -63,7 +57,7 @@ const QuarterlyStatement = () => {
       const authToken = localStorage.getItem('authToken');
 
       if (!userId || !authToken) {
-        alert('Authentication required. Please log in.');
+        toast.error('Authentication required. Please log in.');
         setLoading(false);
         return;
       }
@@ -82,15 +76,42 @@ const QuarterlyStatement = () => {
       if (response.status === 200 && result.status === 'success') {
         setData(result.data);
       } else {
-        alert(result.message || 'Failed to fetch quarterly statement');
+        toast.error(result.message || 'Failed to fetch quarterly statement');
       }
     } catch (error) {
       console.error('Error fetching quarterly statement:', error);
-      alert('An error occurred while fetching the quarterly statement');
     } finally {
       setLoading(false);
     }
   };
+
+  const fetchUserData = async () => {
+    try {
+      const userId = localStorage.getItem('userId');
+      const authToken = localStorage.getItem('authToken');
+      if (!userId || !authToken) return;
+
+      const response = await axiosInstance.get(
+        `/api/user/get-one-user/${userId}`,
+        { headers: { 'Authorization': `Bearer ${authToken}` } }
+      );
+
+      if (response.data.status === 'success') {
+        setUserData(response.data.data);
+      }
+    } catch (error) {
+      // Use localStorage fallback
+      setUserData({
+        firstName: localStorage.getItem('userFirstName') || '',
+        lastName: '',
+        email: localStorage.getItem('userEmail') || '',
+      });
+    }
+  };
+
+  useEffect(() => {
+    fetchUserData();
+  }, []);
 
   useEffect(() => {
     fetchQuarterlyStatement();
@@ -135,8 +156,7 @@ const QuarterlyStatement = () => {
       const csvContent = convertToCSV(dataToExport);
       downloadFile(csvContent, 'quarterly-statement.csv', 'text/csv');
     } else {
-      console.log('PDF Export Data:', dataToExport);
-      alert('PDF export functionality would be implemented here with a library like jsPDF');
+      toast.error('PDF export is not yet available. Please use CSV.');
     }
     
     setShowExportModal(false);
@@ -254,19 +274,19 @@ const QuarterlyStatement = () => {
               <div className="space-y-3">
                 <div className="flex justify-between">
                   <span className="font-sfpro text-[14px] font-[400] text-[#1E1E1E]">Name</span>
-                  <span className="font-sfpro text-[14px] font-[400] text-[#1E1E1E]">{staticData.customerName}</span>
+                  <span className="font-sfpro text-[14px] font-[400] text-[#1E1E1E]">{userData ? `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || '—' : '—'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="font-sfpro text-[14px] font-[400] text-[#1E1E1E]">Address</span>
-                  <span className="font-sfpro text-[14px] font-[400] text-[#1E1E1E] text-right max-w-[200px]">{staticData.address}</span>
+                  <span className="font-sfpro text-[14px] font-[400] text-[#1E1E1E] text-right max-w-[200px]">{userData?.address || '—'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="font-sfpro text-[14px] font-[400] text-[#1E1E1E]">Email Address</span>
-                  <span className="font-sfpro text-[14px] font-[400] text-[#1E1E1E]">{staticData.email}</span>
+                  <span className="font-sfpro text-[14px] font-[400] text-[#1E1E1E]">{userData?.email || '—'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="font-sfpro text-[14px] font-[400] text-[#1E1E1E]">Phone number</span>
-                  <span className="font-sfpro text-[14px] font-[400] text-[#1E1E1E]">{staticData.phoneNumber}</span>
+                  <span className="font-sfpro text-[14px] font-[400] text-[#1E1E1E]">{userData?.phoneNumber || '—'}</span>
                 </div>
               </div>
             </div>

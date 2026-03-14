@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import React, { useState } from 'react';
 import { HiOutlineX, HiOutlineDownload } from 'react-icons/hi';
 
@@ -145,7 +146,7 @@ const GeneratorReportExportReport = ({ onClose, data, currentFilters }) => {
         downloadFile(htmlContent, `generator-report-${timestamp}.html`, 'text/html');
         
         // Show instruction to user
-        alert('HTML file downloaded. You can open it in your browser and use "Print to PDF" to convert it to PDF format.');
+        toast.error('HTML file downloaded. You can open it in your browser and use "Print to PDF" to convert it to PDF format.');
       }
       
       // Close modal after successful export
@@ -155,7 +156,7 @@ const GeneratorReportExportReport = ({ onClose, data, currentFilters }) => {
       
     } catch (error) {
       console.error('Export failed:', error);
-      alert('Export failed. Please try again.');
+      toast.error('Export failed. Please try again.');
     } finally {
       setIsExporting(false);
     }

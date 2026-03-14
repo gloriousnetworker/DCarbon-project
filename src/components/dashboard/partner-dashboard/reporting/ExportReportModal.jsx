@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import React, { useState } from "react";
 
 export default function ExportReportModal({
@@ -81,7 +82,7 @@ export default function ExportReportModal({
 
   const handleExport = async () => {
     if (tableData.length === 0) {
-      alert("No data available to export");
+      toast.error("No data available to export");
       return;
     }
 
@@ -96,7 +97,7 @@ export default function ExportReportModal({
       onClose();
     } catch (error) {
       console.error("Export failed:", error);
-      alert(`Export failed: ${error.message}. Please try again.`);
+      toast.error(`Export failed: ${error.message}. Please try again.`);
     } finally {
       setLoading(false);
     }

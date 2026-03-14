@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import React, { useState, useEffect } from "react";
 import { FiDownload, FiCalendar, FiFilter } from "react-icons/fi";
 import { axiosInstance } from "../../../../../../lib/config";
@@ -418,7 +419,7 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
   const downloadData = () => {
     try {
       if (chartData.length === 0) {
-        alert('No chart data available to download.');
+        toast.error('No chart data available to download.');
         return;
       }
 
@@ -470,7 +471,7 @@ export default function CommercialDetailsGraph({ facilityId, meterId }) {
       }, 100);
     } catch (err) {
       console.error('Error downloading chart data:', err);
-      alert('Failed to download chart data. Please try again.');
+      toast.error('Failed to download chart data. Please try again.');
     }
   };
 

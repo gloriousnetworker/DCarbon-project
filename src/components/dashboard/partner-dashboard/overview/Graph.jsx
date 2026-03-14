@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import React, { useState, useEffect } from "react";
 import { axiosInstance } from "../../../../../lib/config";
 import {
@@ -179,7 +180,7 @@ export default function ReferredAndCommissionDashboard() {
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error("Error downloading report:", error);
-      alert("Failed to download report. Please try again.");
+      toast.error("Failed to download report. Please try again.");
     } finally {
       setDownloadingReport(false);
     }

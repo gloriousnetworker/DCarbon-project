@@ -11,9 +11,9 @@ export default function HomePage() {
       <header className="flex items-center justify-between px-6 py-4 md:px-12 md:py-6">
         <div className="flex items-center space-x-3">
           <img
-            src="/dashboard_images/logo.png"
+            src="/auth_images/Login_logo.png"
             alt="DCarbon Logo"
-            className="h-8 md:h-10 object-contain brightness-0 invert"
+            className="h-8 md:h-10 object-contain"
             onError={(e) => { e.target.style.display = 'none'; }}
           />
         </div>

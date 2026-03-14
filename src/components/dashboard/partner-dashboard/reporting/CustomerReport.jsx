@@ -72,14 +72,14 @@ export default function CustomerReport({ onNavigate }) {
 
   const fetchUserDetails = async (email) => {
     if (!email || userDetailsCache[email]) return;
-    
+
     try {
       const token = localStorage.getItem("authToken");
       const response = await axiosInstance.get(
-        `/api/user/${email}`,
+        `/api/user/partner/details/${email}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
+
       if (response.data.status === 'success') {
         setUserDetailsCache(prev => ({
           ...prev,
@@ -87,7 +87,7 @@ export default function CustomerReport({ onNavigate }) {
         }));
       }
     } catch (error) {
-      console.error('Error fetching user details:', error);
+      // User details are supplementary — don't block the report if lookup fails
     }
   };
 
@@ -256,7 +256,7 @@ export default function CustomerReport({ onNavigate }) {
       const displayEmail = getDisplayEmail(ref);
       
       return (
-        <tr key={ref.id} className="border-b border-gray-200 hover:bg-gray-50">
+        <tr key={`${ref.id}-${ref.inviteeEmail}-${idx}`} className="border-b border-gray-200 hover:bg-gray-50">
           <td className="py-2 px-2 text-xs font-medium text-center">{(currentPage - 1) * LIMIT + idx + 1}</td>
           <td className="py-2 px-2 text-xs" title={displayName}>{truncateText(displayName, 20)}</td>
           <td className="py-2 px-2 text-xs" title={displayEmail}>{truncateText(displayEmail, 25)}</td>

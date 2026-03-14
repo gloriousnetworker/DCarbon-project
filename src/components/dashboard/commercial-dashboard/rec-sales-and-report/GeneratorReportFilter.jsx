@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import React, { useState } from 'react';
 import { HiOutlineX } from 'react-icons/hi';
 
@@ -14,7 +15,7 @@ const GeneratorReportFilter = ({ currentFilters, onApply, onClose }) => {
     
     // Validate date range
     if (filters.dateFrom && filters.dateTo && filters.dateFrom > filters.dateTo) {
-      alert('Date From cannot be later than Date To');
+      toast.error('Date From cannot be later than Date To');
       return;
     }
     
