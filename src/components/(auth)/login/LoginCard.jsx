@@ -299,7 +299,7 @@ export default function LoginCard() {
 
         <hr className="border-t-2 border-gray-200 my-4 opacity-70" />
 
-        <p className="font-sfpro font-[400] text-[10px] leading-[100%] tracking-[-0.05em] text-center text-[#FFFFFF] mb-0">
+        <p className="font-sfpro font-[400] text-xs leading-[100%] tracking-[-0.05em] text-center text-[#FFFFFF] mb-0">
           By clicking on <strong>Sign in</strong>, you agree to our{' '}
           <a href="/terms" className="text-[#039994] underline font-[600] hover:text-[#02857f]">
             Terms and Conditions

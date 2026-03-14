@@ -83,7 +83,7 @@ export default function WelcomeModal({ isOpen, onClose, userData }) {
                 </button>
 
                 <div className="text-center">
-                  <p className="font-sfpro text-[10px] font-[800] leading-[100%] tracking-[-0.05em] underline text-white">
+                  <p className="font-sfpro text-xs font-[800] leading-[100%] tracking-[-0.05em] underline text-white">
                     By continuing, you agree to our{' '}
                     <a 
                       href="/terms-and-conditions" 

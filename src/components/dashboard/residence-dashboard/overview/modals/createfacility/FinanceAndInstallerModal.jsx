@@ -50,7 +50,7 @@ const styles = {
   optionGroup: 'px-3 py-2 text-sm text-gray-500 font-sfpro',
   optionGroupGreenButton: 'px-3 py-2 text-sm text-green-600 font-semibold font-sfpro',
   greenButtonBadge: 'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 ml-2',
-  termsTextContainer: 'mt-4 text-center font-sfpro text-[10px] font-[800] leading-[100%] tracking-[-0.05em] underline text-[#1E1E1E]'
+  termsTextContainer: 'mt-4 text-center font-sfpro text-xs font-[800] leading-[100%] tracking-[-0.05em] underline text-[#1E1E1E]'
 };
 
 export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {

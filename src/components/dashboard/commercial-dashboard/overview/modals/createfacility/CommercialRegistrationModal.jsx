@@ -1061,7 +1061,7 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
                   </div>
                 </div>
 
-                <div className="mt-4 text-center font-sfpro text-[10px] font-[800] leading-[100%] tracking-[-0.05em] underline text-[#1E1E1E]">
+                <div className="mt-4 text-center font-sfpro text-xs font-[800] leading-[100%] tracking-[-0.05em] underline text-[#1E1E1E]">
                   <span>Terms and Conditions</span>
                   <span className="mx-2">&</span>
                   <span>Privacy Policy</span>

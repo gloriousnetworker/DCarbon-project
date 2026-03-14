@@ -5,26 +5,22 @@
 /* Import FontAwesome styles */
 @import "@fortawesome/fontawesome-free/css/all.min.css";
 
-/* Font Styles */
-/* @font-face {
-  font-family: 'SF Pro Text';
-  src: url('/fonts/SFProText-Regular.woff2') format('woff2'),
-       url('/fonts/SFProText-Regular.woff') format('woff');
-  font-weight: 400;
-  font-style: normal;
-}
+/* Import Inter font (SF Pro equivalent, freely available) */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-@font-face {
-  font-family: 'SF Pro Text';
-  src: url('/fonts/SFProText-Semibold.woff2') format('woff2'),
-       url('/fonts/SFProText-Semibold.woff') format('woff');
-  font-weight: 600;
-  font-style: normal;
-} */
+/* Brand CSS custom properties */
+:root {
+  --color-brand: #039994;
+  --color-brand-hover: #028580;
+  --color-brand-dark: #056C69;
+  --color-surface: #F7F7F7;
+  --color-content: #1E1E1E;
+  --color-content-muted: #626060;
+}
 
 body {
   @apply bg-background text-foreground;
-  font-family: 'SF Pro Text', sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 /* Utility Layer */

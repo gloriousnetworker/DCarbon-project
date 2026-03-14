@@ -92,11 +92,11 @@ const DashboardNavbar = ({
               {sectionDisplayMap[selectedSection]}
             </h1>
             {isLoading ? (
-              <div className="bg-gray-200 text-gray-500 px-2 py-1.5 rounded-full text-[10px] font-medium font-sfpro">
+              <div className="bg-gray-200 text-gray-500 px-2 py-1.5 rounded-full text-xs font-medium font-sfpro">
                 Loading...
               </div>
             ) : partnerType ? (
-              <button className="bg-[#1E1E1E] text-white px-2 py-1.5 rounded-full text-[10px] font-medium font-sfpro">
+              <button className="bg-[#1E1E1E] text-white px-2 py-1.5 rounded-full text-xs font-medium font-sfpro">
                 {getDisplayPartnerType(partnerType)}
               </button>
             ) : null}

@@ -145,7 +145,7 @@ export default function StepOneCard() {
         </div>
 
         {/* Footer links */}
-        <div className="mt-6 text-center font-sfpro text-[10px] font-[800] leading-[100%] tracking-[-0.05em] underline text-[#1E1E1E]">
+        <div className="mt-6 text-center font-sfpro text-xs font-[800] leading-[100%] tracking-[-0.05em] underline text-[#1E1E1E]">
           By continuing, you agree to our {' '}
           <a href="/terms" className="text-[#039994] hover:underline">Terms</a> and {' '}
           <a href="/privacy" className="text-[#039994] hover:underline">Privacy Policy</a>

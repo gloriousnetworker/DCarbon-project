@@ -21,7 +21,7 @@ const styles = {
   buttonPrimary: 'w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro',
   spinnerOverlay: 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20',
   spinner: 'h-12 w-12 border-4 border-t-4 border-gray-300 border-t-[#039994] rounded-full animate-spin',
-  termsTextContainer: 'mt-6 text-center font-sfpro text-[10px] leading-[100%] tracking-[-0.05em] text-[#1E1E1E]',
+  termsTextContainer: 'mt-6 text-center font-sfpro text-xs leading-[100%] tracking-[-0.05em] text-[#1E1E1E]',
   termsLink: 'text-[#039994] hover:underline font-medium',
   mandatoryStar: 'text-red-500 ml-1',
   labelContainer: 'flex items-center'

@@ -11,8 +11,22 @@ module.exports = {
   ],
   theme: {
     extend: {
+      colors: {
+        brand: {
+          DEFAULT: '#039994',
+          hover: '#028580',
+          dark: '#056C69',
+        },
+        surface: {
+          DEFAULT: '#F7F7F7',
+        },
+        content: {
+          DEFAULT: '#1E1E1E',
+          muted: '#626060',
+        },
+      },
       fontFamily: {
-        'sf-pro-text': ['SF Pro Text', 'sans-serif'],
+        sfpro: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
       },
       keyframes: {
         rotate: {
@@ -31,6 +45,10 @@ module.exports = {
           '0%, 100%': { opacity: '0' },
           '50%': { opacity: '1' },
         },
+        fadeIn: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
       },
       animation: {
         rotate: 'rotate 2s linear infinite',
@@ -39,6 +57,7 @@ module.exports = {
         'dot-1': 'dotBlink 1s ease-in-out infinite',
         'dot-2': 'dotBlink 1s ease-in-out infinite 0.2s',
         'dot-3': 'dotBlink 1s ease-in-out infinite 0.4s',
+        fadeIn: 'fadeIn 0.2s ease-out',
       },
       screens: {
         sm: '640px',
@@ -46,5 +65,4 @@ module.exports = {
     },
   },
   plugins: [nextui()],
-  important: true,
 };

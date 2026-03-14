@@ -16,7 +16,7 @@ const styles = {
   buttonPrimary:
     'w-full rounded-md bg-[#039994] text-white font-semibold py-2 hover:bg-[#02857f] focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro',
   termsTextContainer:
-    'mt-6 text-center font-sfpro text-[10px] font-[800] leading-[100%] tracking-[-0.05em] underline text-[#FFFFFF]',
+    'mt-6 text-center font-sfpro text-xs font-[800] leading-[100%] tracking-[-0.05em] underline text-[#FFFFFF]',
   formWrapper: 'w-full max-w-md space-y-6',
 };
 

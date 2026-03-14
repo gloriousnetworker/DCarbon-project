@@ -273,7 +273,7 @@ export default function QuickActions({ onSectionChange }) {
                     {walletLoading ? "..." : `${currentPoints.toLocaleString()}`}
                   </span>
                 </div>
-                <span className="text-[10px] text-[#9CA3AF] mt-1.5 block">Total accumulated points</span>
+                <span className="text-xs text-[#9CA3AF] mt-1.5 block">Total accumulated points</span>
               </div>
 
               <div className="space-y-5">
@@ -293,8 +293,8 @@ export default function QuickActions({ onSectionChange }) {
                     />
                   </div>
                   <div className="flex justify-between mt-1.5">
-                    <span className="text-[10px] text-[#9CA3AF] font-medium">0 pts</span>
-                    <span className="text-[10px] text-[#9CA3AF] font-medium">{redemptionThreshold.toLocaleString()} pts</span>
+                    <span className="text-xs text-[#9CA3AF] font-medium">0 pts</span>
+                    <span className="text-xs text-[#9CA3AF] font-medium">{redemptionThreshold.toLocaleString()} pts</span>
                   </div>
                 </div>
 
@@ -316,8 +316,8 @@ export default function QuickActions({ onSectionChange }) {
                     />
                   </div>
                   <div className="flex justify-between mt-1.5">
-                    <span className="text-[10px] text-[#9CA3AF] font-medium">0 referrals</span>
-                    <span className="text-[10px] text-[#9CA3AF] font-medium">{referralThreshold} referrals</span>
+                    <span className="text-xs text-[#9CA3AF] font-medium">0 referrals</span>
+                    <span className="text-xs text-[#9CA3AF] font-medium">{referralThreshold} referrals</span>
                   </div>
                 </div>
               </div>

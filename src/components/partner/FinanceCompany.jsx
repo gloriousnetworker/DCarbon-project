@@ -207,7 +207,7 @@ export default function StepOneCard() {
         </div>
 
         {/* Terms and Conditions & Privacy Policy Links */}
-        <div className="mt-6 text-center font-sfpro text-[10px] font-[800] underline text-[#1E1E1E]">
+        <div className="mt-6 text-center font-sfpro text-xs font-[800] underline text-[#1E1E1E]">
           By clicking on 'Next', you agree to our{' '}
           <a href="/terms" className="text-[#039994] hover:underline font-medium">
             Terms and Conditions

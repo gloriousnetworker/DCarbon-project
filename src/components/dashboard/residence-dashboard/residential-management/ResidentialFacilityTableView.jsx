@@ -119,17 +119,17 @@ export default function FacilityTableView({ onSelectFacility }) {
             <table className="w-full table-fixed divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="w-8 px-1 py-1 text-left text-[10px] font-bold text-gray-700 uppercase">S/N</th>
-                  <th className="w-20 px-1 py-1 text-left text-[10px] font-bold text-gray-700 uppercase">ID</th>
-                  <th className="w-24 px-1 py-1 text-left text-[10px] font-bold text-gray-700 uppercase">Address</th>
-                  <th className="w-20 px-1 py-1 text-left text-[10px] font-bold text-gray-700 uppercase">Provider</th>
-                  <th className="w-16 px-1 py-1 text-left text-[10px] font-bold text-gray-700 uppercase">Meter</th>
-                  <th className="w-12 px-1 py-1 text-left text-[10px] font-bold text-gray-700 uppercase">Zip</th>
-                  <th className="w-16 px-1 py-1 text-left text-[10px] font-bold text-gray-700 uppercase">Installer</th>
-                  <th className="w-16 px-1 py-1 text-left text-[10px] font-bold text-gray-700 uppercase">Finance</th>
-                  <th className="w-18 px-1 py-1 text-left text-[10px] font-bold text-gray-700 uppercase">Company</th>
-                  <th className="w-16 px-1 py-1 text-left text-[10px] font-bold text-gray-700 uppercase">Status</th>
-                  <th className="w-18 px-1 py-1 text-left text-[10px] font-bold text-gray-700 uppercase">Created</th>
+                  <th className="w-8 px-1 py-1 text-left text-xs font-bold text-gray-700 uppercase">S/N</th>
+                  <th className="w-20 px-1 py-1 text-left text-xs font-bold text-gray-700 uppercase">ID</th>
+                  <th className="w-24 px-1 py-1 text-left text-xs font-bold text-gray-700 uppercase">Address</th>
+                  <th className="w-20 px-1 py-1 text-left text-xs font-bold text-gray-700 uppercase">Provider</th>
+                  <th className="w-16 px-1 py-1 text-left text-xs font-bold text-gray-700 uppercase">Meter</th>
+                  <th className="w-12 px-1 py-1 text-left text-xs font-bold text-gray-700 uppercase">Zip</th>
+                  <th className="w-16 px-1 py-1 text-left text-xs font-bold text-gray-700 uppercase">Installer</th>
+                  <th className="w-16 px-1 py-1 text-left text-xs font-bold text-gray-700 uppercase">Finance</th>
+                  <th className="w-18 px-1 py-1 text-left text-xs font-bold text-gray-700 uppercase">Company</th>
+                  <th className="w-16 px-1 py-1 text-left text-xs font-bold text-gray-700 uppercase">Status</th>
+                  <th className="w-18 px-1 py-1 text-left text-xs font-bold text-gray-700 uppercase">Created</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -140,37 +140,37 @@ export default function FacilityTableView({ onSelectFacility }) {
                       className="hover:bg-gray-50 cursor-pointer"
                       onClick={() => onSelectFacility && onSelectFacility(facility)}
                     >
-                      <td className="px-1 py-1 text-[10px] font-medium text-[#039994]">
+                      <td className="px-1 py-1 text-xs font-medium text-[#039994]">
                         {index + 1 + (page - 1) * limit}
                       </td>
-                      <td className="px-1 py-1 text-[10px] text-gray-600 truncate" title={facility.id}>
+                      <td className="px-1 py-1 text-xs text-gray-600 truncate" title={facility.id}>
                         {facility.id?.slice(-8) || "-"}
                       </td>
-                      <td className="px-1 py-1 text-[10px] text-gray-600 truncate" title={facility.address || "-"}>
+                      <td className="px-1 py-1 text-xs text-gray-600 truncate" title={facility.address || "-"}>
                         {facility.address || "-"}
                       </td>
-                      <td className="px-1 py-1 text-[10px] text-gray-600 truncate" title={facility.utilityProvider || "-"}>
+                      <td className="px-1 py-1 text-xs text-gray-600 truncate" title={facility.utilityProvider || "-"}>
                         {facility.utilityProvider || "-"}
                       </td>
-                      <td className="px-1 py-1 text-[10px] text-gray-600 truncate">
+                      <td className="px-1 py-1 text-xs text-gray-600 truncate">
                         {facility.meterId || "-"}
                       </td>
-                      <td className="px-1 py-1 text-[10px] text-gray-600">
+                      <td className="px-1 py-1 text-xs text-gray-600">
                         {facility.zipCode || "-"}
                       </td>
-                      <td className="px-1 py-1 text-[10px] text-gray-600 truncate" title={facility.installer || "-"}>
+                      <td className="px-1 py-1 text-xs text-gray-600 truncate" title={facility.installer || "-"}>
                         {facility.installer || "-"}
                       </td>
-                      <td className="px-1 py-1 text-[10px] text-gray-600 capitalize truncate" title={facility.financeType || "-"}>
+                      <td className="px-1 py-1 text-xs text-gray-600 capitalize truncate" title={facility.financeType || "-"}>
                         {facility.financeType || "-"}
                       </td>
-                      <td className="px-1 py-1 text-[10px] text-gray-600 truncate" title={facility.financeCompany || "-"}>
+                      <td className="px-1 py-1 text-xs text-gray-600 truncate" title={facility.financeCompany || "-"}>
                         {facility.financeCompany || "-"}
                       </td>
-                      <td className="px-1 py-1 text-[10px] text-gray-600">
+                      <td className="px-1 py-1 text-xs text-gray-600">
                         {statusBadge(facility.status)}
                       </td>
-                      <td className="px-1 py-1 text-[10px] text-gray-600">
+                      <td className="px-1 py-1 text-xs text-gray-600">
                         {new Date(facility.createdAt).toLocaleDateString('en-US', { 
                           month: '2-digit', 
                           day: '2-digit', 

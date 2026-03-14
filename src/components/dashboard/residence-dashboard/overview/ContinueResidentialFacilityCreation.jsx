@@ -26,7 +26,7 @@ const styles = {
   emptyStateText: 'font-sfpro text-[14px] font-medium text-gray-600',
   emptyStateSubtext: 'font-sfpro text-[12px] text-gray-500 mt-1',
   closeButtonSecondary: 'mt-3 rounded-md border border-[#039994] text-[#039994] font-semibold py-2 px-4 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#039994] font-sfpro text-[14px]',
-  termsContainer: 'mt-4 text-center font-sfpro text-[10px] font-[800] leading-[100%] tracking-[-0.05em] underline text-[#1E1E1E]'
+  termsContainer: 'mt-4 text-center font-sfpro text-xs font-[800] leading-[100%] tracking-[-0.05em] underline text-[#1E1E1E]'
 };
 
 export default function ResidentialFacilityModal({ isOpen, onClose, currentStep }) {

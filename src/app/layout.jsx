@@ -1,18 +1,23 @@
-// app/layout.js
-'use client';
-
 import '../styles/globals.css';
-import { Toaster } from 'react-hot-toast';
-import { ProfileProvider } from '../components/dashboard/contexts/ProfileContext';
+import Providers from './Providers';
+
+export const metadata = {
+  title: 'DCarbon',
+  description: 'Sustainable Innovation — Renewable Energy Certificate Management',
+};
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+};
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body>
-        <ProfileProvider>
-          <Toaster position="top-center" />
+        <Providers>
           {children}
-        </ProfileProvider>
+        </Providers>
       </body>
     </html>
   );

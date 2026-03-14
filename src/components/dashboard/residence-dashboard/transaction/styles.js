@@ -52,7 +52,7 @@ export const spinner =
   'h-12 w-12 border-4 border-t-4 border-gray-300 border-t-[#039994] rounded-full animate-spin';
 
 export const termsTextContainer =
-  'mt-6 text-center font-sfpro text-[10px] font-[800] leading-[100%] tracking-[-0.05em] underline text-[#1E1E1E]';
+  'mt-6 text-center font-sfpro text-xs font-[800] leading-[100%] tracking-[-0.05em] underline text-[#1E1E1E]';
 
 // New style exports for the file upload section
 export const uploadHeading =
