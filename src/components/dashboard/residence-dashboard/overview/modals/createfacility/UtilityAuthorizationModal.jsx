@@ -157,6 +157,16 @@ export default function ResidentialFacilityModal({ isOpen, onClose, currentStep 
         const submitEmailResult = submitEmailResponse.data;
         
         if (submitEmailResult.status === 'success') {
+          // Persist utility data to database
+          try {
+            await axiosInstance.post('/api/auth/save-utility-data', {
+              ...greenButtonResult,
+              userId,
+            });
+          } catch (saveError) {
+            console.error('Failed to save utility data:', saveError);
+          }
+
           setGreenButtonEmail('');
           setShowGreenButtonIframe(false);
           onClose();

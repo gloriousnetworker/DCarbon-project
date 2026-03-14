@@ -99,6 +99,16 @@ export default function VerificationContent({ token: propToken }) {
         },
       });
 
+      // Persist utility data to database
+      try {
+        await axiosInstance.post('/api/auth/save-utility-data', {
+          ...data,
+          userId: data.userId || localStorage.getItem('userId'),
+        });
+      } catch (saveError) {
+        console.error('Failed to save utility data:', saveError);
+      }
+
       // Store success
       storeVerificationData(token, data.userId, true);
       navigateToAgreement();

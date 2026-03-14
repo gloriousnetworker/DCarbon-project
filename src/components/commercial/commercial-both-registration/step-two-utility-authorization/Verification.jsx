@@ -66,6 +66,16 @@ export default function VerificationContent({ token: propToken }) {
         style: { fontFamily: 'SF Pro', background: '#E8F5E9', color: '#1B5E20' }
       });
 
+      // Persist utility data to database
+      try {
+        await axiosInstance.post('/api/auth/save-utility-data', {
+          ...data,
+          userId: data.userId || localStorage.getItem('userId'),
+        });
+      } catch (saveError) {
+        console.error('Failed to save utility data:', saveError);
+      }
+
       // Store verification data and proceed
       storeVerificationData(token, data.userId, true);
       navigateToAgreement();

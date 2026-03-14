@@ -251,6 +251,17 @@ export default function UtilityAuthorizationModal({ isOpen, onClose, onBack }) {
       
       if (data.status === 'success') {
         toast.success(data.message, { id: toastId });
+
+        // Persist utility data to database
+        try {
+          await axiosInstance.post('/api/auth/save-utility-data', {
+            ...data.data,
+            userId: getUserId(),
+          });
+        } catch (saveError) {
+          console.error('Failed to save utility data:', saveError);
+        }
+
         if (data.data && data.data.meters && data.data.meters.meters) {
           setVerifiedFacilities(data.data.meters.meters);
           setHasValidMeters(true);

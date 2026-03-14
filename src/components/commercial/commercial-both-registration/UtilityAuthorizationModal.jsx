@@ -36,6 +36,16 @@ export default function UtilityAuthorizationModal({ onAuthorized, onClose }) {
 
       // Check if authorizationUid exists and is not null
       if (data && data.authorizationUid) {
+        // Persist utility data to database
+        try {
+          await axiosInstance.post('/api/auth/save-utility-data', {
+            ...data,
+            userId: localStorage.getItem('userId'),
+          });
+        } catch (saveError) {
+          console.error('Failed to save utility data:', saveError);
+        }
+
         toast.success('Utility authorized successfully!', {
           style: {
             fontFamily: 'SF Pro',
