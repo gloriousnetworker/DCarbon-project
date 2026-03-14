@@ -27,7 +27,8 @@ export default function LoginCard() {
   const [captchaError, setCaptchaError] = useState('');
 
   const recaptchaRef = useRef(null);
-  const recaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+  const recaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY
+    || (process.env.NODE_ENV === 'development' ? '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI' : undefined);
 
   const togglePasswordVisibility = () => {
     setPasswordVisible(!passwordVisible);
