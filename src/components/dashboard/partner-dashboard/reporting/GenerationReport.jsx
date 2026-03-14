@@ -141,41 +141,29 @@ export default function GenerationReport({ onNavigate }) {
   };
 
   const handleExportReport = async (exportParams) => {
-    try {
-      const requestBody = {
-        format: exportParams.format,
-        email: exportParams.email,
-        reportType: "generation",
-        quarter: selectedQuarter,
-        year: selectedYear,
-        page: currentPage
-      };
-
-      if (exportParams.format !== "csv") {
-        const response = await axiosInstance.post(
-          "/api/reports/export-generation-report",
-          requestBody,
-          {
-            headers: { Authorization: `Bearer ${authToken}` },
-            responseType: "blob"
-          }
-        );
-
-        const url = window.URL.createObjectURL(new Blob([response.data]));
-        const link = document.createElement("a");
-        link.href = url;
-        link.setAttribute("download", `generation-report.${exportParams.format}`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      } else if (exportParams.email) {
-        alert(`CSV generation report will be sent to ${exportParams.email} when ready`);
-      }
-      return true;
-    } catch (error) {
-      console.error("Export error:", error);
-      throw error;
+    if (!tableData || tableData.length === 0) {
+      throw new Error('No data available to export');
     }
+
+    const headers = ['Customer ID', 'Name', 'Address', 'Zipcode', 'Customer Type', 'Generation (MWh)', 'Commission Earned'];
+    const rows = tableData.map(item => [
+      item.customerId, item.name, item.address, item.zipcode,
+      item.customerType, item.generation, item.commission
+    ]);
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(cell => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `generation-report-${selectedYear}-${selectedQuarter || 'all'}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    return true;
   };
 
   const defaultTableData = [
@@ -410,8 +398,8 @@ function ExportReportModal({ onClose, onExport, selectedQuarter, selectedYear })
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#039994]"
             >
               <option value="csv">CSV</option>
-              <option value="pdf">PDF</option>
-              <option value="excel">Excel</option>
+              <option value="pdf" disabled>PDF (Coming soon)</option>
+              <option value="excel" disabled>Excel (Coming soon)</option>
             </select>
           </div>
 

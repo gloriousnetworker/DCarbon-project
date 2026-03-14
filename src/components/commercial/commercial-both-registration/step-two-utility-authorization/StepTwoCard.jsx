@@ -72,7 +72,6 @@ export default function OperatorRegistrationCard() {
   const [hasMounted, setHasMounted] = useState(false);
   const router = useRouter();
 
-  const localURL = '';
 
   useEffect(() => {
     setHasMounted(true);

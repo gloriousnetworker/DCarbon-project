@@ -72,7 +72,6 @@ export default function OperatorRegistrationCard() {
   const [hasMounted, setHasMounted] = useState(false);
   const router = useRouter();
 
-  const localURL = '';
 
   useEffect(() => {
     setHasMounted(true);
@@ -81,7 +80,7 @@ export default function OperatorRegistrationCard() {
   useEffect(() => {
     const fetchUtilityProviders = async () => {
       try {
-        const response = await axiosInstance.get(`${localURL}/api/auth/utility-providers`);
+        const response = await axiosInstance.get(`/api/auth/utility-providers`);
         const data = response.data;
         
         if (response.ok && data.status === 'success') {
@@ -235,7 +234,7 @@ export default function OperatorRegistrationCard() {
 
     try {
       const response = await axiosInstance.put(
-        `${localURL}/api/user/update-utility-auth-email/${userId}`,
+        `/api/user/update-utility-auth-email/${userId}`,
         {
           utilityAuthEmail: formData.utilityAuthEmail
         },
@@ -302,7 +301,7 @@ export default function OperatorRegistrationCard() {
 
     try {
       const response = await axiosInstance.post(
-        `${localURL}/api/user/request-utility-provider/${userId}`,
+        `/api/user/request-utility-provider/${userId}`,
         requestData,
         {
           headers: {
@@ -386,7 +385,7 @@ export default function OperatorRegistrationCard() {
     try {
       // First, submit the operator registration data
       const registrationResponse = await axiosInstance.put(
-        `${localURL}/api/user/commercial-registration/${userId}`,
+        `/api/user/commercial-registration/${userId}`,
         {
           entityType: formData.entityType,
           commercialRole: formData.commercialRole,
@@ -411,7 +410,7 @@ export default function OperatorRegistrationCard() {
 
       // Then initiate utility authorization with the verified email
       const initiateResponse = await axiosInstance.post(
-        `${localURL}/api/auth/initiate-utility-auth/${userId}`,
+        `/api/auth/initiate-utility-auth/${userId}`,
         {
           utilityAuthEmail: formData.utilityAuthEmail
         },
