@@ -105,11 +105,6 @@ export default function AgreementFormPage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${authToken}`,
         },
-        data: JSON.stringify({
-          signature: signatureData,
-          termsAccepted: true,
-          agreementCompleted: true
-        }),
       });
 
       if (response.status !== 200) {
