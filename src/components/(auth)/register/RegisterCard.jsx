@@ -47,7 +47,7 @@ function RegisterCardContent() {
   const [showPartnerRoles, setShowPartnerRoles] = useState(false);
 
   const searchParams = useSearchParams();
-  const recaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI';
+  const recaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
 
   useEffect(() => {
     const code = searchParams.get('referral') || searchParams.get('referralCode');
@@ -735,13 +735,19 @@ function RegisterCardContent() {
             </div>
 
             <div className="mb-4 flex justify-center">
-              <ReCAPTCHA
-                ref={recaptchaRef}
-                sitekey={recaptchaSiteKey}
-                onChange={onCaptchaChange}
-                onExpired={onCaptchaExpired}
-                onError={onCaptchaError}
-              />
+              {recaptchaSiteKey ? (
+                <ReCAPTCHA
+                  ref={recaptchaRef}
+                  sitekey={recaptchaSiteKey}
+                  onChange={onCaptchaChange}
+                  onExpired={onCaptchaExpired}
+                  onError={onCaptchaError}
+                />
+              ) : (
+                <p className="text-red-500 text-sm text-center font-sfpro">
+                  Security verification is unavailable. Please contact support.
+                </p>
+              )}
             </div>
             {captchaError && <p className="text-red-500 text-[14px] font-sfpro mb-2">{captchaError}</p>}
 

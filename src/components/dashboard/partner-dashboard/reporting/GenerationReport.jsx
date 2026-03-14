@@ -83,7 +83,7 @@ export default function GenerationReport({ onNavigate }) {
       }
 
       const response = await axiosInstance.get(
-        `/api/generation/${userId}`,
+        `/api/facility/generator-report/${userId}`,
         {
           params: params,
           headers: {

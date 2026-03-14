@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { axiosInstance } from '../../../../lib/config';
 import Loader from '../../../components/loader/Loader';
 import toast from 'react-hot-toast';
@@ -8,6 +8,18 @@ import ReCAPTCHA from 'react-google-recaptcha';
 
 export default function LoginCard() {
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('reason') === 'session_expired') {
+        toast.error('Your session has expired. Please sign in again.', {
+          style: { fontFamily: 'SF Pro', background: '#FFEBEE', color: '#B71C1C' },
+          duration: 5000,
+        });
+      }
+    }
+  }, []);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordVisible, setPasswordVisible] = useState(false);
@@ -15,7 +27,7 @@ export default function LoginCard() {
   const [captchaError, setCaptchaError] = useState('');
 
   const recaptchaRef = useRef(null);
-  const recaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI';
+  const recaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
 
   const togglePasswordVisibility = () => {
     setPasswordVisible(!passwordVisible);
@@ -238,13 +250,19 @@ export default function LoginCard() {
           </div>
 
           <div className="flex justify-center">
-            <ReCAPTCHA
-              ref={recaptchaRef}
-              sitekey={recaptchaSiteKey}
-              onChange={onCaptchaChange}
-              onExpired={onCaptchaExpired}
-              onError={onCaptchaError}
-            />
+            {recaptchaSiteKey ? (
+              <ReCAPTCHA
+                ref={recaptchaRef}
+                sitekey={recaptchaSiteKey}
+                onChange={onCaptchaChange}
+                onExpired={onCaptchaExpired}
+                onError={onCaptchaError}
+              />
+            ) : (
+              <p className="text-red-500 text-sm text-center font-sfpro">
+                Security verification is unavailable. Please contact support.
+              </p>
+            )}
           </div>
           {captchaError && (
             <p className="text-red-500 text-[14px] font-sfpro text-center">{captchaError}</p>
