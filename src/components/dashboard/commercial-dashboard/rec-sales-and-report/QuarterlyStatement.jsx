@@ -157,8 +157,8 @@ const QuarterlyStatement = () => {
       },
       billingInfo: {
         name: 'DCarbon Solutions Inc.',
-        address: userData?.address || '—',
-        email: userData?.email || '—'
+        address: 'California, United States',
+        email: 'info@dcarbon.solutions'
       },
       recSummary: {
         totalRecsGenerated: data?.totalRecsGenerated || 0,
@@ -313,8 +313,8 @@ const QuarterlyStatement = () => {
               <h3 className="font-sfpro text-[16px] font-[600] text-[#039994] mb-3">Billing to</h3>
               <div className="space-y-2">
                 <div className="font-sfpro text-[14px] font-[600] text-[#1E1E1E]">DCarbon Solutions Inc.</div>
-                <div className="font-sfpro text-[12px] font-[400] text-[#1E1E1E]">{userData?.address || '—'}</div>
-                <div className="font-sfpro text-[12px] font-[400] text-[#1E1E1E]">{userData?.email || '—'}</div>
+                <div className="font-sfpro text-[12px] font-[400] text-[#1E1E1E]">California, United States</div>
+                <div className="font-sfpro text-[12px] font-[400] text-[#1E1E1E]">info@dcarbon.solutions</div>
               </div>
             </div>
           </div>
