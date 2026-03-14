@@ -193,7 +193,7 @@ const SubmitInvoice = ({ onBack, onInvoiceSubmitted }) => {
         invoiceDocument: uploadedFileUrl
       };
 
-      const response = await axiosInstance.post(`/api/payout-request/request`, requestBody, {
+      const response = await axiosInstance.post(`/api/payout-request`, requestBody, {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${authToken}`,
