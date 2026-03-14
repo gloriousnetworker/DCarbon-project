@@ -34,9 +34,6 @@ const MyAccount = () => {
         });
 
         const data = response.data;
-        if (!response.ok) {
-          throw new Error(data.message || "Failed to fetch user data");
-        }
 
         setUserData(data.data);
         localStorage.setItem("userProfile", JSON.stringify(data.data));

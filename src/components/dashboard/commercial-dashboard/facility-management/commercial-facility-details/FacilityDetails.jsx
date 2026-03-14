@@ -120,8 +120,8 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
         `/api/user/get-operators/${userId}`,
         { headers: { Authorization: `Bearer ${authToken}` } }
       );
-      
-      const result = await response.json();
+
+      const result = response.data;
       if (result.status === "success") {
         setOperators(result.data);
       }
@@ -239,7 +239,7 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
         `/api/auth/user-meters/${userId}`,
         { headers: { 'Authorization': `Bearer ${authToken}` } }
       );
-      const result = await response.json();
+      const result = response.data;
       
       const metersExist = result.status === 'success' && 
                        Array.isArray(result.data) &&
@@ -263,7 +263,7 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
         `/api/user/agreement/${userId}`,
         { headers: { 'Authorization': `Bearer ${authToken}` } }
       );
-      const result = await response.json();
+      const result = response.data;
       return result.status === 'success' && result.data?.termsAccepted;
     } catch (error) {
       return false;
@@ -276,7 +276,7 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
         `/api/user/financial-info/${userId}`,
         { headers: { 'Authorization': `Bearer ${authToken}` } }
       );
-      const result = await response.json();
+      const result = response.data;
       return result.status === 'success' && result.data?.financialInfo;
     } catch (error) {
       return false;
