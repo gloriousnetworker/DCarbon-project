@@ -408,15 +408,14 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
     try {
       toast.loading('Uploading document...', { id: 'upload-toast' });
       
-      const response = await fetch(endpoints[docType], {
-        method: 'PUT',
+      const response = await axiosInstance.put(endpoints[docType], formData, {
         headers: {
-          'Authorization': `Bearer ${authToken}`
-        },
-        body: formData
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'multipart/form-data'
+        }
       });
 
-      const result = await response.json();
+      const result = response.data;
 
       if (result.status === 'success') {
         const updatedData = {
