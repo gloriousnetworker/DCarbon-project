@@ -58,7 +58,7 @@ const ChangePasswordCard = ({ onClose }) => {
   const styles = {
     mainContainer: "min-h-screen w-full flex flex-col items-center justify-center py-8 px-4 bg-white",
     modalOverlay: "fixed inset-0 z-50 bg-black bg-opacity-40 flex justify-center items-center",
-    modalContent: "relative bg-white rounded-md shadow-md w-full max-w-md p-6",
+    modalContent: "relative bg-white rounded-md shadow-md w-full max-w-md mx-4 p-4 md:p-6 max-h-[90vh] overflow-y-auto",
     pageTitle: "mb-4 font-[600] text-[24px] leading-normal tracking-[-0.05em] text-[#039994] font-sfpro text-center",
     formWrapper: "w-full max-w-md space-y-6",
     labelClass: "block mb-2 font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] font-[400] text-[#1E1E1E]",

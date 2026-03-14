@@ -143,7 +143,7 @@ const InviteFacilityModal = ({ isOpen, onClose, facilityData, customerEmail, onI
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg w-full max-w-md p-6">
+      <div className="bg-white rounded-lg w-full max-w-md mx-4 p-4 md:p-6 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-[#039994]">Invite to Create Facility</h2>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700">

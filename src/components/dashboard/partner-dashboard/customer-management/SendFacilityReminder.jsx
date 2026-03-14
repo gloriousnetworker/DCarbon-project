@@ -100,7 +100,7 @@ const SendReminderModal = ({ isOpen, onClose, customerEmail }) => {
       role="dialog"
       aria-modal="true"
     >
-      <div className="relative bg-white rounded-lg shadow-lg w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
+      <div className="relative bg-white rounded-lg shadow-lg w-full max-w-md mx-4 p-4 md:p-6 max-h-[90vh] overflow-y-auto max-h-[90vh] overflow-y-auto">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-[#F04438] hover:text-red-600"
