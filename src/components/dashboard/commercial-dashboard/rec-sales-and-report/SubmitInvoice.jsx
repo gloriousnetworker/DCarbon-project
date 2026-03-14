@@ -177,11 +177,20 @@ const SubmitInvoice = ({ onBack, onInvoiceSubmitted }) => {
         return;
       }
 
+      const today = new Date();
+      const issueDate = today.toISOString().split('T')[0];
+      const dueDate = new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
       const requestBody = {
         userId: userId,
+        quarter: parseInt(formData.quarter),
+        year: parseInt(formData.year),
+        invoiceNo: formData.invoiceNumber,
+        issueDate: issueDate,
+        dueDate: dueDate,
         amount: parseFloat(formData.amount),
-        userType: 'COMMERCIAL',
-        invoiceId: uploadedFileUrl
+        description: `Quarter ${formData.quarter} REC payout`,
+        invoiceDocument: uploadedFileUrl
       };
 
       const response = await axiosInstance.post(`/api/payout-request/request`, requestBody, {
@@ -193,7 +202,7 @@ const SubmitInvoice = ({ onBack, onInvoiceSubmitted }) => {
 
       const result = response.data;
 
-      if (response.status === 200 || response.status === 201 && result.status === 'success') {
+      if (result.status === 'success') {
         showToast('Invoice submitted successfully', 'success');
         
         if (onInvoiceSubmitted) {
