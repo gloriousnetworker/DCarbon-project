@@ -1,120 +1,64 @@
-'use client'; // Mark as a client component
+'use client';
 
-import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function HomePage() {
-  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  useEffect(() => {
-    setTimeout(() => {
-      setLoading(false); // Simulate loading completion after 5 seconds
-    }, 5000);
-  }, []);
-
-  const handleLoginClick = () => {
-    router.push('/login');
-  };
-
   return (
-    <div className="min-h-screen bg-[#039994] flex flex-col justify-center items-center text-white relative">
-      {/* Login Button - Top Right */}
-      <div className="absolute top-8 right-8">
+    <div className="min-h-screen bg-gradient-to-br from-[#039994] to-[#056C69] flex flex-col">
+      {/* Header */}
+      <header className="flex items-center justify-between px-6 py-4 md:px-12 md:py-6">
+        <div className="flex items-center space-x-3">
+          <img
+            src="/dashboard_images/logo.png"
+            alt="DCarbon Logo"
+            className="h-8 md:h-10 object-contain brightness-0 invert"
+            onError={(e) => { e.target.style.display = 'none'; }}
+          />
+        </div>
         <button
-          onClick={handleLoginClick}
-          className="bg-white text-[#039994] px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-all duration-300 transform hover:scale-105 shadow-lg"
+          onClick={() => router.push('/login')}
+          className="text-white border border-white/30 px-5 py-2 rounded-lg text-sm font-medium hover:bg-white/10 transition-colors"
         >
-          Login
+          Sign in
         </button>
-      </div>
+      </header>
 
-      <div className="text-center">
-        {/* Heading */}
-        <h1 className="text-5xl font-extrabold mb-6">
+      {/* Hero */}
+      <main className="flex-1 flex flex-col items-center justify-center px-6 text-center">
+        <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-4 tracking-tight">
           DCARBON
         </h1>
-        <p className="text-xl max-w-3xl mx-auto mb-8">
-          SUSTAINABLE INNOVATION
+        <p className="text-lg md:text-xl text-white/80 mb-2 font-medium tracking-widest uppercase">
+          Sustainable Innovation
+        </p>
+        <p className="text-sm md:text-base text-white/60 max-w-lg mb-10 leading-relaxed">
+          Empowering renewable energy certificate management for a cleaner future.
         </p>
 
-        {/* Construction Animation */}
-        {loading ? (
-          <div className="flex items-center justify-center space-x-4">
-            {/* Animated SVG (Sleek Construction Worker) */}
-            <svg
-              className="w-24 h-24 animate-bounce"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 200 200"
-            >
-              {/* Construction Worker Helmet */}
-              <circle cx="100" cy="50" r="30" fill="yellow" stroke="#fff" strokeWidth="3" />
-              {/* Worker Body (Arms + Tools) */}
-              <rect
-                className="construction-arm"
-                x="70"
-                y="70"
-                width="15"
-                height="40"
-                fill="white"
-              />
-              <rect
-                className="construction-arm"
-                x="115"
-                y="70"
-                width="15"
-                height="40"
-                fill="white"
-              />
-              {/* Worker Legs */}
-              <line x1="85" y1="110" x2="85" y2="150" stroke="white" strokeWidth="5" />
-              <line x1="115" y1="110" x2="115" y2="150" stroke="white" strokeWidth="5" />
-              {/* Hammer Icon */}
-              <rect
-                className="construction-tool"
-                x="50"
-                y="120"
-                width="10"
-                height="30"
-                fill="gray"
-                transform="rotate(45 55 130)"
-              />
-              {/* Construction Head (Simple Face) */}
-              <circle className="construction-head" cx="100" cy="50" r="5" fill="#fff" />
-            </svg>
-            <span className="text-lg font-semibold text-white">Under Construction</span>
-          </div>
-        ) : (
-          <p className="text-lg font-semibold">Coming Soon</p>
-        )}
-
-        {/* Under Construction Message */}
-        <div className="mt-8 flex flex-col items-center space-y-2">
-          <div className="text-3xl font-semibold text-white">We're Building Something Amazing!</div>
-          <p className="text-lg text-white opacity-80">
-            We're working hard to bring you the best experience. Stay tuned for updates.
-          </p>
+        <div className="flex flex-col sm:flex-row items-center gap-4">
+          <button
+            onClick={() => router.push('/login')}
+            className="bg-white text-[#039994] px-8 py-3 rounded-lg font-semibold text-sm hover:bg-gray-100 transition-colors shadow-lg min-w-[180px]"
+          >
+            Sign in
+          </button>
+          <button
+            onClick={() => router.push('/register')}
+            className="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold text-sm hover:bg-white/10 transition-colors min-w-[180px]"
+          >
+            Create Account
+          </button>
         </div>
+      </main>
 
-        {/* Loading dots animation */}
-        <div className="flex justify-center mt-6 space-x-2">
-          <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
-          <div className="w-2 h-2 bg-white rounded-full animate-pulse delay-75" />
-          <div className="w-2 h-2 bg-white rounded-full animate-pulse delay-150" />
-        </div>
-
-        {/* Additional Login Button (Alternative placement) */}
-        {!loading && (
-          <div className="mt-8">
-            <button
-              onClick={handleLoginClick}
-              className="bg-yellow-400 text-[#039994] px-8 py-4 rounded-full font-bold text-lg hover:bg-yellow-300 transition-all duration-300 transform hover:scale-105 shadow-xl"
-            >
-              Get Started - Login
-            </button>
-          </div>
-        )}
-      </div>
+      {/* Footer */}
+      <footer className="px-6 py-6 md:px-12 text-center">
+        <p className="text-white/40 text-xs">
+          &copy; {new Date().getFullYear()} DCarbon Solutions Inc. All rights reserved.
+        </p>
+      </footer>
     </div>
   );
 }
