@@ -89,16 +89,36 @@ const QuarterlyStatement = () => {
       const authToken = localStorage.getItem('authToken');
       if (!userId || !authToken) return;
 
-      const response = await axiosInstance.get(
+      // Fetch base user data
+      const userResponse = await axiosInstance.get(
         `/api/user/get-one-user/${userId}`,
         { headers: { 'Authorization': `Bearer ${authToken}` } }
       );
 
-      if (response.data.status === 'success') {
-        setUserData(response.data.data);
+      let mergedData = {};
+      if (userResponse.data.status === 'success') {
+        mergedData = { ...userResponse.data.data };
       }
+
+      // Fetch commercial user data (has phone and address)
+      try {
+        const commercialResponse = await axiosInstance.get(
+          `/api/user/get-commercial-user/${userId}`,
+          { headers: { 'Authorization': `Bearer ${authToken}` } }
+        );
+        if (commercialResponse.data.status === 'success') {
+          const cu = commercialResponse.data.data?.commercialUser;
+          if (cu) {
+            mergedData.phoneNumber = mergedData.phoneNumber || cu.phoneNumber;
+            mergedData.address = mergedData.address || cu.ownerAddress;
+          }
+        }
+      } catch (e) {
+        // Commercial user data is supplementary
+      }
+
+      setUserData(mergedData);
     } catch (error) {
-      // Use localStorage fallback
       setUserData({
         firstName: localStorage.getItem('userFirstName') || '',
         lastName: '',
