@@ -576,7 +576,7 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
             </div>
           )}
           
-          <div className="relative bg-white p-6 rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
+          <div className="relative bg-white p-4 md:p-6 rounded-lg w-full max-w-md mx-4 max-h-[85vh] overflow-y-auto">
             <button
               onClick={onClose}
               className="absolute right-4 top-4 text-gray-500 hover:text-gray-700 focus:outline-none"
@@ -987,7 +987,7 @@ export default function AddResidentialFacilityModal({ isOpen, onClose }) {
 
       {showAddFinanceTypeModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20">
-          <div className="relative bg-white p-6 rounded-lg w-full max-w-md">
+          <div className="relative bg-white p-4 md:p-6 rounded-lg w-full max-w-md mx-4 max-h-[85vh] overflow-y-auto">
             <button
               onClick={handleCloseAddFinanceTypeModal}
               className="absolute right-4 top-4 text-gray-500 hover:text-gray-700 focus:outline-none"

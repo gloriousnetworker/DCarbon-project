@@ -132,15 +132,15 @@ const QuarterlyStatement = () => {
     const dataToExport = {
       period: `Q${selectedQuarter} ${selectedYear}`,
       customerInfo: {
-        name: staticData.customerName,
-        address: staticData.address,
-        email: staticData.email,
-        phone: staticData.phoneNumber
+        name: userData ? `${userData.firstName || ''} ${userData.lastName || ''}`.trim() : '—',
+        address: userData?.address || '—',
+        email: userData?.email || '—',
+        phone: userData?.phoneNumber || '—'
       },
       billingInfo: {
-        name: staticData.name,
-        address: staticData.address,
-        email: staticData.email
+        name: 'DCarbon Solutions Inc.',
+        address: userData?.address || '—',
+        email: userData?.email || '—'
       },
       recSummary: {
         totalRecsGenerated: data?.totalRecsGenerated || 0,
@@ -294,9 +294,9 @@ const QuarterlyStatement = () => {
             <div className="rounded-lg p-4" style={{ backgroundColor: '#EFEFEF80' }}>
               <h3 className="font-sfpro text-[16px] font-[600] text-[#039994] mb-3">Billing to</h3>
               <div className="space-y-2">
-                <div className="font-sfpro text-[14px] font-[600] text-[#1E1E1E]">{staticData.name}</div>
-                <div className="font-sfpro text-[12px] font-[400] text-[#1E1E1E]">{staticData.address}</div>
-                <div className="font-sfpro text-[12px] font-[400] text-[#1E1E1E]">{staticData.email}</div>
+                <div className="font-sfpro text-[14px] font-[600] text-[#1E1E1E]">DCarbon Solutions Inc.</div>
+                <div className="font-sfpro text-[12px] font-[400] text-[#1E1E1E]">{userData?.address || '—'}</div>
+                <div className="font-sfpro text-[12px] font-[400] text-[#1E1E1E]">{userData?.email || '—'}</div>
               </div>
             </div>
           </div>

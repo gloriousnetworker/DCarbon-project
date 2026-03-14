@@ -2,28 +2,19 @@ import React, { useState, useEffect } from "react";
 import { axiosInstance } from "../../../../../lib/config";
 
 const getDynamicQuarters = () => {
-  const today = new Date();
-  const currentYear = today.getFullYear();
-  const currentMonth = today.getMonth() + 1;
-  
-  const quarters = [];
-  const currentQuarter = Math.ceil(currentMonth / 3);
-  
-  for (let i = 0; i < 8; i++) {
-    let year = currentYear - Math.floor((i + (4 - currentQuarter)) / 4);
-    let quarterNum = currentQuarter - i;
-    while (quarterNum < 1) {
-      quarterNum += 4;
-      year -= 1;
-    }
-    
-    quarters.push({
-      label: `Q${quarterNum} (Jan-Mar)`,
-      value: quarterNum.toString()
-    });
-  }
-  
-  return quarters;
+  const quarterLabels = {
+    1: 'Q1 (Jan-Mar)',
+    2: 'Q2 (Apr-Jun)',
+    3: 'Q3 (Jul-Sep)',
+    4: 'Q4 (Oct-Dec)',
+  };
+
+  return [
+    { label: quarterLabels[1], value: '1' },
+    { label: quarterLabels[2], value: '2' },
+    { label: quarterLabels[3], value: '3' },
+    { label: quarterLabels[4], value: '4' },
+  ];
 };
 
 const getDynamicYears = () => {
