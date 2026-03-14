@@ -130,7 +130,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
         setUserAgreement(response.data.data);
       }
     } catch (err) {
-      console.error('Error fetching user agreement:', err);
+      // Agreement may not exist yet for new users
     } finally {
       setLoadingUserAgreement(false);
     }
@@ -142,17 +142,17 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
       const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
       const userId = loginResponse?.data?.user?.id;
       const token = loginResponse?.data?.token;
-      
+
       const response = await axiosInstance.get(
         `/api/user/referrer/${userId}`,
         { headers: { 'Authorization': `Bearer ${token}` } }
       );
-      
-      if (response.data.status === 'success' && response.data.data.partnerType === 'FINANCE_COMPANY') {
+
+      if (response.data.status === 'success' && response.data.data?.partnerType === 'FINANCE_COMPANY') {
         setReferrerFinanceCompany(response.data.data.partner);
       }
     } catch (err) {
-      console.error('Error fetching referrer info:', err);
+      // Referrer info may not exist for users without a referral
     } finally {
       setLoadingReferrer(false);
     }
@@ -784,8 +784,8 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
 
       {isOpen && !showInstapullAuthModal && !showAgreementModal && !showGreenButtonModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-          <div className="relative w-full max-w-lg bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
-            <div className="relative p-6 pb-4">
+          <div className="relative w-full max-w-lg mx-4 bg-white rounded-2xl overflow-hidden max-h-[85vh] flex flex-col">
+            <div className="relative p-4 md:p-6 pb-4">
               {onBack && (
                 <button
                   onClick={onBack}
@@ -864,7 +864,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
                         <optgroup label="Green Button Utilities" className={styles.optionGroupGreenButton}>
                           {greenButtonUtilities.map((provider) => (
                             <option key={provider.id} value={provider.name}>
-                              {provider.name} <span className={styles.greenButtonBadge}>Green Button</span>
+                              {provider.name} (Green Button)
                             </option>
                           ))}
                         </optgroup>
