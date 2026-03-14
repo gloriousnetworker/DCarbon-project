@@ -134,12 +134,13 @@ const SubmitInvoice = ({ onBack, onInvoiceSubmitted }) => {
       const response = await axiosInstance.post(`/api/file-storage/upload/${formData.invoiceNumber}`, formDataUpload, {
         headers: {
           'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'multipart/form-data',
         },
       });
 
       const result = response.data;
 
-      if (response.status === 200 || response.status === 201 && result.success) {
+      if ((response.status === 200 || response.status === 201) && result.data) {
         setUploadedFileUrl(result.data.url);
         showToast('File uploaded successfully', 'success');
       } else {
