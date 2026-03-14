@@ -117,24 +117,19 @@ export default function UserDashboard() {
           onSectionChange={handleSectionChange}
         />
 
-        {sidebarOpen && (
-          <div className="fixed inset-0 z-50 flex md:hidden">
-            <div
-              className="absolute inset-0 bg-black bg-opacity-50"
-              onClick={toggleSidebar}
+        <div className={`fixed inset-0 z-40 md:hidden transition-opacity duration-300 ${sidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+          <div className="absolute inset-0 bg-black/50" onClick={toggleSidebar} />
+          <div className={`relative bg-white w-64 h-full shadow-lg transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+            <DashboardSidebar
+              selectedSection={activeSection}
+              onSectionChange={handleSectionChange}
+              toggleSidebar={toggleSidebar}
             />
-            <div className="relative bg-white w-64 h-full shadow-md">
-              <DashboardSidebar
-                selectedSection={activeSection}
-                onSectionChange={handleSectionChange}
-                toggleSidebar={toggleSidebar}
-              />
-            </div>
           </div>
-        )}
+        </div>
 
         <main className="flex-1">
-          <div className="max-w-7xl mx-auto p-6">
+          <div className="max-w-7xl mx-auto p-4 md:p-6">
             <SectionComponent {...sectionProps} />
           </div>
         </main>

@@ -240,7 +240,7 @@
 //       <header className="bg-white border-b border-gray-200">
 //         <div className="max-w-full px-4 py-3 flex items-center justify-between">
 //           <div className="flex items-center space-x-4">
-//             <button className="md:hidden" onClick={toggleSidebar}>
+//             <button className="md:hidden p-2" aria-label="Toggle menu" onClick={toggleSidebar}>
 //               <FaBars className="text-gray-700" size={20} />
 //             </button>
 //             <h1 className="font-[550] text-[16px] leading-[50%] tracking-[-0.05em] text-[#1E1E1E] font-sfpro text-center">
@@ -252,7 +252,7 @@
             
 //           </div>
 
-//           <div className="flex items-center space-x-6">
+//           <div className="flex items-center space-x-3 md:space-x-6">
 //             <div className="relative group">
 //               <div
 //                 onClick={handleRegistrationClick}
@@ -273,7 +273,7 @@
 //               </div>
 //             </div>
 
-//             <div className="flex items-center space-x-6">
+//             <div className="flex items-center space-x-3 md:space-x-6">
 //               <div className="relative group">
 //                 <button
 //                   onClick={handleFeedbackClick}
@@ -451,7 +451,7 @@ const DashboardNavbar = ({
       <header className="bg-white border-b border-gray-200">
         <div className="max-w-full px-4 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <button className="md:hidden" onClick={toggleSidebar}>
+            <button className="md:hidden p-2" aria-label="Toggle menu" onClick={toggleSidebar}>
               <FaBars className="text-gray-700" size={20} />
             </button>
             <h1 className="font-[550] text-[16px] leading-[50%] tracking-[-0.05em] text-[#1E1E1E] font-sfpro text-center">
@@ -461,8 +461,8 @@ const DashboardNavbar = ({
 
           <div className="flex-1 flex justify-center mx-4"></div>
 
-          <div className="flex items-center space-x-6">
-            <div className="flex items-center space-x-6">
+          <div className="flex items-center space-x-3 md:space-x-6">
+            <div className="flex items-center space-x-3 md:space-x-6">
               <div className="relative group">
                 <button
                   onClick={handleFeedbackClick}
