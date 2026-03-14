@@ -468,8 +468,8 @@ export default function ResidentialFacilityModal({ isOpen, onClose, currentStep 
     <>
       {isOpen && !showFinanceModal && !showGreenButtonIframe && !showStandardIframe && !showVideoModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-          <div className="relative w-full max-w-2xl bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
-            <div className="flex-shrink-0 p-6 border-b border-gray-200 bg-gradient-to-r from-[#039994]/10 to-transparent">
+          <div className="relative w-full max-w-2xl mx-4 bg-white rounded-2xl overflow-hidden max-h-[85vh] flex flex-col">
+            <div className="flex-shrink-0 p-4 md:p-6 border-b border-gray-200 bg-gradient-to-r from-[#039994]/10 to-transparent">
               <div className="flex justify-between items-center">
                 <div>
                   <h2 className="font-[600] text-[20px] leading-[100%] tracking-[-0.05em] text-[#039994] font-sans mb-1">

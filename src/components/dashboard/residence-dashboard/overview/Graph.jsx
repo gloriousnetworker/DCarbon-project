@@ -88,7 +88,7 @@ export default function Graph() {
                            );
         setHasMeters(metersExist);
       } catch (error) {
-        console.error('Error checking meters:', error);
+        // Expected 404 if user hasn't authorized utility yet
       } finally {
         setMetersLoading(false);
       }

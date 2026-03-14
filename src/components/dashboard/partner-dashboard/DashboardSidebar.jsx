@@ -108,7 +108,7 @@ const DashboardSidebar = ({
           }`}
         >
           <FiTrendingUp className={iconBase} color={isActive("customerManagement") ? "#FFFFFF" : "#039994"} />
-          <span>Partner Management</span>
+          <span>Customer Management</span>
         </button>
       </nav>
 

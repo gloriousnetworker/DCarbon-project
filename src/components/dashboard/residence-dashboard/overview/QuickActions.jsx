@@ -117,7 +117,7 @@ export default function QuickActions({ onSectionChange }) {
       
       setHasMeters(metersExist);
     } catch (error) {
-      console.error('Error fetching meters:', error);
+      // Expected 404 if user hasn't authorized utility yet
     } finally {
       setIsLoading(false);
     }

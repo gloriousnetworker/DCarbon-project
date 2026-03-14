@@ -73,10 +73,8 @@ const QuarterlyStatement = () => {
 
       const result = response.data;
 
-      if (response.status === 200 && result.status === 'success') {
+      if (result.data) {
         setData(result.data);
-      } else {
-        toast.error(result.message || 'Failed to fetch quarterly statement');
       }
     } catch (error) {
       console.error('Error fetching quarterly statement:', error);
