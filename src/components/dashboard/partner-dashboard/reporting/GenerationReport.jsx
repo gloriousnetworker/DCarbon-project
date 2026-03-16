@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { axiosInstance } from "../../../../../lib/config";
+import ResponsiveTable from "../../shared/ResponsiveTable";
 
 const getDynamicQuarters = () => {
   const quarterLabels = {
@@ -263,46 +264,21 @@ export default function GenerationReport({ onNavigate }) {
         </div>
 
         <div className="w-full bg-white rounded-lg shadow-sm border border-gray-200">
-          {loading && (
-            <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#039994] mx-auto"></div>
-              <p className="text-sm text-gray-500 mt-2">Loading generation data...</p>
-            </div>
-          )}
-
-          {!loading && (
-            <div className="w-full overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="border-b border-gray-300 bg-gray-50">
-                    <th className="py-3 px-2 text-left text-xs font-bold text-gray-700 whitespace-nowrap">Customer ID</th>
-                    <th className="py-3 px-2 text-left text-xs font-bold text-gray-700 whitespace-nowrap">Name</th>
-                    <th className="py-3 px-2 text-left text-xs font-bold text-gray-700 whitespace-nowrap">Address</th>
-                    <th className="py-3 px-2 text-left text-xs font-bold text-gray-700 whitespace-nowrap">Zipcode</th>
-                    <th className="py-3 px-2 text-left text-xs font-bold text-gray-700 whitespace-nowrap">Customer Type</th>
-                    <th className="py-3 px-2 text-left text-xs font-bold text-gray-700 whitespace-nowrap">Generation (MWh)</th>
-                    <th className="py-3 px-2 text-left text-xs font-bold text-gray-700 whitespace-nowrap">Commission Earned</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {displayData.map((item) => (
-                    <tr
-                      key={item.id}
-                      className="border-b border-gray-200 hover:bg-gray-50"
-                    >
-                      <td className="py-2 px-2 text-xs">{item.customerId}</td>
-                      <td className="py-2 px-2 text-xs">{item.name}</td>
-                      <td className="py-2 px-2 text-xs">{item.address}</td>
-                      <td className="py-2 px-2 text-xs">{item.zipcode}</td>
-                      <td className="py-2 px-2 text-xs">{item.customerType}</td>
-                      <td className="py-2 px-2 text-xs">{item.generation}</td>
-                      <td className="py-2 px-2 text-xs">${item.commission}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+          <ResponsiveTable
+            loading={loading}
+            data={displayData}
+            emptyTitle="No generation data found"
+            emptyDescription="Generation data for the selected period will appear here."
+            columns={[
+              { key: 'customerId', label: 'Customer ID' },
+              { key: 'name', label: 'Name' },
+              { key: 'address', label: 'Address' },
+              { key: 'zipcode', label: 'Zipcode' },
+              { key: 'customerType', label: 'Customer Type' },
+              { key: 'generation', label: 'Generation (MWh)' },
+              { key: 'commission', label: 'Commission Earned', render: (v) => `$${v}` },
+            ]}
+          />
         </div>
 
         {!loading && tableData.length > 0 && totalPages > 1 && (

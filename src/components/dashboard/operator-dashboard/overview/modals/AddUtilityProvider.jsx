@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { toast } from "react-hot-toast";
 import * as styles from "./styles";
+import { axiosInstance } from '../../../../../lib/config';
 
 export default function AddUtilityProvider({ isOpen, onClose }) {
   const [email, setEmail] = useState("");
@@ -43,63 +44,43 @@ export default function AddUtilityProvider({ isOpen, onClose }) {
         return;
       }
 
-      const response = await axiosInstance.
+      const response = await axiosInstance.put(
         `/api/user/update-utility-auth-email/${userId}`,
+        { utilityAuthEmail: email.trim() },
         {
-          method: "PUT",
           headers: {
-            "Content-Type": "application/json",
             "Authorization": `Bearer ${authToken}`,
           },
-          body: JSON.stringify({
-            utilityAuthEmail: email.trim()
-          }),
         }
       );
 
       const data = response.data;
 
-      if (response.ok && data.status === "success") {
-        toast.success("Utility authorization email added successfully!");
-        
-        // Update localStorage with new user data
-        const updatedLoginResponse = {
-          ...loginResponse,
-          data: {
-            ...loginResponse.data,
-            user: {
-              ...loginResponse.data.user,
-              utilityAuthEmail: data.data.utilityAuthEmail
-            }
-          }
-        };
-        localStorage.setItem("loginResponse", JSON.stringify(updatedLoginResponse));
+      toast.success("Utility authorization email added successfully!");
 
-        // Close modal
-        onClose();
-        
-        // Open utility authorization window
-        setTimeout(() => {
-          window.open("https://utilityapi.com/authorize/DCarbon_Solutions", "_blank");
-        }, 1000);
-        
-      } else {
-        // Handle different error scenarios
-        if (response.status === 401) {
-          toast.error("Authentication failed. Please log in again.");
-        } else if (response.status === 403) {
-          toast.error("You don't have permission to perform this action.");
-        } else {
-          toast.error(data.message || "Failed to add utility authorization email");
+      // Update localStorage with new user data
+      const updatedLoginResponse = {
+        ...loginResponse,
+        data: {
+          ...loginResponse.data,
+          user: {
+            ...loginResponse.data.user,
+            utilityAuthEmail: data.data?.utilityAuthEmail
+          }
         }
-      }
+      };
+      localStorage.setItem("loginResponse", JSON.stringify(updatedLoginResponse));
+
+      // Close modal
+      onClose();
+
+      // Open utility authorization window
+      setTimeout(() => {
+        window.open("https://utilityapi.com/authorize/DCarbon_Solutions", "_blank");
+      }, 1000);
     } catch (error) {
       console.error("Error adding utility auth email:", error);
-      if (error.name === 'TypeError' && error.message.includes('fetch')) {
-        toast.error("Network error. Please check your connection and try again.");
-      } else {
-        toast.error("An error occurred. Please try again.");
-      }
+      toast.error(error.response?.data?.message || error.message || "An error occurred. Please try again.");
     } finally {
       setIsLoading(false);
     }

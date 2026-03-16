@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { axiosInstance } from "../../../../../lib/config";
+import ResponsiveTable from '../../shared/ResponsiveTable';
 
 const mainContainer = 'min-h-screen w-full py-8 px-4 bg-white';
 const headingContainer = 'relative w-full flex flex-col items-center mb-6';
@@ -181,63 +182,29 @@ const AdminInvoices = ({ onBack }) => {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payout ID</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice Number</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User Type</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Admin Note</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created Date</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Approved At</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredInvoices.length === 0 ? (
-                    <tr>
-                      <td colSpan="8" className="px-6 py-8 text-center text-sm text-gray-500">
-                        No invoices found
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredInvoices.map((invoice) => (
-                      <tr key={invoice.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {invoice.id.substring(0, 8)}...
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {invoice.invoice || 'N/A'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-semibold">
-                          ${invoice.amountRequested?.toFixed(2) || '0.00'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(invoice.status)}`}>
-                            {invoice.status || 'N/A'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {invoice.userType || 'N/A'}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
-                          {invoice.adminNote || 'N/A'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {formatDate(invoice.createdAt)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {formatDateTime(invoice.approvedAt)}
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+          <div className="bg-white rounded-lg shadow p-4">
+            <ResponsiveTable
+              loading={isLoading}
+              data={filteredInvoices}
+              emptyTitle="No invoices found"
+              columns={[
+                { key: 'id', label: 'Payout ID', render: (v) => v ? `${v.substring(0, 8)}...` : 'N/A' },
+                { key: 'invoice', label: 'Invoice Number', render: (v) => v || 'N/A' },
+                { key: 'amountRequested', label: 'Amount', render: (v) => `$${v?.toFixed(2) || '0.00'}` },
+                {
+                  key: 'status', label: 'Status',
+                  render: (v) => (
+                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(v)}`}>
+                      {v || 'N/A'}
+                    </span>
+                  ),
+                },
+                { key: 'userType', label: 'User Type', render: (v) => v || 'N/A' },
+                { key: 'adminNote', label: 'Admin Note', render: (v) => v || 'N/A' },
+                { key: 'createdAt', label: 'Created Date', render: (v) => formatDate(v) },
+                { key: 'approvedAt', label: 'Approved At', render: (v) => formatDateTime(v) },
+              ]}
+            />
           </div>
 
           {filteredInvoices.length > 0 && (

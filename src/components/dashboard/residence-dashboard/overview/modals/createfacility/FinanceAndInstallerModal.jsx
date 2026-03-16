@@ -369,7 +369,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     await axiosInstance.put(
       `/api/residential-facility/residential-docs/finance-agreement/${facilityId}`,
       formDataObj,
-      { headers: { 'Content-Type': 'multipart/form-data', 'Authorization': `Bearer ${token}` } }
+      { headers: { 'Authorization': `Bearer ${token}` } }
     );
   };
 

@@ -307,7 +307,7 @@ export default function FinanceAndInstallerModal({ isOpen, onClose, onBack }) {
     await axiosInstance.put(
       `/api/facility/update-facility-financial-agreement/${facilityId}`,
       formDataObj,
-      { headers: { 'Content-Type': 'multipart/form-data', 'Authorization': `Bearer ${token}` } }
+      { headers: { 'Authorization': `Bearer ${token}` } }
     );
   };
 

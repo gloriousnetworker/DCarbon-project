@@ -4,11 +4,10 @@ import SignatureModal from "./SignatureModal";
 import { jsPDF } from "jspdf";
 import { axiosInstance } from "../../../../../lib/config";
 
-export default function OwnerAndOperatorTermsAndAgreementModal({ isOpen, onClose }) {
+export default function OwnerAndOperatorTermsAndAgreementModal({ isOpen, onClose, onAgreementAccepted }) {
   const [isChecked1, setIsChecked1] = useState(false);
   const [isChecked2, setIsChecked2] = useState(false);
   const [showSignatureModal, setShowSignatureModal] = useState(false);
-  const [showFinanceModal, setShowFinanceModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [hasSigned, setHasSigned] = useState(false);
   const [signatureUrl, setSignatureUrl] = useState(null);
@@ -119,23 +118,16 @@ export default function OwnerAndOperatorTermsAndAgreementModal({ isOpen, onClose
     }
     const success = await acceptUserAgreementTerms();
     if (success) {
-      setShowFinanceModal(true);
+      if (onAgreementAccepted) {
+        onAgreementAccepted();
+      } else {
+        onClose();
+      }
     }
   };
 
   const handleSignatureCancel = () => {
     setShowSignatureModal(false);
-    window.location.reload();
-  };
-
-  const handleFinanceModalClose = () => {
-    setShowFinanceModal(false);
-    onClose();
-    window.location.reload();
-  };
-
-  const handleFinanceModalBack = () => {
-    setShowFinanceModal(false);
   };
 
   const handleModalClose = () => {
@@ -293,16 +285,6 @@ export default function OwnerAndOperatorTermsAndAgreementModal({ isOpen, onClose
     
     doc.save("DCarbon_Owner_Operator_Agreements.pdf");
   };
-
-  if (showFinanceModal) {
-    return (
-      <OperatorFinanceAndInstallerModal
-        isOpen={showFinanceModal}
-        onClose={handleFinanceModalClose}
-        onBack={handleFinanceModalBack}
-      />
-    );
-  }
 
   if (!isOpen && !showSignatureModal) return null;
 

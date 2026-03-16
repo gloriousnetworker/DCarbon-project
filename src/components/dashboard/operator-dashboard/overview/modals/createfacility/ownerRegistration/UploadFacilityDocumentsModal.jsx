@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { toast } from "react-hot-toast";
+import { axiosInstance } from '../../../../../../../lib/config';
 import InviteOperatorModal from './InviteOperatorModal.jsx';
 import {
   buttonPrimary,
@@ -69,22 +70,17 @@ export default function UploadFacilityDocumentsModal({ isOpen, onClose }) {
       const formData = new FormData();
       formData.append(documentKeys[index], files[index]);
 
-      const response = await axiosInstance.
+      const response = await axiosInstance.put(
         `/api/facility/${endpoints[index]}/${userId}`,
+        formData,
         {
-          method: 'PUT',
           headers: {
             'Authorization': `Bearer ${authToken}`,
           },
-          body: formData,
         }
       );
 
       const data = response.data;
-
-      if (!response.ok) {
-        throw new Error(data.message || `Failed to upload ${documentTypes[index]}`);
-      }
 
       // Update status to PENDING after successful upload
       setDocumentStatuses(prev => {

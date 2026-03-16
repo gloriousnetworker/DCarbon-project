@@ -197,6 +197,10 @@ export default function ResidentialFacilityModal({ isOpen, onClose, currentStep 
   };
 
   const handleContinueRegistration = () => {
+    if (currentStage < 3) {
+      toast.error("Please complete the agreement signing step before continuing with utility authorization.");
+      return;
+    }
     const facility = userFacilities.find(f => f.id === selectedFacility);
     if (facility) {
       setSelectedUtilityProvider(facility.utilityProvider);

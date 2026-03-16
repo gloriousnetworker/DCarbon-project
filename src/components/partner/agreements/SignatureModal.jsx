@@ -139,15 +139,10 @@ export default function SignatureModal({ isOpen, onClose, onComplete }) {
       clearInterval(progressInterval);
       setUploadProgress(100);
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Failed to upload signature');
-      }
-
-      const result = await response.json();
+      const result = response.data;
       setIsUploaded(true);
       toast.success('Signature uploaded successfully!');
-      
+
       if (result.data?.signature) {
         localStorage.setItem('signatureUrl', result.data.signature);
       }
@@ -205,7 +200,7 @@ export default function SignatureModal({ isOpen, onClose, onComplete }) {
       }
 
       if (signatureFile) {
-        const success = await uploadSignature(new File([signatureFile], 'signature.png'));
+        const success = await uploadSignature(new File([signatureFile], 'signature.png', { type: 'image/png' }));
         if (success) {
           onComplete();
         }

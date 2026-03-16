@@ -250,20 +250,22 @@ export default function LoginCard() {
             </div>
           </div>
 
-          <div className="flex justify-center">
-            {recaptchaSiteKey ? (
-              <ReCAPTCHA
-                ref={recaptchaRef}
-                sitekey={recaptchaSiteKey}
-                onChange={onCaptchaChange}
-                onExpired={onCaptchaExpired}
-                onError={onCaptchaError}
-              />
-            ) : (
-              <p className="text-red-500 text-sm text-center font-sfpro">
-                Security verification is unavailable. Please contact support.
-              </p>
-            )}
+          <div className="flex justify-center overflow-hidden">
+            <div className="w-full max-w-[304px] [transform-origin:left_top] [@media(max-width:360px)]:[transform:scale(0.85)]">
+              {recaptchaSiteKey ? (
+                <ReCAPTCHA
+                  ref={recaptchaRef}
+                  sitekey={recaptchaSiteKey}
+                  onChange={onCaptchaChange}
+                  onExpired={onCaptchaExpired}
+                  onError={onCaptchaError}
+                />
+              ) : (
+                <p className="text-red-500 text-sm text-center font-sfpro">
+                  Security verification is unavailable. Please contact support.
+                </p>
+              )}
+            </div>
           </div>
           {captchaError && (
             <p className="text-red-500 text-[14px] font-sfpro text-center">{captchaError}</p>

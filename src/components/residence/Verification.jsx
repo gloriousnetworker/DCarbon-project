@@ -72,19 +72,7 @@ export default function VerificationContent({ token: propToken }) {
         { token }
       );
 
-      const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        const text = await response.text();
-        throw new Error(text || "Invalid response from server");
-      }
-
       const data = response.data;
-
-      if (!response.ok) {
-        throw new Error(
-          data.message || "Utility authorization verification failed"
-        );
-      }
 
       setVerificationStatus("success");
       setMessage(

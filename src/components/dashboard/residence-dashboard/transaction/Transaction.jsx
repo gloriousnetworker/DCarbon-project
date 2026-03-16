@@ -4,6 +4,7 @@ import RequestRedemption from "./RequestRedemption";
 import RedeemPoints from "./RedeemPoints";
 import ResidentialBonusTable from "./ResidentialBonusTable";
 import * as styles from "./styles";
+import ResponsiveTable from "../../shared/ResponsiveTable";
 
 export default function RedemptionTransactions() {
   const [showRequestRedemptionModal, setShowRequestRedemptionModal] = useState(false);
@@ -182,39 +183,30 @@ export default function RedemptionTransactions() {
         </div>
       )}
 
-      <div className="w-full max-w-5xl overflow-x-auto">
-        <table className="w-full table-auto border-collapse">
-          <thead>
-            <tr className="text-left text-[#1E1E1E]">
-              <th className="pb-2 font-sfpro font-medium">S/N</th>
-              <th className="pb-2 font-sfpro font-medium">Payout ID</th>
-              <th className="pb-2 font-sfpro font-medium">User Type</th>
-              <th className="pb-2 font-sfpro font-medium">Amount Requested</th>
-              <th className="pb-2 font-sfpro font-medium">Status</th>
-              <th className="pb-2 font-sfpro font-medium">Approved At</th>
-              <th className="pb-2 font-sfpro font-medium">Rejected At</th>
-              <th className="pb-2 font-sfpro font-medium">Created At</th>
-            </tr>
-          </thead>
-          <tbody>
-            {transactions.map((t) => (
-              <tr key={t.id} className="border-t">
-                <td className="py-3 font-sfpro">{t.serialNumber}</td>
-                <td className="py-3 font-sfpro">{t.id}</td>
-                <td className="py-3 font-sfpro">{t.userType}</td>
-                <td className="py-3 font-sfpro">${t.amountRequested.toFixed(2)}</td>
-                <td className="py-3">
-                  <span className={`px-3 py-1 rounded-full text-xs font-sfpro font-semibold ${statusColor(t.status)}`}>
-                    {t.status}
-                  </span>
-                </td>
-                <td className="py-3 font-sfpro">{t.approvedAt}</td>
-                <td className="py-3 font-sfpro">{t.rejectedAt}</td>
-                <td className="py-3 font-sfpro">{t.createdAt}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="w-full max-w-5xl">
+        <ResponsiveTable
+          loading={loading}
+          data={transactions}
+          emptyTitle="No transactions found"
+          emptyDescription="Your payout request history will appear here."
+          columns={[
+            { key: 'serialNumber', label: 'S/N' },
+            { key: 'id', label: 'Payout ID' },
+            { key: 'userType', label: 'User Type' },
+            { key: 'amountRequested', label: 'Amount Requested', render: (v) => `$${v?.toFixed(2) || '0.00'}` },
+            {
+              key: 'status', label: 'Status',
+              render: (v) => (
+                <span className={`px-3 py-1 rounded-full text-xs font-sfpro font-semibold ${statusColor(v)}`}>
+                  {v}
+                </span>
+              ),
+            },
+            { key: 'approvedAt', label: 'Approved At' },
+            { key: 'rejectedAt', label: 'Rejected At' },
+            { key: 'createdAt', label: 'Created At' },
+          ]}
+        />
       </div>
 
       {showRequestRedemptionModal && (

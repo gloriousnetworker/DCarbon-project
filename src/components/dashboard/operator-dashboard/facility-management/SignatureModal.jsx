@@ -204,7 +204,7 @@ export default function SignatureModal({ isOpen, onClose, onComplete }) {
       }
 
       if (signatureFile) {
-        const success = await uploadSignature(new File([signatureFile], 'signature.png'));
+        const success = await uploadSignature(new File([signatureFile], 'signature.png', { type: 'image/png' }));
         if (success) {
           onComplete();
         }

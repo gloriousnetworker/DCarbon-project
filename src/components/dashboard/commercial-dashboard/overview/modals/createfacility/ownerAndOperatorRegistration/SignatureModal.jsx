@@ -194,7 +194,6 @@ export default function SignatureModal({ isOpen, onClose, onComplete }) {
         url: `/api/user/update-user-agreement/${userId}`,
         headers: {
           'Authorization': `Bearer ${authToken}`,
-          'Content-Type': 'multipart/form-data',
         },
         data: formData,
       });

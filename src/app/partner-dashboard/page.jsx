@@ -12,6 +12,7 @@ import DashboardHelpCentre from '../../components/dashboard/partner-dashboard/He
 import DashboardNotifications from '../../components/dashboard/partner-dashboard/Notifications';
 import DashboardLogout from '../../components/dashboard/partner-dashboard/Logout';
 import MyAccount from '../../components/dashboard/partner-dashboard/account/MyAccount';
+import PartnerSubmitInvoice from '../../components/dashboard/partner-dashboard/reporting/PartnerSubmitInvoice';
 
 export default function UserDashboard() {
   const [activeSection, setActiveSection] = useState('overview');
@@ -24,11 +25,21 @@ export default function UserDashboard() {
       const authToken = localStorage.getItem('authToken');
       if (!authToken) {
         router.push('/login');
-      } else {
-        setIsLoading(false);
+        return;
       }
+      const userType = localStorage.getItem('userType');
+      const redirectMap = {
+        COMMERCIAL: '/commercial-dashboard',
+        RESIDENTIAL: '/residence-dashboard',
+        OPERATOR: '/operator-dashboard',
+      };
+      if (userType && redirectMap[userType]) {
+        router.replace(redirectMap[userType]);
+        return;
+      }
+      setIsLoading(false);
     };
-    
+
     checkAuth();
   }, [router]);
 
@@ -49,6 +60,7 @@ export default function UserDashboard() {
     overview: 'Overview',
     reporting: 'Reporting',
     customerManagement: 'Customer Management',
+    submitInvoice: 'Submit Invoice',
     myAccount: 'My Account',
     notifications: 'Notification',
     helpCenter: 'Help & Tutorials',
@@ -66,6 +78,9 @@ export default function UserDashboard() {
       break;
     case 'customerManagement':
       SectionComponent = CustomerManagement;
+      break;
+    case 'submitInvoice':
+      SectionComponent = PartnerSubmitInvoice;
       break;
     case 'myAccount':
       SectionComponent = MyAccount;

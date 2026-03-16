@@ -410,8 +410,7 @@ export default function FacilityDetails({ facility, onBack, onFacilityUpdated })
       
       const response = await axiosInstance.put(endpoints[docType], formData, {
         headers: {
-          'Authorization': `Bearer ${authToken}`,
-          'Content-Type': 'multipart/form-data'
+          'Authorization': `Bearer ${authToken}`
         }
       });
 

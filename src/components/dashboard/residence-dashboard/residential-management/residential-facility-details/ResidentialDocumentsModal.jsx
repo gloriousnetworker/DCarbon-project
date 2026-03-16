@@ -268,8 +268,7 @@ const DocumentUploadModal = ({ isOpen, onClose, onUpload, docType, facilityId })
         formData,
         {
           headers: {
-            Authorization: `Bearer ${authToken}`,
-            "Content-Type": "multipart/form-data"
+            Authorization: `Bearer ${authToken}`
           }
         }
       );

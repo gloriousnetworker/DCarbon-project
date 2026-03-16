@@ -386,15 +386,13 @@ const DashboardNavbar = ({
         }
       );
 
-      if (response.ok) {
-        const result = await response.json();
-        if (result.status === 'success' && result.data) {
-          const unreadNotifications = result.data.filter(notification => !notification.isRead);
-          const unreadCount = unreadNotifications.length;
-          setUnreadCount(unreadCount);
-          setShowNotificationDot(unreadCount > 0);
-          localStorage.setItem('notifications', JSON.stringify(result.data));
-        }
+      const result = response.data;
+      if (result.status === 'success' && result.data) {
+        const unreadNotifications = result.data.filter(notification => !notification.isRead);
+        const unreadCount = unreadNotifications.length;
+        setUnreadCount(unreadCount);
+        setShowNotificationDot(unreadCount > 0);
+        localStorage.setItem('notifications', JSON.stringify(result.data));
       }
     } catch (error) {
       console.error('Error fetching notifications:', error);

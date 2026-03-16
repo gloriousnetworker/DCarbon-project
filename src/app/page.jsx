@@ -39,16 +39,16 @@ export default function HomePage() {
 
         <div className="flex flex-col sm:flex-row items-center gap-4">
           <button
-            onClick={() => router.push('/login')}
+            onClick={() => router.push('/register')}
             className="bg-white text-[#039994] px-8 py-3 rounded-lg font-semibold text-sm hover:bg-gray-100 transition-colors shadow-lg min-w-[180px]"
           >
-            Sign in
+            Get Started
           </button>
           <button
-            onClick={() => router.push('/register')}
+            onClick={() => router.push('/login')}
             className="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold text-sm hover:bg-white/10 transition-colors min-w-[180px]"
           >
-            Create Account
+            Sign in
           </button>
         </div>
       </main>

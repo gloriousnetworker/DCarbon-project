@@ -465,7 +465,7 @@ export default function AddCommercialFacilityModal({ isOpen, onClose, onCreateNe
     await axiosInstance.put(
       `/api/facility/update-facility-financial-agreement/${facilityId}`,
       formData,
-      { headers: { 'Content-Type': 'multipart/form-data', 'Authorization': `Bearer ${authToken}` } }
+      { headers: { 'Authorization': `Bearer ${authToken}` } }
     );
   };
 

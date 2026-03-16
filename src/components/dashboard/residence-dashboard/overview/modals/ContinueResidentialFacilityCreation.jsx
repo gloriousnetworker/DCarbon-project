@@ -81,7 +81,20 @@ export default function ResidentialFacilityModal({ isOpen, onClose, currentStep 
     }
   };
 
-  const handleContinueRegistration = () => {
+  const handleContinueRegistration = async () => {
+    try {
+      const response = await axiosInstance.get(`/api/user/agreement/${userId}`, {
+        headers: { Authorization: `Bearer ${authToken}` }
+      });
+      const termsAccepted = response.data?.status === 'success' && response.data?.data?.termsAccepted;
+      if (!termsAccepted) {
+        toast.error("Please complete the agreement signing step before continuing with utility authorization.");
+        return;
+      }
+    } catch {
+      toast.error("Unable to verify agreement status. Please try again.");
+      return;
+    }
     const facility = userFacilities.find(f => f.id === selectedFacility);
     if (facility) {
       setSelectedUtilityProvider(facility.utilityProvider);

@@ -7,7 +7,6 @@ import DashboardNavbar from '../../components/dashboard/commercial-dashboard/Das
 import DashboardOverview from '../../components/dashboard/commercial-dashboard/overview/DashboardOverview';
 import GeneratorManagement from '../../components/dashboard/commercial-dashboard/facility-management/FacilityManagement';
 import Report from '../../components/dashboard/commercial-dashboard/rec-sales-and-report/GeneratorMonthlyReport';
-import PendingActions from '../../components/dashboard/commercial-dashboard/payouts/Payouts';
 import DashboardContactSupport from '../../components/dashboard/commercial-dashboard/ContactSupport';
 import DashboardHelpCentre from '../../components/dashboard/commercial-dashboard/HelpCentre';
 import DashboardNotifications from '../../components/dashboard/commercial-dashboard/Notifications';
@@ -25,11 +24,21 @@ export default function UserDashboard() {
       const authToken = localStorage.getItem('authToken');
       if (!authToken) {
         router.push('/login');
-      } else {
-        setIsLoading(false);
+        return;
       }
+      const userType = localStorage.getItem('userType');
+      const redirectMap = {
+        RESIDENTIAL: '/residence-dashboard',
+        PARTNER: '/partner-dashboard',
+        OPERATOR: '/operator-dashboard',
+      };
+      if (userType && redirectMap[userType]) {
+        router.replace(redirectMap[userType]);
+        return;
+      }
+      setIsLoading(false);
     };
-    
+
     checkAuth();
   }, [router]);
 
@@ -50,7 +59,6 @@ export default function UserDashboard() {
     overview: 'Overview',
     generatorManagement: 'Generator Management',
     report: 'Report',
-    pendingActions: 'Pending Actions',
     myAccount: 'My Account',
     notifications: 'Notification',
     helpCenter: 'Help Centre (FAQs)',
@@ -68,9 +76,6 @@ export default function UserDashboard() {
       break;
     case 'report':
       SectionComponent = Report;
-      break;
-    case 'pendingActions':
-      SectionComponent = PendingActions;
       break;
     case 'myAccount':
       SectionComponent = MyAccount;

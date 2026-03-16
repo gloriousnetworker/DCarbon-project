@@ -274,19 +274,34 @@ export default function ExistingFacilitiesModal({ isOpen, onClose, currentStep }
     }
   };
 
-  const handleContinueRegistration = () => {
+  const handleContinueRegistration = async () => {
     const selectedFacilityData = userFacilities.find(f => f.id === selectedFacility);
-    
-    if (selectedFacilityData) {
+    if (!selectedFacilityData) return;
+
+    // Block bypass: ensure agreement is signed before proceeding
+    const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+    const userId = loginResponse?.data?.user?.id;
+    const authToken = loginResponse?.data?.token;
+    const hasAgreement = userId && authToken ? await checkStage3Completion(userId, authToken) : false;
+
+    if (!hasAgreement) {
       const facilityRole = selectedFacilityData.commercialRole;
-      
       if (facilityRole === 'owner' || facilityRole === 'Owner') {
-        setShowInviteOperatorModal(true);
+        setCurrentModal('ownerTerms');
       } else {
-        openInstapullTab();
-        setShowMainModal(false);
-        setShowInstapullAuthModal(true);
+        setCurrentModal('ownerOperatorTerms');
       }
+      setShowMainModal(false);
+      return;
+    }
+
+    const facilityRole = selectedFacilityData.commercialRole;
+    if (facilityRole === 'owner' || facilityRole === 'Owner') {
+      setShowInviteOperatorModal(true);
+    } else {
+      openInstapullTab();
+      setShowMainModal(false);
+      setShowInstapullAuthModal(true);
     }
   };
 

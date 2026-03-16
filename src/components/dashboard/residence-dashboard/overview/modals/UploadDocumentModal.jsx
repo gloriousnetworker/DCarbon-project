@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
+import { axiosInstance } from '../../../../../lib/config';
 import {
   backArrow,
   pageTitle,
@@ -30,7 +31,6 @@ const DOCUMENT_TYPES = [
   { id: 'alternate-location', label: 'Alternate Location Agreement' },
 ];
 
-const API_BASE_URL = '';
 
 export default function UploadDocumentsModal({ isOpen, onClose }) {
   const [facilities, setFacilities] = useState([]);
@@ -59,20 +59,14 @@ export default function UploadDocumentsModal({ isOpen, onClose }) {
         return;
       }
 
-      const response = await axiosInstance.
-        `${API_BASE_URL}/api/residential-facility/get-user-facilities/${userId}`,
+      const response = await axiosInstance.get(
+        `/api/residential-facility/get-user-facilities/${userId}`,
         {
-          method: 'GET',
           headers: {
             'Authorization': `Bearer ${authToken}`,
-            'Content-Type': 'application/json',
           },
         }
       );
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch facilities (Status: ${response.status})`);
-      }
 
       const data = response.data;
       
@@ -116,7 +110,7 @@ export default function UploadDocumentsModal({ isOpen, onClose }) {
 
   const buildEndpoint = (documentType, facilityId) => {
     // All document types use the residential-facility path with facility ID
-    return `${API_BASE_URL}/api/residential-facility/residential-docs/${documentType}/${facilityId}`;
+    return `/api/residential-facility/residential-docs/${documentType}/${facilityId}`;
   };
 
   const handleSubmit = async (e) => {
@@ -157,62 +151,17 @@ export default function UploadDocumentsModal({ isOpen, onClose }) {
       // Build the endpoint using facility ID
       const endpoint = buildEndpoint(selectedDocumentType, selectedFacility);
 
-      console.log('Uploading to endpoint:', endpoint);
-      console.log('File name:', file.name);
-      console.log('File type:', file.type);
-      console.log('File size:', file.size);
-      console.log('Document type:', selectedDocumentType);
-      console.log('Facility ID:', selectedFacility);
-
-      const response = await axiosInstance.endpoint, {
-        method: 'PUT',
-        body: formData,
-        headers: {
-          'Authorization': `Bearer ${authToken}`,
-          // Don't set Content-Type header - let the browser set it automatically for FormData
-        },
-      });
-
-      console.log('Response status:', response.status);
-      console.log('Response headers:', response.headers);
-
-      if (!response.ok) {
-        let errorMessage = 'Failed to upload document';
-        
-        try {
-          const errorText = await response.text();
-          console.log('Error response body:', errorText);
-          
-          // Try to parse as JSON
-          try {
-            const errorData = JSON.parse(errorText);
-            errorMessage = errorData.message || errorData.error || errorMessage;
-          } catch (parseError) {
-            // If not JSON, use the text as error message
-            errorMessage = errorText || response.statusText || errorMessage;
-          }
-        } catch (textError) {
-          errorMessage = response.statusText || errorMessage;
+      const response = await axiosInstance.put(
+        endpoint,
+        formData,
+        {
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+          },
         }
-        
-        throw new Error(`${errorMessage} (Status: ${response.status})`);
-      }
+      );
 
-      // Try to parse response, but don't fail if it's not JSON
-      let responseData = {};
-      try {
-        const responseText = await response.text();
-        console.log('Success response body:', responseText);
-        
-        if (responseText) {
-          responseData = JSON.parse(responseText);
-        }
-      } catch (jsonError) {
-        // Response might not be JSON, which is fine for successful uploads
-        console.log('Response is not JSON, but upload was successful');
-      }
-
-      toast.success('Document uploaded successfully!', { id: uploadToast });
+      toast.success(response.data?.message || 'Document uploaded successfully!', { id: uploadToast });
       resetForm();
       onClose(); // Close the modal after successful upload
       

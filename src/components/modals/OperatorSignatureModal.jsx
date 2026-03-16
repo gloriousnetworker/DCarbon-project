@@ -160,10 +160,6 @@ const SignatureModal = ({ isOpen, onClose, onSaveSignature }) => {
         method = "uploaded";
       }
 
-      // Add required agreement fields
-      formData.append("termsAccepted", "true");
-      formData.append("agreementCompleted", "true");
-
       const response = await axiosInstance.put(
         `/api/user/update-user-agreement/${userId}`,
         formData,
@@ -174,14 +170,8 @@ const SignatureModal = ({ isOpen, onClose, onSaveSignature }) => {
         }
       );
 
-      // axios returns status in response.status and data in response.data
-      if (response.status !== 200 && response.status !== 201) {
-        throw new Error(response.data?.message || 'Failed to save signature');
-      }
-
-      const result = await response.json();
       toast.success(`Signature (${method}) saved successfully`);
-      onSaveSignature(result);
+      onSaveSignature(response.data);
       onClose();
     } catch (error) {
       console.error("Signature upload error:", error);

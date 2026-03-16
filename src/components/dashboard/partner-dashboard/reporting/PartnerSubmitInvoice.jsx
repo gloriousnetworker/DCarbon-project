@@ -29,7 +29,7 @@ const Toast = ({ message, type, onClose }) => {
   }, [onClose]);
 
   const bgColor = type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500';
-  
+
   return (
     <div className={`fixed top-4 right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-slide-in`}>
       {message}
@@ -39,8 +39,7 @@ const Toast = ({ message, type, onClose }) => {
 
 const generateInvoiceNumber = (year, quarter) => {
   const randomDigits = Math.floor(1000 + Math.random() * 9000);
-  const quarterStr = `Q${quarter}`;
-  return `DCARBON-INV-${year}-${quarterStr}-${randomDigits}`;
+  return `DCARBON-PINV-${year}-Q${quarter}-${randomDigits}`;
 };
 
 const getYearOptions = () => {
@@ -52,14 +51,8 @@ const getYearOptions = () => {
   return years;
 };
 
-const SubmitInvoice = ({ onBack, onInvoiceSubmitted }) => {
-  const [formData, setFormData] = useState({
-    quarter: '',
-    year: '',
-    invoiceNumber: '',
-    amount: ''
-  });
-
+const PartnerSubmitInvoice = ({ onBack, onInvoiceSubmitted }) => {
+  const [formData, setFormData] = useState({ quarter: '', year: '', invoiceNumber: '', amount: '' });
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadedFileUrl, setUploadedFileUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -76,23 +69,16 @@ const SubmitInvoice = ({ onBack, onInvoiceSubmitted }) => {
     else if (currentMonth <= 9) currentQuarter = 3;
     else currentQuarter = 4;
 
-    setFormData(prev => ({
-      ...prev,
-      year: currentYear.toString(),
-      quarter: currentQuarter.toString()
-    }));
+    setFormData(prev => ({ ...prev, year: currentYear.toString(), quarter: currentQuarter.toString() }));
   }, []);
 
   useEffect(() => {
     if (formData.year && formData.quarter) {
-      const newInvoiceNumber = generateInvoiceNumber(formData.year, formData.quarter);
-      setFormData(prev => ({ ...prev, invoiceNumber: newInvoiceNumber }));
+      setFormData(prev => ({ ...prev, invoiceNumber: generateInvoiceNumber(formData.year, formData.quarter) }));
     }
   }, [formData.year, formData.quarter]);
 
-  const showToast = (message, type) => {
-    setToast({ message, type });
-  };
+  const showToast = (message, type) => setToast({ message, type });
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -108,37 +94,24 @@ const SubmitInvoice = ({ onBack, onInvoiceSubmitted }) => {
   };
 
   const handleFileUpload = async () => {
-    if (!selectedFile) {
-      showToast('Please select a file to upload', 'error');
-      return;
-    }
-
-    if (!formData.quarter || !formData.invoiceNumber) {
-      showToast('Please select quarter and year first', 'error');
-      return;
-    }
+    if (!selectedFile) { showToast('Please select a file to upload', 'error'); return; }
+    if (!formData.quarter || !formData.invoiceNumber) { showToast('Please select quarter and year first', 'error'); return; }
 
     setIsUploading(true);
-
     try {
       const authToken = localStorage.getItem('authToken');
-      if (!authToken) {
-        showToast('Authentication required. Please log in.', 'error');
-        setIsUploading(false);
-        return;
-      }
+      if (!authToken) { showToast('Authentication required. Please log in.', 'error'); return; }
 
       const formDataUpload = new FormData();
       formDataUpload.append('file', selectedFile);
 
-      const response = await axiosInstance.post(`/api/file-storage/upload/${formData.invoiceNumber}`, formDataUpload, {
-        headers: {
-          'Authorization': `Bearer ${authToken}`,
-        },
-      });
+      const response = await axiosInstance.post(
+        `/api/file-storage/upload/${formData.invoiceNumber}`,
+        formDataUpload,
+        { headers: { 'Authorization': `Bearer ${authToken}` } }
+      );
 
       const result = response.data;
-
       if ((response.status === 200 || response.status === 201) && result.data) {
         setUploadedFileUrl(result.data.url);
         showToast('File uploaded successfully', 'success');
@@ -146,8 +119,7 @@ const SubmitInvoice = ({ onBack, onInvoiceSubmitted }) => {
         showToast(result.message || 'Failed to upload file', 'error');
       }
     } catch (error) {
-      console.error('File upload error:', error);
-      showToast('An error occurred while uploading the file', 'error');
+      showToast(error.response?.data?.message || 'An error occurred while uploading the file', 'error');
     } finally {
       setIsUploading(false);
     }
@@ -158,79 +130,60 @@ const SubmitInvoice = ({ onBack, onInvoiceSubmitted }) => {
       showToast('Please fill in all required fields', 'error');
       return;
     }
-
     if (!uploadedFileUrl) {
       showToast('Please upload an invoice document first', 'error');
       return;
     }
 
     setIsLoading(true);
-
     try {
       const userId = localStorage.getItem('userId');
       const authToken = localStorage.getItem('authToken');
-
-      if (!userId || !authToken) {
-        showToast('Authentication required. Please log in.', 'error');
-        setIsLoading(false);
-        return;
-      }
+      if (!userId || !authToken) { showToast('Authentication required. Please log in.', 'error'); return; }
 
       const today = new Date();
       const issueDate = today.toISOString().split('T')[0];
       const dueDate = new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
       const requestBody = {
-        userId: userId,
+        userId,
         quarter: parseInt(formData.quarter),
         year: parseInt(formData.year),
         invoiceNo: formData.invoiceNumber,
-        issueDate: issueDate,
-        dueDate: dueDate,
+        issueDate,
+        dueDate,
         amount: parseFloat(formData.amount),
-        description: `Quarter ${formData.quarter} REC payout`,
-        invoiceDocument: uploadedFileUrl
+        description: `Quarter ${formData.quarter} Partner Commission`,
+        invoiceDocument: uploadedFileUrl,
       };
 
-      const response = await axiosInstance.post(`/api/quarterly-statements/invoices`, requestBody, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`,
-        },
-      });
+      const response = await axiosInstance.post(
+        '/api/quarterly-statements/invoices',
+        requestBody,
+        { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` } }
+      );
 
       const result = response.data;
-
       if (result.status === 'success') {
         showToast('Invoice submitted successfully', 'success');
-        
-        if (onInvoiceSubmitted) {
-          onInvoiceSubmitted(formData.amount);
-        }
-        
+        if (onInvoiceSubmitted) onInvoiceSubmitted(formData.amount);
+
         setFormData({
           quarter: formData.quarter,
           year: formData.year,
           invoiceNumber: generateInvoiceNumber(formData.year, formData.quarter),
-          amount: ''
+          amount: '',
         });
         setSelectedFile(null);
         setUploadedFileUrl('');
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
-        }
-        
-        setTimeout(() => {
-          if (onBack) {
-            onBack();
-          }
-        }, 2000);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+
+        setTimeout(() => { if (onBack) onBack(); }, 2000);
       } else {
         showToast(result.message || 'Failed to submit invoice', 'error');
       }
     } catch (error) {
-      console.error('Invoice submission error:', error);
-      showToast('An error occurred while submitting the invoice', 'error');
+      showToast(error.response?.data?.message || 'An error occurred while submitting the invoice', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -238,14 +191,8 @@ const SubmitInvoice = ({ onBack, onInvoiceSubmitted }) => {
 
   return (
     <>
-      {toast && (
-        <Toast 
-          message={toast.message} 
-          type={toast.type} 
-          onClose={() => setToast(null)} 
-        />
-      )}
-      
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+
       {(isLoading || isUploading) && (
         <div className={spinnerOverlay}>
           <div className={spinner}></div>
@@ -267,13 +214,7 @@ const SubmitInvoice = ({ onBack, onInvoiceSubmitted }) => {
             <div className={rowWrapper}>
               <div className={halfWidth}>
                 <label className={labelClass}>Quarter</label>
-                <select
-                  name="quarter"
-                  value={formData.quarter}
-                  onChange={handleInputChange}
-                  className={selectClass}
-                  required
-                >
+                <select name="quarter" value={formData.quarter} onChange={handleInputChange} className={selectClass} required>
                   <option value="">Select Quarter</option>
                   <option value="1">Q1</option>
                   <option value="2">Q2</option>
@@ -283,13 +224,7 @@ const SubmitInvoice = ({ onBack, onInvoiceSubmitted }) => {
               </div>
               <div className={halfWidth}>
                 <label className={labelClass}>Year</label>
-                <select
-                  name="year"
-                  value={formData.year}
-                  onChange={handleInputChange}
-                  className={selectClass}
-                  required
-                >
+                <select name="year" value={formData.year} onChange={handleInputChange} className={selectClass} required>
                   <option value="">Select Year</option>
                   {getYearOptions().map(year => (
                     <option key={year} value={year}>{year}</option>
@@ -300,14 +235,7 @@ const SubmitInvoice = ({ onBack, onInvoiceSubmitted }) => {
 
             <div>
               <label className={labelClass}>Invoice Number</label>
-              <input
-                type="text"
-                name="invoiceNumber"
-                value={formData.invoiceNumber}
-                className={disabledInputClass}
-                readOnly
-                disabled
-              />
+              <input type="text" value={formData.invoiceNumber} className={disabledInputClass} readOnly disabled />
             </div>
 
             <div>
@@ -320,7 +248,7 @@ const SubmitInvoice = ({ onBack, onInvoiceSubmitted }) => {
                 className={inputClass}
                 step="0.01"
                 min="0"
-                placeholder="Enter amount"
+                placeholder="Enter commission amount"
                 required
               />
             </div>
@@ -329,9 +257,7 @@ const SubmitInvoice = ({ onBack, onInvoiceSubmitted }) => {
               <label className={labelClass}>Invoice Document</label>
               <div className={uploadFieldWrapper}>
                 <label className={uploadInputLabel}>
-                  <span className="truncate">
-                    {selectedFile ? selectedFile.name : 'Choose file...'}
-                  </span>
+                  <span className="truncate">{selectedFile ? selectedFile.name : 'Choose file...'}</span>
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -352,21 +278,11 @@ const SubmitInvoice = ({ onBack, onInvoiceSubmitted }) => {
                   {isUploading ? 'Uploading...' : 'Upload'}
                 </button>
               </div>
-              {uploadedFileUrl && (
-                <p className={noteText}>
-                  ✓ File uploaded successfully
-                </p>
-              )}
-              <p className={noteText}>
-                Accepted formats: PDF, JPG, PNG, DOC, DOCX
-              </p>
+              {uploadedFileUrl && <p className={noteText}>✓ File uploaded successfully</p>}
+              <p className={noteText}>Accepted formats: PDF, JPG, PNG, DOC, DOCX</p>
             </div>
 
-            <button 
-              onClick={handleSubmit} 
-              className={buttonPrimary}
-              disabled={isLoading || !uploadedFileUrl}
-            >
+            <button onClick={handleSubmit} className={buttonPrimary} disabled={isLoading || !uploadedFileUrl}>
               {isLoading ? 'Submitting...' : 'Submit Invoice'}
             </button>
           </div>
@@ -375,21 +291,13 @@ const SubmitInvoice = ({ onBack, onInvoiceSubmitted }) => {
 
       <style jsx>{`
         @keyframes slide-in {
-          from {
-            transform: translateX(100%);
-            opacity: 0;
-          }
-          to {
-            transform: translateX(0);
-            opacity: 1;
-          }
+          from { transform: translateX(100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
         }
-        .animate-slide-in {
-          animation: slide-in 0.3s ease-out;
-        }
+        .animate-slide-in { animation: slide-in 0.3s ease-out; }
       `}</style>
     </>
   );
 };
 
-export default SubmitInvoice;
+export default PartnerSubmitInvoice;

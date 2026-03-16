@@ -94,7 +94,7 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
           }
         }
       );
-      const result = await response.json();
+      const result = response.data;
       return result.status === 'success' && result.data?.commercialUser?.ownerAddress;
     } catch (error) {
       return false;
@@ -111,7 +111,7 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
           }
         }
       );
-      const result = await response.json();
+      const result = response.data;
       return result.status === 'success' && result.data?.termsAccepted;
     } catch (error) {
       return false;
@@ -128,7 +128,7 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
           }
         }
       );
-      const result = await response.json();
+      const result = response.data;
       return result.status === 'success' && result.data?.financialInfo;
     } catch (error) {
       return false;
@@ -145,7 +145,7 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
           }
         }
       );
-      const result = await response.json();
+      const result = response.data;
       return result.status === 'success' && result.data?.length > 0 && result.data.some(item => item.meters?.meters?.length > 0);
     } catch (error) {
       return false;
@@ -346,7 +346,7 @@ export default function CommercialRegistrationModal({ isOpen, onClose, currentSt
         }
       );
 
-      const result = await response.json();
+      const result = response.data;
       
       if (result.success) {
         window.open(result.redirectUrl, '_blank');

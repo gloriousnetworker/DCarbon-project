@@ -9,7 +9,11 @@ import { toast } from "react-hot-toast";
 import Loader from "@/components/loader/Loader";
 import { axiosInstance } from "../../../../../lib/config";
 
+const labelClass = "text-sm text-gray-700 mb-1 block font-sfpro";
+const inputClass = "border border-gray-300 rounded w-full px-3 py-2 focus:outline-none font-sfpro text-[14px] leading-[100%] tracking-[-0.05em] bg-[#F0F0F0]";
+
 const MyAccount = () => {
+  const [showOwnerDetails, setShowOwnerDetails] = useState(true);
   const [showPreferences, setShowPreferences] = useState(true);
   const [viewTwoFA, setViewTwoFA] = useState(false);
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
@@ -79,6 +83,77 @@ const MyAccount = () => {
               {!loading && (
                 <>
                   <ContactInformation userData={userData} />
+
+                  {/* Owner Details Section */}
+                  <div className="border-t border-[#E8E8E8] pt-6">
+                    <div
+                      className="flex items-center justify-between cursor-pointer"
+                      onClick={() => setShowOwnerDetails(!showOwnerDetails)}
+                    >
+                      <h2 className="text-lg font-semibold text-[#039994] font-sfpro">
+                        Owner Details
+                      </h2>
+                      {showOwnerDetails ? (
+                        <FaChevronUp className="text-[#039994]" size={20} />
+                      ) : (
+                        <FaChevronDown className="text-[#039994]" size={20} />
+                      )}
+                    </div>
+                    {showOwnerDetails && (
+                      <div className="mt-4 space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className={labelClass}>Phone</label>
+                            <input
+                              type="text"
+                              readOnly
+                              value={userData?.phone || userData?.phoneNumber || '—'}
+                              className={inputClass}
+                            />
+                          </div>
+                          <div>
+                            <label className={labelClass}>City</label>
+                            <input
+                              type="text"
+                              readOnly
+                              value={userData?.city || '—'}
+                              className={inputClass}
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className={labelClass}>Address</label>
+                          <input
+                            type="text"
+                            readOnly
+                            value={userData?.address || userData?.residentialAddress || '—'}
+                            className={inputClass}
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className={labelClass}>State</label>
+                            <input
+                              type="text"
+                              readOnly
+                              value={userData?.state || '—'}
+                              className={inputClass}
+                            />
+                          </div>
+                          <div>
+                            <label className={labelClass}>Zip Code</label>
+                            <input
+                              type="text"
+                              readOnly
+                              value={userData?.zipCode || userData?.postalCode || '—'}
+                              className={inputClass}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   <div className="border-t border-[#E8E8E8] pt-6">
                     <div
                       className="flex items-center justify-between cursor-pointer"

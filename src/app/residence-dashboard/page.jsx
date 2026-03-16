@@ -24,11 +24,21 @@ export default function UserDashboard() {
       const authToken = localStorage.getItem('authToken');
       if (!authToken) {
         router.push('/login');
-      } else {
-        setIsLoading(false);
+        return;
       }
+      const userType = localStorage.getItem('userType');
+      const redirectMap = {
+        COMMERCIAL: '/commercial-dashboard',
+        PARTNER: '/partner-dashboard',
+        OPERATOR: '/operator-dashboard',
+      };
+      if (userType && redirectMap[userType]) {
+        router.replace(redirectMap[userType]);
+        return;
+      }
+      setIsLoading(false);
     };
-    
+
     checkAuth();
   }, [router]);
 

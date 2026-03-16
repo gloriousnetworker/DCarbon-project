@@ -146,7 +146,7 @@ export default function FacilityDetails({ facility, customerEmail, onBack, onFac
         { headers: { Authorization: `Bearer ${authToken}` } }
       );
       
-      const result = await response.json();
+      const result = response.data;
       if (result.status === "success") {
         setOperators(result.data);
       }
@@ -417,7 +417,7 @@ export default function FacilityDetails({ facility, customerEmail, onBack, onFac
         }
       );
 
-      const result = await response.json();
+      const result = response.data;
 
       if (result.status === 'success') {
         setFacilityData(prevData => ({

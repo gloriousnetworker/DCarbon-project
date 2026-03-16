@@ -81,7 +81,7 @@ export default function OperatorRegistrationCard() {
         const response = await axiosInstance.get(`/api/auth/utility-providers`);
         const data = response.data;
         
-        if (response.ok && data.status === 'success') {
+        if (data.status === 'success') {
           setUtilityProviders(data.data);
           setFilteredProviders(data.data);
         } else {
@@ -226,7 +226,7 @@ export default function OperatorRegistrationCard() {
         throw new Error('This email is already in use for utility authorization');
       }
       
-      if (!response.ok || data.status !== 'success') {
+      if (data.status !== 'success') {
         throw new Error(data.message || 'Failed to verify email');
       }
 
@@ -355,7 +355,7 @@ export default function OperatorRegistrationCard() {
       );
 
       const data = response.data;
-      if (!response.ok || data.status !== 'success') {
+      if (data.status !== 'success') {
         throw new Error(data.message || 'Failed to submit provider request');
       }
 

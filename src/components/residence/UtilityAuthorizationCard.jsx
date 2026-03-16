@@ -79,11 +79,6 @@ export default function OperatorRegistrationCard() {
         }
       );
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Registration update failed');
-      }
-
       toast.success('Registration updated successfully!', {
         style: {
           fontFamily: 'SF Pro',

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { axiosInstance } from "../../../../../lib/config";
+import ResponsiveTable from "../../shared/ResponsiveTable";
 
 const getDynamicQuarters = () => {
   const today = new Date();
@@ -434,35 +435,22 @@ export default function CommissionStatement({ onNavigate }) {
 
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <h3 className="text-lg font-semibold text-[#039994] mb-4">Payout History</h3>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead>
-                    <tr>
-                      {["Payout ID", "User Type", "Amount", "Status", "Admin Note", "Created At", "Approved By"].map((h) => (
-                        <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {payoutHistory.map((payout) => (
-                      <tr key={payout.id}>
-                        <td className="px-4 py-3 text-sm text-gray-900">{payout.id.slice(0, 8)}...</td>
-                        <td className="px-4 py-3 text-sm text-gray-900">{payout.userType}</td>
-                        <td className="px-4 py-3 text-sm text-gray-900">${payout.amountRequested}</td>
-                        <td className={`px-4 py-3 text-sm font-medium ${getStatusColor(payout.status)}`}>{payout.status}</td>
-                        <td className="px-4 py-3 text-sm text-gray-900 max-w-xs">{payout.adminNote || "-"}</td>
-                        <td className="px-4 py-3 text-sm text-gray-900">{new Date(payout.createdAt).toLocaleDateString()}</td>
-                        <td className="px-4 py-3 text-sm text-gray-900">{payout.approvedBy ? payout.approvedBy.slice(0, 8) + "..." : "-"}</td>
-                      </tr>
-                    ))}
-                    {payoutHistory.length === 0 && (
-                      <tr>
-                        <td colSpan="7" className="px-4 py-8 text-center text-sm text-gray-500">No payout history available</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+              <ResponsiveTable
+                data={payoutHistory}
+                emptyTitle="No payout history available"
+                columns={[
+                  { key: 'id', label: 'Payout ID', render: (v) => v ? `${v.slice(0, 8)}...` : '—' },
+                  { key: 'userType', label: 'User Type' },
+                  { key: 'amountRequested', label: 'Amount', render: (v) => `$${v}` },
+                  {
+                    key: 'status', label: 'Status',
+                    render: (v) => <span className={`text-sm font-medium ${getStatusColor(v)}`}>{v}</span>,
+                  },
+                  { key: 'adminNote', label: 'Admin Note', render: (v) => v || '—' },
+                  { key: 'createdAt', label: 'Created At', render: (v) => new Date(v).toLocaleDateString() },
+                  { key: 'approvedBy', label: 'Approved By', render: (v) => v ? `${v.slice(0, 8)}...` : '—' },
+                ]}
+              />
             </div>
           </>
         )}

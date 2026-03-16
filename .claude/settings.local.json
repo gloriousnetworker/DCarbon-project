@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -rn Content-Type.*multipart/form-data '/c/Users/Udofot.tsx/Desktop/EDUMARCO SERVICES/dcarbon-web-app-vercel/DCarbon-project/src/components/dashboard' --include=*.jsx)",
+      "Bash(grep -rn response.ok '/c/Users/Udofot.tsx/Desktop/EDUMARCO SERVICES/dcarbon-web-app-vercel/DCarbon-project/src/components/dashboard' --include=*.jsx)",
+      "Bash(grep -v \"//\")",
+      "Bash(grep -rn 'await response\\\\.json' '/c/Users/Udofot.tsx/Desktop/EDUMARCO SERVICES/dcarbon-web-app-vercel/DCarbon-project/src/components/dashboard' --include=*.jsx)",
+      "Bash(grep -rn shared/ResponsiveTable '/c/Users/Udofot.tsx/Desktop/EDUMARCO SERVICES/dcarbon-web-app-vercel/DCarbon-project/src/components/dashboard' --include=*.jsx)",
+      "Bash(grep -rn '= await fetch\\\\b' '/c/Users/Udofot.tsx/Desktop/EDUMARCO SERVICES/dcarbon-web-app-vercel/DCarbon-project/src/components/dashboard' --include=*.jsx)"
+    ]
+  }
+}

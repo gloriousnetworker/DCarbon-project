@@ -177,14 +177,9 @@ const SignatureModal = ({ isOpen, onClose, onSaveSignature }) => {
         }
       );
 
-      const data = response.data;
-      if (response.ok) {
-        toast.success(`Signature (${signatureMethod}) saved successfully`);
-        onSaveSignature(signatureMethod);
-        onClose();
-      } else {
-        toast.error(data.message || "Failed to save signature");
-      }
+      toast.success(`Signature (${signatureMethod}) saved successfully`);
+      onSaveSignature(signatureMethod);
+      onClose();
     } catch (error) {
       console.error("Error saving signature:", error);
       toast.error("An error occurred while saving the signature");
